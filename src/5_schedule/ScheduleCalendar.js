@@ -4,12 +4,12 @@
  * 데이터는 props로 내려오고, 사용자 동작은 on... 콜백으로 부모에게 올라갑니다.
  */
 import React from "react";
-import { weekDays } from "./scheduleData";
+import { groupSchedulesByDate, weekDays } from "./scheduleData";
 import ScheduleStaffWeek from "./ScheduleStaffWeek";
+import { ScheduleEvent } from "./ScheduleItemParts";
 
 // 보기 방식에 맞는 일정 표를 보여주고 선택과 검색을 부모에게 전달합니다.
 export default function ScheduleCalendar({
-  monthLabel,
   view,
   onViewChange,
   onChangePeriod,
@@ -19,8 +19,7 @@ export default function ScheduleCalendar({
   onScopeFilterChange,
   query,
   onQueryChange,
-  holidayInfo,
-  calendarYear,
+  holidayError,
   holidayDates,
   calendarDays,
   visibleItems,
@@ -33,34 +32,20 @@ export default function ScheduleCalendar({
   onShowMore,
   onOpenSchedule,
 }) {
-  // props를 { ... }로 구조 분해하면 props.onSelectDate 대신 onSelectDate로 사용할 수 있습니다.
-  // 실제 선택 상태는 부모에 있습니다. 이 함수는 부모의 변경 함수를 호출할 뿐 직접 저장하지 않습니다.
-  const openDate = (date) => onSelectDate(date);
-  // filter로 해당 날짜만 추린 새 배열에 sort를 적용하므로 부모 배열은 바뀌지 않습니다.
-  // HH:mm은 자릿수가 같아 "09:00"이 "15:00"보다 먼저 정렬됩니다.
-  const dateItems = (date) =>
-    visibleItems
-      .filter((item) => item.date === date)
-      .sort((a, b) => a.time.localeCompare(b.time));
-  // map은 데이터 배열의 각 요소를 JSX 버튼으로 바꿉니다. 주/일/시간 화면에서 같은 표시를 재사용합니다.
-  // key는 React가 형제 목록의 항목을 식별하는 값입니다. 색상은 각 데이터의 color를 inline style로 전달합니다.
-  // 일정 버튼은 부모 날짜 칸 안에 있으므로 stopPropagation으로 날짜 선택 클릭까지 전달되지 않게 합니다.
-  // onOpenSchedule(item)은 부모의 editSchedule을 호출해 해당 내용이 채워진 폼을 엽니다.
+  // 한 번 정렬해 날짜별로 묶습니다. 날짜 칸이 늘어도 전체 배열을 매번 filter/sort하지 않습니다.
+  const schedulesByDate = groupSchedulesByDate(visibleItems);
+  const dateItems = (date) => schedulesByDate[date] || [];
+  const selectedItems = dateItems(selectedDate);
   const renderItems = (items) =>
     items.map((item) => (
-      <button type="button" className="sm-event" key={item.id} style={{ background: item.color }}
-        onClick={(event) => { event.stopPropagation(); onOpenSchedule(item); }}
-        aria-label={`${item.title} 상세 내용 확인 및 수정`}>
-        <time>{item.time}</time> {item.title}
-        <small>{item.person}</small>
-      </button>
+      <ScheduleEvent key={item.id} item={item} onOpen={onOpenSchedule} />
     ));
 
   return (
     <section className="sm-card">
       <div className="sm-calendar-head">
         <div className="sm-month">
-          <h2>{view === "monthly" ? monthLabel : periodLabel}</h2>
+          <h2>{periodLabel}</h2>
           <div className="sm-arrows">
             <button
               aria-label="이전 기간"
@@ -123,9 +108,7 @@ export default function ScheduleCalendar({
       </div>
 
       <div className="sm-holiday-error" role="status">
-        {holidayInfo.year === calendarYear && holidayInfo.error
-          ? "공휴일 정보를 불러오지 못했습니다."
-          : ""}
+        {holidayError ? "공휴일 정보를 불러오지 못했습니다." : ""}
       </div>
 
       {/* 조건부 렌더링: view가 monthly일 때만 월간 표를 만듭니다.
@@ -146,7 +129,13 @@ export default function ScheduleCalendar({
             {calendarDays.map((cell, index) => {
               // 부모가 만든 null 칸은 월 앞뒤의 빈자리입니다. 실제 날짜처럼 선택하지 않게 만듭니다.
               if (!cell) {
-                return <div key={`blank-${index}`} className="sm-day" aria-hidden="true" />;
+                return (
+                  <div
+                    key={`blank-${index}`}
+                    className="sm-day"
+                    aria-hidden="true"
+                  />
+                );
               }
               const holidayName = holidayDates[cell.key];
               const weekday = cell.date.getDay();
@@ -164,21 +153,27 @@ export default function ScheduleCalendar({
               return (
                 <div
                   key={cell.key}
-                  onClick={() => openDate(cell.key)}
+                  onClick={() => onSelectDate(cell.key)}
                   className={`sm-day ${selectedDate === cell.key ? "selected" : ""} ${cell.key === todayKey ? "today" : ""}`}
                 >
-                  <div className={`sm-day-num ${dateColor}`} title={holidayName || undefined}>
+                  <div
+                    className={`sm-day-num ${dateColor}`}
+                    title={holidayName || undefined}
+                  >
                     {cell.date.getDate()}
                   </div>
-                  {holidayName && <div className="sm-holiday-name">{holidayName}</div>}
+                  {holidayName && (
+                    <div className="sm-holiday-name">{holidayName}</div>
+                  )}
                   {/* slice(0, 2)는 원본을 수정하지 않고 처음 두 건만 복사합니다.
                       남은 일정은 아래 더보기에서 해당 날짜의 목록을 열어 확인합니다. */}
                   {dayItems.slice(0, 2).map((item) => (
-                    <button type="button" key={item.id} className="sm-event" style={{ background: item.color }}
-                      onClick={(event) => { event.stopPropagation(); onOpenSchedule(item); }}
-                      aria-label={`${item.title} 상세 내용 확인 및 수정`}>
-                      {item.title}
-                    </button>
+                    <ScheduleEvent
+                      key={item.id}
+                      item={item}
+                      compact
+                      onOpen={onOpenSchedule}
+                    />
                   ))}
                   {dayItems.length > 2 && (
                     <button
@@ -204,18 +199,32 @@ export default function ScheduleCalendar({
           날짜 헤더/빈 공간은 날짜 선택, 내부 일정 버튼은 내용 수정으로 구분됩니다. */}
       {view === "weekly" && (
         <div className="sm-week-view">
-          {weekDates.map(({ date, key }, index) => (
-            <div
-              className={`sm-week-column ${selectedDate === key ? "selected" : ""}`}
-              key={key}
-              onClick={() => openDate(key)}
-            >
-              <button type="button" className={`sm-week-date ${index === 5 ? "saturday" : index === 6 ? "sunday" : ""}`} onClick={() => openDate(key)}>
-                {weekDays[index]} {date.getDate()}
-              </button>
-              {dateItems(key).length ? renderItems(dateItems(key)) : <span className="sm-muted">일정 없음</span>}
-            </div>
-          ))}
+          {weekDates.map(({ date, key }, index) => {
+            const dayItems = dateItems(key);
+            return (
+              <div
+                className={`sm-week-column ${selectedDate === key ? "selected" : ""}`}
+                key={key}
+                onClick={() => onSelectDate(key)}
+              >
+                <button
+                  type="button"
+                  className={`sm-week-date ${index === 5 ? "saturday" : index === 6 ? "sunday" : ""}`}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onSelectDate(key);
+                  }}
+                >
+                  {weekDays[index]} {date.getDate()}
+                </button>
+                {dayItems.length ? (
+                  renderItems(dayItems)
+                ) : (
+                  <span className="sm-muted">일정 없음</span>
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
 
@@ -230,7 +239,7 @@ export default function ScheduleCalendar({
           items={visibleItems}
           selectedDate={selectedDate}
           holidayDates={holidayDates}
-          onSelectDate={openDate}
+          onSelectDate={onSelectDate}
           onOpenSchedule={onOpenSchedule}
         />
       )}
@@ -243,7 +252,7 @@ export default function ScheduleCalendar({
             Array.from({ length: 24 }, (_, hour) => {
               // "15:30"에서 앞 두 글자 "15"만 잘라 숫자로 바꾸면 15시 행에 배치됩니다.
               // 분 정보는 없애지 않으며 renderItems가 원본 time 전체를 표시합니다.
-              const hourItems = dateItems(selectedDate).filter(
+              const hourItems = selectedItems.filter(
                 (item) => Number(item.time.slice(0, 2)) === hour,
               );
               return (
@@ -253,8 +262,8 @@ export default function ScheduleCalendar({
                 </div>
               );
             })
-          ) : dateItems(selectedDate).length ? (
-            renderItems(dateItems(selectedDate))
+          ) : selectedItems.length ? (
+            renderItems(selectedItems)
           ) : (
             <p className="sm-empty">선택한 날짜에 등록된 일정이 없습니다.</p>
           )}

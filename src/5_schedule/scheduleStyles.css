@@ -26,7 +26,8 @@
   background: #f4f6fb;
   color: #242536;
   font:
-    14px "Malgun Gothic", Arial,
+    14px "Malgun Gothic",
+    Arial,
     sans-serif;
 }
 
@@ -219,6 +220,7 @@
 .sm-calendar-head {
   gap: 12px;
   margin-bottom: 18px;
+  flex-wrap: wrap;
 }
 
 .sm-calendar-filters {
@@ -245,6 +247,7 @@
   margin: 0 0 18px;
   border-radius: 10px;
   background: #f0f2f8;
+  flex-wrap: wrap;
 }
 
 .sm-view-tabs button {
@@ -254,6 +257,7 @@
   background: transparent;
   color: #70798c;
   cursor: pointer;
+  white-space: nowrap;
 }
 
 .sm-view-tabs button.active {
@@ -395,6 +399,11 @@
   line-height: 1.5;
   text-overflow: ellipsis;
   white-space: nowrap;
+  display: block;
+  width: 100%;
+  border: 0;
+  text-align: left;
+  cursor: pointer;
 }
 
 .sm-more-events {
@@ -471,11 +480,14 @@
   padding: 10px 4px;
   color: #70798c;
   font-size: 11px;
+  border-right: 1px solid #eceef5;
+  font-variant-numeric: tabular-nums;
 }
 
 .sm-hour-row > div {
   min-width: 0;
   padding: 4px 0;
+  padding-inline: 8px;
 }
 
 .sm-hour-row .sm-event,
@@ -582,6 +594,8 @@
   display: block;
   margin-bottom: 4px;
   font-size: 12px;
+  overflow-wrap: anywhere;
+  line-height: 1.5;
 }
 
 .sm-agenda-item small,
@@ -823,7 +837,10 @@
 }
 
 .schedule-app button {
-  transition: background-color 120ms, border-color 120ms, box-shadow 120ms;
+  transition:
+    background-color 120ms,
+    border-color 120ms,
+    box-shadow 120ms;
 }
 
 .schedule-app button:focus-visible,
@@ -843,10 +860,6 @@
 .sm-cancel:hover {
   border-color: #c6bbee;
   background: #f7f5ff;
-}
-
-.sm-calendar-head {
-  flex-wrap: wrap;
 }
 
 .sm-agenda-item .sm-item-actions {
@@ -870,21 +883,6 @@
 
 .sm-hour-row:nth-child(even) {
   background: #fafbfe;
-}
-
-.sm-hour-row > time {
-  border-right: 1px solid #eceef5;
-  font-variant-numeric: tabular-nums;
-}
-
-.sm-hour-row > div {
-  padding-inline: 8px;
-}
-
-.sm-agenda-item strong,
-.sm-deadline strong {
-  overflow-wrap: anywhere;
-  line-height: 1.5;
 }
 
 .sm-form select:disabled {
@@ -1045,14 +1043,6 @@
   font-family: inherit;
 }
 
-.sm-event {
-  display: block;
-  width: 100%;
-  border: 0;
-  text-align: left;
-  cursor: pointer;
-}
-
 .sm-event:hover {
   filter: brightness(0.94);
 }
@@ -1087,13 +1077,6 @@
  * 같은 클래스의 앞쪽 선언도 계속 적용되고 아래 속성만 덮어써지므로 공통 버튼/글꼴 규칙을 재사용합니다.
  * 추가 탭으로 폭이 부족하면 flex-wrap:wrap이 다음 줄로 넘기고 nowrap은 버튼 내부 글자를 유지합니다.
  */
-.sm-view-tabs {
-  flex-wrap: wrap;
-}
-
-.sm-view-tabs button {
-  white-space: nowrap;
-}
 
 /* max-width:100%는 바깥 카드 폭을 넘지 않게 제한합니다.
  * 표가 그보다 넓어지면 overflow-x:auto로 이 영역만 가로 스크롤하며 페이지 전체를 넓히지 않습니다. */

@@ -4,7 +4,10 @@ import ScheduleFormModal from "./ScheduleFormModal";
 import ScheduleListModal from "./ScheduleListModal";
 import ScheduleSidebar from "./ScheduleSidebar";
 import {
-  createEmptyForm,
+  createScheduleForm,
+  compareSchedules,
+  excludeOccurrence,
+  getWeekDates,
   expandSchedules,
   dateKey,
   getTodayKey,
@@ -45,7 +48,8 @@ function loadSchedules() {
         // 이전 일정에는 attendees가 없을 수 있습니다. []로 보완하면 새 표에서도 안전하게 읽습니다.
         // 저장 배열에 중복/공백이 있더라도 불러오는 시점에 같은 정리 규칙을 다시 적용합니다.
         attendees: normalizeAttendees(item.attendees),
-        description: typeof item.description === "string" ? item.description : "",
+        description:
+          typeof item.description === "string" ? item.description : "",
         type: scheduleTypes.includes(item.type) ? item.type : "기획",
         visibility: item.visibility === "private" ? "private" : "shared",
         biweekly: item.repeatType === "weekly" && item.biweekly === true,
@@ -58,12 +62,15 @@ function loadSchedules() {
     // Set은 중복 값을 저장하지 않습니다. 날짜순으로 읽어 같은 seriesId의 첫 항목만 남깁니다.
     // 마지막 map은 구조 분해로 이전 종료일·그룹 필드를 빼고 나머지 속성만 반환합니다.
     const seenSeries = new Set();
-    return normalized.sort((a, b) => a.date.localeCompare(b.date)).filter((item) => {
-      if (!item.seriesId || item.repeatType === "none") return true;
-      if (seenSeries.has(item.seriesId)) return false;
-      seenSeries.add(item.seriesId);
-      return true;
-    }).map(({ repeatUntil, seriesId, ...item }) => item);
+    return normalized
+      .sort((a, b) => a.date.localeCompare(b.date))
+      .filter((item) => {
+        if (!item.seriesId || item.repeatType === "none") return true;
+        if (seenSeries.has(item.seriesId)) return false;
+        seenSeries.add(item.seriesId);
+        return true;
+      })
+      .map(({ repeatUntil, seriesId, ...item }) => item);
   } catch {
     // JSON이 깨졌거나 브라우저 저장소 접근이 막혀 있으면 빈 일정으로 시작합니다.
     return [];
@@ -72,10 +79,10 @@ function loadSchedules() {
 
 /*
  * [공부 순서 2] 상태와 화면이 연결되는 흐름
- * loadSchedules → items state → 반복 날짜 계산 → 검색 필터 → 자식 컴포넌트의 props 순서입니다.
+ * loadSchedules → items state → 검색 필터 → 반복 날짜 계산 → 자식 컴포넌트의 props 순서입니다.
  * 자식에서 입력·클릭하면 부모가 전달한 함수를 호출하고, 그 함수가 state를 바꿉니다.
  * React는 바뀐 state로 다시 렌더링하며, 저장 effect는 새 원본 목록을 localStorage에 기록합니다.
- * items는 저장 원본이고 expandedItems는 화면에 필요한 날짜별 계산 결과입니다.
+ * items는 저장 원본, filteredItems는 검색 결과, visibleItems는 날짜별 반복 계산 결과입니다.
  */
 export default function ScheduleManager() {
   // 화면에서 변하는 값은 useState로 저장합니다. 상태가 바뀌면 React가 화면을 다시 그립니다.
@@ -99,15 +106,13 @@ export default function ScheduleManager() {
   const [items, setItems] = useState(loadSchedules);
   const [storageError, setStorageError] = useState(false);
   // 등록 창, 전체 일정 창, 수정 중인 일정의 ID도 화면 상태로 관리합니다.
-  const [formOpen, setFormOpen] = useState(false);
   const [listOpen, setListOpen] = useState(false);
   // null이면 원본 전체 목록, 날짜 문자열이면 그날에 실제 발생하는 목록을 표시합니다.
   const [listDateFilter, setListDateFilter] = useState(null);
-  const [form, setForm] = useState(createEmptyForm);
-  // editingId=null은 신규 등록, 값이 있으면 수정할 원본 ID입니다.
-  // editingOccurrence=날짜는 반복 한 번 수정, null은 일반 일정/반복 규칙 전체 수정을 뜻합니다.
-  const [editingId, setEditingId] = useState(null);
-  const [editingOccurrence, setEditingOccurrence] = useState(null);
+  // form=null이면 닫힌 상태입니다. 열림 여부를 별도 state로 중복 보관하지 않습니다.
+  const [form, setForm] = useState(null);
+  // null이면 신규 등록, 객체이면 수정할 원본 ID와 특정 반복 날짜를 함께 보관합니다.
+  const [editing, setEditing] = useState(null);
   const calendarYear = month.getFullYear();
   const [holidayInfo, setHolidayInfo] = useState({
     year: null,
@@ -134,7 +139,7 @@ export default function ScheduleManager() {
       // 용량 초과나 저장소 차단 시에도 화면을 유지하고 저장 실패를 안내합니다.
       setStorageError(true);
     }
-  // 의존성 배열의 items가 바뀔 때 실행되므로 검색이나 보기 전환만으로는 저장하지 않습니다.
+    // 의존성 배열의 items가 바뀔 때 실행되므로 검색이나 보기 전환만으로는 저장하지 않습니다.
   }, [items]);
 
   // 다음 자정에 오늘 날짜를 갱신합니다. 오늘을 보고 있었다면 새 날짜를 선택합니다.
@@ -209,36 +214,31 @@ export default function ScheduleManager() {
     };
   }, [calendarYear]);
 
-  // 월 경계의 주간 일정과 선택 날짜도 포함해서 필요한 날짜만 계산합니다.
-  // useMemo는 의존성(items, month)이 같으면 이전 계산 결과를 재사용합니다.
-  // 일정이나 표시 월이 바뀔 때만 이 범위를 다시 펼치므로 폼 입력 중 반복 계산을 줄입니다.
-  const expandedItems = useMemo(() => {
-    const first = new Date(month.getFullYear(), month.getMonth(), 1);
-    // 월 양쪽 7일의 여유를 두어 주별 화면의 월 경계 날짜들도 포함합니다.
-    first.setDate(first.getDate() - 7);
+  // 검색은 저장 원본에 한 번만 적용합니다. 입력 중 폼 state만 바뀌면 같은 결과 배열을 재사용합니다.
+  // 참석자도 이름 검색에 포함되며, 개인/공유는 분류 필터입니다(접근 권한 검사가 아닙니다).
+  const filteredItems = useMemo(() => {
+    const keyword = query.toLowerCase();
+    return items.filter(
+      (item) =>
+        (scopeFilter === "all" || item.visibility === scopeFilter) &&
+        [item.title, item.project, ...getSchedulePeople(item)]
+          .join(" ")
+          .toLowerCase()
+          .includes(keyword),
+    );
+  }, [items, query, scopeFilter]);
+
+  // 월 양쪽 7일을 포함해 월 경계의 주별 표도 준비합니다. 반복 규칙은 조회 기간만 펼칩니다.
+  const visibleItems = useMemo(() => {
+    const first = new Date(month.getFullYear(), month.getMonth(), -6);
     const last = new Date(month.getFullYear(), month.getMonth() + 1, 7);
-    return expandSchedules(items, dateKey(first), dateKey(last));
-  }, [items, month]);
-  // 선택 날짜가 현재 표시 월 밖일 수도 있어 선택 날짜는 하루 범위로 별도 계산합니다.
-  const selectedOccurrences = useMemo(
-    () => expandSchedules(items, selectedDate, selectedDate),
-    [items, selectedDate],
+    return expandSchedules(filteredItems, dateKey(first), dateKey(last));
+  }, [filteredItems, month]);
+  // 선택 날짜가 표시 월 밖일 수도 있어 선택 날짜 패널은 별도 하루 범위로 계산합니다.
+  const selectedItems = useMemo(
+    () => expandSchedules(filteredItems, selectedDate, selectedDate),
+    [filteredItems, selectedDate],
   );
-  // 소문자로 통일해 검색하며 두 조건이 모두 true여야 표시합니다.
-  // filter는 원본을 삭제하지 않고 조건을 통과한 항목들로 새 배열을 반환합니다.
-  const matchesFilters = (item) => {
-    // getSchedulePeople은 담당자와 참석자를 합친 배열입니다. join(" ")으로 검색할 문자열을 만듭니다.
-    // 참석자 이름으로 검색해도 그 사람이 함께 참여하는 일정을 찾을 수 있습니다.
-    // 이는 일정을 거르는 조건이며 결과 일정에 참여한 다른 사람의 행까지 숨기는 사람 필터는 아닙니다.
-    const matchesQuery = `${item.title} ${item.project} ${getSchedulePeople(item).join(" ")}`
-      .toLowerCase()
-      .includes(query.toLowerCase());
-    const matchesScope =
-      scopeFilter === "all" || item.visibility === scopeFilter;
-    return matchesQuery && matchesScope;
-  };
-  const visibleItems = expandedItems.filter(matchesFilters);
-  const selectedItems = selectedOccurrences.filter(matchesFilters);
 
   // 해당 월의 날짜를 월요일 시작 달력 격자에 맞춰 계산합니다.
   const calendarDays = useMemo(() => {
@@ -284,7 +284,9 @@ export default function ScheduleManager() {
     const date = new Date(`${selectedDate}T00:00:00`);
     // 주별과 담당자별 주간(staff)은 같은 7일 범위를 쓰므로 둘 다 한 주씩 이동합니다.
     // includes(view)가 true면 7, 일별/시간대별이면 1을 곱합니다.
-    date.setDate(date.getDate() + delta * (["weekly", "staff"].includes(view) ? 7 : 1));
+    date.setDate(
+      date.getDate() + delta * (["weekly", "staff"].includes(view) ? 7 : 1),
+    );
     selectDate(dateKey(date));
   };
   // 날짜 선택과 표시 월을 같이 바꾸면 다른 달의 날짜로 이동할 때 달력도 따라갑니다.
@@ -299,110 +301,77 @@ export default function ScheduleManager() {
   const updateForm = (event) =>
     setForm((current) => ({
       ...current,
-      [event.target.name]: event.target.type === "checkbox" ? event.target.checked : event.target.value,
-      ...(event.target.name === "repeatType" && event.target.value !== "weekly" ? { biweekly: false } : {}),
+      [event.target.name]:
+        event.target.type === "checkbox"
+          ? event.target.checked
+          : event.target.value,
+      ...(event.target.name === "repeatType" && event.target.value !== "weekly"
+        ? { biweekly: false }
+        : {}),
     }));
-  // 폼 제출 시 새 일정이면 추가하고, 수정 중이면 같은 ID의 일정만 교체합니다.
-  const addSchedule = (event) => {
-    // 기본 form 제출의 페이지 새로고침을 막고 React state로 저장을 처리합니다.
-    event.preventDefault();
-    // 전체 규칙 수정 시 기존 제외 날짜들을 유지하려고 원본을 찾습니다.
-    const original = items.find((item) => item.id === editingId);
-    const item = {
-      ...form,
-      // 입력 중 form.attendees는 문자열이며 ...form 뒤에서 배열 값으로 덮어써 저장 형태를 통일합니다.
-      // 비운 경우 []가 저장됩니다. 배열은 반복 계산의 ...item 복사에도 포함되어 다음 발생일에 유지됩니다.
-      // 폼의 참석자 문자열을 이름 배열로 바꾸어 반복 규칙·일반 일정에 같은 형태로 저장합니다.
-      // 빈 입력은 split 결과 [""] → trim/빈 값 제거 → []가 됩니다.
-      // 참석자 유무를 필수로 검사하지 않으므로 []도 그대로 저장됩니다.
-      attendees: normalizeAttendees(form.attendees),
-      // 신규/반복 한 번 수정은 새 ID, 원본 수정은 기존 ID를 사용합니다.
-      // 시각+임의 문자열은 짧은 간격으로 여러 건을 등록할 때 ID 충돌 가능성을 낮춥니다.
-      id: editingOccurrence || editingId === null
-        ? "schedule-" + Date.now() + "-" + Math.random().toString(36).slice(2, 8)
-        : editingId,
-      color: typeColors[form.type],
-      // ?.는 original이 없어도 오류 없이 undefined를 반환하고 || []가 기본값을 제공합니다.
-      excludedDates: editingOccurrence ? [] : original?.excludedDates || [],
-    };
-    // current는 최신 목록입니다. map/spread로 새 배열을 만들어 기존 state를 직접 바꾸지 않습니다.
-    setItems((current) => {
-      let next;
-      if (editingOccurrence) {
-        // 반복 중 한 날짜를 수정하면 원래 날짜를 제외하고 수정한 항목을 따로 저장합니다.
-        next = current.map((schedule) => schedule.id === editingId
-          ? { ...schedule, excludedDates: [...(schedule.excludedDates || []), editingOccurrence] }
-          : schedule);
-        // next는 map으로 새로 만든 배열이므로 추가해도 이전 state 배열은 그대로입니다.
-        // 수정한 한 건은 repeatType=none으로 저장되어 다른 반복 날짜에 영향을 주지 않습니다.
-        next.push(item);
-      } else if (editingId !== null) {
-        next = current.map((schedule) => schedule.id === editingId ? item : schedule);
-      } else {
-        next = [...current, item];
-      }
-      return next.sort((a, b) => (a.date + " " + a.time).localeCompare(b.date + " " + b.time));
-    });
-    // 저장 후 폼·수정 상태를 초기화해 다음 등록에 이전 값이 남지 않게 합니다.
-    selectDate(form.date);
-    setQuery("");
-    setForm(createEmptyForm());
-    setEditingId(null);
-    setEditingOccurrence(null);
-    setFormOpen(false);
-  };
-  // 등록 버튼은 이전 수정 상태를 비우고 빈 폼으로 엽니다.
-  const openNewSchedule = () => {
-    setEditingId(null);
-    setEditingOccurrence(null);
-    setForm(createEmptyForm());
-    setFormOpen(true);
+  // item이 없으면 빈 폼, 있으면 수정용 폼입니다. 목록에서 수정해도 같은 함수를 사용합니다.
+  const openScheduleForm = (item) => {
+    setEditing(item || null);
+    setForm(createScheduleForm(item));
+    setListOpen(false);
   };
   const closeScheduleForm = () => {
-    setFormOpen(false);
-    setEditingId(null);
-    setEditingOccurrence(null);
-    setForm(createEmptyForm());
+    setForm(null);
+    setEditing(null);
   };
-  // 전체 목록은 원본 규칙, 달력은 occurrenceDate가 붙은 특정 날짜 항목을 전달합니다.
-  // 특정 날짜 수정은 반복 종류를 none으로 넣어 그날만 별도 일정으로 저장할 준비를 합니다.
-  // 선택한 일정 정보를 폼에 채워 수정 화면을 엽니다.
-  const editSchedule = (item) => {
-    setEditingId(item.id);
-    setEditingOccurrence(item.occurrenceDate || null);
-    setForm({
-      date: item.date,
-      time: item.time,
-      title: item.title,
-      description: item.description || "",
-      project: item.project,
-      person: item.person,
-      // input의 value에는 문자열을 넣으므로 배열을 join(", ")으로 연결해 폼에 채웁니다.
-      // 이때 새 일정 데이터를 저장하지는 않습니다. 실제 반영은 사용자가 저장을 눌렀을 때 수행합니다.
-      // 반복 중 한 날짜 수정과 반복 규칙 전체 수정 모두 같은 참석자 변환을 재사용합니다.
-      // 저장 배열을 쉼표 문자열로 돌려주면 수정 창에서도 같은 입력창을 재사용할 수 있습니다.
-      // join은 ["민수", "지수"]를 "민수, 지수"로 연결합니다. []는 빈 문자열이 됩니다.
-      // 참석자 없는 예전 항목도 normalizeAttendees가 []로 보완하므로 빈 입력창으로 수정할 수 있습니다.
-      attendees: normalizeAttendees(item.attendees).join(", "),
-      type: item.type,
-      visibility: item.visibility || "shared",
-      repeatType: item.occurrenceDate ? "none" : item.repeatType || "none",
-      biweekly: !item.occurrenceDate && item.biweekly === true,
+
+  // 입력값은 이 시점에 저장 형태로 바꿉니다. 참석자 미입력은 []이며 필수 항목이 아닙니다.
+  const addSchedule = (event) => {
+    event.preventDefault();
+    const occurrence = editing?.occurrenceDate;
+    const item = {
+      ...form,
+      id:
+        editing && !occurrence
+          ? editing.id
+          : "schedule-" +
+            Date.now() +
+            "-" +
+            Math.random().toString(36).slice(2, 8),
+      attendees: normalizeAttendees(form.attendees),
+      color: typeColors[form.type],
+      excludedDates: occurrence ? [] : editing?.excludedDates || [],
+    };
+    setItems((current) => {
+      // 반복 한 번 수정은 원래 날짜를 제외하고 새 일반 일정을 추가합니다.
+      // 원본 전체 수정은 같은 ID만 교체하고, 신규 등록은 새 항목을 추가합니다.
+      const next = current.map((schedule) => {
+        if (schedule.id !== editing?.id) return schedule;
+        return occurrence ? excludeOccurrence(schedule, occurrence) : item;
+      });
+      if (!editing || occurrence) next.push(item);
+      return next.sort(compareSchedules);
     });
-    setListOpen(false);
-    setFormOpen(true);
+    selectDate(form.date);
+    setQuery("");
+    closeScheduleForm();
   };
   // 특정 반복 날짜 삭제는 excludedDates에 날짜를 추가해 이후 계산에서 제외합니다.
   // 원본/일반 항목 삭제는 filter로 ID를 제거합니다. 확인 문구도 삭제 범위를 구분합니다.
   const deleteSchedule = (item) => {
-    const repeated = item.repeatType === "weekly" || item.repeatType === "monthly";
-    const label = item.occurrenceDate ? item.date + "의 일정" : repeated ? "전체 반복 일정" : "일정";
-    if (!window.confirm("'" + item.title + "' " + label + "을 삭제할까요?")) return;
-    setItems((current) => item.occurrenceDate
-      ? current.map((schedule) => schedule.id === item.id
-          ? { ...schedule, excludedDates: [...(schedule.excludedDates || []), item.occurrenceDate] }
-          : schedule)
-      : current.filter((schedule) => schedule.id !== item.id));
+    const repeated =
+      item.repeatType === "weekly" || item.repeatType === "monthly";
+    const label = item.occurrenceDate
+      ? item.date + "의 일정"
+      : repeated
+        ? "전체 반복 일정"
+        : "일정";
+    if (!window.confirm("'" + item.title + "' " + label + "을 삭제할까요?"))
+      return;
+    setItems((current) =>
+      item.occurrenceDate
+        ? current.map((schedule) =>
+            schedule.id === item.id
+              ? excludeOccurrence(schedule, item.occurrenceDate)
+              : schedule,
+          )
+        : current.filter((schedule) => schedule.id !== item.id),
+    );
   };
   // 달력에서 더보기를 누르면 해당 날짜 일정만 필터링한 목록을 엽니다.
   const showDateSchedules = (date) => {
@@ -418,30 +387,26 @@ export default function ScheduleManager() {
 
   // 통계는 검색과 무관합니다. 프로젝트/팀원은 원본의 고유 이름 수를 셉니다.
   // 오늘 작업/주간 마감은 해당 기간에 펼친 실제 발생 횟수이므로 반복 일정도 포함됩니다.
-  const weekStart = new Date();
-  weekStart.setDate(weekStart.getDate() - ((weekStart.getDay() + 6) % 7));
-  const weekEnd = new Date(weekStart);
-  weekEnd.setDate(weekEnd.getDate() + 6);
-  const weekStartKey = dateKey(weekStart);
-  const weekEndKey = dateKey(weekEnd);
+  const currentWeek = getWeekDates(new Date(`${todayKey}T00:00:00`));
+  const weekStartKey = currentWeek[0].key;
+  const weekEndKey = currentWeek[6].key;
   // 마감 통계에는 작업 구분이 '마감' 또는 '출고'인 일정만 포함합니다.
   const isDeadline = (item) => item.type === "마감" || item.type === "출고";
-  const weekDeadlineCount = expandSchedules(items, weekStartKey, weekEndKey).filter(
-    (item) =>
-      isDeadline(item) && item.date >= weekStartKey && item.date <= weekEndKey,
-  ).length;
+  const weekDeadlineCount = expandSchedules(
+    items,
+    weekStartKey,
+    weekEndKey,
+  ).filter(isDeadline).length;
   // 오늘을 포함해 4일 동안의 마감만 골라 날짜·시간 순서로 보여줍니다.
   const deadlineWindowEnd = new Date(`${todayKey}T00:00:00`);
   deadlineWindowEnd.setDate(deadlineWindowEnd.getDate() + 3);
   const deadlineWindowEndKey = dateKey(deadlineWindowEnd);
-  const upcomingDeadlines = expandSchedules(items, todayKey, deadlineWindowEndKey)
-    .filter(
-      (item) =>
-        isDeadline(item) &&
-        item.date >= todayKey &&
-        item.date <= deadlineWindowEndKey,
-    )
-    .sort((a, b) => `${a.date} ${a.time}`.localeCompare(`${b.date} ${b.time}`));
+  // expandSchedules가 범위 필터와 정렬을 완료하므로 같은 조건을 다시 검사하지 않습니다.
+  const upcomingDeadlines = expandSchedules(
+    items,
+    todayKey,
+    deadlineWindowEndKey,
+  ).filter(isDeadline);
   // 상태별 진행 수가 아니라 일정에 입력된 서로 다른 프로젝트명 개수입니다.
   // map으로 이름만 추출 → filter(Boolean)으로 빈 이름 제외 → Set으로 중복 제거 → size로 개수 조회.
   const projectCount = new Set(
@@ -449,22 +414,11 @@ export default function ScheduleManager() {
   ).size;
   // 각 일정의 [담당자, 참석자들] 배열을 flatMap으로 하나로 합친 뒤 Set으로 전체 중복을 제거합니다.
   // 한 사람이 여러 일정에 있거나 담당/참석 역할을 겸해도 상단 팀원 수에는 한 번만 셉니다.
-  const assigneeCount = new Set(
-    items.flatMap(getSchedulePeople),
-  ).size;
+  const assigneeCount = new Set(items.flatMap(getSchedulePeople)).size;
   const todayWorkCount = expandSchedules(items, todayKey, todayKey).length;
   const monthLabel = `${month.getFullYear()}년 ${month.getMonth() + 1}월`;
-  const selectedDay = new Date(`${selectedDate}T00:00:00`);
-  // 선택 날짜에서 월요일까지 되돌린 뒤 0~6일을 더해 주별 화면에 필요한 7일을 만듭니다.
-  const weekStartDate = new Date(selectedDay);
-  weekStartDate.setDate(
-    weekStartDate.getDate() - ((weekStartDate.getDay() + 6) % 7),
-  );
-  const weekDates = Array.from({ length: 7 }, (_, index) => {
-    const date = new Date(weekStartDate);
-    date.setDate(date.getDate() + index);
-    return { date, key: dateKey(date) };
-  });
+  const selectedDay = selectedDateObject;
+  const weekDates = getWeekDates(selectedDay);
   // staff도 weekly와 같은 첫날~마지막 날 제목을 사용합니다. 보기만 바뀌고 날짜 기준은 같습니다.
   const periodLabel =
     view === "monthly"
@@ -472,6 +426,11 @@ export default function ScheduleManager() {
       : ["weekly", "staff"].includes(view)
         ? `${weekDates[0].date.getMonth() + 1}/${weekDates[0].date.getDate()} – ${weekDates[6].date.getMonth() + 1}/${weekDates[6].date.getDate()}`
         : `${selectedDay.getFullYear()}년 ${selectedDay.getMonth() + 1}월 ${selectedDay.getDate()}일 (${"일월화수목금토"[selectedDay.getDay()]})`;
+
+  // 날짜 제한 전의 검색 결과에서 사람을 모아 이번 주 0건인 사람도 행으로 유지합니다.
+  const staffPeople = [
+    ...new Set(filteredItems.flatMap(getSchedulePeople)),
+  ].sort((a, b) => a.localeCompare(b, "ko"));
 
   return (
     <main className="schedule-app">
@@ -499,7 +458,7 @@ export default function ScheduleManager() {
             <button className="sm-secondary-btn" onClick={showAllSchedules}>
               전체 일정 ({items.length})
             </button>
-            <button className="sm-btn" onClick={openNewSchedule}>
+            <button className="sm-btn" onClick={() => openScheduleForm()}>
               ＋ 일정 등록
             </button>
           </div>
@@ -514,51 +473,30 @@ export default function ScheduleManager() {
 
         {/* 현재 일정 데이터에서 요약 숫자를 만들어 표시합니다. */}
         <section className="sm-stats">
-          <div className="sm-stat">
-            <div>
-              <div className="sm-stat-label">일정 등록 프로젝트</div>
-              <div className="sm-stat-value">{projectCount}</div>
-            </div>
-            <div className="sm-stat-icon">▦</div>
-          </div>
-          <div className="sm-stat">
-            <div>
-              <div className="sm-stat-label">오늘의 작업</div>
-              <div className="sm-stat-value">
-                {todayWorkCount}
-                <span className="sm-muted"> 건</span>
+          {[
+            ["일정 등록 프로젝트", projectCount, "", "▦"],
+            ["오늘의 작업", todayWorkCount, "건", "◷"],
+            ["이번 주 마감", weekDeadlineCount, "건", "⚑"],
+            ["배정된 팀원", assigneeCount, "명", "♙"],
+          ].map(([label, count, unit, icon]) => (
+            <div className="sm-stat" key={label}>
+              <div>
+                <div className="sm-stat-label">{label}</div>
+                <div className="sm-stat-value">
+                  {count}
+                  {unit && <span className="sm-muted"> {unit}</span>}
+                </div>
               </div>
+              <div className="sm-stat-icon">{icon}</div>
             </div>
-            <div className="sm-stat-icon">◷</div>
-          </div>
-          <div className="sm-stat">
-            <div>
-              <div className="sm-stat-label">이번 주 마감</div>
-              <div className="sm-stat-value">
-                {weekDeadlineCount}
-                <span className="sm-muted"> 건</span>
-              </div>
-            </div>
-            <div className="sm-stat-icon">⚑</div>
-          </div>
-          <div className="sm-stat">
-            <div>
-              <div className="sm-stat-label">배정된 팀원</div>
-              <div className="sm-stat-value">
-                {assigneeCount}
-                <span className="sm-muted"> 명</span>
-              </div>
-            </div>
-            <div className="sm-stat-icon">♙</div>
-          </div>
+          ))}
         </section>
 
         {/* 달력과 오른쪽 일정 패널을 각각 별도 컴포넌트로 표시합니다. */}
         <div className="sm-layout">
           {/* 부모의 값과 함수를 props로 전달합니다. 자식은 함수를 호출해 부모 state 변경을 요청합니다. */}
           <ScheduleCalendar
-            onOpenSchedule={editSchedule}
-            monthLabel={monthLabel}
+            onOpenSchedule={openScheduleForm}
             view={view}
             onViewChange={setView}
             onChangePeriod={changePeriod}
@@ -568,21 +506,13 @@ export default function ScheduleManager() {
             onScopeFilterChange={setScopeFilter}
             query={query}
             onQueryChange={setQuery}
-            holidayInfo={holidayInfo}
-            calendarYear={calendarYear}
+            holidayError={
+              holidayInfo.year === calendarYear && holidayInfo.error
+            }
             holidayDates={holidayDates}
             calendarDays={calendarDays}
             visibleItems={visibleItems}
-            // 전체 저장 목록에서 검색·공개 범위를 적용한 뒤 담당자+참석자를 모아 행 이름을 만듭니다.
-            // 이번 주 발생 목록만 사용하지 않아 이번 주 일정이 없는 사람도 0건 행으로 남습니다.
-            // Set으로 사람 중복 제거 → 배열 복원 → 한국어 이름 순서로 정렬해 자식에게 전달합니다.
-            // 1. filter: 검색·공개 조건에 맞는 일정만 고릅니다. 날짜는 아직 제한하지 않습니다.
-            // 2. flatMap: 일정마다 [담당자, 참석자들]을 구한 뒤 한 배열로 이어 붙입니다.
-            //    [["민수", "지수"], ["민수", "영희"]] → ["민수", "지수", "민수", "영희"].
-            // 3. Set: ["민수", "지수", "영희"]로 중복을 제거합니다. [...]는 Set을 배열로 돌립니다.
-            // 4. sort: localeCompare의 ko 옵션으로 한국어 정렬 규칙에 따라 이름 순서를 정합니다.
-            // 새 배열이므로 정렬해도 원본 items의 순서는 바뀌지 않습니다.
-            staffPeople={[...new Set(items.filter(matchesFilters).flatMap(getSchedulePeople))].sort((a, b) => a.localeCompare(b, "ko"))}
+            staffPeople={staffPeople}
             selectedDate={selectedDate}
             todayKey={todayKey}
             onSelectDate={setSelectedDate}
@@ -596,35 +526,35 @@ export default function ScheduleManager() {
             upcomingDeadlines={upcomingDeadlines}
             onSelectDate={selectDate}
             onDelete={deleteSchedule}
-            onEdit={editSchedule}
+            onEdit={openScheduleForm}
           />
         </div>
       </div>
 
-      {/* 등록 폼은 열려 있을 때만 별도 모달 컴포넌트로 보여줍니다. */}
-      {/* && 앞이 참일 때만 뒤 JSX를 만듭니다. false면 폼 컴포넌트 자체가 렌더링되지 않습니다. */}
-      {formOpen && (
+      {/* form 객체가 있을 때만 폼을 표시합니다. 닫을 때 null로 초기화합니다. */}
+      {form && (
         <ScheduleFormModal
           form={form}
           onChange={updateForm}
           onSubmit={addSchedule}
           onClose={closeScheduleForm}
-          isEditing={editingId !== null}
-          isOccurrence={editingOccurrence !== null}
+          isEditing={editing !== null}
+          isOccurrence={Boolean(editing?.occurrenceDate)}
         />
       )}
       {/* 전체 보기는 원본 규칙을 한 번씩, 날짜 더보기는 해당 날짜에 펼친 결과를 넘깁니다. */}
       {listOpen && (
         <ScheduleListModal
-          items={listDateFilter ? expandSchedules(items, listDateFilter, listDateFilter) : items}
+          items={
+            listDateFilter
+              ? expandSchedules(items, listDateFilter, listDateFilter)
+              : items
+          }
           filterDate={listDateFilter}
+          totalCount={items.length}
           onClearDateFilter={() => setListDateFilter(null)}
-          onSelectDate={(date) => {
-            selectDate(date);
-            setListOpen(false);
-          }}
           onDelete={deleteSchedule}
-          onEdit={editSchedule}
+          onEdit={openScheduleForm}
           onClose={() => setListOpen(false)}
         />
       )}
