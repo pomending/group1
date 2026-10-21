@@ -4,7 +4,11 @@
  * 데이터는 props로 내려오고, 사용자 동작은 on... 콜백으로 부모에게 올라갑니다.
  */
 import React from "react";
-import { groupSchedulesByDate, weekDays } from "./scheduleData";
+import {
+  groupSchedulesByDate,
+  weekDays,
+  scheduleStatuses,
+} from "./scheduleData";
 import ScheduleStaffWeek from "./ScheduleStaffWeek";
 import { ScheduleEvent } from "./ScheduleItemParts";
 
@@ -17,6 +21,8 @@ export default function ScheduleCalendar({
   weekDates,
   scopeFilter,
   onScopeFilterChange,
+  statusFilter,
+  onStatusFilterChange,
   query,
   onQueryChange,
   holidayError,
@@ -73,6 +79,18 @@ export default function ScheduleCalendar({
             <option value="all">전체 일정</option>
             <option value="shared">회사 공유</option>
             <option value="private">개인 일정</option>
+          </select>
+          <select
+            aria-label="업무 상태 필터"
+            value={statusFilter}
+            onChange={(event) => onStatusFilterChange(event.target.value)}
+          >
+            <option value="all">모든 업무 상태</option>
+            {scheduleStatuses.map(({ value, label }) => (
+              <option key={value} value={value}>
+                {label}
+              </option>
+            ))}
           </select>
           <input
             className="sm-search"

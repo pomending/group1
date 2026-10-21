@@ -15,6 +15,7 @@ export default function ScheduleSidebar({
   onSelectDate,
   onDelete,
   onEdit,
+  onStatusChange,
 }) {
   return (
     <aside className="sm-sidebar">
@@ -66,6 +67,7 @@ export default function ScheduleSidebar({
                 item={item}
                 onEdit={onEdit}
                 onDelete={onDelete}
+                onStatusChange={onStatusChange}
               />
             </div>
           ))

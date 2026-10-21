@@ -1,6 +1,12 @@
 import React from "react";
 import ScheduleModal from "./ScheduleModal";
-import { getRepeatLabel, repeatTypes, scheduleTypes } from "./scheduleData";
+import {
+  getRepeatLabel,
+  MAX_REPEAT_INTERVAL,
+  repeatTypes,
+  scheduleTypes,
+  scheduleStatuses,
+} from "./scheduleData";
 
 // 입력값·저장은 부모가 관리하고, 공통 모달은 배경 클릭·제목·닫기 버튼을 담당합니다.
 // isOccurrence이면 반복 중 특정 날짜만 수정하므로 반복 종류를 고정합니다.
@@ -111,11 +117,22 @@ export default function ScheduleFormModal({
           />
         </label>
         {/* 공통 scheduleTypes를 map으로 option에 바꿉니다. 기타를 추가할 때도 공통 배열만 수정합니다. */}
-        <label className="sm-form-wide">
+        <label>
           작업 구분
           <select name="type" value={form.type} onChange={onChange}>
             {scheduleTypes.map((type) => (
               <option key={type}>{type}</option>
+            ))}
+          </select>
+        </label>
+        {/* name=status도 공통 onChange를 거쳐 form.status에 저장됩니다. 새 일정은 진행 전입니다. */}
+        <label>
+          업무 진행 상태
+          <select name="status" value={form.status} onChange={onChange}>
+            {scheduleStatuses.map(({ value, label }) => (
+              <option key={value} value={value}>
+                {label}
+              </option>
             ))}
           </select>
         </label>
@@ -141,22 +158,31 @@ export default function ScheduleFormModal({
             ))}
           </select>
         </label>
-        {/* 매주일 때만 격주 입력을 렌더링합니다. checkbox는 value 대신 checked로 제어합니다.
-              checked는 화면 체크 상태이고 onChange에서 target.checked를 읽어 boolean으로 저장합니다.
-              규칙 전체 수정은 가능하지만 특정 발생일 수정은 disabled로 반복 종류 변경을 막습니다. */}
-        {form.repeatType === "weekly" && (
-          <label className="sm-form-wide sm-checkbox-label">
+        {/* 반복 단위와 간격만 조합합니다. 2주=격주, 12개월=매년, 24개월=2년마다입니다.
+            min/max/step/required가 1~120의 정수만 제출되도록 브라우저에서 검사합니다. */}
+        {form.repeatType !== "none" && (
+          <label className="sm-form-wide">
+            반복 간격 ({form.repeatType === "weekly" ? "주" : "개월"})
             <input
-              type="checkbox"
-              name="biweekly"
-              checked={form.biweekly === true}
+              type="number"
+              name="repeatInterval"
+              value={form.repeatInterval}
               onChange={onChange}
+              min={1}
+              max={MAX_REPEAT_INTERVAL}
+              step={1}
+              required
               disabled={isOccurrence}
+              aria-describedby="sm-repeat-help"
             />
-            격주 (시작 날짜 기준 2주마다)
+            <span id="sm-repeat-help" className="sm-form-note">
+              {form.repeatType === "weekly"
+                ? "시작 날짜부터 입력한 주마다 반복합니다. 2주 = 격주"
+                : "시작 날짜부터 입력한 개월마다 반복합니다. 12개월 = 매년, 24개월 = 2년마다"}
+            </span>
           </label>
         )}
-        {/* 공통 함수가 현재 날짜·시간·격주 상태를 읽으므로 입력을 바꾸면 안내 문장도 즉시 바뀝니다. */}
+        {/* 공통 함수가 현재 날짜·시간·반복 간격을 읽으므로 입력을 바꾸면 안내 문장도 즉시 바뀝니다. */}
         {form.repeatType !== "none" && (
           <p className="sm-form-note sm-form-wide">
             {getRepeatLabel(form)}에 종료일 없이 반복됩니다.

@@ -3,7 +3,7 @@
  * .sm-... 클래스는 각 컴포넌트의 className과 이름이 같을 때 적용됩니다.
  * 일반적인 읽는 순서: 공통 크기/색상 → 페이지 배치 → 달력 → 목록/폼 → 반응형 조정.
  * 뒤쪽에 같은 속성을 다시 쓰면 같은 우선순위에서는 나중 선언이 적용됩니다.
- * 더 구체적인 선택자(.sm-form .sm-checkbox-label input 등)는 일반 input 규칙보다 우선합니다.
+ * 더 구체적인 선택자(.sm-staff-table .sm-event 등)는 일반 .sm-event 규칙보다 우선합니다.
  * 여기서는 스타일 선언을 바꾸지 않고 각 규칙이 배치에 영향을 주는 과정을 설명합니다.
  */
 
@@ -1013,27 +1013,10 @@
 }
 
 /* 일정 상세 내용 입력과 표시
- * checkbox는 일반 입력창과 달리 width/height를 작게 덮어쓰고 checked 여부는 React가 관리합니다.
- * accent-color는 브라우저 기본 체크 표시의 강조 색을 지정합니다.
  * textarea의 resize:vertical은 세로 크기만 사용자가 바꿀 수 있게 합니다.
  * .sm-event를 button으로 만들어 키보드로도 일정을 선택할 수 있으며 CSS가 일반 일정 막대처럼 꾸밉니다.
  * white-space:pre-wrap은 입력 줄바꿈과 공백을 보존하면서 긴 줄은 화면 폭에 맞춰 줄바꿈합니다.
  */
-.sm-form .sm-checkbox-label {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.sm-form .sm-checkbox-label input {
-  width: 17px;
-  height: 17px;
-  margin: 0;
-  padding: 0;
-  accent-color: var(--sm-accent);
-  cursor: pointer;
-}
-
 .sm-form textarea {
   height: auto;
   min-height: 120px;
@@ -1204,4 +1187,65 @@
   font-size: 11px;
   line-height: 1.6;
   overflow-wrap: anywhere;
+}
+
+/* 업무 상태는 작업 종류 색상과 분리합니다. 같은 상태 배지/선택창이 같은 색과 문구를 사용합니다. */
+.sm-calendar-filters {
+  flex-wrap: wrap;
+}
+
+.sm-item-actions {
+  flex-wrap: wrap;
+}
+
+.sm-status-badge,
+.sm-status-select {
+  color: var(--sm-status-color);
+  background: var(--sm-status-background);
+}
+
+.sm-status-badge.pending,
+.sm-status-select.pending {
+  --sm-status-color: #566176;
+  --sm-status-background: #eef1f6;
+}
+
+.sm-status-badge.in_progress,
+.sm-status-select.in_progress {
+  --sm-status-color: #244f9c;
+  --sm-status-background: #e8f0ff;
+}
+
+.sm-status-badge.completed,
+.sm-status-select.completed {
+  --sm-status-color: #1c684d;
+  --sm-status-background: #e4f5ec;
+}
+
+.sm-status-badge {
+  display: inline-block;
+  flex-shrink: 0;
+  padding: 2px 5px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1.4;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+.sm-status-select {
+  max-width: 140px;
+  min-height: 30px;
+  padding: 4px 6px;
+  border: 1px solid #dce1eb;
+  border-radius: 6px;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.sm-agenda-item .sm-status-select {
+  flex-basis: 100%;
+  width: 100%;
+  max-width: none;
 }

@@ -13,6 +13,7 @@ export default function ScheduleListModal({
   onDelete,
   onEdit,
   onClose,
+  onStatusChange,
 }) {
   // sort는 배열 자체를 바꾸므로 복사본만 정렬합니다.
   const sortedItems = [...items].sort(compareSchedules);
@@ -67,6 +68,7 @@ export default function ScheduleListModal({
                 item={item}
                 onEdit={onEdit}
                 onDelete={onDelete}
+                onStatusChange={onStatusChange}
               />
             </article>
           ))

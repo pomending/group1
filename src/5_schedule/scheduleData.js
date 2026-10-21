@@ -15,12 +15,34 @@ export const scheduleTypes = [
   "기타",
 ];
 // value는 저장·비교에 쓰는 내부 값이고, label은 사용자에게 보여 주는 이름입니다.
-// 격주는 별도 repeatType이 아니라 weekly 규칙의 biweekly 옵션으로 구분합니다.
+// 주간/월간은 단위이고 repeatInterval은 그 단위가 몇 번 지날 때 반복할지 나타냅니다.
 export const repeatTypes = [
   { value: "none", label: "반복 없음" },
-  { value: "weekly", label: "매주" },
-  { value: "monthly", label: "매월" },
+  { value: "weekly", label: "주간" },
+  { value: "monthly", label: "월간" },
 ];
+
+export const MAX_REPEAT_INTERVAL = 120;
+// 기존 biweekly=true 데이터도 2주 간격으로 읽습니다. 새 데이터의 숫자 간격을 우선합니다.
+export const getRepeatInterval = (item) => {
+  if (item.repeatType === "none") return 1;
+  const value = Number(
+    item.repeatInterval ??
+      (item.repeatType === "weekly" && item.biweekly ? 2 : 1),
+  );
+  return Number.isInteger(value) && value >= 1 && value <= MAX_REPEAT_INTERVAL
+    ? value
+    : 1;
+};
+
+// 화면 문구와 저장값을 구분합니다. 작업 종류(디자인/제작 등)와 진행 상태는 별개입니다.
+export const scheduleStatuses = [
+  { value: "pending", label: "업무 진행 전", shortLabel: "진행 전" },
+  { value: "in_progress", label: "업무 중", shortLabel: "업무 중" },
+  { value: "completed", label: "업무 완료", shortLabel: "완료" },
+];
+export const normalizeStatus = (value) =>
+  scheduleStatuses.some((status) => status.value === value) ? value : "pending";
 
 // 작업 종류에 따라 달력 일정 막대에 사용할 색을 정합니다.
 export const typeColors = {
@@ -92,8 +114,9 @@ export const createEmptyForm = () => ({
   // 예: 입력 "민수, 지수" → 저장 ["민수", "지수"] → 수정 입력 "민수, 지수".
   attendees: "",
   type: "기획",
+  status: "pending",
   repeatType: "none",
-  biweekly: false,
+  repeatInterval: 1,
   visibility: "shared",
 });
 
@@ -108,7 +131,7 @@ export const createScheduleForm = (item) => {
     ),
     attendees: normalizeAttendees(item.attendees).join(", "),
     repeatType: item.occurrenceDate ? "none" : item.repeatType || "none",
-    biweekly: !item.occurrenceDate && item.biweekly === true,
+    repeatInterval: item.occurrenceDate ? 1 : getRepeatInterval(item),
   };
 };
 
@@ -201,8 +224,8 @@ export const expandSchedules = (items, fromKey, toKey) => {
         }
       };
       if (item.repeatType === "weekly") {
-        // 체크하지 않으면 7일, 격주를 체크하면 14일을 한 주기로 사용합니다.
-        const interval = item.biweekly ? 14 : 7;
+        // 주 수를 일 수로 바꿉니다. 1주는 7일, 2주는 격주, 3주는 21일 간격입니다.
+        const interval = getRepeatInterval(item) * 7;
         // 조회 시작일과 반복 시작일 중 늦은 쪽에서 탐색합니다. 과거의 모든 주를 순회하지 않습니다.
         // Date를 복사해 아래 setDate가 from이나 start 객체를 변경하지 않도록 합니다.
         const date = new Date(from > start ? from : start);
@@ -219,7 +242,7 @@ export const expandSchedules = (items, fromKey, toKey) => {
         date.setDate(
           date.getDate() + ((interval - (elapsed % interval)) % interval),
         );
-        // 첫 반복일을 찾았으므로 이후에는 7일 또는 14일씩 이동하면 됩니다.
+        // 첫 반복일을 찾았으므로 이후에는 같은 일 수만큼 이동하면 됩니다.
         // setDate는 월·연도 경계를 자동으로 넘겨 계산합니다.
         while (date <= to) {
           addOccurrence(date);
@@ -230,6 +253,16 @@ export const expandSchedules = (items, fromKey, toKey) => {
         // 31일에서 바로 setMonth를 호출하면 짧은 달을 건너뛸 수 있어 항상 1일을 기준으로 삼습니다.
         const first = from > start ? from : start;
         const date = new Date(first.getFullYear(), first.getMonth(), 1);
+        const interval = getRepeatInterval(item);
+        // 조회 월이 아니라 원래 시작 월에 간격을 맞춥니다.
+        // 10월 시작·3개월 간격이라면 11월부터 조회해도 다음 발생은 1월입니다.
+        const elapsed =
+          (date.getFullYear() - start.getFullYear()) * 12 +
+          date.getMonth() -
+          start.getMonth();
+        date.setMonth(
+          date.getMonth() + ((interval - (elapsed % interval)) % interval),
+        );
         while (date <= to) {
           // new Date(연도, 다음 달, 0)은 다음 달 1일의 하루 전, 즉 현재 월의 말일입니다.
           const lastDay = new Date(
@@ -246,7 +279,7 @@ export const expandSchedules = (items, fromKey, toKey) => {
               Math.min(start.getDate(), lastDay),
             ),
           );
-          date.setMonth(date.getMonth() + 1);
+          date.setMonth(date.getMonth() + interval);
         }
       }
       return dates;
@@ -258,17 +291,27 @@ export const expandSchedules = (items, fromKey, toKey) => {
 // 반복 규칙을 설명 문장으로 바꾸는 공통 함수입니다. 폼 안내와 전체 목록이 같은 규칙을 사용합니다.
 // getDay()의 0~6을 "일월화수목금토"의 인덱스로 사용해 요일 한 글자를 찾습니다.
 export const getRepeatLabel = (item) => {
+  const interval = getRepeatInterval(item);
   if (item.repeatType === "weekly") {
     const day = new Date(item.date + "T00:00:00").getDay();
     return (
-      (item.biweekly ? "격주 " : "매주 ") +
+      (interval === 1
+        ? "매주 "
+        : interval === 2
+          ? "격주 "
+          : `${interval}주마다 `) +
       "일월화수목금토"[day] +
       "요일 " +
       item.time
     );
   }
   if (item.repeatType === "monthly") {
-    return "매월 " + Number(item.date.slice(8)) + "일 " + item.time;
+    const day = Number(item.date.slice(8));
+    if (interval % 12 === 0) {
+      const years = interval / 12;
+      return `${years === 1 ? "매년" : `${years}년마다`} ${Number(item.date.slice(5, 7))}월 ${day}일 ${item.time}`;
+    }
+    return `${interval === 1 ? "매월" : `${interval}개월마다`} ${day}일 ${item.time}`;
   }
   return "반복 없음";
 };

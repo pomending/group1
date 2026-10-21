@@ -14,6 +14,8 @@ import {
   normalizeAttendees,
   getSchedulePeople,
   scheduleTypes,
+  normalizeStatus,
+  getRepeatInterval,
   typeColors,
 } from "./scheduleData";
 import "./scheduleStyles.css";
@@ -51,8 +53,10 @@ function loadSchedules() {
         description:
           typeof item.description === "string" ? item.description : "",
         type: scheduleTypes.includes(item.type) ? item.type : "기획",
+        // 과거 저장 데이터에는 status가 없으므로 진행 전으로 보완합니다.
+        status: normalizeStatus(item.status),
         visibility: item.visibility === "private" ? "private" : "shared",
-        biweekly: item.repeatType === "weekly" && item.biweekly === true,
+        repeatInterval: getRepeatInterval(item),
         repeatType: ["weekly", "monthly"].includes(item.repeatType)
           ? item.repeatType
           : "none",
@@ -70,7 +74,7 @@ function loadSchedules() {
         seenSeries.add(item.seriesId);
         return true;
       })
-      .map(({ repeatUntil, seriesId, ...item }) => item);
+      .map(({ repeatUntil, seriesId, biweekly, ...item }) => item);
   } catch {
     // JSON이 깨졌거나 브라우저 저장소 접근이 막혀 있으면 빈 일정으로 시작합니다.
     return [];
@@ -102,6 +106,7 @@ export default function ScheduleManager() {
   const [query, setQuery] = useState("");
   const [view, setView] = useState("monthly");
   const [scopeFilter, setScopeFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
   // 저장값 중 형식이 올바른 일정만 state로 불러옵니다.
   const [items, setItems] = useState(loadSchedules);
   const [storageError, setStorageError] = useState(false);
@@ -221,12 +226,13 @@ export default function ScheduleManager() {
     return items.filter(
       (item) =>
         (scopeFilter === "all" || item.visibility === scopeFilter) &&
+        (statusFilter === "all" || item.status === statusFilter) &&
         [item.title, item.project, ...getSchedulePeople(item)]
           .join(" ")
           .toLowerCase()
           .includes(keyword),
     );
-  }, [items, query, scopeFilter]);
+  }, [items, query, scopeFilter, statusFilter]);
 
   // 월 양쪽 7일을 포함해 월 경계의 주별 표도 준비합니다. 반복 규칙은 조회 기간만 펼칩니다.
   const visibleItems = useMemo(() => {
@@ -296,18 +302,16 @@ export default function ScheduleManager() {
   };
   // 입력창의 name과 form의 속성 이름을 맞춰 하나의 함수로 모든 입력을 처리합니다.
   // 예: name="title"이면 [event.target.name]이 title이 되어 그 속성만 덮어씁니다.
-  // ...current는 다른 입력값을 유지합니다. 체크박스는 value 대신 checked(boolean)를 읽습니다.
-  // 매주에서 다른 반복으로 바꾸면 숨겨진 격주 값도 false로 초기화합니다.
+  // 숫자 입력은 빈칸일 때만 ""로 유지해 편집을 허용하고, 나머지는 숫자로 저장합니다.
+  // 주간/월간 단위를 바꾸면 간격을 1로 초기화해 24개월이 24주로 잘못 이어지지 않게 합니다.
   const updateForm = (event) =>
     setForm((current) => ({
       ...current,
       [event.target.name]:
-        event.target.type === "checkbox"
-          ? event.target.checked
+        event.target.type === "number" && event.target.value !== ""
+          ? Number(event.target.value)
           : event.target.value,
-      ...(event.target.name === "repeatType" && event.target.value !== "weekly"
-        ? { biweekly: false }
-        : {}),
+      ...(event.target.name === "repeatType" ? { repeatInterval: 1 } : {}),
     }));
   // item이 없으면 빈 폼, 있으면 수정용 폼입니다. 목록에서 수정해도 같은 함수를 사용합니다.
   const openScheduleForm = (item) => {
@@ -351,6 +355,41 @@ export default function ScheduleManager() {
     setQuery("");
     closeScheduleForm();
   };
+  // 날짜별 반복 항목의 상태를 바꾸면 그날만 일반 항목으로 분리합니다.
+  // 원본 규칙의 status를 바꾸지 않아 다음 주/다음 달의 업무까지 완료되지 않습니다.
+  const changeScheduleStatus = (item, value) => {
+    const status = normalizeStatus(value);
+    if (status === item.status) return;
+    setItems((current) => {
+      if (!item.occurrenceDate) {
+        return current.map((schedule) =>
+          schedule.id === item.id ? { ...schedule, status } : schedule,
+        );
+      }
+      const { occurrenceDate, ...occurrence } = item;
+      const updated = current.map((schedule) =>
+        schedule.id === item.id
+          ? excludeOccurrence(schedule, occurrenceDate)
+          : schedule,
+      );
+      return [
+        ...updated,
+        {
+          ...occurrence,
+          id:
+            "schedule-" +
+            Date.now() +
+            "-" +
+            Math.random().toString(36).slice(2, 8),
+          status,
+          repeatType: "none",
+          repeatInterval: 1,
+          excludedDates: [],
+        },
+      ].sort(compareSchedules);
+    });
+  };
+
   // 특정 반복 날짜 삭제는 excludedDates에 날짜를 추가해 이후 계산에서 제외합니다.
   // 원본/일반 항목 삭제는 filter로 ID를 제거합니다. 확인 문구도 삭제 범위를 구분합니다.
   const deleteSchedule = (item) => {
@@ -504,6 +543,8 @@ export default function ScheduleManager() {
             weekDates={weekDates}
             scopeFilter={scopeFilter}
             onScopeFilterChange={setScopeFilter}
+            statusFilter={statusFilter}
+            onStatusFilterChange={setStatusFilter}
             query={query}
             onQueryChange={setQuery}
             holidayError={
@@ -527,6 +568,7 @@ export default function ScheduleManager() {
             onSelectDate={selectDate}
             onDelete={deleteSchedule}
             onEdit={openScheduleForm}
+            onStatusChange={changeScheduleStatus}
           />
         </div>
       </div>
@@ -552,6 +594,7 @@ export default function ScheduleManager() {
           }
           filterDate={listDateFilter}
           totalCount={items.length}
+          onStatusChange={changeScheduleStatus}
           onClearDateFilter={() => setListDateFilter(null)}
           onDelete={deleteSchedule}
           onEdit={openScheduleForm}
