@@ -1,0 +1,93 @@
+
+/* 대시보드 전체 */
+.dashboard {
+    padding: 30px;
+    background-color: #f8f9fa;
+    min-height: 100vh;
+    box-sizing: border-box;
+}
+
+.dashboard h1 {
+    color: #263a49;
+    margin-bottom: 8px;
+}
+
+.dashboard > p {
+    color: #888;
+    margin-bottom: 25px;
+}
+
+/* 상단 중요 공지 */
+.dashboard-banner {
+    background-color: #263a49;
+    color: white;
+    padding: 20px;
+    border-radius: 6px;
+    margin-bottom: 20px;
+}
+
+.dashboard-banner strong {
+    background-color: #e1ad69;
+    color: #372918;
+    padding: 6px 10px;
+    margin-right: 15px;
+    border-radius: 3px;
+}
+
+/* 왼쪽과 오른쪽 영역 배치 */
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 20px;
+}
+
+/* 각 영역 안의 칸 배치 */
+.dashboard-left,
+.dashboard-right {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+/* 공통 칸 디자인 */
+.dashboard-card {
+    background-color: white;
+    border: 1px solid #e2e5e8;
+    border-radius: 6px;
+    padding: 20px;
+}
+
+/* 칸 제목 */
+.dashboard-card h3 {
+    color: #263a49;
+    font-size: 18px;
+    margin-top: 0;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #ddd;
+}
+
+/* 칸 내부 내용 */
+.dashboard-card p {
+    color: #555;
+    font-size: 14px;
+    padding: 10px 0;
+    margin: 0;
+    border-bottom: 1px solid #eee;
+}
+
+/* 일정 칸 */
+.schedule-card {
+    background-color: #ebf1ee;
+    min-height: 200px;
+}
+
+/* 작은 화면 */
+@media (max-width: 800px) {
+    .dashboard-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .dashboard {
+        padding: 15px;
+    }
+}
