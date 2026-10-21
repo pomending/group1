@@ -1,6 +1,18 @@
-/* 일정 관리 화면에서만 사용하는 스타일입니다. */
+/*
+ * [공부 순서 6] JSX의 className과 연결되는 화면 배치
+ * .sm-... 클래스는 각 컴포넌트의 className과 이름이 같을 때 적용됩니다.
+ * 일반적인 읽는 순서: 공통 크기/색상 → 페이지 배치 → 달력 → 목록/폼 → 반응형 조정.
+ * 뒤쪽에 같은 속성을 다시 쓰면 같은 우선순위에서는 나중 선언이 적용됩니다.
+ * 더 구체적인 선택자(.sm-form .sm-checkbox-label input 등)는 일반 input 규칙보다 우선합니다.
+ * 여기서는 스타일 선언을 바꾸지 않고 각 규칙이 배치에 영향을 주는 과정을 설명합니다.
+ */
 
-/* 기본 레이아웃과 공통 색상 */
+/* 기본 레이아웃과 공통 색상
+ * border-box는 width/height 안에 padding과 border를 포함시켜 입력창·격자가 넘치지 않게 합니다.
+ * --sm-accent 같은 변수는 이 영역과 자식에서 var(--sm-accent)로 재사용합니다.
+ * clamp(최솟값, 화면 비례 값, 최댓값)는 화면 폭이 달라도 여백이 일정 범위를 넘지 않게 합니다.
+ * max-width와 margin:auto는 넓은 화면에서 콘텐츠가 무한히 퍼지지 않고 중앙에 놓이게 합니다.
+ */
 .schedule-app,
 .schedule-app * {
   box-sizing: border-box;
@@ -9,10 +21,12 @@
 .schedule-app {
   min-height: 100vh;
   padding: 32px clamp(16px, 4vw, 52px);
-  background: #f6f7fb;
+  --sm-accent: #6954d1;
+  --sm-border: #e3e6ef;
+  background: #f4f6fb;
   color: #242536;
   font:
-    14px Arial,
+    14px "Malgun Gothic", Arial,
     sans-serif;
 }
 
@@ -21,7 +35,12 @@
   margin: auto;
 }
 
-/* 페이지 상단 헤더와 제목 */
+/* 페이지 상단 헤더와 제목
+ * 쉼표로 나열한 선택자는 같은 선언을 여러 클래스에 적용합니다.
+ * flex는 자식을 한 방향으로 배치합니다. align-items는 교차 방향 정렬,
+ * justify-content:space-between은 양끝 배치, gap은 항목 사이 간격입니다.
+ * display:grid + place-items:center 조합은 아이콘을 가로·세로 가운데에 놓습니다.
+ */
 .sm-top,
 .sm-heading,
 .sm-stat,
@@ -69,7 +88,7 @@
 
 .sm-avatar {
   width: 34px;
-  height: 34px;
+  height: 38px;
   border-radius: 50%;
   background: #e8e4ff;
   color: #6351c9;
@@ -108,7 +127,7 @@
 
 .sm-heading p {
   margin: 7px 0 0;
-  color: #85879a;
+  color: #70798c;
   font-size: 13px;
 }
 
@@ -130,7 +149,11 @@
   cursor: pointer;
 }
 
-/* 대시보드 통계 카드 */
+/* 대시보드 통계 카드
+ * repeat(4, 1fr)은 사용 가능한 폭을 같은 비율의 네 열로 나눕니다.
+ * 카드 내부는 flex로 숫자 영역과 아이콘을 나누고, 통계 카드 묶음은 grid로 행/열을 만듭니다.
+ * tabular-nums는 지원하는 글꼴에서 숫자 폭을 맞춰 값의 자릿수가 변해도 안정적으로 보이게 합니다.
+ */
 .sm-stats {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -140,9 +163,10 @@
 
 .sm-stat,
 .sm-card {
-  border: 1px solid #ececf2;
-  border-radius: 13px;
+  border: 1px solid var(--sm-border);
+  border-radius: 14px;
   background: white;
+  box-shadow: 0 3px 12px #25305a04;
 }
 
 .sm-stat {
@@ -151,12 +175,13 @@
 
 .sm-stat-label {
   margin-bottom: 6px;
-  color: #85879a;
+  color: #70798c;
   font-size: 12px;
 }
 
 .sm-stat-value {
-  font-size: 22px;
+  font-size: 27px;
+  font-variant-numeric: tabular-nums;
   font-weight: 700;
 }
 
@@ -168,21 +193,74 @@
   color: #7665dc;
 }
 
-/* 달력과 오른쪽 일정 패널의 배치 */
+/* 달력과 오른쪽 일정 패널의 배치
+ * minmax(0, 1fr)은 달력이 남은 폭을 차지하되 긴 내용 때문에 최소 폭이 커지지 않게 합니다.
+ * 오른쪽은 320px로 두고, align-items:start는 짧은 패널이 달력 높이만큼 늘어나는 것을 막습니다.
+ * min-width:0은 grid/flex 자식의 긴 문자열이 전체 레이아웃을 밀어내지 않게 하는 값입니다.
+ */
 .sm-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 300px;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  align-items: start;
   gap: 16px;
 }
 
 .sm-card {
-  padding: 19px;
+  min-width: 0;
+  padding: 22px;
 }
 
-/* 달력의 월 이동, 검색, 요일과 공휴일 */
+/* 달력의 월 이동, 검색, 요일과 공휴일
+ * 탭 active 클래스는 React가 view와 비교해 붙이며, CSS가 배경/색으로 선택 상태를 표현합니다.
+ * repeat(7, minmax(0, 1fr))은 요일과 날짜가 동일한 7열 정렬을 유지하게 합니다.
+ * .sm-day-num.holiday는 한 요소에 두 클래스가 모두 있을 때 선택됩니다.
+ * text-overflow:ellipsis는 overflow:hidden과 한 줄 제한이 함께 있어야 말줄임으로 보입니다.
+ */
 .sm-calendar-head {
   gap: 12px;
   margin-bottom: 18px;
+}
+
+.sm-calendar-filters {
+  display: flex;
+  gap: 8px;
+}
+
+.sm-calendar-filters select {
+  height: 38px;
+  padding: 0 9px;
+  border: 1px solid #e9e9f0;
+  border-radius: 8px;
+  background: white;
+  color: #5d5f70;
+  font-size: 12px;
+}
+
+.sm-view-tabs {
+  display: flex;
+  gap: 4px;
+  width: fit-content;
+  max-width: 100%;
+  padding: 4px;
+  margin: 0 0 18px;
+  border-radius: 10px;
+  background: #f0f2f8;
+}
+
+.sm-view-tabs button {
+  padding: 9px 16px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: #70798c;
+  cursor: pointer;
+}
+
+.sm-view-tabs button.active {
+  background: white;
+  color: var(--sm-accent);
+  box-shadow: 0 1px 4px #23244714;
+  font-weight: 700;
 }
 
 .sm-month {
@@ -202,7 +280,7 @@
 
 .sm-icon-btn,
 .sm-search {
-  height: 34px;
+  height: 38px;
   border: 1px solid #e9e9f0;
   border-radius: 8px;
   background: white;
@@ -216,6 +294,7 @@
 
 .sm-search {
   width: 230px;
+  min-width: 0;
   padding: 0 9px;
   font-size: 12px;
 }
@@ -226,10 +305,12 @@
 }
 
 .sm-weekday {
-  padding-bottom: 9px;
-  color: #9698a8;
+  padding: 12px 0;
+  background: #f7f8fc;
+  color: #646d82;
   text-align: center;
-  font-size: 11px;
+  font-size: 12px;
+  font-weight: 700;
 }
 
 .sm-weekday.saturday,
@@ -253,33 +334,49 @@
 }
 
 .sm-holiday-error {
-  min-height: 14px;
+  margin-bottom: 8px;
   color: #df4555;
   font-size: 11px;
 }
 
-/* 달력 날짜와 일정 표시 */
+/* 달력 날짜와 일정 표시
+ * min-height는 최소 높이만 지정하므로 일정이 늘어나면 날짜 칸도 늘어날 수 있습니다.
+ * :hover는 마우스가 올라간 상태, .selected는 React가 선택 날짜에 붙인 상태입니다.
+ * inset box-shadow는 칸 크기를 바꾸지 않고 안쪽 테두리처럼 선택 상태를 강조합니다.
+ * :nth-child(7n)은 매 행 마지막 칸을 선택해 마지막 세로선을 없앱니다.
+ * 오늘의 기본 강조는 :not(...) 조건으로 주말·공휴일의 날짜 색상을 보존합니다.
+ */
 .sm-day {
-  min-height: 98px;
-  padding: 8px 6px;
-  border-top: 1px solid #f0f0f4;
+  min-height: 112px;
+  padding: 9px 7px;
+  border-top: 1px solid #e9ecf3;
+  border-right: 1px solid #f0f2f7;
   cursor: pointer;
 }
 
-.sm-day:hover,
+.sm-day:hover {
+  background: #faf9ff;
+}
+
 .sm-day.selected {
-  background: #f7f5ff;
+  background: #f0ecff;
+  box-shadow: inset 0 0 0 1px #b7a9ef;
+}
+
+.sm-day:nth-child(7n) {
+  border-right: 0;
 }
 
 .sm-day-num {
   display: grid;
-  width: 24px;
-  height: 24px;
+  width: 28px;
+  height: 28px;
   margin-bottom: 5px;
   place-items: center;
   border-radius: 50%;
-  color: #626477;
-  font-size: 12px;
+  color: #4e586e;
+  font-size: 13px;
+  font-weight: 600;
 }
 
 .sm-day.today .sm-day-num:not(.saturday):not(.sunday):not(.holiday) {
@@ -290,10 +387,12 @@
 .sm-event {
   overflow: hidden;
   margin: 3px 0;
-  padding: 4px;
-  border-radius: 4px;
+  padding: 5px 7px;
+  border-radius: 5px;
   color: white;
-  font-size: 10px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.5;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -312,7 +411,93 @@
   text-decoration: underline;
 }
 
-/* 선택 날짜의 일정과 다가오는 마감 */
+/* 주간은 7열, 각 열은 align-content:start로 일정을 위에서부터 쌓습니다.
+ * 이벤트 제목의 overflow-wrap:anywhere는 긴 단어도 열 안에서 줄바꿈하게 합니다.
+ * 시간대별 행은 고정 폭 시간 열 + 남은 폭 일정 열로 나누고 일정 영역에 스크롤을 허용합니다.
+ */
+.sm-week-view {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  min-height: 380px;
+  border-top: 1px solid #f0f0f4;
+}
+
+.sm-week-column {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  min-width: 0;
+  padding: 10px 7px;
+  border: 0;
+  border-right: 1px solid #f0f0f4;
+  background: white;
+  text-align: left;
+  cursor: pointer;
+}
+
+.sm-week-column:last-child {
+  border-right: 0;
+}
+
+.sm-week-column.selected {
+  background: #f7f5ff;
+}
+
+.sm-week-column .sm-event {
+  display: grid;
+  gap: 3px;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.sm-week-column .sm-event small {
+  opacity: 0.85;
+}
+
+.sm-day-view {
+  max-height: 620px;
+  overflow-y: auto;
+  padding-top: 4px;
+}
+
+.sm-hour-row {
+  display: grid;
+  grid-template-columns: 54px minmax(0, 1fr);
+  min-height: 42px;
+  border-top: 1px solid #f0f0f4;
+}
+
+.sm-hour-row > time {
+  padding: 10px 4px;
+  color: #70798c;
+  font-size: 11px;
+}
+
+.sm-hour-row > div {
+  min-width: 0;
+  padding: 4px 0;
+}
+
+.sm-hour-row .sm-event,
+.sm-day-view > .sm-event {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  font-size: 12px;
+}
+
+.sm-hour-row .sm-event small,
+.sm-day-view > .sm-event small {
+  margin-left: auto;
+}
+
+/* 선택 날짜의 일정과 다가오는 마감
+ * agenda-item은 시간 / 색상선 / 내용의 3열입니다.
+ * 아래 .sm-agenda-item .sm-item-actions의 grid-column:3은 수정·삭제를 내용 열 아래에 배치합니다.
+ * 버튼은 flex-shrink:0으로 글자가 과도하게 눌려 작아지지 않게 합니다.
+ * 빈 상태는 실제 데이터가 없을 때만 JSX가 만들며, CSS는 안내 문단의 외형을 담당합니다.
+ */
 .sm-sidebar {
   display: grid;
   align-content: start;
@@ -329,7 +514,7 @@
 }
 
 .sm-muted {
-  color: #999bab;
+  color: #747e91;
   font-size: 11px;
 }
 
@@ -341,7 +526,7 @@
 
 .sm-agenda-item {
   display: grid;
-  grid-template-columns: 42px 3px minmax(0, 1fr) auto;
+  grid-template-columns: 40px 3px minmax(0, 1fr);
   gap: 9px;
   padding: 11px 0;
   border-top: 1px solid #f0f0f4;
@@ -349,6 +534,7 @@
 
 .sm-item-actions {
   display: flex;
+  flex-shrink: 0;
   gap: 5px;
 }
 
@@ -383,7 +569,7 @@
 }
 
 .sm-time {
-  color: #85879a;
+  color: #70798c;
   font-size: 11px;
 }
 
@@ -400,13 +586,16 @@
 
 .sm-agenda-item small,
 .sm-deadline small {
-  color: #9294a3;
+  color: #737d90;
   font-size: 10px;
 }
 
 .sm-empty {
-  padding: 24px 5px;
-  color: #9a9cad;
+  padding: 30px 12px;
+  border: 1px dashed #e3e6ef;
+  border-radius: 9px;
+  background: #fafbfe;
+  color: #778195;
   text-align: center;
   font-size: 12px;
 }
@@ -447,7 +636,12 @@
   background: #e36c79;
 }
 
-/* 일정 등록 모달과 입력 폼 */
+/* 일정 등록 모달과 입력 폼
+ * position:fixed + inset:0은 배경을 화면 전체에 고정합니다. z-index는 다른 내용 위에 표시합니다.
+ * backdrop의 grid/place-items:center는 모달을 중앙에 두고 반투명 색은 뒤 화면을 어둡게 합니다.
+ * max-height:calc(100dvh - 32px)와 overflow-y:auto는 작은 화면에서도 긴 폼을 스크롤하게 합니다.
+ * 폼의 2열 grid에서 grid-column:1 / -1은 첫 열부터 마지막 선까지 전체 폭을 차지한다는 뜻입니다.
+ */
 .sm-modal-backdrop {
   position: fixed;
   inset: 0;
@@ -459,7 +653,9 @@
 }
 
 .sm-modal {
-  width: min(100%, 480px);
+  width: min(100%, 520px);
+  max-height: calc(100dvh - 32px);
+  overflow-y: auto;
   padding: 24px;
   border-radius: 16px;
   background: white;
@@ -480,7 +676,7 @@
 
 .sm-modal-head p {
   margin: 6px 0 0;
-  color: #85879a;
+  color: #70798c;
   font-size: 12px;
 }
 
@@ -506,9 +702,10 @@
 }
 
 .sm-form input,
-.sm-form select {
+.sm-form select,
+.sm-form textarea {
   width: 100%;
-  height: 39px;
+  height: 42px;
   padding: 0 10px;
   border: 1px solid #e5e5ed;
   border-radius: 8px;
@@ -520,7 +717,8 @@
 }
 
 .sm-form input:focus,
-.sm-form select:focus {
+.sm-form select:focus,
+.sm-form textarea:focus {
   border-color: #7665dc;
   outline: 2px solid #7665dc20;
 }
@@ -528,6 +726,12 @@
 .sm-form-wide,
 .sm-form-actions {
   grid-column: 1 / -1;
+}
+
+.sm-form-note {
+  margin: -6px 0 0;
+  color: #70798c;
+  font-size: 11px;
 }
 
 .sm-form-actions {
@@ -546,7 +750,11 @@
   cursor: pointer;
 }
 
-/* 전체 일정 목록 */
+/* 전체 일정 목록
+ * 모달을 flex-column으로 만들고 목록에 overflow-y:auto를 주어 긴 목록을 스크롤할 수 있게 합니다.
+ * 목록 정보는 grid로 날짜/제목/설명을 세로로 쌓고, 바깥 item은 flex로 동작 버튼과 나눕니다.
+ * 제목의 white-space:nowrap과 ellipsis는 긴 제목이 한 행을 넘지 않게 합니다.
+ */
 .sm-list-modal {
   display: flex;
   max-height: min(80vh, 720px);
@@ -581,7 +789,7 @@
 
 .sm-list-date,
 .sm-list-item-info small {
-  color: #85879a;
+  color: #70798c;
   font-size: 11px;
 }
 
@@ -602,7 +810,95 @@
   cursor: pointer;
 }
 
-/* 작은 화면에서는 패널을 세로로 배치합니다. */
+/* 버튼과 입력창의 조작 상태
+ * font-family:inherit는 브라우저 기본 버튼 글꼴 대신 페이지의 글꼴을 따르게 합니다.
+ * transition은 속성 변화의 중간 프레임을 만들어 hover 효과가 바로 끊기지 않게 합니다.
+ * :focus-visible은 주로 키보드로 조작하는 초점에 윤곽선을 표시합니다.
+ * outline은 레이아웃 크기를 바꾸지 않아 포커스가 생겨도 주변 요소가 밀리지 않습니다.
+ */
+.schedule-app button,
+.schedule-app input,
+.schedule-app select {
+  font-family: inherit;
+}
+
+.schedule-app button {
+  transition: background-color 120ms, border-color 120ms, box-shadow 120ms;
+}
+
+.schedule-app button:focus-visible,
+.schedule-app input:focus-visible,
+.schedule-app select:focus-visible {
+  outline: 3px solid #b4a5ed;
+  outline-offset: 2px;
+}
+
+.sm-btn:hover {
+  background: #6050c1;
+  box-shadow: 0 3px 8px #6954d126;
+}
+
+.sm-secondary-btn:hover,
+.sm-icon-btn:hover,
+.sm-cancel:hover {
+  border-color: #c6bbee;
+  background: #f7f5ff;
+}
+
+.sm-calendar-head {
+  flex-wrap: wrap;
+}
+
+.sm-agenda-item .sm-item-actions {
+  grid-column: 3;
+  justify-content: flex-end;
+}
+
+.sm-week-column > .sm-week-date {
+  padding: 7px 0 12px;
+  text-align: center;
+  font-size: 13px;
+}
+
+.sm-week-column > .saturday {
+  color: #3976ce;
+}
+
+.sm-week-column > .sunday {
+  color: #df4555;
+}
+
+.sm-hour-row:nth-child(even) {
+  background: #fafbfe;
+}
+
+.sm-hour-row > time {
+  border-right: 1px solid #eceef5;
+  font-variant-numeric: tabular-nums;
+}
+
+.sm-hour-row > div {
+  padding-inline: 8px;
+}
+
+.sm-agenda-item strong,
+.sm-deadline strong {
+  overflow-wrap: anywhere;
+  line-height: 1.5;
+}
+
+.sm-form select:disabled {
+  background: #f3f4f8;
+  color: #8b91a0;
+  cursor: not-allowed;
+}
+
+/* 반응형 배치: media 조건이 맞을 때만 안쪽 선언이 적용됩니다.
+ * 1000px 이하: 달력/사이드바를 한 열로 바꾸고 사이드바 내부 두 패널을 가로로 배치합니다.
+ * 680px 이하: 제목/버튼과 필터를 세로 배치하고 통계 카드를 두 열로 조정합니다.
+ * 주간 표는 열 너비를 확보한 채 가로 스크롤해 일정 글자가 지나치게 좁아지지 않게 합니다.
+ * 420px 이하: 입력 폼도 한 열로 바꾸고 전체 목록 버튼을 다음 줄로 배치합니다.
+ */
 @media (max-width: 1000px) {
   .sm-layout {
     grid-template-columns: 1fr;
@@ -622,8 +918,17 @@
     grid-template-columns: 1fr 1fr;
   }
 
+  .sm-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
   .sm-heading-actions {
     width: 100%;
+  }
+
+  .sm-heading-actions button {
+    flex: 1;
   }
 
   .sm-top-right span {
@@ -637,6 +942,33 @@
 
   .sm-search {
     flex: 1;
+    width: 100%;
+  }
+
+  .sm-view-tabs {
+    width: 100%;
+  }
+
+  .sm-view-tabs button {
+    flex: 1;
+    padding-inline: 7px;
+  }
+
+  .sm-card {
+    padding: 14px;
+  }
+
+  .sm-calendar-filters {
+    width: 100%;
+  }
+
+  .sm-calendar-filters select {
+    max-width: 125px;
+  }
+
+  .sm-week-view {
+    overflow-x: auto;
+    grid-template-columns: repeat(7, minmax(125px, 1fr));
   }
 
   .sm-day {
@@ -655,4 +987,238 @@
   .sm-modal {
     padding: 19px;
   }
+}
+
+@media (max-width: 420px) {
+  .sm-form {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .sm-stat {
+    gap: 8px;
+    padding: 14px 12px;
+  }
+
+  .sm-stat-icon {
+    width: 28px;
+    height: 28px;
+  }
+
+  .sm-list-item {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .sm-list-item > .sm-item-actions {
+    align-self: flex-end;
+  }
+}
+
+/* 일정 상세 내용 입력과 표시
+ * checkbox는 일반 입력창과 달리 width/height를 작게 덮어쓰고 checked 여부는 React가 관리합니다.
+ * accent-color는 브라우저 기본 체크 표시의 강조 색을 지정합니다.
+ * textarea의 resize:vertical은 세로 크기만 사용자가 바꿀 수 있게 합니다.
+ * .sm-event를 button으로 만들어 키보드로도 일정을 선택할 수 있으며 CSS가 일반 일정 막대처럼 꾸밉니다.
+ * white-space:pre-wrap은 입력 줄바꿈과 공백을 보존하면서 긴 줄은 화면 폭에 맞춰 줄바꿈합니다.
+ */
+.sm-form .sm-checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sm-form .sm-checkbox-label input {
+  width: 17px;
+  height: 17px;
+  margin: 0;
+  padding: 0;
+  accent-color: var(--sm-accent);
+  cursor: pointer;
+}
+
+.sm-form textarea {
+  height: auto;
+  min-height: 120px;
+  padding: 10px;
+  resize: vertical;
+  line-height: 1.6;
+  font-family: inherit;
+}
+
+.sm-event {
+  display: block;
+  width: 100%;
+  border: 0;
+  text-align: left;
+  cursor: pointer;
+}
+
+.sm-event:hover {
+  filter: brightness(0.94);
+}
+
+.sm-detail-link,
+.sm-week-date {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.sm-detail-link:hover {
+  color: var(--sm-accent);
+  text-decoration: underline;
+}
+
+.sm-description {
+  margin: 8px 0 0;
+  color: #657085;
+  font-size: 12px;
+  line-height: 1.65;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* 담당자별 주간 표의 스타일이 적용되는 순서
+ * 바깥 sm-staff-scroll이 스크롤 범위를 만들고, 안쪽 table이 최소 너비를 유지합니다.
+ * 이름 행은 position:sticky로 고정하며, 날짜별 일정 버튼은 기존 sm-event 스타일에 세로 배치를 덧붙입니다.
+ * 같은 클래스의 앞쪽 선언도 계속 적용되고 아래 속성만 덮어써지므로 공통 버튼/글꼴 규칙을 재사용합니다.
+ * 추가 탭으로 폭이 부족하면 flex-wrap:wrap이 다음 줄로 넘기고 nowrap은 버튼 내부 글자를 유지합니다.
+ */
+.sm-view-tabs {
+  flex-wrap: wrap;
+}
+
+.sm-view-tabs button {
+  white-space: nowrap;
+}
+
+/* max-width:100%는 바깥 카드 폭을 넘지 않게 제한합니다.
+ * 표가 그보다 넓어지면 overflow-x:auto로 이 영역만 가로 스크롤하며 페이지 전체를 넓히지 않습니다. */
+.sm-staff-scroll {
+  max-width: 100%;
+  overflow-x: auto;
+  border: 1px solid #e3e6ef;
+  border-radius: 10px;
+}
+
+/* width:100%는 넓은 화면에서는 카드 폭을 채우고 min-width:960px는 좁은 화면에서도 읽을 폭을 확보합니다.
+ * table-layout:fixed는 긴 제목에 따라 날짜 열 너비가 들쭉날쭉 바뀌지 않도록 합니다.
+ * border-collapse:separate와 border-spacing:0을 함께 사용해 셀 테두리는 분리하고 셀 사이 빈틈은 없앱니다. */
+.sm-staff-table {
+  width: 100%;
+  min-width: 960px;
+  border-collapse: separate;
+  border-spacing: 0;
+  table-layout: fixed;
+}
+
+/* caption은 표 전체의 설명입니다. 표 데이터와 달리 별도 날짜 셀이나 사람 행이 아닙니다. */
+.sm-staff-table caption {
+  padding: 12px;
+  background: #fafbfe;
+  color: #70798c;
+  text-align: left;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+/* th는 머리글, td는 일정 셀입니다. 공통 padding과 선으로 날짜/사람의 경계를 맞춥니다.
+ * vertical-align:top은 같은 행에 일정 수가 달라도 위에서부터 나란히 보이게 합니다.
+ * overflow-wrap:anywhere는 띄어쓰기 없는 긴 이름이나 제목도 셀 안에서 줄바꿈하게 합니다. */
+.sm-staff-table th,
+.sm-staff-table td {
+  padding: 10px 7px;
+  border-top: 1px solid #e9ecf3;
+  border-right: 1px solid #e9ecf3;
+  vertical-align: top;
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+
+.sm-staff-table thead th {
+  background: #f7f8fc;
+  font-size: 12px;
+}
+
+/* 각 tr의 바로 아래 첫 셀만 고릅니다. 헤더에서는 사람 제목, 본문에서는 사람 이름입니다.
+ * sticky+left:0은 가로 스크롤해도 이름을 왼쪽에 붙여 놓습니다.
+ * z-index:1과 불투명 배경은 뒤로 지나가는 일정이 이름 위로 겹쳐 보이는 것을 막습니다. */
+.sm-staff-table tr > :first-child {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  width: 112px;
+  background: #f7f8fc;
+}
+
+/* 행의 마지막 셀 오른쪽 선은 바깥 스크롤 영역 테두리와 겹치므로 생략합니다. */
+.sm-staff-table tr > :last-child {
+  border-right: 0;
+}
+
+.sm-staff-table tbody th {
+  color: #4e586e;
+  font-size: 13px;
+}
+
+/* 이름 아래 건수는 small을 block으로 만들어 줄을 나눕니다.
+ * 건수 값의 계산은 JSX가 하고 CSS는 위치·크기·색만 담당합니다. */
+.sm-staff-table tbody th small {
+  display: block;
+  margin-top: 7px;
+  color: #747e91;
+  font-size: 11px;
+  font-weight: 400;
+}
+
+.sm-staff-table td {
+  height: 100px;
+}
+
+/* selected 클래스는 React가 selectedDate와 열 날짜를 비교해 붙입니다.
+ * CSS가 날짜를 직접 판단하지 않으며, 같은 날짜의 모든 사람 셀에 같은 배경이 적용됩니다. */
+.sm-staff-table td.selected {
+  background: #f7f5ff;
+}
+
+/* 기존 일정 버튼을 grid로 바꿔 시간 → 제목 → 담당/참석을 세로로 쌓습니다.
+ * white-space:normal은 공통 sm-event의 한 줄 표시를 이 표 안에서만 해제합니다. */
+.sm-staff-table .sm-event {
+  display: grid;
+  gap: 3px;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+/* React가 넘긴 aria-pressed 값이 true인 날짜 버튼만 선택해 밑줄을 표시합니다.
+ * 속성 선택자를 사용하므로 선택 상태를 별도 CSS 클래스로 중복 관리할 필요가 없습니다. */
+.sm-staff-table .sm-week-date[aria-pressed="true"] {
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.sm-staff-table .saturday {
+  color: #3976ce;
+}
+
+.sm-staff-table .sunday {
+  color: #df4555;
+}
+
+.sm-staff-empty {
+  color: #a3aabd;
+  font-size: 12px;
+}
+
+/* 선택 날짜 패널에 표시되는 참석자 문단입니다.
+ * 이 선택자는 폼의 입력창이 아니라 저장된 참석자 이름을 보여 주는 p 요소에 연결됩니다. */
+.sm-attendees {
+  margin: 6px 0 0;
+  color: #70798c;
+  font-size: 11px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
 }
