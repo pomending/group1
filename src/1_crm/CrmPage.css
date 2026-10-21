@@ -1,0 +1,22 @@
+div {
+    width: 90%;
+    margin: 30px auto;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+tr {
+    border-bottom: 1px solid #ddd;
+}
+
+td {
+    padding: 12px;
+    text-align: center;
+}
+
+tr:hover {
+    background-color: #f2f2f2;
+}
