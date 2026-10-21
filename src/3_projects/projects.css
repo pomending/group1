@@ -1,0 +1,290 @@
+
+/* 프로젝트 관리 전체 영역 */
+.project-app,
+.project-app * {
+  box-sizing: border-box;
+}
+
+.project-app {
+  min-height: 100vh;
+  padding: 32px clamp(16px, 4vw, 52px);
+  background: #f6f7fb;
+  color: #242536;
+  font: 14px Arial, sans-serif;
+}
+
+.pm-shell {
+  max-width: 1440px;
+  margin: auto;
+}
+
+/* 페이지 제목 */
+.pm-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 22px;
+}
+
+.pm-eyebrow {
+  margin-bottom: 6px;
+  color: #7665dc;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.pm-heading h2 {
+  margin: 0;
+  font-size: 28px;
+}
+
+.pm-heading p {
+  margin: 7px 0 0;
+  color: #85879a;
+  font-size: 13px;
+}
+
+/* 버튼 */
+.pm-btn {
+  padding: 11px 15px;
+  border: 0;
+  border-radius: 9px;
+  background: #7665dc;
+  color: white;
+  cursor: pointer;
+}
+
+.pm-btn:hover {
+  background: #6554ca;
+}
+
+/* 통계 카드 */
+.pm-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.pm-stat {
+  padding: 20px;
+  border: 1px solid #ececf2;
+  border-radius: 13px;
+  background: white;
+}
+
+.pm-stat-label {
+  margin-bottom: 12px;
+  color: #85879a;
+  font-size: 12px;
+}
+
+.pm-stat-value {
+  font-size: 26px;
+  font-weight: 700;
+}
+
+/* 프로젝트 목록 영역 */
+.pm-card {
+  padding: 20px;
+  border: 1px solid #ececf2;
+  border-radius: 13px;
+  background: white;
+}
+
+.pm-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.pm-card-header h3 {
+  margin: 0;
+  font-size: 17px;
+}
+
+.pm-card-header span {
+  color: #85879a;
+  font-size: 12px;
+}
+
+/* 검색 / 필터 */
+.pm-filters {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.pm-search,
+.pm-select {
+  height: 40px;
+  padding: 0 12px;
+  border: 1px solid #e5e5ed;
+  border-radius: 8px;
+  background: white;
+  color: #242536;
+  font-size: 13px;
+}
+
+.pm-search {
+  flex: 1;
+  min-width: 0;
+}
+
+.pm-select {
+  min-width: 130px;
+}
+
+.pm-search:focus,
+.pm-select:focus {
+  border-color: #7665dc;
+  outline: 2px solid #7665dc20;
+}
+
+/* 목록 테이블 */
+.pm-table-wrap {
+  overflow-x: auto;
+}
+
+.project-list {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.project-list th {
+  padding: 14px;
+  border-bottom: 1px solid #eaeaf0;
+  background: #fafafe;
+  color: #85879a;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.project-list td {
+  padding: 17px 14px;
+  border-bottom: 1px solid #f0f0f4;
+  font-size: 13px;
+}
+
+.project-list tbody tr:hover {
+  background: #faf9ff;
+}
+
+.pm-project-name {
+  margin-bottom: 5px;
+  font-weight: 600;
+}
+
+.pm-project-date {
+  color: #9294a3;
+  font-size: 11px;
+}
+
+/* 상태 표시 */
+.pm-status {
+  display: inline-block;
+  padding: 6px 11px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.pm-status-대기 {
+  background: #f2f3f6;
+  color: #77798c;
+}
+
+.pm-status-진행중 {
+  background: #f2efff;
+  color: #7665dc;
+}
+
+.pm-status-완료 {
+  background: #e8f6ef;
+  color: #299665;
+}
+
+.pm-status-지연 {
+  background: #fff0f2;
+  color: #d4505e;
+}
+
+/* 진행률 */
+.pm-progress {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.pm-progress-bar {
+  width: 100px;
+  height: 7px;
+  overflow: hidden;
+  border-radius: 10px;
+  background: #eae8f5;
+}
+
+.pm-progress-fill {
+  height: 100%;
+  border-radius: 10px;
+  background: #7665dc;
+}
+
+.pm-progress-text {
+  color: #77798c;
+  font-size: 11px;
+}
+
+/* 상세 버튼 */
+.pm-view-btn {
+  padding: 7px 12px;
+  border: 1px solid #e2def8;
+  border-radius: 7px;
+  background: white;
+  color: #6858c8;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.pm-view-btn:hover {
+  background: #f7f5ff;
+}
+
+/* 검색 결과 없음 */
+.pm-empty {
+  padding: 32px;
+  color: #999bab;
+  text-align: center;
+}
+
+/* 반응형 */
+@media (max-width: 680px) {
+  .project-app {
+    padding: 18px 12px;
+  }
+
+  .pm-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .pm-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .pm-filters {
+    flex-direction: column;
+  }
+
+  .pm-table-wrap {
+    overflow-x: auto;
+  }
+
+  .project-list {
+    min-width: 600px;
+  }
+}
