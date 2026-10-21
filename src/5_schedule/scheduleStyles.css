@@ -1,0 +1,658 @@
+/* 일정 관리 화면에서만 사용하는 스타일입니다. */
+
+/* 기본 레이아웃과 공통 색상 */
+.schedule-app,
+.schedule-app * {
+  box-sizing: border-box;
+}
+
+.schedule-app {
+  min-height: 100vh;
+  padding: 32px clamp(16px, 4vw, 52px);
+  background: #f6f7fb;
+  color: #242536;
+  font:
+    14px Arial,
+    sans-serif;
+}
+
+.sm-shell {
+  max-width: 1440px;
+  margin: auto;
+}
+
+/* 페이지 상단 헤더와 제목 */
+.sm-top,
+.sm-heading,
+.sm-stat,
+.sm-calendar-head,
+.sm-month,
+.sm-panel-title,
+.sm-deadline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.sm-top {
+  margin-bottom: 28px;
+}
+
+.sm-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.sm-mark,
+.sm-avatar,
+.sm-stat-icon {
+  display: grid;
+  place-items: center;
+}
+
+.sm-storage-warning {
+  margin: -6px 0 14px;
+  color: #d4505e;
+  font-size: 12px;
+}
+
+.sm-mark {
+  width: 36px;
+  height: 36px;
+  border-radius: 11px;
+  background: #28253d;
+  color: white;
+}
+
+.sm-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: #e8e4ff;
+  color: #6351c9;
+  font-weight: 700;
+}
+
+.sm-top-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  color: #77798c;
+  font-size: 12px;
+}
+
+.sm-heading {
+  gap: 16px;
+  margin-bottom: 22px;
+}
+
+.sm-heading-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.sm-eyebrow {
+  margin-bottom: 6px;
+  color: #7665dc;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.sm-heading h1 {
+  margin: 0;
+  font-size: 28px;
+}
+
+.sm-heading p {
+  margin: 7px 0 0;
+  color: #85879a;
+  font-size: 13px;
+}
+
+.sm-btn {
+  padding: 11px 15px;
+  border: 0;
+  border-radius: 9px;
+  background: #7665dc;
+  color: white;
+  cursor: pointer;
+}
+
+.sm-secondary-btn {
+  padding: 10px 14px;
+  border: 1px solid #e5e5ed;
+  border-radius: 9px;
+  background: white;
+  color: #5d5f70;
+  cursor: pointer;
+}
+
+/* 대시보드 통계 카드 */
+.sm-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.sm-stat,
+.sm-card {
+  border: 1px solid #ececf2;
+  border-radius: 13px;
+  background: white;
+}
+
+.sm-stat {
+  padding: 16px;
+}
+
+.sm-stat-label {
+  margin-bottom: 6px;
+  color: #85879a;
+  font-size: 12px;
+}
+
+.sm-stat-value {
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.sm-stat-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: #f2efff;
+  color: #7665dc;
+}
+
+/* 달력과 오른쪽 일정 패널의 배치 */
+.sm-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: 16px;
+}
+
+.sm-card {
+  padding: 19px;
+}
+
+/* 달력의 월 이동, 검색, 요일과 공휴일 */
+.sm-calendar-head {
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.sm-month {
+  justify-content: flex-start;
+  gap: 10px;
+}
+
+.sm-month h2 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.sm-arrows {
+  display: flex;
+  gap: 7px;
+}
+
+.sm-icon-btn,
+.sm-search {
+  height: 34px;
+  border: 1px solid #e9e9f0;
+  border-radius: 8px;
+  background: white;
+  color: #5d5f70;
+}
+
+.sm-icon-btn {
+  width: 30px;
+  cursor: pointer;
+}
+
+.sm-search {
+  width: 230px;
+  padding: 0 9px;
+  font-size: 12px;
+}
+
+.sm-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+
+.sm-weekday {
+  padding-bottom: 9px;
+  color: #9698a8;
+  text-align: center;
+  font-size: 11px;
+}
+
+.sm-weekday.saturday,
+.sm-day-num.saturday {
+  color: #3976ce;
+}
+
+.sm-weekday.sunday,
+.sm-day-num.sunday,
+.sm-day-num.holiday {
+  color: #df4555;
+}
+
+.sm-holiday-name {
+  overflow: hidden;
+  margin: 0 0 4px;
+  color: #df4555;
+  font-size: 9px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sm-holiday-error {
+  min-height: 14px;
+  color: #df4555;
+  font-size: 11px;
+}
+
+/* 달력 날짜와 일정 표시 */
+.sm-day {
+  min-height: 98px;
+  padding: 8px 6px;
+  border-top: 1px solid #f0f0f4;
+  cursor: pointer;
+}
+
+.sm-day:hover,
+.sm-day.selected {
+  background: #f7f5ff;
+}
+
+.sm-day-num {
+  display: grid;
+  width: 24px;
+  height: 24px;
+  margin-bottom: 5px;
+  place-items: center;
+  border-radius: 50%;
+  color: #626477;
+  font-size: 12px;
+}
+
+.sm-day.today .sm-day-num:not(.saturday):not(.sunday):not(.holiday) {
+  background: #7665dc;
+  color: white;
+}
+
+.sm-event {
+  overflow: hidden;
+  margin: 3px 0;
+  padding: 4px;
+  border-radius: 4px;
+  color: white;
+  font-size: 10px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sm-more-events {
+  padding: 2px 0;
+  border: 0;
+  background: none;
+  color: #7665dc;
+  font-size: 10px;
+  cursor: pointer;
+}
+
+.sm-more-events:hover,
+.sm-list-all-btn:hover {
+  text-decoration: underline;
+}
+
+/* 선택 날짜의 일정과 다가오는 마감 */
+.sm-sidebar {
+  display: grid;
+  align-content: start;
+  gap: 14px;
+}
+
+.sm-panel-title {
+  margin-bottom: 14px;
+}
+
+.sm-panel-title h3 {
+  margin: 0;
+  font-size: 14px;
+}
+
+.sm-muted {
+  color: #999bab;
+  font-size: 11px;
+}
+
+.sm-agenda-date {
+  margin: -6px 0 12px;
+  color: #77798c;
+  font-size: 12px;
+}
+
+.sm-agenda-item {
+  display: grid;
+  grid-template-columns: 42px 3px minmax(0, 1fr) auto;
+  gap: 9px;
+  padding: 11px 0;
+  border-top: 1px solid #f0f0f4;
+}
+
+.sm-item-actions {
+  display: flex;
+  gap: 5px;
+}
+
+.sm-edit-btn {
+  align-self: center;
+  padding: 5px 8px;
+  border: 1px solid #e2def8;
+  border-radius: 6px;
+  background: white;
+  color: #6858c8;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.sm-edit-btn:hover {
+  background: #f7f5ff;
+}
+
+.sm-delete-btn {
+  align-self: center;
+  padding: 5px 8px;
+  border: 1px solid #f0dadd;
+  border-radius: 6px;
+  background: white;
+  color: #d4505e;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.sm-delete-btn:hover {
+  background: #fff4f5;
+}
+
+.sm-time {
+  color: #85879a;
+  font-size: 11px;
+}
+
+.sm-line {
+  border-radius: 4px;
+}
+
+.sm-agenda-item strong,
+.sm-deadline strong {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 12px;
+}
+
+.sm-agenda-item small,
+.sm-deadline small {
+  color: #9294a3;
+  font-size: 10px;
+}
+
+.sm-empty {
+  padding: 24px 5px;
+  color: #9a9cad;
+  text-align: center;
+  font-size: 12px;
+}
+
+.sm-deadline {
+  width: 100%;
+  justify-content: flex-start;
+  gap: 10px;
+  padding: 11px 0;
+  border: 0;
+  border-top: 1px solid #f0f0f4;
+  background: white;
+  color: inherit;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+}
+
+.sm-deadline:hover {
+  background: #faf9ff;
+}
+
+.sm-date-subtitle {
+  color: #77798c;
+  font-size: 12px;
+}
+
+.sm-date-subtitle strong {
+  color: #df4555;
+  font-weight: 500;
+}
+
+.sm-deadline-dot {
+  width: 8px;
+  height: 8px;
+  flex: none;
+  border-radius: 50%;
+  background: #e36c79;
+}
+
+/* 일정 등록 모달과 입력 폼 */
+.sm-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: #17162980;
+}
+
+.sm-modal {
+  width: min(100%, 480px);
+  padding: 24px;
+  border-radius: 16px;
+  background: white;
+  box-shadow: 0 20px 60px #19172a35;
+}
+
+.sm-modal-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.sm-modal-head h2 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.sm-modal-head p {
+  margin: 6px 0 0;
+  color: #85879a;
+  font-size: 12px;
+}
+
+.sm-close {
+  border: 0;
+  background: none;
+  color: #77798c;
+  font-size: 24px;
+  cursor: pointer;
+}
+
+.sm-form {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.sm-form label {
+  display: grid;
+  gap: 6px;
+  color: #5d5f70;
+  font-size: 12px;
+}
+
+.sm-form input,
+.sm-form select {
+  width: 100%;
+  height: 39px;
+  padding: 0 10px;
+  border: 1px solid #e5e5ed;
+  border-radius: 8px;
+  background: white;
+  color: #242536;
+  font:
+    13px Arial,
+    sans-serif;
+}
+
+.sm-form input:focus,
+.sm-form select:focus {
+  border-color: #7665dc;
+  outline: 2px solid #7665dc20;
+}
+
+.sm-form-wide,
+.sm-form-actions {
+  grid-column: 1 / -1;
+}
+
+.sm-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.sm-cancel {
+  padding: 10px 14px;
+  border: 1px solid #e5e5ed;
+  border-radius: 8px;
+  background: white;
+  color: #5d5f70;
+  cursor: pointer;
+}
+
+/* 전체 일정 목록 */
+.sm-list-modal {
+  display: flex;
+  max-height: min(80vh, 720px);
+  flex-direction: column;
+}
+
+.sm-list-content {
+  overflow-y: auto;
+}
+
+.sm-list-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 0;
+  border-top: 1px solid #f0f0f4;
+}
+
+.sm-list-item-info {
+  display: grid;
+  justify-items: start;
+  gap: 4px;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.sm-list-date,
+.sm-list-item-info small {
+  color: #85879a;
+  font-size: 11px;
+}
+
+.sm-list-item-info strong {
+  overflow: hidden;
+  max-width: 100%;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sm-list-all-btn {
+  margin-top: 6px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #6858c8;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+/* 작은 화면에서는 패널을 세로로 배치합니다. */
+@media (max-width: 1000px) {
+  .sm-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .sm-sidebar {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 680px) {
+  .schedule-app {
+    padding: 18px 12px;
+  }
+
+  .sm-stats {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .sm-heading-actions {
+    width: 100%;
+  }
+
+  .sm-top-right span {
+    display: none;
+  }
+
+  .sm-calendar-head {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .sm-search {
+    flex: 1;
+  }
+
+  .sm-day {
+    min-height: 74px;
+    padding: 6px 3px;
+  }
+
+  .sm-event {
+    font-size: 9px;
+  }
+
+  .sm-sidebar {
+    grid-template-columns: 1fr;
+  }
+
+  .sm-modal {
+    padding: 19px;
+  }
+}
