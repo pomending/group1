@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-asdasdasdasdasdasd
 
 // 고객사 더미 데이터 가져오기
 import { customerList } from "./CustomerDummy";
