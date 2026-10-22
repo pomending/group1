@@ -144,7 +144,7 @@ function ProjectList(props) {
                                             </td>
 
                                             <td>
-                                                <button className="pm-view-btn">
+                                                <button className="pm-view-btn" onClick={(e)=>{props.setPage('detail')}}>
                                                     보기
                                                 </button>
                                             </td>

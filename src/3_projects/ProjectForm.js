@@ -3,30 +3,126 @@ import { useState } from "react";
 import "./ProjectForm.css";
 
 function ProjectForm(props) {
-    const [name, setName] = useState('');
-    const [customer, setCustomer] = useState('');
+    const [projectName, setProjectName] = useState('');
     const [manager, setManager] = useState('김민수');
     const [due, setDue] = useState('');
+    const [selQuotation, setSelQuotation] = useState('')
+
+    const quotations = [
+        {
+            id: 1,
+            customerId: 1,
+            status: "승인",
+            items: [
+                {
+                    productId: 1,
+                    productName: "스테인리스 텀블러",
+                    quantity: 300,
+                    unitPrice: 8000
+                }
+            ]
+        },
+        {
+            id: 2,
+            customerId: 2,
+            status: "승인",
+            items: [
+                {
+                    productId: 2,
+                    productName: "캔버스 에코백",
+                    quantity: 500,
+                    unitPrice: 5000
+                }
+            ]
+        },
+        {
+            id: 3,
+            customerId: 3,
+            status: "승인",
+            items: [
+                {
+                    productId: 3,
+                    productName: "세라믹 머그컵",
+                    quantity: 400,
+                    unitPrice: 6000
+                },
+                {
+                    productId: 2,
+                    productName: "캔버스 에코백",
+                    quantity: 200,
+                    unitPrice: 5000
+                }
+            ]
+        },
+        {
+            id: 4,
+            customerId: 1,
+            status: "승인 대기",
+            items: [
+                {
+                    productId: 4,
+                    productName: "아크릴 키링",
+                    quantity: 1000,
+                    unitPrice: 2500
+                }
+            ]
+        },
+        {
+            id: 5,
+            customerId: 4,
+            status: "거절",
+            items: [
+                {
+                    productId: 1,
+                    productName: "스테인리스 텀블러",
+                    quantity: 100,
+                    unitPrice: 8500
+                }
+            ]
+        },
+        {
+            id: 6,
+            customerId: 4,
+            status: "승인",
+            items: [
+                {
+                    productId: 4,
+                    productName: "아크릴 키링",
+                    quantity: 800,
+                    unitPrice: 2300
+                }
+            ]
+        }
+    ];
+
+    const selectedQuotation = quotations.find(
+        q => q.id === Number(selQuotation)
+    )
+
+    const formatQuotationId = (id) => {
+        return `QT-${String(id).padStart(3, '0')}`;
+    };
 
     const handleSubmit = (e) => {
         e.preventDefault();
 
-        if (name.trim() === '') {
+        if (projectName.trim() === '') {
             alert('프로젝트명을 입력하세요');
             return;
         }
 
-        if (customer.trim() === '') {
-            alert('고객사를 입력하세요');
+        if (!selectedQuotation || selectedQuotation.status !== "승인") {
+            alert("승인된 견적을 선택하세요.");
             return;
         }
 
         props.setProjects(prev => [...prev, {
             id: Math.max(0, ...prev.map(p => Number(p.id) || 0)) + 1,
-            name: name.trim(),
-            customer: customer.trim(),
+            projectName: projectName.trim(),
             manager: manager,
             dueDate: due,
+            quotationId: Number(selQuotation),
+            customerId: selectedQuotation.customerId,
             status: '대기'
         }]);
 
@@ -61,7 +157,7 @@ function ProjectForm(props) {
                     <div className="pf-card-header">
                         <div>
                             <span className="pf-section-num">
-                                01 / PROJECT INFO
+                                PROJECT INFO
                             </span>
                             <h3>프로젝트 기본 정보</h3>
                             <p>프로젝트 진행에 필요한 정보를 등록합니다.</p>
@@ -74,27 +170,93 @@ function ProjectForm(props) {
                             <label htmlFor="pf-name">
                                 프로젝트명 <span className="pf-required">*</span>
                             </label>
-                            <input
-                                id="pf-name"
-                                name="name"
-                                value={name}
-                                placeholder="예: ABC대학교 창립기념 텀블러 제작"
-                                onChange={(e) => setName(e.target.value)}
-                            />
-                            <small>프로젝트를 구분할 수 있는 이름을 입력하세요.</small>
-                        </div>
 
-                        <div className="pf-field">
-                            <label htmlFor="pf-customer">
-                                고객사 <span className="pf-required">*</span>
-                            </label>
-                            <input
-                                id="pf-customer"
-                                name="customer"
-                                value={customer}
-                                placeholder="예: ABC대학교"
-                                onChange={(e) => setCustomer(e.target.value)}
-                            />
+                            <input value={projectName} onChange={(e) => { setProjectName(e.target.value) }} />
+
+                            <label htmlFor="pf-quotation">연결 견적 선택</label>
+
+                            <select
+                                id="pf-quotation"
+                                name="quotation"
+                                value={selQuotation}
+                                onChange={(e) => setSelQuotation(e.target.value)}
+                            >
+                                <option value="">견적을 선택하세요</option>
+
+                                {quotations
+                                    .filter(q => q.status === "승인")
+                                    .map(q => (
+                                        <option key={q.id} value={q.id}>
+                                            {formatQuotationId(q.id)} | 고객 {q.customerId}
+                                        </option>
+                                    ))}
+                            </select>
+
+                            {selectedQuotation && (
+                                <div className="pf-quotation-preview">
+
+                                    <div className="pf-quotation-title">
+                                        <h4>선택된 견적 정보</h4>
+                                        <span className="pf-approved">승인 완료</span>
+                                    </div>
+
+                                    <div className="pf-quotation-meta">
+                                        <div>
+                                            <span>견적 번호</span>
+                                            <strong>
+                                                {formatQuotationId(selectedQuotation.id)}
+                                            </strong>
+                                        </div>
+
+                                        <div>
+                                            <span>고객 ID</span>
+                                            <strong>{selectedQuotation.customerId}</strong>
+                                        </div>
+                                    </div>
+
+                                    <div className="pf-quotation-table-wrap">
+                                        <table className="pf-quotation-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>상품명</th>
+                                                    <th>수량</th>
+                                                    <th>단가</th>
+                                                    <th>금액</th>
+                                                </tr>
+                                            </thead>
+
+                                            <tbody>
+                                                {selectedQuotation.items.map((product, index) => (
+                                                    <tr key={index}>
+                                                        <td>{product.productName}</td>
+                                                        <td>{product.quantity}개</td>
+                                                        <td>
+                                                            {product.unitPrice.toLocaleString()}원
+                                                        </td>
+                                                        <td>
+                                                            {(product.quantity * product.unitPrice)
+                                                                .toLocaleString()}원
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+
+                                    <div className="pf-quotation-summary">
+                                        <span>총 견적 금액</span>
+                                        <strong>
+                                            {selectedQuotation.items.reduce(
+                                                (sum, product) =>
+                                                    sum + product.quantity * product.unitPrice,
+                                                0
+                                            ).toLocaleString()}원
+                                        </strong>
+                                    </div>
+
+                                </div>
+                            )}
+
                         </div>
 
                         <div className="pf-field">
