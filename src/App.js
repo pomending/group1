@@ -7,6 +7,8 @@ import ProjectPage from "./3_projects/ProjectPage";
 import TaskPage from "./4_tasks/TaskPage";
 import SchedulePage from "./5_schedule/SchedulePage";
 import DashboardPage from "./6_dashboard/DashboardPage";
+import QuotationList from "./2_quotation/QuotationList";
+import ProductPage from "./2_quotation/ProductPage";
 
 function App() {
   return (
@@ -27,6 +29,8 @@ function App() {
           <Route path="/projects" element={<ProjectPage />} />
           <Route path="/tasks" element={<TaskPage />} />
           <Route path="/schedule" element={<SchedulePage />} />
+          <Route path="/quotation/list" element={<QuotationList/>}/>
+          <Route path="/product" element={<ProductPage/>}/>
         </Routes>
       </div>
     </BrowserRouter>
