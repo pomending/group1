@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-asdasdasdasdasdasd
+
 
 // 고객사 더미 데이터 가져오기
 import { customerList } from "./CustomerDummy";
@@ -19,6 +19,21 @@ function CrmPage() {
 
 
 
+    // 현재 페이지 번호를 기억해서 해당 페이지의 고객 목록을 보여주기위해 저장하는 state(페이지번호)
+    const [currentPage, setCurrentPage] = useState(1);
+    //한페이지에 나오는 고객목록 수
+    const itemsPerPage = 10;
+
+    // 현재 페이지에 보여줄 고객 10명만 가져오기 ,const 변수명=배열.slice(0,1)0부터1까지가져와
+    const currentCustomers = searchResult.slice(
+        // 시작 위치 계산 (1페이지=0, 2페이지=10)
+        (currentPage - 1) * itemsPerPage,
+        // 끝 위치 계산 (1페이지=10, 2페이지=20)
+        (currentPage - 1) * itemsPerPage + itemsPerPage);
+
+    //검색된 고객 수를 기준으로 전체페이지수 계산( 소수점 올림 Math.ceil() )
+    const totalPages = Math.ceil(searchResult.length/itemsPerPage);
+
     // 검색 버튼을 클릭하면 실행되는 함수
     function searchCustomer() {
 
@@ -33,6 +48,13 @@ function CrmPage() {
         );
     }
 
+    //검색후 다시 초기 전체목록으로 초기화시키는 버튼만드는 함수
+    function resetSearch() {
+
+        setSearch("")
+        setSearchResult(customerList)
+    }
+
 
     return (
         <div className="crm-page">
@@ -43,15 +65,15 @@ function CrmPage() {
 
             <input
                 placeholder="업체명을 입력하세요"
+                value={search}
 
                 // 입력할 때마다 search state 업데이트
                 onChange={(e) => setSearch((e.target.value))}
             />
 
 
-            <button onClick={searchCustomer}>
-                검색
-            </button>
+            <button onClick={searchCustomer}>검색</button>
+            <button onClick={resetSearch}>초기화</button>
 
 
             <table>
@@ -77,7 +99,7 @@ function CrmPage() {
 
 
 
-                    {searchResult.map((customer) => (
+                    {currentCustomers.map((customer) => (
                         // 고객 한 명당 하나의 행(tr) 생성
                         // key : React가 각 행을 구분하는 고유값
                         <tr key={customer.id}>
@@ -98,6 +120,11 @@ function CrmPage() {
                     ))}
                 </tbody>
             </table>
+            <button onClick={()=>setCurrentPage(currentPage-1)}
+                    disabled={currentPage===1}>◀</button>
+            <span>{currentPage}</span>
+            <button onClick={()=>setCurrentPage(currentPage+1)}
+                    disabled={currentPage===totalPages}>▶</button>
         </div>
     );
 }
