@@ -1,0 +1,60 @@
+
+/* 공통 커뮤니티 디자인 가져오기 */
+@import "./Community.css";
+
+/* 글쓰기 전체 영역 */
+.community-write {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+/* 제목, 작성자, 내용 라벨 */
+.community-write label {
+    font-size: 14px;
+    font-weight: bold;
+    color: #263a49;
+    margin-top: 10px;
+}
+
+/* 제목과 작성자 입력창 */
+.community-write input {
+    width: 100%;
+    padding: 13px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-size: 14px;
+    font-family: inherit;
+    background-color: white;
+}
+
+/* 내용 입력창 */
+.community-write textarea {
+    width: 100%;
+    min-height: 300px;
+    padding: 15px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-size: 14px;
+    font-family: inherit;
+    resize: vertical;
+    background-color: white;
+}
+
+/* 입력창을 선택했을 때 */
+.community-write input:focus,
+.community-write textarea:focus {
+    outline: none;
+    border-color: #527c94;
+}
+
+/* 입력 안내 문구 */
+.community-write input::placeholder,
+.community-write textarea::placeholder {
+    color: #aaa;
+}
+
+/* 등록·취소 버튼 영역 */
+.community-write .community-actions {
+    margin-top: 20px;
+}

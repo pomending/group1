@@ -1,0 +1,156 @@
+
+/* 커뮤니티 전체 */
+.community {
+    background-color: #f5f7fa;
+    min-height: 100vh;
+    padding: 30px;
+    box-sizing: border-box;
+}
+
+.community * {
+    box-sizing: border-box;
+}
+
+/* 커뮤니티 제목 */
+.community h1 {
+    color: #263a49;
+    font-size: 26px;
+    margin: 0 0 15px;
+}
+
+/* 커뮤니티 설명 */
+.community > p {
+    color: #888;
+    font-size: 14px;
+    margin-bottom: 25px;
+}
+
+/* 게시판 본문 */
+.community-board {
+    background-color: white;
+    border: 1px solid #e2e5e8;
+    border-radius: 8px;
+    padding: 25px;
+    overflow-x: auto;
+}
+
+/* 게시글 목록 제목과 글쓰기 버튼 */
+.community-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+}
+
+.community-top h3 {
+    color: #263a49;
+    margin: 0;
+    font-size: 18px;
+}
+
+/* 게시글 목록 표 */
+.community-board table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: center;
+}
+
+/* 표의 제목과 내용 */
+.community-board th,
+.community-board td {
+    padding: 15px;
+    border-bottom: 1px solid #e2e5e8;
+    font-size: 14px;
+}
+
+/* 표 제목 */
+.community-board th {
+    background-color: #f1f3f5;
+    color: #263a49;
+    font-weight: bold;
+}
+
+/* 게시글 제목은 왼쪽 정렬 */
+.community-board td:nth-child(2) {
+    text-align: left;
+}
+
+/* 게시글 제목 링크 */
+.post-title {
+    color: #263a49;
+    text-decoration: none;
+    font-size: 14px;
+}
+
+.post-title:hover {
+    text-decoration: underline;
+}
+
+/* 게시글이 없을 때 */
+.community-empty {
+    color: #888;
+    text-align: center;
+    padding: 30px;
+}
+
+/* 뒤로가기 링크 */
+.community-back {
+    display: inline-block;
+    margin-bottom: 20px;
+    color: #263a49;
+    text-decoration: none;
+    font-size: 14px;
+}
+
+/* 글쓰기, 등록하기 버튼 */
+.community-button {
+    display: inline-block;
+    background-color: #263a49;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    text-decoration: none;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.community-button:hover {
+    background-color: #38566b;
+}
+
+/* 취소, 목록으로 버튼 */
+.community-cancel {
+    display: inline-block;
+    background-color: white;
+    color: #263a49;
+    border: 1px solid #ddd;
+    padding: 10px 20px;
+    border-radius: 5px;
+    text-decoration: none;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+/* 버튼들을 오른쪽에 배치 */
+.community-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+/* 작은 화면 */
+@media (max-width: 700px) {
+    .community {
+        padding: 15px;
+    }
+
+    .community-board {
+        padding: 15px;
+    }
+
+    .community-board table {
+        min-width: 430px;
+    }
+}
