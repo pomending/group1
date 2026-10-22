@@ -3,6 +3,7 @@ import React, { useState } from "react";
 import './projects.css';
 import ProjectList from "./ProjectList";
 import ProjectForm from "./ProjectForm";
+import ProjectDetail from "./ProjectDetail";
 
 function ProjectPage() {
 
@@ -52,7 +53,10 @@ function ProjectPage() {
             {page === 'newproject' &&
                 <ProjectForm page={page} setPage={setPage} 
                              projects={projects} setProjects={setProjects}/>
-            } 
+            }
+            {page === 'detail' && 
+                <ProjectDetail />
+            }
         </div>
     );
 }

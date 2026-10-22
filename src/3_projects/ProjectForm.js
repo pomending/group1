@@ -6,6 +6,7 @@ function ProjectForm(props) {
     const [projectName, setProjectName] = useState('');
     const [manager, setManager] = useState('김민수');
     const [due, setDue] = useState('');
+    const [selQuotation, setSelQuotation] = useState('')
 
     const quotations = [
         {
@@ -94,6 +95,14 @@ function ProjectForm(props) {
         }
     ];
 
+    const selectedQuotation = quotations.find(
+        q => q.id === Number(selQuotation)
+    )
+
+    const formatQuotationId = (id) => {
+        return `QT-${String(id).padStart(3, '0')}`;
+    };
+
     const handleSubmit = (e) => {
         e.preventDefault();
 
@@ -102,11 +111,18 @@ function ProjectForm(props) {
             return;
         }
 
+        if (!selectedQuotation || selectedQuotation.status !== "승인") {
+            alert("승인된 견적을 선택하세요.");
+            return;
+        }
+
         props.setProjects(prev => [...prev, {
             id: Math.max(0, ...prev.map(p => Number(p.id) || 0)) + 1,
             projectName: projectName.trim(),
             manager: manager,
             dueDate: due,
+            quotationId: Number(selQuotation),
+            customerId: selectedQuotation.customerId,
             status: '대기'
         }]);
 
@@ -115,7 +131,6 @@ function ProjectForm(props) {
 
     return (
         <div className="pf-page">
-            {/* aaa */}
             <div className="pf-container">
 
                 <button
@@ -156,24 +171,91 @@ function ProjectForm(props) {
                                 프로젝트명 <span className="pf-required">*</span>
                             </label>
 
-                            <input value={projectName} onChange={(e)=>{setProjectName(e.target.value)}}/>
+                            <input value={projectName} onChange={(e) => { setProjectName(e.target.value) }} />
 
-                            <label>연결 견적 선택</label>
+                            <label htmlFor="pf-quotation">연결 견적 선택</label>
 
-                            <select>
-                                {
-                                    quotations.map((q)=>(
-                                        <option> {q.qt_id} | {q.qt_name} </option>
-                                    ))
-                                }
+                            <select
+                                id="pf-quotation"
+                                name="quotation"
+                                value={selQuotation}
+                                onChange={(e) => setSelQuotation(e.target.value)}
+                            >
+                                <option value="">견적을 선택하세요</option>
+
+                                {quotations
+                                    .filter(q => q.status === "승인")
+                                    .map(q => (
+                                        <option key={q.id} value={q.id}>
+                                            {formatQuotationId(q.id)} | 고객 {q.customerId}
+                                        </option>
+                                    ))}
                             </select>
 
-                            <table>
-                                <caption>선택된 견적 정보</caption>
-                                <tr>
-                                    <td></td>
-                                </tr>
-                            </table>
+                            {selectedQuotation && (
+                                <div className="pf-quotation-preview">
+
+                                    <div className="pf-quotation-title">
+                                        <h4>선택된 견적 정보</h4>
+                                        <span className="pf-approved">승인 완료</span>
+                                    </div>
+
+                                    <div className="pf-quotation-meta">
+                                        <div>
+                                            <span>견적 번호</span>
+                                            <strong>
+                                                {formatQuotationId(selectedQuotation.id)}
+                                            </strong>
+                                        </div>
+
+                                        <div>
+                                            <span>고객 ID</span>
+                                            <strong>{selectedQuotation.customerId}</strong>
+                                        </div>
+                                    </div>
+
+                                    <div className="pf-quotation-table-wrap">
+                                        <table className="pf-quotation-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>상품명</th>
+                                                    <th>수량</th>
+                                                    <th>단가</th>
+                                                    <th>금액</th>
+                                                </tr>
+                                            </thead>
+
+                                            <tbody>
+                                                {selectedQuotation.items.map((product, index) => (
+                                                    <tr key={index}>
+                                                        <td>{product.productName}</td>
+                                                        <td>{product.quantity}개</td>
+                                                        <td>
+                                                            {product.unitPrice.toLocaleString()}원
+                                                        </td>
+                                                        <td>
+                                                            {(product.quantity * product.unitPrice)
+                                                                .toLocaleString()}원
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+
+                                    <div className="pf-quotation-summary">
+                                        <span>총 견적 금액</span>
+                                        <strong>
+                                            {selectedQuotation.items.reduce(
+                                                (sum, product) =>
+                                                    sum + product.quantity * product.unitPrice,
+                                                0
+                                            ).toLocaleString()}원
+                                        </strong>
+                                    </div>
+
+                                </div>
+                            )}
 
                         </div>
 
