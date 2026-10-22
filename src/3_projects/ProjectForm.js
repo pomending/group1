@@ -3,28 +3,108 @@ import { useState } from "react";
 import "./ProjectForm.css";
 
 function ProjectForm(props) {
-    const [name, setName] = useState('');
-    const [customer, setCustomer] = useState('');
+    const [projectName, setProjectName] = useState('');
     const [manager, setManager] = useState('김민수');
     const [due, setDue] = useState('');
+
+    const quotations = [
+        {
+            id: 1,
+            customerId: 1,
+            status: "승인",
+            items: [
+                {
+                    productId: 1,
+                    productName: "스테인리스 텀블러",
+                    quantity: 300,
+                    unitPrice: 8000
+                }
+            ]
+        },
+        {
+            id: 2,
+            customerId: 2,
+            status: "승인",
+            items: [
+                {
+                    productId: 2,
+                    productName: "캔버스 에코백",
+                    quantity: 500,
+                    unitPrice: 5000
+                }
+            ]
+        },
+        {
+            id: 3,
+            customerId: 3,
+            status: "승인",
+            items: [
+                {
+                    productId: 3,
+                    productName: "세라믹 머그컵",
+                    quantity: 400,
+                    unitPrice: 6000
+                },
+                {
+                    productId: 2,
+                    productName: "캔버스 에코백",
+                    quantity: 200,
+                    unitPrice: 5000
+                }
+            ]
+        },
+        {
+            id: 4,
+            customerId: 1,
+            status: "승인 대기",
+            items: [
+                {
+                    productId: 4,
+                    productName: "아크릴 키링",
+                    quantity: 1000,
+                    unitPrice: 2500
+                }
+            ]
+        },
+        {
+            id: 5,
+            customerId: 4,
+            status: "거절",
+            items: [
+                {
+                    productId: 1,
+                    productName: "스테인리스 텀블러",
+                    quantity: 100,
+                    unitPrice: 8500
+                }
+            ]
+        },
+        {
+            id: 6,
+            customerId: 4,
+            status: "승인",
+            items: [
+                {
+                    productId: 4,
+                    productName: "아크릴 키링",
+                    quantity: 800,
+                    unitPrice: 2300
+                }
+            ]
+        }
+    ];
 
     const handleSubmit = (e) => {
         e.preventDefault();
 
-        if (name.trim() === '') {
+        if (projectName.trim() === '') {
             alert('프로젝트명을 입력하세요');
-            return;
-        }
-
-        if (customer.trim() === '') {
-            alert('고객사를 입력하세요');
             return;
         }
 
         props.setProjects(prev => [...prev, {
             id: Math.max(0, ...prev.map(p => Number(p.id) || 0)) + 1,
-            name: name.trim(),
-            customer: customer.trim(),
+            projectName: projectName.trim(),
             manager: manager,
             dueDate: due,
             status: '대기'
@@ -61,7 +141,7 @@ function ProjectForm(props) {
                     <div className="pf-card-header">
                         <div>
                             <span className="pf-section-num">
-                                01 / PROJECT INFO
+                                PROJECT INFO
                             </span>
                             <h3>프로젝트 기본 정보</h3>
                             <p>프로젝트 진행에 필요한 정보를 등록합니다.</p>
@@ -74,27 +154,26 @@ function ProjectForm(props) {
                             <label htmlFor="pf-name">
                                 프로젝트명 <span className="pf-required">*</span>
                             </label>
-                            <input
-                                id="pf-name"
-                                name="name"
-                                value={name}
-                                placeholder="예: ABC대학교 창립기념 텀블러 제작"
-                                onChange={(e) => setName(e.target.value)}
-                            />
-                            <small>프로젝트를 구분할 수 있는 이름을 입력하세요.</small>
-                        </div>
 
-                        <div className="pf-field">
-                            <label htmlFor="pf-customer">
-                                고객사 <span className="pf-required">*</span>
-                            </label>
-                            <input
-                                id="pf-customer"
-                                name="customer"
-                                value={customer}
-                                placeholder="예: ABC대학교"
-                                onChange={(e) => setCustomer(e.target.value)}
-                            />
+                            <input value={projectName} onChange={(e)=>{setProjectName(e.target.value)}}/>
+
+                            <label>연결 견적 선택</label>
+
+                            <select>
+                                {
+                                    quotations.map((q)=>(
+                                        <option> {q.qt_id} | {q.qt_name} </option>
+                                    ))
+                                }
+                            </select>
+
+                            <table>
+                                <caption>선택된 견적 정보</caption>
+                                <tr>
+                                    <td></td>
+                                </tr>
+                            </table>
+
                         </div>
 
                         <div className="pf-field">
