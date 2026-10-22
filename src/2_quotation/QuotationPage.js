@@ -87,7 +87,7 @@ function QuotationPage() {
                     <tbody>
                         
                         <tr>
-                            <td>234234234</td>
+                            <td>2342342332</td>
                             <td>성민팩토리</td>
                             <td>성민키링</td>
                             <td>2026-10-12</td>
