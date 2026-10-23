@@ -1,27 +1,30 @@
+/* [오른쪽 목록의 기준이 서로 다른 이유]
+ * 즐겨찾기는 검색과 날짜 이동에 관계없이 고정해 둔 원본 일정을 보여줍니다.
+ * 선택한 날짜 일정은 현재 선택 날짜에 실제로 발생하는 일정과 필터 결과를 보여줍니다.
+ * 다가오는 일정은 전체 원본에서 완료하지 않은 가까운 발생 일정을 계산해 보여줍니다.
+ * 이 세 목록은 목적이 달라 같은 검색 결과 배열 하나로 합치면 필요한 일정이 가려질 수 있습니다.
+ * props로 전달한 onEdit, onDelete는 Manager의 함수입니다. 목록은 실행할 대상을 인자로 전달할 뿐입니다.
+ * 원본 반복 일정과 날짜별 발생 일정은 수정 범위가 다르므로 부모가 준 객체를 그대로 넘깁니다.
+ */
+import { ScheduleAgendaItem, ScheduleAttendees, ScheduleFavorite, ScheduleVisibility, ScheduleIcon } from "./ScheduleItemParts";
 import React from "react";
-import { ScheduleAgendaItem } from "./ScheduleItemParts";
 import { weekDays, getScheduleTime, getRepeatLabel } from "./scheduleData";
 import ScheduleDirectory from "./ScheduleDirectory";
-import ScheduleIcon from "./ScheduleIcon";
 
 /* 같은 원본 일정에서 여러 화면용 목록이 나오는 이유
  * directoryItems: 전체 원본입니다. 프로젝트·팀원 목록은 현재 월에 일정이 없어도 사람/이름을 보여줍니다.
  * favoriteItems: 전체 저장 자료 중 사용자가 별표를 누른 일정입니다. 검색·표시 월과 무관합니다.
  * selectedItems: 현재 선택한 하루의 일정입니다. 프로젝트 선택 조건도 부모에서 적용되어 내려옵니다.
- * upcomingSchedules: 시작 전 또는 진행 중인 미완료 일정 중 가까운 5건입니다.
+ * upcomingSchedules: 오늘 포함 7일 이내의 시작 전·진행 중인 미완료 일정 중 가까운 5건입니다.
  *
  * Sidebar는 이 배열들을 별도 state로 다시 복사하지 않습니다. 부모가 준 값을 그대로 표시합니다.
  * 만약 같은 값을 자식 state에도 저장하면 부모는 바뀌었는데 자식은 옛 목록인 문제가 생길 수 있습니다.
  * 부모가 원본을 관리하고 자식은 props로 표시하는 구조를 따라가면 값이 어디서 바뀌는지 찾기 쉽습니다.
- *
- * renderItem은 데이터를 바꾸는 함수가 아니라 JSX 한 행을 반환하는 함수입니다.
- * detailed=true는 상세 메모까지 보여 달라는 옵션입니다. renderItem(item, true)처럼 호출합니다.
- * 컴포넌트에 <ScheduleAgendaItem detailed />라고 쓰는 것도 detailed={true}와 같습니다.
  */
 // [공부 순서 5] 선택 날짜의 결과를 보여 주는 영역입니다.
 // 검색·공개 필터와 반복 계산은 이미 부모에서 처리되므로 여기서는 받은 배열만 표시합니다.
-// 부모가 넘겨준 선택 날짜의 일정과 마감 예정 목록을 보여줍니다.
-// 수정·삭제·마감 선택은 실제 데이터 처리를 하는 부모 함수에 맡깁니다.
+// 부모가 넘겨준 선택 날짜의 일정과 가까운 미완료 일정 목록을 보여줍니다.
+// 수정·삭제·완료 여부 변경은 실제 데이터를 관리하는 부모 함수에 맡깁니다.
 export default function ScheduleSidebar({
   directoryMode,
   directoryItems,
@@ -46,19 +49,6 @@ export default function ScheduleSidebar({
   onEdit,
   onStatusChange,
 }) {
-  // 같은 행사도 반복 날짜가 다르면 별개의 행입니다. key에 ID와 날짜를 함께 사용합니다.
-  // JSX를 반환하는 작은 함수로 공통 props 전달을 모으고, 상세 표시 여부만 인자로 바꿉니다.
-  const renderItem = (item, detailed = false) => (
-    <ScheduleAgendaItem
-      key={`${item.id}-${item.date}`}
-      item={item}
-      detailed={detailed}
-      onEdit={onEdit}
-      onDelete={onDelete}
-      onStatusChange={onStatusChange}
-      onToggleFavorite={onToggleFavorite}
-    />
-  );
   return (
     <aside className="sm-sidebar">
       {/* key가 바뀌면 팀원 선택도 초기화됩니다. 목록의 자료는 검색과 무관한 저장 원본입니다. */}
@@ -69,21 +59,50 @@ export default function ScheduleSidebar({
       )}
       {/* 즐겨찾기는 검색 결과를 복사하지 않습니다. 원본 일정의 별표 상태로 매번 목록을 만듭니다.
           반복 일정은 원본 한 건만 표시해 무한히 늘어나지 않으며 수정·상태 변경은 전체 규칙에 적용됩니다. */}
-        <section className="sm-card sm-favorites" aria-labelledby="sm-favorites-title">
+        <section className="sm-card" aria-labelledby="sm-favorites-title">
           <div className="sm-panel-title">
             <h3 id="sm-favorites-title">★ 즐겨찾기</h3>
             <span className="sm-muted" role="status">{favoriteItems.length}건</span>
           </div>
-          <p className="sm-search-summary">계속 확인할 일정을 모아두세요. 반복 일정은 전체 규칙이 고정됩니다.</p>
+          <p className="sm-search-summary">별표로 모아둔 일정입니다. 반복 일정의 변경은 전체에 적용됩니다.</p>
           <div className="sm-favorite-list">
+            {/* 즐겨찾기는 좁은 카드에서 읽으므로 시간과 내용을 고정된 가로 열로 나누지 않습니다.
+                map은 favoriteItems의 일정마다 아래 article을 하나씩 만듭니다. 항목의 정보와
+                버튼을 위에서 아래로 직접 배치하면 시간을 위한 고정 열에 제목이 눌리지 않습니다. */}
             {favoriteItems.map((item) => (
-              <div key={item.id}>
+              <article className="sm-favorite-item" key={item.id} style={{ "--sm-event-color": item.color }}>
+                <div className="sm-favorite-heading">
+                  {/* 제목을 누르면 수정 창이 열립니다. 별은 별도로 눌러 즐겨찾기를 해제합니다. */}
+                  <button type="button" className="sm-favorite-title" onClick={() => onEdit(item)}
+                    aria-label={`${item.title} 일정 수정`}>
+                    <strong>{item.title}</strong>
+                  </button>
+                  <ScheduleFavorite item={item} onToggleFavorite={onToggleFavorite} />
+                </div>
+                <div className="sm-favorite-time-row">
+                  <span className="sm-favorite-time">
+                    <ScheduleIcon name="clock" />
+                    <time>{getScheduleTime(item)}</time>
+                  </span>
+                  <ScheduleVisibility visibility={item.visibility} />
+                </div>
+                {/* dl은 이름과 값의 묶음입니다. dt는 '프로젝트' 같은 설명 이름,
+                    dd는 실제 값입니다. 두 줄로 나눠 제목·프로젝트·담당자가 섞이지 않게 합니다. */}
+                <dl className="sm-favorite-info">
+                  <dt>프로젝트</dt><dd>{item.project || "프로젝트 없음"}</dd>
+                  <dt>담당자</dt><dd>{item.person}</dd>
+                </dl>
+                {/* 참석자가 있는 일정은 기존처럼 명단도 표시하고, 없으면 이 부품이 아무것도 만들지 않습니다. */}
+                <ScheduleAttendees item={item} paragraph />
                 <button type="button" className="sm-favorite-date"
                   aria-label={`${item.title} 즐겨찾기 일정으로 이동`} onClick={() => onSelectFavorite(item)}>
-                  {item.date.replaceAll("-", ".")} · {getRepeatLabel(item)}
+                  <span>
+                    <time dateTime={item.date}>{item.date.replaceAll("-", ".")}</time>
+                    {item.repeatType !== "none" && <span className="sm-favorite-repeat"> · {getRepeatLabel(item)}</span>}
+                  </span>
+                  <span className="sm-favorite-calendar-link">달력 보기 <span aria-hidden="true">↗</span></span>
                 </button>
-                {renderItem(item)}
-              </div>
+              </article>
             ))}
             {favoriteItems.length === 0 && (
               <div className="sm-empty">선택한 날짜 또는 전체 일정에서 ☆ 별을 눌러 추가하세요.</div>
@@ -128,7 +147,11 @@ export default function ScheduleSidebar({
         </div>
         {/* 일정이 있으면 항목을 반복하고, 없으면 빈 상태 안내를 표시합니다. */}
         {selectedItems.length ? (
-          selectedItems.map((item) => renderItem(item, true))
+          selectedItems.map((item) => (
+            // 같은 반복 일정도 날짜가 다르면 별개의 행입니다. key에 ID와 날짜를 함께 사용합니다.
+            <ScheduleAgendaItem key={`${item.id}-${item.date}`} item={item}
+              onEdit={onEdit} onDelete={onDelete} onStatusChange={onStatusChange} onToggleFavorite={onToggleFavorite} />
+          ))
         ) : (
           <div className="sm-empty">등록된 일정이 없습니다.</div>
         )}
@@ -143,7 +166,7 @@ export default function ScheduleSidebar({
             여기서 날짜를 다시 계산하거나 일정을 추가로 걸러 내지는 않습니다. 아이콘은 장식입니다. */}
         <p className="sm-panel-description">
           <span aria-hidden="true"><ScheduleIcon name="clock" /></span>
-          시작 전·진행 중인 미완료 일정 중 가까운 5건입니다.
+          오늘부터 7일 이내의 미완료 일정 중 가까운 5건입니다.
         </p>
         {/* 부모가 시작·종료 시각을 비교한 결과를 표시합니다. 같은 반복 원본도 발생 날짜가 다르면
             별개의 일정이므로 key에는 id와 date를 함께 씁니다. 클릭하면 해당 날짜의 일별 화면을 엽니다. */}
