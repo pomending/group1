@@ -1,407 +1,94 @@
-
-/* 전체 배경 */
+/* ProjectForm — 미리보기를 우측에 배치해 세로 길이 축소 */
 .pf-page {
-    min-height: 100vh;
-    padding: 36px 24px 70px;
-    background: #f6f7fb;
-    color: #303348;
+  --pf-accent: #7565d8;
+  --pf-muted: #85899a;
+  --pf-line: #e9e9f1;
+  min-height: 100vh;
+  padding: 18px 24px 30px;
+  background: #f6f7fb;
+  color: #303348;
+  font: 14px/1.4 Arial, sans-serif;
 }
+.pf-page, .pf-page * { box-sizing: border-box; }
+.pf-container { max-width: 1200px; margin: 0 auto; }
+.pf-back { padding: 0; margin-bottom: 12px; border: 0; background: none; color: var(--pf-accent); font-size: 13px; font-weight: 600; cursor: pointer; }
+.pf-back:hover { color: #5949be; }
+.pf-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 14px; }
+.pf-eyebrow, .pf-section-num { display: block; margin: 0 0 4px; color: var(--pf-accent); font-size: 10px; font-weight: 700; letter-spacing: .8px; }
+.pf-heading h2 { margin: 0; font-size: 24px; }
+.pf-subtitle { margin: 3px 0 0; color: var(--pf-muted); font-size: 12px; }
+.pf-heading-tag { padding: 7px 10px; border-radius: 8px; background: #edeaff; color: var(--pf-accent); font-size: 12px; white-space: nowrap; }
 
-.pf-page * {
-    box-sizing: border-box;
+/* 기본 폼 카드 */
+.pf-card { padding: 18px 20px; border: 1px solid var(--pf-line); border-radius: 11px; background: #fff; }
+.pf-card-header { padding-bottom: 10px; margin-bottom: 14px; border-bottom: 1px solid var(--pf-line); }
+.pf-card-header h3 { margin: 0; font-size: 17px; }
+.pf-card-header p { margin: 3px 0 0; color: var(--pf-muted); font-size: 12px; }
+.pf-fields { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+.pf-field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.pf-full { grid-column: 1 / -1; }
+.pf-field label { color: #4b4e63; font-size: 12px; font-weight: 600; }
+.pf-required { color: #df6a76; }
+.pf-field input, .pf-field select, .pf-field textarea { width: 100%; min-width: 0; height: 36px; padding: 0 10px; border: 1px solid #dedee9; border-radius: 7px; background: #fff; color: #35374d; font: inherit; font-size: 13px; }
+.pf-field textarea { height: auto; padding: 9px 10px; }
+.pf-field :is(input, select, textarea):focus { border-color: var(--pf-accent); outline: 2px solid #7565d829; }
+.pf-full > label:not(:first-child) { margin-top: 4px; }
+
+/* 견적 선택 후: 왼쪽에 입력 2개, 오른쪽에 견적 미리보기 */
+.pf-full:has(.pf-quotation-preview) {
+  display: grid;
+  grid-template-columns: minmax(245px, .75fr) minmax(0, 1.25fr);
+  grid-template-rows: 16px 36px 16px 36px minmax(0, 1fr);
+  gap: 6px 18px;
+  align-content: start;
 }
+.pf-full:has(.pf-quotation-preview) > label:first-of-type { grid-area: 1 / 1; }
+.pf-full:has(.pf-quotation-preview) > #pf-name { grid-area: 2 / 1; }
+.pf-full:has(.pf-quotation-preview) > label:nth-of-type(2) { grid-area: 3 / 1; margin-top: 4px; }
+.pf-full:has(.pf-quotation-preview) > #pf-quotation { grid-area: 4 / 1; }
+.pf-full:has(.pf-quotation-preview) > .pf-quotation-preview { grid-area: 1 / 2 / 6 / 3; }
 
-.pf-container {
-    max-width: 1050px;
-    margin: 0 auto;
+/* 견적 미리보기 */
+.pf-quotation-preview { min-width: 0; padding: 12px 14px; border: 1px solid #e6e1fa; border-radius: 9px; background: #faf9ff; }
+.pf-quotation-title { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
+.pf-quotation-title h4 { margin: 0; color: #43415d; font-size: 14px; }
+.pf-approved { padding: 4px 9px; border-radius: 20px; background: #e5f5ed; color: #34895f; font-size: 11px; font-weight: 600; }
+.pf-quotation-meta { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+.pf-quotation-meta > div { display: flex; flex-direction: column; gap: 2px; }
+.pf-quotation-meta span { color: #9391a5; font-size: 11px; }
+.pf-quotation-meta strong { color: #3b3a53; font-size: 12px; }
+.pf-quotation-table-wrap { overflow-x: auto; border: 1px solid #eeedf5; border-radius: 7px; background: #fff; }
+.pf-quotation-table { width: 100%; min-width: 440px; border-collapse: collapse; font-size: 12px; }
+.pf-quotation-table th { padding: 7px 9px; background: #f5f4fb; color: #797b90; font-weight: 600; text-align: left; }
+.pf-quotation-table td { padding: 8px 9px; border-top: 1px solid #eeedf5; color: #43465b; }
+.pf-quotation-table :is(th, td):not(:first-child) { text-align: right; }
+.pf-quotation-summary { display: flex; align-items: center; justify-content: flex-end; gap: 16px; margin-top: 9px; }
+.pf-quotation-summary span { color: #83869a; font-size: 12px; }
+.pf-quotation-summary strong { color: var(--pf-accent); font-size: 17px; }
+
+/* 상태 / 등록 버튼 */
+.pf-status-box { display: flex; align-items: center; gap: 8px; min-height: 36px; padding: 0 10px; border: 1px solid #f4e8cc; border-radius: 7px; background: #fff8ea; color: #ab803c; font-size: 12px; font-weight: 600; }
+.pf-status-dot { width: 7px; height: 7px; flex-shrink: 0; border-radius: 50%; background: #d5a356; }
+.pf-status-hint { margin-left: auto; color: #b5a17e; font-size: 11px; font-weight: 400; }
+.pf-footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 15px; padding-top: 12px; border-top: 1px solid var(--pf-line); }
+.pf-footer p { margin: 0; color: #9699a9; font-size: 11px; }
+.pf-actions { display: flex; gap: 8px; }
+.pf-btn { padding: 9px 15px; border-radius: 7px; font-size: 12px; font-weight: 600; cursor: pointer; }
+.pf-btn-cancel { border: 1px solid #e9e9f0; background: #f3f3f7; color: #747789; }
+.pf-btn-submit { border: 1px solid var(--pf-accent); background: var(--pf-accent); color: #fff; }
+.pf-btn-cancel:hover { background: #e9e9f0; }
+.pf-btn-submit:hover { background: #5e4fc0; }
+
+@media (max-width: 900px) {
+  .pf-full:has(.pf-quotation-preview) { display: flex; flex-direction: column; gap: 6px; }
+  .pf-quotation-preview { margin-top: 6px; }
+  .pf-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
-
-/* 뒤로 가기 */
-.pf-back {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 28px;
-    padding: 0;
-    border: none;
-    background: transparent;
-    color: #7565d8;
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-}
-
-.pf-back:hover {
-    color: #5949be;
-}
-
-/* 상단 헤더 */
-.pf-heading {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 20px;
-    margin-bottom: 28px;
-}
-
-.pf-eyebrow {
-    margin: 0 0 8px;
-    color: #7565d8;
-    font-size: 12px;
-    font-weight: 700;
-    letter-spacing: 1px;
-}
-
-.pf-heading h2 {
-    margin: 0;
-    font-size: 28px;
-    color: #292b44;
-}
-
-.pf-subtitle {
-    margin: 9px 0 0;
-    color: #898d9f;
-    font-size: 14px;
-}
-
-.pf-heading-tag {
-    padding: 11px 17px;
-    border-radius: 10px;
-    background: #edeaff;
-    color: #7565d8;
-    font-size: 13px;
-    font-weight: 600;
-    white-space: nowrap;
-}
-
-/* 등록 카드 */
-.pf-card {
-    padding: 32px;
-    background: #ffffff;
-    border: 1px solid #ececf3;
-    border-radius: 16px;
-    box-shadow: 0 4px 18px rgba(40, 40, 80, 0.04);
-}
-
-.pf-card-header {
-    padding-bottom: 24px;
-    margin-bottom: 28px;
-    border-bottom: 1px solid #ededf3;
-}
-
-.pf-section-num {
-    display: block;
-    margin-bottom: 8px;
-    color: #7565d8;
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 1px;
-}
-
-.pf-card-header h3 {
-    margin: 0 0 8px;
-    color: #292b44;
-    font-size: 20px;
-}
-
-.pf-card-header p {
-    margin: 0;
-    color: #9295a6;
-    font-size: 13px;
-}
-
-/* 입력 영역 */
-.pf-fields {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 28px 24px;
-}
-
-.pf-field {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    min-width: 0;
-}
-
-.pf-full {
-    grid-column: 1 / -1;
-}
-
-.pf-field label {
-    color: #4b4e63;
-    font-size: 14px;
-    font-weight: 600;
-}
-
-.pf-required {
-    color: #df6a76;
-}
-
-.pf-field input,
-.pf-field select,
-.pf-field textarea {
-    width: 100%;
-    min-width: 0;
-    padding: 12px 14px;
-    border: 1px solid #dedee9;
-    border-radius: 9px;
-    background: #ffffff;
-    color: #35374d;
-    font-size: 14px;
-    font-family: inherit;
-    outline: none;
-    transition: border-color 0.2s, box-shadow 0.2s;
-}
-
-.pf-field input:focus,
-.pf-field select:focus,
-.pf-field textarea:focus {
-    border-color: #7565d8;
-    box-shadow: 0 0 0 3px rgba(117, 101, 216, 0.12);
-}
-
-.pf-field input::placeholder {
-    color: #aaadba;
-}
-
-.pf-field select {
-    cursor: pointer;
-}
-
-/* 프로젝트명과 견적 선택 사이 간격 */
-.pf-full > label:not(:first-child) {
-    margin-top: 18px;
-}
-
-/* 선택 견적 미리보기 */
-.pf-quotation-preview {
-    margin-top: 8px;
-    padding: 24px;
-    background: #faf9ff;
-    border: 1px solid #e6e1fa;
-    border-radius: 12px;
-}
-
-.pf-quotation-title {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    margin-bottom: 24px;
-}
-
-.pf-quotation-title h4 {
-    margin: 0;
-    color: #43415d;
-    font-size: 16px;
-}
-
-.pf-approved {
-    padding: 6px 12px;
-    background: #e5f5ed;
-    border-radius: 20px;
-    color: #34895f;
-    font-size: 12px;
-    font-weight: 600;
-}
-
-/* 견적 기본 정보 */
-.pf-quotation-meta {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 16px;
-    margin-bottom: 20px;
-}
-
-.pf-quotation-meta div {
-    display: flex;
-    flex-direction: column;
-    gap: 7px;
-}
-
-.pf-quotation-meta span {
-    color: #9391a5;
-    font-size: 12px;
-}
-
-.pf-quotation-meta strong {
-    color: #3b3a53;
-    font-size: 14px;
-}
-
-/* 견적 상품 테이블 */
-.pf-quotation-table-wrap {
-    overflow-x: auto;
-    background: #ffffff;
-    border: 1px solid #eeedf5;
-    border-radius: 9px;
-}
-
-.pf-quotation-table {
-    width: 100%;
-    min-width: 520px;
-    border-collapse: collapse;
-    font-size: 13px;
-}
-
-.pf-quotation-table th {
-    padding: 14px;
-    background: #f5f4fb;
-    color: #797b90;
-    font-weight: 600;
-    text-align: left;
-}
-
-.pf-quotation-table td {
-    padding: 15px 14px;
-    color: #43465b;
-    border-top: 1px solid #eeedf5;
-}
-
-.pf-quotation-table th:not(:first-child),
-.pf-quotation-table td:not(:first-child) {
-    text-align: right;
-}
-
-.pf-quotation-table tbody tr:hover {
-    background: #faf9ff;
-}
-
-.pf-quotation-summary {
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    gap: 24px;
-    padding-top: 20px;
-}
-
-.pf-quotation-summary span {
-    color: #83869a;
-    font-size: 13px;
-}
-
-.pf-quotation-summary strong {
-    color: #7565d8;
-    font-size: 21px;
-}
-
-/* 프로젝트 상태 */
-.pf-status-box {
-    display: flex;
-    align-items: center;
-    gap: 9px;
-    padding: 12px 14px;
-    background: #fff8ea;
-    border: 1px solid #f4e8cc;
-    border-radius: 9px;
-    color: #ab803c;
-    font-size: 14px;
-    font-weight: 600;
-}
-
-.pf-status-dot {
-    width: 9px;
-    height: 9px;
-    background: #d5a356;
-    border-radius: 50%;
-}
-
-.pf-status-hint {
-    margin-left: auto;
-    color: #b5a17e;
-    font-size: 12px;
-    font-weight: 400;
-}
-
-/* 하단 버튼 */
-.pf-footer {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 20px;
-    margin-top: 36px;
-    padding-top: 24px;
-    border-top: 1px solid #ededf3;
-}
-
-.pf-footer p {
-    margin: 0;
-    color: #9699a9;
-    font-size: 12px;
-}
-
-.pf-actions {
-    display: flex;
-    gap: 10px;
-}
-
-.pf-btn {
-    padding: 12px 22px;
-    border-radius: 9px;
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background 0.2s;
-}
-
-.pf-btn-cancel {
-    background: #f3f3f7;
-    border: 1px solid #e9e9f0;
-    color: #747789;
-}
-
-.pf-btn-cancel:hover {
-    background: #e9e9f0;
-}
-
-.pf-btn-submit {
-    background: #7565d8;
-    border: 1px solid #7565d8;
-    color: white;
-}
-
-.pf-btn-submit:hover {
-    background: #5e4fc0;
-}
-
-/* 작은 화면 대응 */
-@media (max-width: 700px) {
-    .pf-page {
-        padding: 20px 14px 40px;
-    }
-
-    .pf-card {
-        padding: 20px;
-    }
-
-    .pf-heading {
-        align-items: flex-start;
-    }
-
-    .pf-heading h2 {
-        font-size: 23px;
-    }
-
-    .pf-heading-tag {
-        display: none;
-    }
-
-    .pf-fields,
-    .pf-quotation-meta {
-        grid-template-columns: 1fr;
-    }
-
-    .pf-quotation-preview {
-        padding: 16px;
-    }
-
-    .pf-footer {
-        flex-direction: column;
-        align-items: stretch;
-    }
-
-    .pf-actions {
-        justify-content: flex-end;
-    }
+@media (max-width: 600px) {
+  .pf-page { padding: 14px 12px 24px; }
+  .pf-heading-tag { display: none; }
+  .pf-card { padding: 14px; }
+  .pf-fields, .pf-quotation-meta { grid-template-columns: 1fr; }
+  .pf-footer { align-items: stretch; flex-direction: column; }
+  .pf-actions { justify-content: flex-end; }
 }
