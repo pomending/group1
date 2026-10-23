@@ -1,154 +1,127 @@
 
 import React, { useState } from "react";
 
+ // 상품 목록 관리 css
+import './TaskPage.css';
+
 function TaskPage() {
-  // 상품 목록 a
-  const [products, setProducts] = useState([]);
 
-  // 입력값 관리
-  const [productName, setProductName] = useState("");
-  const [worker, setWorker] = useState("");
-  const [file, setFile] = useState(null);
+const [products, setProducts] = useState([]);
+const [activeTab, setActiveTab] = useState("all")
 
-  // 상품 등록 함수
-  // aaa
-  const addProduct = (e) => {
-    e.preventDefault();
+//제작 중인 상품 개수 계산
+const makingCount = products.filter(
+   (product) => product.status === "제작중"
+).length;
 
-    if (!productName || !worker) {
-      alert("상품명과 담당자를 입력하세요.");
-      return;
-    }
+const makingWaiting = products.filter(
+  (product) => product.status === "검수대기"
+).length;
 
-    const newProduct = {
-      id: Date.now(),
-      name: productName,
-      worker: worker,
-      image: file ? URL.createObjectURL(file) : null,
-      status: "제작 중",
-    };
+const Packaging = products.filter(
+  (product) => product.status === "포장중"
+).length;
 
-    setProducts([...products, newProduct]);
+const complete = products.filter(
+  (product) => product.status === "등록완료"
+).length;
 
-    // 입력값 초기화
-    setProductName("");
-    setWorker("");
-    setFile(null);
-    e.target.reset();
-  };
+return(
+  <div className="production-page">
+  
+    <h1>상품제작관리</h1>
 
-  // 제작 상태 변경 함수
-  const changeStatus = (id, status) => {
-    setProducts(
-      products.map((product) =>
-        product.id === id
-          ? { ...product, status: status }
-          : product
-      )
-    );
-  };
+    <div className="product-count-card">
+      <p className="product-count-title">디자인 제작 중</p>
 
-  return (
-    <div className="production-page">
-      <h1>상품제작관리</h1>
+      <h2 className="product-count-number">
+        {makingCount}
+      </h2>
+    </div>
+    <div className="product-count-card">
+      <p className="product-count-title">검수대기</p>
 
-      {/* 상품 등록 */}
-      <form onSubmit={addProduct}>
-        <h2>상품 등록</h2>
+      <h2 className="product-count-number">
+        {makingWaiting}
+      </h2>
+    </div>
+    <div className="product-count-card">
+      <p className="product-count-title">포장 진행 중</p>
 
-        <label>상품명</label>
-        <input
-          type="text"
-          value={productName}
-          onChange={(e) => setProductName(e.target.value)}
-          placeholder="상품명을 입력하세요"
-        />
+      <h2 className="product-count-number">
+        {Packaging}
+      </h2>
+    </div>
+    <div className="product-count-card">
+      <p className="product-count-title">등록완료</p>
 
-        <label>담당자</label>
-        <input
-          type="text"
-          value={worker}
-          onChange={(e) => setWorker(e.target.value)}
-          placeholder="담당자를 입력하세요"
-        />
+      <h2 className="product-count-number">
+        {complete}
+      </h2>
+    </div>
 
-        <label>디자인 파일</label>
-        <input
-          type="file"
-          accept="image/*"
-          onChange={(e) =>
-            setFile(e.target.files[0] || null)
-          }
-        />
 
-        {file && (
-          <div>
-            <p>선택한 파일: {file.name}</p>
-            <img
-              src={URL.createObjectURL(file)}
-              alt="디자인 미리보기"
-              width="150"
-            />
-          </div>
+     {/* 탭 메뉴 */}
+     <div className="tab-menu">
+        <button
+          className={activeTab === "all" ? "active" : ""}
+          onClick={() => setActiveTab("all")}
+        >
+          전체 상품
+        </button>
+
+        <button
+          className={activeTab === "making" ? "active" : ""}
+          onClick={() => setActiveTab("making")}
+        >
+          제작 중
+        </button>
+
+        <button
+          className={activeTab === "inspection" ? "active" : ""}
+          onClick={() => setActiveTab("inspection")}
+        >
+          검수대기
+        </button>
+
+        <button
+          className={activeTab === "complete" ? "active" : ""}
+          onClick={() => setActiveTab("complete")}
+        >
+          등록완료
+        </button>
+      </div>
+
+      {/* 탭에 따른 내용 */}
+      <div className="tab-content">
+        {activeTab === "all" && (
+          <h2>전체 상품 목록</h2>
         )}
 
-        <button type="submit">상품 등록</button>
-      </form>
+        {activeTab === "making" && (
+          <h2>제작 중인 상품 목록</h2>
+        )}
 
-      {/* 상품 목록 */}
-      <h2>제작 목록</h2>
+        {activeTab === "inspection" && (
+          <h2>검수대기 상품 목록</h2>
+        )}
 
-      {products.length === 0 ? (
-        <p>등록된 상품이 없습니다.</p>
-      ) : (
-        <table>
-          <thead>
-            <tr>
-              <th>상품명</th>
-              <th>디자인</th>
-              <th>담당자</th>
-              <th>제작 상태</th>
-            </tr>
-          </thead>
-
-          <tbody>
-            {products.map((product) => (
-              <tr key={product.id}>
-                <td>{product.name}</td>
-
-                <td>
-                  {product.image && (
-                    <img
-                      src={product.image}
-                      alt={product.name}
-                      width="70"
-                    />
-                  )}
-                </td>
-
-                <td>{product.worker}</td>
-
-                <td>
-                  <select
-                    value={product.status}
-                    onChange={(e) =>
-                      changeStatus(
-                        product.id,
-                        e.target.value
-                      )
-                    }
-                  >
-                    <option value="제작 중">제작 중</option>
-                    <option value="제작 완료">제작 완료</option>
-                  </select>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
+        {activeTab === "complete" && (
+          <h2>등록완료 상품 목록</h2>
+        )}
+      </div>
     </div>
-  );
-}
+   
+
+   
+ 
+);
+ 
+
+  }
+
+  
+
+  
 
 export default TaskPage;

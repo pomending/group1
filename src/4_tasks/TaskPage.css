@@ -1,0 +1,94 @@
+
+
+
+.production-page {width:100%; background-color: #f4f5ef; overflow:hidden; padding:50px;}
+
+/* 상품 개수 카드 */
+.product-count-card {
+  width: 180px;
+  min-height: 80px;
+  padding: 16px 20px;
+  margin-bottom: 0px;
+  margin-right: 20px;
+  background-color: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  float:left;
+}
+.product-count-card:last-child {  margin-right: 0px;}
+
+/* 카드 제목 */
+.product-count-title {
+  margin: 0 0 10px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #64748b;
+}
+
+/* 상품 개수 */
+.product-count-number {
+  margin: 0;
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: #111827;
+}
+
+
+
+/* 탭 메뉴 전체 */
+.tab-menu {
+  display: flex;
+  gap: 8px;
+  margin-top: 24px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+/* 탭 버튼 */
+.tab-menu button {
+  padding: 12px 20px;
+  border: none;
+  border-bottom: 3px solid transparent;
+  background: transparent;
+  color: #64748b;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+/* 마우스를 올렸을 때 */
+.tab-menu button:hover {
+  color: #4f46e5;
+}
+
+/* 선택된 탭 */
+.tab-menu button.active {
+  color: #4f46e5;
+  font-weight: 700;
+  border-bottom-color: #4f46e5;
+}
+
+/* 탭 내용 영역 */
+.tab-content {
+  min-height: 200px;
+  padding: 24px 0;
+}
+
+.tab-content h2 {
+  font-size: 20px;
+  color: #1e293b;
+}
+
+/* 모바일 */
+@media (max-width: 480px) {
+  .tab-menu {
+    gap: 0;
+    overflow-x: auto;
+  }
+
+  .tab-menu button {
+    flex-shrink: 0;
+    padding: 12px;
+    font-size: 13px;
+  }
+}
+
