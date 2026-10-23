@@ -24,7 +24,7 @@ function App() {
 
         <Routes>
           <Route path="/" element={<DashboardPage />} />
-          <Route path="/crm" element={<CrmPage />} />
+          <Route path="/crm/*" element={<CrmPage />} />
           <Route path="/quotation" element={<QuotationPage />} />
           <Route path="/projects" element={<ProjectPage />} />
           <Route path="/tasks" element={<TaskPage />} />
