@@ -1,9 +1,18 @@
+/* [값이 바뀌고 저장되는 전체 흐름]
+ * items는 저장할 원본 일정, form은 등록·수정 창에서 작성 중인 임시 입력입니다.
+ * 입력할 때는 form만 바뀌므로 취소하면 원본 일정은 그대로입니다.
+ * 저장을 누르면 입력 검사 → 새 일정 객체 생성 → setItems → 저장 useEffect 순서로 처리합니다.
+ * setItems((current) => ...)의 current는 리액트가 전달하는 최신 일정 배열입니다.
+ * current를 직접 고치지 않고 map/filter 또는 [...current]로 새 배열을 반환해야 변경을 명확히 전달할 수 있습니다.
+ * 검색 결과와 통계는 원본에서 계산하므로 각각 별도 state로 복사해 저장하지 않습니다.
+ * useEffect는 의존성 배열 안의 값이 바뀌면 다시 실행됩니다. 타이머와 이벤트는 반환한 정리 함수에서 해제합니다.
+ * localStorage는 이 브라우저에 저장하는 공간이며 서버나 다른 사용자의 브라우저에 자동 공유되지 않습니다.
+ */
 import React, { useEffect, useRef, useState } from "react";
 import ScheduleCalendar from "./ScheduleCalendar";
-import ScheduleFormModal from "./ScheduleFormModal";
-import ScheduleListModal from "./ScheduleListModal";
+import ScheduleFormModal, { ScheduleListModal } from "./ScheduleFormModal";
 import ScheduleSidebar from "./ScheduleSidebar";
-import ScheduleIcon from "./ScheduleIcon";
+import { ScheduleIcon } from "./ScheduleItemParts";
 import { loadTeamMembers } from "./ScheduleTeamEditor";
 import {
   createScheduleForm,
@@ -41,7 +50,7 @@ import "./scheduleStyles.css";
  * ① Calendar의 onChange → 부모가 전달한 setQuery('김담당') 실행
  * ② query state가 바뀌어 Manager가 다시 렌더링됨
  * ③ filteredItems가 담당자 이름 등을 검색하고 visibleItems가 표시 기간의 반복 날짜를 계산함
- * ④ 새 배열을 props로 받은 Calendar와 Sidebar가 같은 검색 결과를 표시함
+ * ④ Calendar와 선택 날짜 목록은 검색 결과를 표시하고, 즐겨찾기·다가오는 일정은 별도 기준을 유지함
  * 검색은 원본 items를 바꾸지 않습니다. 저장할 일정과 화면에 보여줄 결과를 구분하는 것이 핵심입니다.
  */
 // 새 일정과 반복에서 분리한 일정 모두 같은 방식으로 ID를 만듭니다.
@@ -96,7 +105,7 @@ function loadSchedules() {
         description:
           typeof item.description === "string" ? item.description : "",
         type: scheduleTypes.includes(item.type) ? item.type : "기획",
-        // 과거 저장 데이터에는 status가 없으므로 진행 전으로 보완합니다.
+        // 과거 저장 데이터의 상태가 없거나 업무 중이면 예정으로 보완하고, 완료는 유지합니다.
         status: normalizeStatus(item.status),
         visibility: item.visibility === "private" ? "private" : "shared",
         repeatInterval: getRepeatInterval(item),
@@ -154,10 +163,7 @@ export default function ScheduleManager() {
    * 함수로 전달하는 초기화는 일반 재렌더링마다 반복되지 않습니다.
    * 다만 개발용 StrictMode에서는 초기화 함수가 순수한지 확인하려고 추가 호출될 수 있습니다.
    */
-  // 화면에서 변하는 값은 useState로 저장합니다. 상태가 바뀌면 React가 화면을 다시 그립니다.
   // month는 표시할 연·월을 결정하는 Date입니다. 초기값은 1일이고, 날짜 선택 시 선택 날짜로 바뀔 수 있습니다.
-  // useState에 초기화 함수를 전달하면 일반 재렌더링마다 초기값을 다시 계산하지 않습니다.
-  // [현재 값, 변경 함수] 형태로 반환되며 변경 함수를 호출하면 새 화면 계산을 예약합니다.
   const [month, setMonth] = useState(() => {
     const today = new Date();
     return new Date(today.getFullYear(), today.getMonth(), 1);
@@ -170,12 +176,11 @@ export default function ScheduleManager() {
   const calendarRef = useRef(null);
   // selectedDate는 선택한 날짜를 YYYY-MM-DD 문자열로 보관합니다.
   const [selectedDate, setSelectedDate] = useState(todayKey);
-  // query=검색 문자열, view=시간/일/주/월 보기, scopeFilter=전체/공유/개인 분류입니다.
+  // query=검색 문자열, view=일별/주별/담당자별 주간/월별 보기, scopeFilter=전체/공유/개인 분류입니다.
   // 개인/공유는 화면 분류 값이며 사용자별 접근 권한을 검사하는 기능은 아닙니다.
   const [query, setQuery] = useState("");
   const [view, setView] = useState("monthly");
   const [scopeFilter, setScopeFilter] = useState("all");
-  const [statusFilter, setStatusFilter] = useState("all");
   // null은 목록을 닫은 상태, projects/people은 오른쪽에 열 목록의 종류입니다.
   const [directoryMode, setDirectoryMode] = useState(null);
   // 프로젝트 이름은 부분 검색과 달리 정확히 일치시켜 test와 test2가 섞이지 않게 합니다.
@@ -185,9 +190,10 @@ export default function ScheduleManager() {
   const [items, setItems] = useState(loadedSchedules.items);
   const [loadedTeam] = useState(loadTeamMembers);
   const [teamMembers, setTeamMembers] = useState(loadedTeam.members);
+  const [excludedTeamMembers, setExcludedTeamMembers] = useState(loadedTeam.excluded);
   const [teamStorageError, setTeamStorageError] = useState(false);
   const [storageError, setStorageError] = useState(false);
-  // 등록 창, 전체 일정 창, 수정 중인 일정의 ID도 화면 상태로 관리합니다.
+  // 등록·수정용 form, 전체 목록 열림 여부, 수정 대상 editing 객체를 각각 관리합니다.
   const [listOpen, setListOpen] = useState(false);
   // null이면 원본 전체 목록, 날짜 문자열이면 그날에 실제 발생하는 목록을 표시합니다.
   const [listDateFilter, setListDateFilter] = useState(null);
@@ -210,16 +216,18 @@ export default function ScheduleManager() {
     if (!exists) setSelectedProject(null);
   }, [items, selectedProject]);
 
-  // 팀원은 일정과 별도 목록으로 저장합니다. 이름을 일정에 썼다고 직원이 되는 것은 아닙니다.
+  // 등록 팀원과 제외한 이름을 별도로 저장합니다. 제외 목록은 새 일정 저장에 의한 자동 재등록을 막습니다.
+  // 명시적으로 팀원 등록을 하면 제외 목록에서도 지워 다시 사용할 수 있습니다.
   useEffect(() => {
     if (loadedTeam.readError) return;
     try {
       localStorage.setItem("made-mate-schedule-team", JSON.stringify(teamMembers));
+      localStorage.setItem("made-mate-excluded-team", JSON.stringify(excludedTeamMembers));
       setTeamStorageError(false);
     } catch {
       setTeamStorageError(true);
     }
-  }, [teamMembers, loadedTeam.readError]);
+  }, [teamMembers, excludedTeamMembers, loadedTeam.readError]);
 
   function addTeamMember(value) {
     if (loadedTeam.readError) return "팀원 목록을 읽지 못했습니다. 기존 저장 자료를 확인해 주세요.";
@@ -227,6 +235,7 @@ export default function ScheduleManager() {
     if (!name) return "팀원 이름을 입력해 주세요.";
     if (name.length > 30) return "팀원 이름은 30자 이내로 입력해 주세요.";
     if (teamMembers.includes(name)) return "이미 등록된 팀원입니다.";
+    setExcludedTeamMembers((current) => current.filter(person => person !== name));
     setTeamMembers((current) => [...current, name].sort((a, b) => a.localeCompare(b, "ko")));
     return "";
   }
@@ -236,6 +245,7 @@ export default function ScheduleManager() {
     const message = `${name}님을 팀원 목록에서 제외할까요? 기존 일정의 담당·참석 기록은 유지됩니다.`;
     if (!window.confirm(message)) return;
     setTeamMembers((current) => current.filter((person) => person !== name));
+    setExcludedTeamMembers((current) => current.includes(name) ? current : [...current, name]);
   }
 
   function toggleAttendee(name) {
@@ -249,7 +259,11 @@ export default function ScheduleManager() {
     });
   }
 
+  // 선택 날짜의 주간 목록은 날짜 범위·제목·달력에서 함께 사용합니다. 한 번 계산해 아래에 전달합니다.
   const selectedDateObject = new Date(`${selectedDate}T00:00:00`);
+  const weekDates = getWeekDates(selectedDateObject);
+  const firstDayOfMonth = new Date(calendarYear, month.getMonth(), 1);
+  const lastDayOfMonth = new Date(calendarYear, month.getMonth() + 1, 0);
   // 선택 날짜나 표시 연도와 공휴일 데이터의 연도가 다르면 공휴일 이름을 표시하지 않습니다.
   const selectedHoliday =
     holidayInfo.year === selectedDateObject.getFullYear()
@@ -310,7 +324,7 @@ export default function ScheduleManager() {
   }, [todayKey, selectedDate]);
 
   /* 분이 바뀌거나 다른 탭에서 돌아오면 다가오는 일정을 다시 계산합니다.
-   * 새로고침 없이 시작 시각이 지난 작업을 목록에서 빼기 위한 타이머입니다.
+   * 새로고침 없이 시작 시각에는 다가오는 목록의 표시를 진행 중으로 바꾸고, 종료 시각에는 목록에서 빼기 위한 타이머입니다.
    * Date.now()%60000은 이번 분에서 흐른 밀리초이며, 남은 시간 뒤에 다음 분을 갱신합니다.
    * cleanup은 타이머와 이벤트 연결을 해제해 화면을 닫은 뒤에도 갱신하지 않게 합니다. */
   useEffect(() => {
@@ -332,8 +346,7 @@ export default function ScheduleManager() {
    * 이전 응답이 도착해도 새 연도의 상태를 덮어쓰지 않습니다. 요청 자체를 취소하는 것은 아닙니다.
    */
   useEffect(() => {
-    // 이번 effect의 응답을 반영해도 되는지 표시합니다. 요청 자체를 취소하는 값은 아닙니다.
-    // 연도를 바꾸면 cleanup에서 false로 바꿔 이전 요청이 늦게 도착해도 무시하게 합니다.
+    // 아래 정리 함수가 false로 바꾸면 이 요청의 응답은 화면에 반영하지 않습니다.
     let active = true;
 
     async function loadHolidays() {
@@ -373,7 +386,6 @@ export default function ScheduleManager() {
   for (const item of items) {
     if (selectedProject && item.project !== selectedProject) continue;
     if (scopeFilter !== "all" && item.visibility !== scopeFilter) continue;
-    if (statusFilter !== "all" && item.status !== statusFilter) continue;
     const people = getSchedulePeople(item).join(" ");
     const searchText = `${item.title} ${item.project} ${people}`.toLowerCase();
     if (!searchText.includes(keyword)) continue;
@@ -381,29 +393,26 @@ export default function ScheduleManager() {
   }
 
   // 보기마다 필요한 날짜 범위를 먼저 정하고, 반복 일정을 그 범위에서만 펼칩니다.
-  // 월별은 해당 월 전체, 주별/담당자별은 월요일~일요일, 일별/시간대별은 선택 날짜입니다.
-  // 달력과 검색 목록이 이 배열을 함께 사용하므로 기간 계산을 두 번 하지 않습니다.
+  // 월별은 해당 월 전체, 주별/담당자별은 월요일~일요일, 일별은 선택 날짜입니다.
+  // 달력과 검색 건수는 같은 결과 배열을 사용합니다.
   let from = selectedDate;
   let to = selectedDate;
   if (view === "monthly") {
-    from = dateKey(new Date(month.getFullYear(), month.getMonth(), 1));
-    to = dateKey(new Date(month.getFullYear(), month.getMonth() + 1, 0));
+    from = dateKey(firstDayOfMonth);
+    to = dateKey(lastDayOfMonth);
   } else if (view === "weekly" || view === "staff") {
-    const days = getWeekDates(new Date(`${selectedDate}T00:00:00`));
-    from = days[0].key;
-    to = days[6].key;
+    from = weekDates[0].key;
+    to = weekDates[6].key;
   }
   const visibleItems = expandSchedules(filteredItems, from, to);
   // 선택 날짜가 표시 월 밖일 수도 있어 선택 날짜 패널은 별도 하루 범위로 계산합니다.
   const selectedItems = expandSchedules(filteredItems, selectedDate, selectedDate);
 
-  // 해당 월의 날짜를 월요일 시작 달력 격자에 맞춰 계산합니다.
+  // 월별 달력은 일요일 시작 격자로 계산합니다. 주간 보기는 기존 월요일 시작을 유지합니다.
   const calendarDays = [];
-  const first = new Date(month.getFullYear(), month.getMonth(), 1);
-  // JS의 일요일 시작 인덱스를 월요일 시작 달력에 맞는 빈칸 수로 바꿉니다.
-  // 월요일(1)은 (1+6)%7=0칸, 일요일(0)은 6칸이 되어 월요일 시작 표에 맞습니다.
-  const startOffset = (first.getDay() + 6) % 7;
-  const dayCount = new Date(month.getFullYear(), month.getMonth() + 1, 0).getDate();
+  // getDay()는 일요일=0부터 토요일=6입니다. 그 숫자만큼 앞을 비우면 일요일 시작 달력이 됩니다.
+  const startOffset = firstDayOfMonth.getDay();
+  const dayCount = lastDayOfMonth.getDate();
 
   // 날짜 수에 앞뒤 빈칸을 더하고, 행 수를 7의 배수로 맞춰 달력 칸을 만듭니다.
   // ceil은 올림입니다. 앞 빈칸+날짜가 32개면 5주 * 7=35칸을 생성합니다.
@@ -419,27 +428,21 @@ export default function ScheduleManager() {
     }
   }
 
-  // 달력의 월 이동, 날짜 선택과 폼 입력을 처리하는 함수입니다.
-  // 기존 Date를 직접 수정하지 않고 새 객체로 교체해 React가 변경을 알 수 있게 합니다.
-  const changeMonth = (delta) => {
-    const next = new Date(month.getFullYear(), month.getMonth() + delta, 1);
-    // 31일에서 짧은 달로 이동하면 해당 월 말일을 선택합니다.
-    const lastDay = new Date(next.getFullYear(), next.getMonth() + 1, 0).getDate();
-    next.setDate(Math.min(selectedDateObject.getDate(), lastDay));
-    selectDate(dateKey(next));
-  };
-  // 자식은 -1/+1만 전달합니다. 이 함수에서 현재 보기의 이동 단위를 정합니다.
+  // 자식은 -1/+1만 전달합니다. 월별은 한 달, 주별/담당자별은 7일, 나머지는 하루씩 이동합니다.
+  // Date는 계산용 복사본만 바꾸고, 마지막에 selectDate로 선택 날짜와 표시 월을 함께 갱신합니다.
   const changePeriod = (delta) => {
+    let nextDate = new Date(selectedDateObject);
     if (view === "monthly") {
-      changeMonth(delta);
-      return;
+      nextDate = new Date(calendarYear, month.getMonth() + delta, 1);
+      // 31일에서 짧은 달로 이동하면 해당 월 말일을 선택합니다.
+      const lastDay = new Date(nextDate.getFullYear(), nextDate.getMonth() + 1, 0).getDate();
+      nextDate.setDate(Math.min(selectedDateObject.getDate(), lastDay));
+    } else {
+      let step = 1;
+      if (view === "weekly" || view === "staff") step = 7;
+      nextDate.setDate(nextDate.getDate() + delta * step);
     }
-    const date = new Date(`${selectedDate}T00:00:00`);
-    // 주별과 담당자별 주간(staff)은 같은 7일 범위를 쓰므로 둘 다 한 주씩 이동합니다.
-    let step = 1;
-    if (view === "weekly" || view === "staff") step = 7;
-    date.setDate(date.getDate() + delta * step);
-    selectDate(dateKey(date));
+    selectDate(dateKey(nextDate));
   };
   // 날짜 선택과 표시 월을 같이 바꾸면 다른 달의 날짜로 이동할 때 달력도 따라갑니다.
   const selectDate = (date) => {
@@ -458,7 +461,11 @@ export default function ScheduleManager() {
     setForm((current) => {
       // state 객체를 직접 바꾸지 않고 복사한 뒤, 입력한 항목 하나만 바꿉니다.
       const nextForm = { ...current };
-      nextForm[name] = value;
+      if (name === "repeatPreset") {
+        const parts = value.split(":");
+        nextForm.repeatType = parts[0];
+        nextForm.repeatInterval = Number(parts[1]) || 1;
+      } else nextForm[name] = value;
       if (name === "repeatType") nextForm.repeatInterval = 1;
       return nextForm;
     });
@@ -498,10 +505,7 @@ export default function ScheduleManager() {
       setFormError("일정 이름을 입력해 주세요. 공백만 사용할 수 없습니다.");
       return;
     }
-    if (!project) {
-      setFormError("프로젝트명을 입력해 주세요. 공백만 사용할 수 없습니다.");
-      return;
-    }
+
     if (!isValidScheduleDate(form.date) || !isValidScheduleTime(form.time) || !isValidScheduleTime(form.endTime)) {
       setFormError("올바른 날짜와 시작·종료 시간을 입력해 주세요.");
       return;
@@ -515,17 +519,18 @@ export default function ScheduleManager() {
     }
     // HH:mm은 자릿수가 같아 문자열 비교로도 시간 순서를 확인할 수 있습니다.
     // 같은 날짜 안의 일정이므로 종료 시간은 시작 시간보다 늦어야 합니다.
-    if (!form.endTime || form.endTime <= form.time) {
+    if (form.endTime <= form.time) {
       setFormError("종료 시간은 시작 시간보다 늦게 입력해 주세요.");
       return;
     }
-    // 과거 미등록 이름은 수정하지 않았다면 보존합니다. 새 이름을 일정에서 직원으로 만들지는 않습니다.
-    if (!teamMembers.includes(form.person) && (!editing || editing.person !== form.person)) {
-      setFormError("담당자는 등록된 팀원 중에서 선택해 주세요.");
+    const person = form.person.trim();
+    if (!person || person.length > 30) {
+      setFormError("담당자 이름을 1~30자로 입력해 주세요.");
       return;
     }
+    const attendees = normalizeAttendees(form.attendees);
     const previousAttendees = normalizeAttendees(editing && editing.attendees);
-    for (const name of normalizeAttendees(form.attendees)) {
+    for (const name of attendees) {
       if (!teamMembers.includes(name) && !previousAttendees.includes(name)) {
         setFormError("참석자는 등록된 팀원 중에서 선택해 주세요.");
         return;
@@ -535,13 +540,29 @@ export default function ScheduleManager() {
     let occurrenceDate = null;
     if (editing) occurrenceDate = editing.occurrenceDate;
 
+    // 모든 입력 검사를 마친 뒤 새 이름만 등록합니다. 제외된 이름은 팀원 목록에서 다시 등록해야 합니다.
+    // 과거 미등록 담당자를 그대로 수정하면
+    // 팀원으로 자동 전환하지 않아 기존 기록의 처리 방식을 유지합니다.
+    if (!teamMembers.includes(person) && (!editing || editing.person !== person)) {
+      if (excludedTeamMembers.includes(person)) {
+        setFormError("팀원 목록에서 제외된 이름입니다. 팀원 목록에서 다시 등록한 뒤 선택해 주세요.");
+        return;
+      }
+      const message = addTeamMember(person);
+      if (message) {
+        setFormError(message);
+        return;
+      }
+    }
+
     // 먼저 새 일정 한 건을 만듭니다. 일반 수정인 경우에만 기존 ID와 제외 날짜를 이어받습니다.
     const item = {
       ...form,
       title,
       project,
+      person,
       id: createScheduleId(),
-      attendees: normalizeAttendees(form.attendees),
+      attendees,
       color: typeColors[form.type],
       excludedDates: [],
       isFavorite: false,
@@ -575,11 +596,8 @@ export default function ScheduleManager() {
       return next.sort(compareSchedules);
     });
     selectDate(form.date);
-    // 저장 후 프로젝트명·상태·공개 범위가 바뀌어도 방금 저장한 일정이 필터에 가리지 않게 합니다.
-    setQuery("");
-    setSelectedProject(null);
-    setScopeFilter("all");
-    setStatusFilter("all");
+    // 저장 후 프로젝트명·공개 범위가 바뀌어도 방금 저장한 일정이 필터에 가리지 않게 합니다.
+    clearScheduleFilters();
     closeScheduleForm();
   };
   // 날짜별 반복 항목의 상태를 바꾸면 그날만 일반 항목으로 분리합니다.
@@ -622,7 +640,7 @@ export default function ScheduleManager() {
     if (item.occurrenceDate) label = item.date + "의 일정";
     else if (repeated) label = "전체 반복 일정";
     if (!window.confirm("'" + item.title + "' " + label + "을 삭제할까요?"))
-      return;
+      return false;
     setItems((current) => {
       if (item.occurrenceDate) {
         return current.map((schedule) => {
@@ -632,28 +650,29 @@ export default function ScheduleManager() {
       }
       return current.filter((schedule) => schedule.id !== item.id);
     });
+    return true;
   };
-  // 달력에서 더보기를 누르면 해당 날짜 일정만 필터링한 목록을 엽니다.
-  const showDateSchedules = (date) => {
-    setSelectedDate(date);
+  // 날짜를 주면 그날의 더보기, 생략하면 전체 목록입니다. 같은 모달의 열기 처리를 한 곳에 둡니다.
+  const showScheduleList = (date = null) => {
+    if (date) setSelectedDate(date);
     setListDateFilter(date);
     setListOpen(true);
   };
-  // 상단 전체 일정 버튼은 날짜 필터를 해제하고 모든 일정을 보여줍니다.
-  const showAllSchedules = () => {
-    setListDateFilter(null);
-    setListOpen(true);
-  };
+
+  // 여러 이동/저장 동작이 같은 검색·프로젝트·공개 조건을 해제합니다. 한 함수로 모아 빠뜨리는 조건을 없앱니다.
+  // 디렉터리 닫기와 날짜 이동은 여기 넣지 않아, 저장 후에는 기존 화면 구성을 유지합니다.
+  function clearScheduleFilters() {
+    setQuery("");
+    setSelectedProject(null);
+    setScopeFilter("all");
+  }
 
   // 상단 통계는 전체 데이터를 세므로 이동할 때도 검색·필터를 해제해 같은 기준으로 보여줍니다.
   const showCurrentPeriod = (nextView, date = getTodayKey()) => {
-    // 프로젝트 선택도 별도 필터이므로 함께 해제합니다. getTodayKey()는 클릭한 시점의 오늘입니다.
-    setSelectedProject(null);
+    // getTodayKey()는 클릭한 시점의 오늘입니다. 날짜를 전달했다면 그 날짜를 사용합니다.
+    clearScheduleFilters();
     selectDate(date);
     setView(nextView);
-    setQuery("");
-    setScopeFilter("all");
-    setStatusFilter("all");
     setDirectoryMode(null);
   };
 
@@ -670,62 +689,44 @@ export default function ScheduleManager() {
     const date = getScheduleFocusDate(projectItems, Date.now());
     // 목록이 열린 뒤 데이터가 바뀌어 프로젝트 일정이 없어졌다면 잘못된 날짜로 이동하지 않습니다.
     if (!date) return;
-    setSelectedProject(project);
-    setQuery("");
-    setScopeFilter("all");
-    setStatusFilter("all");
     // 가까운 일정이 있는 날짜를 일별 화면으로 열면 월별 칸의 말줄임 없이 바로 확인할 수 있습니다.
     // 목록을 접어 오른쪽 날짜 정보도 위로 올리고, 작은 화면에서는 메인 달력으로 이동합니다.
-    selectDate(date);
-    setView("daily");
-    setDirectoryMode(null);
+    showCurrentPeriod("daily", date);
+    // 공통 이동이 필터를 먼저 해제한 뒤, 이번에 고른 프로젝트 조건만 다시 적용합니다.
+    setSelectedProject(project);
     focusCalendar();
   };
 
   // 통계는 검색과 무관합니다. 팀원 수는 별도 등록 목록을 기준으로 셉니다.
-  // 오늘 작업/주간 마감은 해당 기간에 펼친 실제 발생 횟수이므로 반복 일정도 포함됩니다.
-  const currentWeek = getWeekDates(new Date(`${todayKey}T00:00:00`));
-  const weekStartKey = currentWeek[0].key;
-  const weekEndKey = currentWeek[6].key;
-  // 마감 통계에는 작업 구분이 '마감' 또는 '출고'인 일정만 포함합니다.
-  const isDeadline = (item) => item.type === "마감" || item.type === "출고";
-  const weekDeadlineCount = expandSchedules(
-    items,
-    weekStartKey,
-    weekEndKey,
-  ).filter(isDeadline).length;
-  // 이 목록은 달력의 검색·선택 프로젝트와 무관하게 전체 일정 중 가까운 5건을 보여줍니다.
-  const upcomingSchedules = getUpcomingSchedules(items, currentTime);
+  // 오늘 작업은 해당 날짜의 실제 발생 횟수이므로 반복 일정도 포함됩니다.
+  // 오늘 일정은 작업 구분과 관계없이 실제 발생하는 모든 일정을 셉니다.
+  const todayWorkCount = expandSchedules(items, todayKey, todayKey).length;
+  // 다가오는 목록은 검색과 무관하게 오늘 포함 7일 이내의 미완료 발생 일정 중 가까운 5건을 보여줍니다.
+  const upcomingSchedules = getUpcomingSchedules(items, currentTime, 5, 7);
   const favoriteItems = items.filter((item) => item.isFavorite);
   // 상태별 진행 수가 아니라 일정에 입력된 서로 다른 프로젝트명 개수입니다.
-  // 이름을 처음 만났을 때만 배열에 넣습니다. 배열 길이가 중복을 뺀 프로젝트/팀원 수입니다.
+  // 이름을 처음 만났을 때만 배열에 넣습니다. 배열 길이가 중복을 뺀 프로젝트 수입니다.
   const projectNames = [];
   for (const item of items) {
     if (item.project && !projectNames.includes(item.project)) projectNames.push(item.project);
   }
-  const projectCount = projectNames.length;
-  const assigneeCount = teamMembers.length;
-  const todayWorkCount = expandSchedules(items, todayKey, todayKey).length;
-  const monthLabel = `${month.getFullYear()}년 ${month.getMonth() + 1}월`;
-  const weekDates = getWeekDates(selectedDateObject);
   // staff도 weekly와 같은 첫날~마지막 날 제목을 사용합니다. 보기만 바뀌고 날짜 기준은 같습니다.
-  let periodLabel = monthLabel;
+  let periodLabel = `${calendarYear}년 ${month.getMonth() + 1}월`;
   if (view === "weekly" || view === "staff") {
-    const firstDay = weekDates[0].date;
-    const lastDay = weekDates[6].date;
-    // dateKey의 YYYY-MM-DD에서 MM-DD만 꺼내 구분자를 바꾸면 항상 두 자리씩 표시됩니다.
-    const firstLabel = dateKey(firstDay).slice(5).replace("-", "/");
-    const lastLabel = dateKey(lastDay).slice(5).replace("-", "/");
+    // 이미 계산한 YYYY-MM-DD에서 MM-DD만 꺼내 구분자를 바꾸면 항상 두 자리씩 표시됩니다.
+    const firstLabel = weekDates[0].key.slice(5).replace("-", "/");
+    const lastLabel = weekDates[6].key.slice(5).replace("-", "/");
     periodLabel = `${firstLabel} – ${lastLabel}`;
-  } else if (view === "daily" || view === "hourly") {
+  } else if (view === "daily") {
     const weekday = "일월화수목금토"[selectedDateObject.getDay()];
     periodLabel = `${selectedDateObject.getFullYear()}년 ${selectedDateObject.getMonth() + 1}월 ${selectedDateObject.getDate()}일 (${weekday})`;
   }
 
   // 직원 행은 별도 등록 목록을 기준으로 합니다. 일정에만 적힌 미등록 이름은 행으로 만들지 않습니다.
-  let staffPeople = [...teamMembers];
+  // 아래에서 배열 내용을 바꾸지 않고 다른 결과 배열을 대입하므로 복사본을 만들 필요는 없습니다.
+  let staffPeople = teamMembers;
   // 이름을 검색했다면 함께 참석한 다른 사람의 행까지 늘어나지 않게 검색한 사람만 남깁니다.
-  // 이름과 일치하는 사람이 없으면 프로젝트/일정명 검색으로 보고 기존 행을 그대로 사용합니다.
+  // 이름과 일치하는 팀원이 없으면 일정 검색 결과에 담당·참석으로 연결된 등록 팀원만 남깁니다.
   let staffPersonSearch = "";
   if (keyword !== "") {
     const matchingPeople = [];
@@ -739,35 +740,22 @@ export default function ScheduleManager() {
       staffPeople = matchingPeople;
       staffPersonSearch = query.trim();
     } else {
-      staffPeople = teamMembers.filter((person) => {
-        for (const item of filteredItems) {
-          if (getSchedulePeople(item).includes(person)) return true;
-        }
-        return false;
-      });
+      // some은 조건에 맞는 일정이 하나라도 있으면 true입니다.
+      staffPeople = teamMembers.filter((person) =>
+        filteredItems.some((item) => getSchedulePeople(item).includes(person)));
     }
   }
 
   // 순서로 의미를 외우는 배열 대신 이름이 붙은 속성을 사용합니다. card.count는 숫자입니다.
   const statCards = [
-    { label: "일정 등록 프로젝트", count: projectCount, unit: "", icon: "projects", action: "projects",
-      buttonLabel: "일정 등록 프로젝트 목록 보기", hint: "프로젝트별 일정 살펴보기" },
-    { label: "오늘의 작업", count: todayWorkCount, unit: "건", icon: "clock", action: "daily",
-      buttonLabel: "오늘의 작업 일별 보기", hint: "오늘의 흐름에 집중하기" },
-    { label: "이번 주 마감", count: weekDeadlineCount, unit: "건", icon: "flag", action: "weekly",
-      buttonLabel: "이번 주 마감 주별 보기", hint: "이번 주 마감 확인하기" },
-    { label: "등록된 팀원", count: assigneeCount, unit: "명", icon: "people", action: "people",
-      buttonLabel: "등록된 팀원 목록 보기", hint: "팀원별 담당 프로젝트 보기" },
+    { label: "일정 등록 프로젝트", count: projectNames.length, unit: "", icon: "projects", action: "projects",
+      buttonLabel: "일정 등록 프로젝트 목록 보기" },
+    { label: "등록된 팀원", count: teamMembers.length, unit: "명", icon: "people", action: "people",
+      buttonLabel: "등록된 팀원 목록 보기" },
   ];
 
   function handleStatClick(action) {
-    if (action === "daily" || action === "weekly") {
-      showCurrentPeriod(action);
-    } else if (directoryMode === action) {
-      setDirectoryMode(null);
-    } else {
-      setDirectoryMode(action);
-    }
+    setDirectoryMode(directoryMode === action ? null : action);
   }
 
   return (
@@ -795,7 +783,8 @@ export default function ScheduleManager() {
             <p>함께 만드는 프로젝트, 한눈에 이어지는 팀의 일정.</p>
           </div>
           <div className="sm-heading-actions">
-            <button className="sm-secondary-btn" onClick={showAllSchedules}>
+            <button className="sm-secondary-btn" aria-label="오늘의 작업 일별 보기" onClick={() => showCurrentPeriod("daily")}>오늘 일정 {todayWorkCount}건</button>
+            <button className="sm-secondary-btn" onClick={() => showScheduleList()}>
               <ScheduleIcon name="calendar" />
               전체 일정 ({items.length})
             </button>
@@ -819,36 +808,13 @@ export default function ScheduleManager() {
         {/* 현재 일정 데이터에서 요약 숫자를 만들어 표시합니다. */}
         <section className="sm-stats">
           {/* map은 준비한 카드 정보 하나마다 화면의 카드 하나를 만듭니다. */}
-          {statCards.map((card) => {
-            let expanded;
-            if (card.action === "projects" || card.action === "people") {
-              expanded = directoryMode === card.action;
-            }
-            return (
-              <div className={`sm-stat sm-stat-${card.action}`} key={card.label}>
-                <div>
-                  <div className="sm-stat-label">{card.label}</div>
-                  <div className="sm-stat-value">
-                    {card.count}
-                    {card.unit && <span className="sm-muted"> {card.unit}</span>}
-                  </div>
-                </div>
-                {/* 아이콘도 button으로 만들어 Tab과 Enter로 실행할 수 있습니다.
-                    목록 아이콘은 펼침 상태를, 달력 아이콘은 이동할 보기를 설명합니다. */}
-                <button
-                  type="button"
-                  className="sm-stat-icon"
-                  aria-label={card.buttonLabel}
-                  aria-expanded={expanded}
-                  onClick={() => handleStatClick(card.action)}
-                >
-                  <ScheduleIcon name={card.icon} />
-                </button>
-                {/* 안내 문구는 별도 행에 놓아 좁은 화면에서도 카드 전체 폭을 사용합니다. */}
-                <p className="sm-stat-hint">{card.hint}</p>
-              </div>
-            );
-          })}
+          {statCards.map((card) => (
+            <button type="button" className="sm-stat" key={card.action} aria-label={card.buttonLabel}
+              aria-expanded={directoryMode === card.action} onClick={() => handleStatClick(card.action)}>
+              <ScheduleIcon name={card.icon} />
+              <span>{card.label}</span><strong>{card.count}{card.unit}</strong>
+            </button>
+          ))}
         </section>
 
         {/* 달력과 오른쪽 일정 패널을 각각 별도 컴포넌트로 표시합니다. */}
@@ -867,8 +833,6 @@ export default function ScheduleManager() {
             weekDates={weekDates}
             scopeFilter={scopeFilter}
             onScopeFilterChange={setScopeFilter}
-            statusFilter={statusFilter}
-            onStatusFilterChange={setStatusFilter}
             query={query}
             onQueryChange={setQuery}
             holidayError={
@@ -882,7 +846,7 @@ export default function ScheduleManager() {
             selectedDate={selectedDate}
             todayKey={todayKey}
             onSelectDate={selectDate}
-            onShowMore={showDateSchedules}
+            onShowMore={showScheduleList}
           />
           {/* 원본 items는 전체 프로젝트·팀원 목록용, visibleItems는 현재 기간의 검색 결과용입니다.
               selectedProject는 선택 표시용 값, onSelectProject는 클릭 시 상태를 바꾸는 함수입니다. */}
@@ -927,7 +891,7 @@ export default function ScheduleManager() {
         <ScheduleFormModal
           form={form}
           teamMembers={teamMembers}
-          onAddTeamMember={addTeamMember}
+          onDelete={() => { if (deleteSchedule(editing)) closeScheduleForm(); }}
           onToggleAttendee={toggleAttendee}
           error={formError}
           onChange={updateForm}
@@ -947,10 +911,8 @@ export default function ScheduleManager() {
           }
           filterDate={listDateFilter}
           totalCount={items.length}
-          onStatusChange={changeScheduleStatus}
           onToggleFavorite={toggleFavorite}
           onClearDateFilter={() => setListDateFilter(null)}
-          onDelete={deleteSchedule}
           onEdit={openScheduleForm}
           onClose={() => setListOpen(false)}
         />

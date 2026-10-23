@@ -1,3 +1,9 @@
+/* [화면이 열리는 순서]
+ * 사용자가 /schedule 주소를 열면 App의 라우터가 이 함수를 실행합니다.
+ * return은 화면에 놓을 JSX를 돌려줍니다. <ScheduleManager />는 글자가 아니라 다른 컴포넌트의 호출입니다.
+ * 이 파일에는 일정 배열이나 저장 함수가 없고, 실제 업무 처리는 Manager가 담당합니다.
+ * 따라서 주소 연결 문제는 Page와 App을, 일정 저장 문제는 Manager를 먼저 확인하면 됩니다.
+ */
 import ScheduleManager from "./ScheduleManager";
 
 /* 리액트를 처음 읽는 경우 이 파일부터 시작하세요.
@@ -18,8 +24,8 @@ import ScheduleManager from "./ScheduleManager";
  *
  * 추천 읽기 순서:
  *    SchedulePage → ScheduleManager(데이터와 동작) → ScheduleCalendar(달력)
- *    → ScheduleFormModal(입력) → ScheduleSidebar/Directory(오른쪽 목록).
- *    scheduleData는 공통 계산, ScheduleItemParts는 여러 화면에서 쓰는 작은 부품입니다.
+ *    → ScheduleFormModal(입력·목록·공통 팝업) → ScheduleSidebar/Directory(오른쪽 목록).
+ *    scheduleData는 공통 계산, ScheduleItemParts는 아이콘과 일정 표시용 공통 부품입니다.
  *    CSS는 화면 배치와 색상을, test 파일은 사용자 동작이 맞는지 확인하는 방법을 설명합니다.
  *
  * 이 코드에서 먼저 익힐 문법:

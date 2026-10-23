@@ -1,8 +1,15 @@
+/* [재사용 부품의 입력과 출력]
+ * item은 표시할 일정 한 건입니다. 같은 부품도 item이 다르면 다른 제목과 시간을 보여줍니다.
+ * onEdit 같은 on으로 시작하는 props는 사용자 동작을 부모에게 전달하는 함수입니다.
+ * ScheduleEvent는 달력 박스, ScheduleAgendaItem은 선택 날짜 상세 카드, ScheduleFavorite는 별표 버튼입니다.
+ * 같은 별표 부품을 재사용하므로 월별·일별·주별·담당자별 화면이 같은 저장 함수를 호출합니다.
+ * 별표는 일정 열기 버튼과 형제 요소로 배치합니다. button 안에 또 button을 넣지 않습니다.
+ * aria-label은 아이콘처럼 글자가 없는 버튼의 이름, aria-pressed는 별 선택 여부를 보조 기기에 알려줍니다.
+ * 화면의 배지 색은 분류를 표현하며 접근 권한을 검사하거나 저장을 실행하는 기능은 아닙니다.
+ */
 import React from "react";
-import ScheduleIcon from "./ScheduleIcon";
 import {
   normalizeAttendees,
-  normalizeStatus,
   scheduleStatuses,
   getScheduleTime,
 } from "./scheduleData";
@@ -12,9 +19,9 @@ import {
  * 각 화면마다 수정·삭제 버튼과 상태 표시를 다시 작성하면 한쪽만 수정되는 문제가 생기기 쉽습니다.
  * 여기서는 같은 모양과 동작을 부품으로 만들고 item과 콜백만 받아 재사용합니다.
  *
- * 예: <ScheduleActions item={item} onEdit={openScheduleForm} ... />
- * 부모의 openScheduleForm 함수가 자식에서는 onEdit이라는 이름으로 들어옵니다.
- * 아래 onClick={() => onEdit(item)}를 실행하면 이 일정 객체를 인자로 부모 함수를 호출합니다.
+ * 예: <ScheduleActions item={item} onDelete={deleteSchedule} ... />
+ * 부모의 deleteSchedule 함수가 자식에서는 onDelete라는 이름으로 들어옵니다.
+ * 아래 onClick={() => onDelete(item)}를 실행하면 이 일정 객체를 인자로 부모 함수를 호출합니다.
  * 함수 이름이 달라 보여도 새 저장 기능이 생긴 것이 아니라 같은 함수를 props로 전달한 것입니다.
  *
  * style={{ "--sm-event-color": item.color }}의 바깥 {}는 JSX에 JS 값을 넣는 표시이고,
@@ -23,22 +30,21 @@ import {
  * CSS 한 곳에서 조정할 수 있습니다. 아래 일정 행의 색상선은 background로 직접 칠합니다.
  * compact=false 같은 매개변수 기본값은 부모가 그 props를 생략했을 때 사용할 값입니다.
  */
-// 상태 코드로 표시 문구를 찾습니다. 알 수 없는 값은 normalizeStatus가 pending으로 바꿉니다.
+// 상태 코드로 표시 문구를 찾습니다. 없는 코드면 첫 항목인 '진행 전'을 사용합니다.
 // 배지·툴팁·선택창이 이 함수를 공유하므로 같은 상태를 서로 다르게 표시하지 않습니다.
 function getStatusOption(status) {
-  const statusCode = normalizeStatus(status);
   for (const option of scheduleStatuses) {
-    if (option.value === statusCode) return option;
+    if (option.value === status) return option;
   }
   return scheduleStatuses[0];
 }
 
 // 공통 상태 정의로 배지와 선택창의 문구를 맞춥니다. 색상만으로 구분하지 않고 텍스트도 표시합니다.
-export function ScheduleStatus({ status, compact = false }) {
+export function ScheduleStatus({ status }) {
   const option = getStatusOption(status);
   return (
     <span className={`sm-status-badge ${option.value}`} title={option.label}>
-      {compact ? option.shortLabel : option.label}
+      {option.label}
     </span>
   );
 }
@@ -47,7 +53,7 @@ export function ScheduleStatus({ status, compact = false }) {
 // 이 배지는 저장된 분류를 표시하며, 로그인 사용자별 접근 권한을 검사하는 기능은 아닙니다.
 export function ScheduleVisibility({ visibility }) {
   let label = "회사 공유";
-  let scopeClass = "sm-visibility shared";
+  let scopeClass = "sm-visibility";
   if (visibility === "private") {
     label = "개인 일정";
     scopeClass = "sm-visibility private";
@@ -55,14 +61,13 @@ export function ScheduleVisibility({ visibility }) {
   return <span className={scopeClass}>{label}</span>;
 }
 
-// 달력·주간 표에서 같은 버튼을 사용합니다. compact이면 월간 칸에 맞춰 제목과 보조 정보를 나눕니다.
-// 클릭 전파를 여기서 막아 내부 일정 버튼이 바깥 날짜 칸의 선택 동작까지 실행하지 않게 합니다.
 // 별표는 여러 화면에서 같은 저장 함수를 사용합니다. 클릭이 날짜 칸으로 전파되지 않게 막습니다.
 export function ScheduleFavorite({ item, onToggleFavorite }) {
   return (
     <button type="button" className="sm-favorite-btn" aria-pressed={Boolean(item.isFavorite)}
       aria-label={`${item.title} 즐겨찾기 ${item.isFavorite ? "해제" : "추가"}`}
       title={item.isFavorite ? "즐겨찾기 해제" : "즐겨찾기 추가"}
+      onDoubleClick={(event) => event.stopPropagation()}
       onClick={(event) => {
         event.stopPropagation();
         onToggleFavorite(item);
@@ -72,60 +77,67 @@ export function ScheduleFavorite({ item, onToggleFavorite }) {
   );
 }
 
+// compact이면 월간 칸에 맞춰 제목과 시간·별표를 나누고, 나머지 보기는 한 버튼으로 만듭니다.
 export function ScheduleEvent({ item, onOpen, compact = false, roleLabel, onToggleFavorite }) {
-  let eventClass = "sm-event";
-  if (compact) eventClass += " sm-event-compact";
   const status = getStatusOption(item.status);
+  const time = getScheduleTime(item);
+  const label = `${item.date} ${time} ${item.title} 상세 내용 확인 및 수정`;
+  const help = `${item.title} · ${time} · ${item.project} · ${item.person} · ${status.label}`;
+  // 두 배치에서 같은 클릭 처리를 사용합니다. 날짜 칸의 클릭까지 실행되지 않게 막은 뒤 수정 창을 엽니다.
+  function openSchedule(event) {
+    event.stopPropagation();
+    onOpen(item);
+  }
   // 버튼 안에 별 버튼을 중첩하지 않고, 일정 박스 안에 제목 버튼과 별 버튼을 나란히 둡니다.
   // 제목은 상세창, 별은 즐겨찾기만 실행하므로 서로의 동작이 섞이지 않습니다.
   if (compact) {
     return (
-      <div className={eventClass} style={{ "--sm-event-color": item.color }}>
+      <div className="sm-event sm-event-compact" style={{ "--sm-event-color": item.color }}
+        onClick={openSchedule} title={help}>
+        {/* 제목뿐 아니라 시간·배지·빈 여백에서도 한 번 클릭하면 같은 수정 창을 엽니다.
+            별 버튼은 더블클릭 전파를 막아 즐겨찾기 조작이 수정 창까지 열지 않게 합니다. */}
         <button type="button" className="sm-event-open"
-          aria-label={`${item.date} ${getScheduleTime(item)} ${item.title} 상세 내용 확인 및 수정`}
-          title={`${item.title} · ${getScheduleTime(item)} · ${item.project} · ${item.person} · ${status.label}`}
-          onClick={(event) => {
-            event.stopPropagation();
-            onOpen(item);
-          }}>
+          aria-label={label} title={help} onClick={openSchedule}>
           <strong className="sm-event-title">{item.title}</strong>
         </button>
         <div className="sm-event-time-row">
-          <time>{getScheduleTime(item)}</time>
-          {onToggleFavorite && <ScheduleFavorite item={item} onToggleFavorite={onToggleFavorite} />}
+          <time>{time}</time>
+          <ScheduleFavorite item={item} onToggleFavorite={onToggleFavorite} />
         </div>
         <span className="sm-event-meta">
-          <ScheduleStatus status={item.status} compact />
+          <ScheduleStatus status={item.status} />
           <ScheduleVisibility visibility={item.visibility} />
         </span>
       </div>
     );
   }
-  return (
+  const eventButton = (
     <button
       type="button"
-      className={eventClass}
+      className="sm-event"
       style={{ "--sm-event-color": item.color }}
-      onClick={(event) => {
-        event.stopPropagation();
-        onOpen(item);
-      }}
-      aria-label={`${item.date} ${getScheduleTime(item)} ${item.title} 상세 내용 확인 및 수정`}
-      title={`${item.title} · ${getScheduleTime(item)} · ${item.project} · ${item.person} · ${status.label}`}
+      onClick={openSchedule}
+      aria-label={label}
+      title={help}
     >
-        <>
-          <time>{getScheduleTime(item)}</time>
-          <span>{item.title}</span>
-          <small>{roleLabel || item.person}</small>
-          <ScheduleStatus status={item.status} compact />
-          <ScheduleVisibility visibility={item.visibility} />
-        </>
+      <time>{time}</time>
+      <span>{item.title}</span>
+      <small>{roleLabel || item.person}</small>
+      <ScheduleStatus status={item.status} />
+      <ScheduleVisibility visibility={item.visibility} />
     </button>
+  );
+  // 별표를 일정 버튼 밖에 나란히 두어 버튼 중첩과 수정 창 열림을 막습니다.
+  return (
+    <div className="sm-event-shell" style={{ "--sm-event-color": item.color }}>
+      {eventButton}
+      <ScheduleFavorite item={item} onToggleFavorite={onToggleFavorite} />
+    </div>
   );
 }
 
-// 부모의 콜백과 item만 바꿔 전달해 목록/사이드바의 수정·삭제 처리를 공통으로 유지합니다.
-export function ScheduleActions({ item, onEdit, onDelete, onStatusChange, onToggleFavorite }) {
+// 선택 날짜 카드의 완료 여부 변경과 삭제 버튼입니다. 수정은 카드 제목 클릭으로 처리합니다.
+export function ScheduleActions({ item, onDelete, onStatusChange }) {
   const status = getStatusOption(item.status);
   let statusHelp = "이 일정의 상태 변경";
   if (item.repeatType !== "none" && !item.occurrenceDate) {
@@ -133,13 +145,9 @@ export function ScheduleActions({ item, onEdit, onDelete, onStatusChange, onTogg
   }
   return (
     <div className="sm-item-actions">
-      {onToggleFavorite && (
-        <ScheduleFavorite item={item} onToggleFavorite={onToggleFavorite} />
-      )}
-      {onStatusChange && (
         <select
           className={`sm-status-select ${status.value}`}
-          aria-label={`${item.title} 업무 진행 상태`}
+          aria-label={`${item.title} 일정 상태`}
           title={statusHelp}
           value={status.value}
           onChange={(event) => onStatusChange(item, event.target.value)}
@@ -150,15 +158,6 @@ export function ScheduleActions({ item, onEdit, onDelete, onStatusChange, onTogg
             </option>
           ))}
         </select>
-      )}
-      <button
-        type="button"
-        className="sm-edit-btn"
-        onClick={() => onEdit(item)}
-        aria-label={`${item.title} 일정 수정`}
-      >
-        수정
-      </button>
       <button
         type="button"
         className="sm-delete-btn"
@@ -179,26 +178,62 @@ export function ScheduleAttendees({ item, paragraph = false }) {
   return <small>참석자: {names}</small>;
 }
 
-// 검색 결과와 선택 날짜 패널은 같은 일정 행을 사용합니다.
-// detailed=true인 선택 날짜 패널에만 작업 구분과 상세 메모를 추가합니다.
+// 선택 날짜 패널의 일정 한 건입니다. 작업 구분·참석자·메모를 함께 표시합니다.
 // 실제 수정·삭제는 이 컴포넌트가 하지 않고 부모가 전달한 함수에 item을 넘깁니다.
-export function ScheduleAgendaItem({ item, detailed = false, onEdit, onDelete, onStatusChange, onToggleFavorite }) {
+export function ScheduleAgendaItem({ item, onEdit, onDelete, onStatusChange, onToggleFavorite }) {
   return (
-    <article className="sm-agenda-item">
-      <time className="sm-time">{getScheduleTime(item)}</time>
-      {/* 색상은 작업 종류를, 상태 선택창은 업무 진행 상태를 나타냅니다. */}
-      <div className="sm-line" style={{ background: item.color }} />
-      <div>
-        <button type="button" className="sm-detail-link" onClick={() => onEdit(item)}>
+    <article className="sm-agenda-item sm-favorite-item" style={{ "--sm-event-color": item.color }}>
+      {/* 즐겨찾기와 같은 배치를 재사용합니다. 제목과 별을 분리하고 정보마다 이름을 붙입니다. */}
+      <div className="sm-favorite-heading">
+        <button type="button" className="sm-favorite-title" aria-label={`${item.title} 일정 수정`} onClick={() => onEdit(item)}>
           <strong>{item.title}</strong>
         </button>
-        <small>{detailed && `${item.type} · `}{item.project} · {item.person}</small>
-        <ScheduleVisibility visibility={item.visibility} />
-        <ScheduleAttendees item={item} paragraph />
-        {/* &&는 조건이 참일 때만 문단을 만듭니다. pre-wrap 스타일이 메모의 줄바꿈을 보존합니다. */}
-        {detailed && item.description && <p className="sm-description">{item.description}</p>}
+        <ScheduleFavorite item={item} onToggleFavorite={onToggleFavorite} />
       </div>
-      <ScheduleActions item={item} onEdit={onEdit} onDelete={onDelete} onStatusChange={onStatusChange} onToggleFavorite={onToggleFavorite} />
+      <div className="sm-favorite-time-row">
+        <span className="sm-favorite-time"><ScheduleIcon name="clock" /><time>{getScheduleTime(item)}</time></span>
+        <ScheduleVisibility visibility={item.visibility} />
+      </div>
+      <dl className="sm-favorite-info">
+        <dt>프로젝트</dt><dd>{item.project || "프로젝트 없음"}</dd>
+        <dt>담당자</dt><dd>{item.person}</dd>
+        <dt>작업 구분</dt><dd>{item.type}</dd>
+      </dl>
+      <ScheduleAttendees item={item} paragraph />
+      {/* 메모가 있을 때만 별도 영역을 만들고 입력한 줄바꿈을 그대로 보여 줍니다. */}
+      {item.description && <p className="sm-description">{item.description}</p>}
+      <ScheduleActions item={item} onDelete={onDelete} onStatusChange={onStatusChange} />
     </article>
+  );
+}
+
+
+
+/* 화면에서 반복해서 사용하는 작은 선 아이콘입니다.
+ * SVG는 사진 파일 대신 선의 좌표로 그림을 그려서 크기를 바꿔도 선명하게 보입니다.
+ * paths 객체에서 name에 맞는 그림만 꺼내므로 버튼마다 같은 SVG 설정을 복사하지 않아도 됩니다.
+ * currentColor는 부모 버튼의 글자색을 따라갑니다. 색상과 크기는 scheduleStyles.css에서 정합니다.
+ * 아이콘은 장식이고 실제 버튼 이름은 글자나 aria-label로 제공하므로,
+ * aria-hidden으로 화면 읽기 프로그램이 그림을 중복해서 읽지 않게 합니다.
+ */
+const paths = {
+  reset: <><path d="M3 10a9 9 0 1 1 2 9M3 4v6h6" /></>,
+  projects: <><rect x="3" y="4" width="18" height="16" rx="3" /><path d="M8 4v16M8 10h13M13 14h4M13 17h3" /></>,
+  people: <><circle cx="9" cy="8" r="3" /><path d="M3 20v-2a6 6 0 0 1 12 0v2M16 5a3 3 0 0 1 0 6M18 14a5 5 0 0 1 3 4v2" /></>,
+  calendar: <><rect x="3" y="5" width="18" height="16" rx="3" /><path d="M7 3v4M17 3v4M3 11h18M8 15h2M14 15h2M8 18h2" /></>,
+  clock: <><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></>,
+  search: <><circle cx="10.5" cy="10.5" r="6.5" /><path d="m16 16 5 5" /></>,
+  plus: <path d="M12 5v14M5 12h14" />,
+  star: <path d="m12 3 2.8 5.7 6.3.9-4.5 4.4 1.1 6.3-5.7-3-5.7 3 1.1-6.3-4.5-4.4 6.3-.9Z" />,
+  arrow: <path d="M5 12h14m-6-6 6 6-6 6" />,
+  chevronLeft: <path d="m14 6-6 6 6 6" />,
+  chevronRight: <path d="m10 6 6 6-6 6" />,
+};
+
+export function ScheduleIcon({ name }) {
+  return (
+    <svg className="sm-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
+      {paths[name]}
+    </svg>
   );
 }

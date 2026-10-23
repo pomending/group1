@@ -1,3 +1,13 @@
+/* [저장 원본과 달력 표시 자료의 차이]
+ * 매주 반복 일정은 날짜별로 무한히 저장하지 않고 시작일·반복 종류·간격을 가진 원본 한 건으로 저장합니다.
+ * expandSchedules(items, 시작일, 종료일)는 화면에 필요한 기간의 발생 일정만 새 배열로 만듭니다.
+ * 예를 들어 매주 목요일 규칙 하나를 10월 범위에 펼치면 여러 목요일 항목이 나오지만 원본은 한 건입니다.
+ * occurrenceDate는 그 규칙 중 특정 날짜의 한 번을 가리키며 excludedDates는 제외한 날짜 목록입니다.
+ * 날짜는 YYYY-MM-DD, 시간은 HH:mm 형식으로 맞춰 비교하고 화면에 표시할 때만 구분자를 바꿉니다.
+ * Date의 월은 0부터 시작합니다. 생성할 때 10월은 9이고 화면에서는 getMonth()에 1을 더합니다.
+ * sort는 배열 자체를 바꾸므로 원본을 정렬하면 안 되는 곳에서는 먼저 [...items]로 복사합니다.
+ * 이 파일은 React state를 바꾸지 않고, 계산 결과를 반환하면 호출한 Manager가 그 결과를 사용합니다.
+ */
 /*
  * [공부 순서 1] 공통 데이터와 날짜 계산
  * React 화면과 관계없이 입력값을 받아 결과를 돌려주는 함수들을 모은 파일입니다.
@@ -29,7 +39,7 @@
  * 발생 목록을 만들 때 원본 id를 유지하고 occurrenceDate를 추가해 어느 날짜의 한 번인지 표시합니다.
  * 그래서 규칙 하나에서 여러 화면 항목이 나와도 원본 저장 개수가 그만큼 늘어나지는 않습니다.
  */
-// 달력의 요일 순서와 등록 폼에서 선택할 수 있는 작업 종류입니다.
+// weekDays는 주별·담당자별 주간용 월요일 시작 순서입니다. 월별은 Calendar에서 일요일 시작으로 따로 표시합니다.
 export const weekDays = ["월", "화", "수", "목", "금", "토", "일"];
 export const scheduleTypes = [
   "기획",
@@ -64,11 +74,10 @@ export const getRepeatInterval = (item) => {
 
 // 화면 문구와 저장값을 구분합니다. 작업 종류(디자인/제작 등)와 진행 상태는 별개입니다.
 export const scheduleStatuses = [
-  { value: "pending", label: "업무 진행 전", shortLabel: "진행 전" },
-  { value: "in_progress", label: "업무 중", shortLabel: "업무 중" },
-  { value: "completed", label: "업무 완료", shortLabel: "완료" },
+  { value: "pending", label: "예정" },
+  { value: "completed", label: "완료" },
 ];
-// 저장값이 기존 코드에 없는 상태이거나 누락됐을 때 기본값을 반환합니다.
+// 기존 업무 중(in_progress)도 예정으로 읽고, 완료 여부만 관리합니다.
 export function normalizeStatus(value) {
   for (const status of scheduleStatuses) {
     if (status.value === value) return value;
@@ -118,8 +127,7 @@ export const compareSchedules = (a, b) =>
 
 // 시작 시간은 기존 time에 유지합니다. 예전 자료는 종료 시간이 없으므로 오후 5시로 표시합니다.
 export function getScheduleTime(item) {
-  const endTime = item.endTime || "17:00";
-  return item.time + "~" + endTime;
+  return item.time + "~" + (item.endTime || "17:00");
 }
 
 // 선택 날짜를 복사해 월요일로 되돌린 뒤 7일을 만듭니다. state의 Date를 직접 바꾸지 않습니다.
@@ -221,13 +229,13 @@ export const normalizeAttendees = (value) => {
   return result;
 };
 
-// 담당자와 참석자를 하나의 이름 배열로 합쳐 사람별 표·검색·팀원 수에서 재사용합니다.
+// 담당자와 참석자를 하나의 이름 배열로 합쳐 사람별 표와 검색에서 사용합니다. 등록 팀원 수는 별도 명단을 셉니다.
 // 담당자="민수", 참석자=["민수", "지수"]이면 중복을 제거한 ["민수", "지수"]를 반환합니다.
 // 현재는 이름 문자열로 사람을 구분하므로 같은 이름은 한 사람으로 취급합니다.
 export const getSchedulePeople = (item) =>
   normalizeAttendees([
-    // ||는 왼쪽이 빈 문자열/undefined 등 거짓으로 평가되면 오른쪽 기본값을 사용합니다.
-    item.person || "",
+    // 담당자가 비어 있거나 문자열이 아니어도 normalizeAttendees가 알아서 건너뜁니다.
+    item.person,
     // ...가 없으면 [담당자, [참석자들]]로 중첩됩니다. 펼쳐야 이름들이 한 배열에 나란히 들어갑니다.
     // normalizeAttendees가 누락값도 배열로 보장하므로 펼치기를 안전하게 사용할 수 있습니다.
     ...normalizeAttendees(item.attendees),
@@ -357,29 +365,32 @@ const getScheduleLookaheadEnd = (item, fromKey, count) => {
 // 프로젝트 선택 시 오늘 이후 첫 발생일로 이동합니다. 모두 과거라면 마지막 저장 날짜를 사용합니다.
 // 반복은 시작일만 비교하지 않고 실제 발생일을 구하며, 삭제한 발생일은 건너뜁니다.
 export const getNextScheduleDate = (items, fromKey) => {
-  const upcoming = [];
+  let nextDate;
+  let latestDate;
   for (const item of items) {
+    // 날짜 하나만 필요하므로 목록 전체를 복사·정렬하지 않고 가장 늦은 저장 날짜만 기억합니다.
+    if (!latestDate || item.date > latestDate) latestDate = item.date;
     const endKey = getScheduleLookaheadEnd(item, fromKey, 1);
     const dates = expandSchedules([item], fromKey, endKey);
-    if (dates.length > 0) upcoming.push(dates[0]);
+    // 각 규칙의 첫 발생일 중 가장 빠른 날짜를 남깁니다. 같은 날짜의 시간 순서는 필요하지 않습니다.
+    if (dates.length > 0 && (!nextDate || dates[0].date < nextDate)) nextDate = dates[0].date;
   }
-  upcoming.sort(compareSchedules);
-  if (upcoming.length > 0) return upcoming[0].date;
-
-  // 미래 일정이 없으면 가장 최근 저장 날짜를 사용합니다. 빈 배열이면 이동할 날짜도 없습니다.
-  const pastItems = [...items].sort(compareSchedules);
-  if (pastItems.length > 0) return pastItems[pastItems.length - 1].date;
-  return undefined;
+  // 미래 일정이 없으면 가장 최근 저장 날짜를 사용합니다. 빈 목록이면 두 값 모두 undefined입니다.
+  return nextDate || latestDate;
 };
 
 /* '다가오는 일정'은 시작 전 작업과 아직 끝나지 않은 작업을 함께 보여줍니다.
  * now는 밀리초 숫자입니다. YYYY-MM-DDTHH:mm을 Date로 바꾸면 브라우저의 현지 시각이 됩니다.
  * 09:00~17:00 작업은 09시 이후에도 남겨 두고 17시가 되면 제외합니다. 완료된 일정도 제외합니다.
- * 반복은 각 규칙에서 가까운 limit개만 후보로 만들고, 전체를 시간순 정렬해 최종 limit개를 남깁니다.
+ * 반복은 각 규칙에서 가까운 limit개를 후보로 만들고, days가 있으면 기간 밖 후보를 제외한 뒤 가까운 limit개를 남깁니다.
  * 오늘 이미 지난 반복 한 건을 건너뛸 수 있도록 조회 횟수에는 1을 더합니다.
- * 연간 반복처럼 먼 미래의 일정도 찾되, 종료일 없는 반복 전체를 생성하지 않습니다. */
-export const getUpcomingSchedules = (items, now, limit = 5) => {
+ * days를 생략한 프로젝트 이동용 조회는 먼 미래도 찾습니다. 오른쪽 목록은 days=7로 기간을 제한합니다. */
+export const getUpcomingSchedules = (items, now, limit = 5, days) => {
   const fromKey = dateKey(new Date(now));
+  // 기간 제한은 오른쪽 목록에서만 사용합니다. 프로젝트 이동은 먼 미래 일정도 찾을 수 있습니다.
+  const windowEnd = new Date(now);
+  windowEnd.setHours(0, 0, 0, 0);
+  windowEnd.setDate(windowEnd.getDate() + (days || 0));
   const upcoming = [];
   for (const item of items) {
     if (item.status === "completed") continue;
@@ -390,6 +401,7 @@ export const getUpcomingSchedules = (items, now, limit = 5) => {
       const startTime = new Date(`${occurrence.date}T${occurrence.time}`).getTime();
       const endTime = new Date(`${occurrence.date}T${occurrence.endTime || "17:00"}`).getTime();
       if (Number.isNaN(startTime) || Number.isNaN(endTime)) continue;
+      if (days && startTime >= windowEnd.getTime()) break;
       // 시작 전이라면 계속 표시합니다. 이미 시작했다면 종료 시간까지 남겨 둡니다.
       // 기존 자료에 시작보다 이른 기본 종료 시간(17시)이 있어도 미래의 시작 일정은 숨기지 않습니다.
       if (startTime <= now && endTime <= now) continue;

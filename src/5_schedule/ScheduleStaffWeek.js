@@ -1,3 +1,11 @@
+/* [사람별 표가 만들어지는 예]
+ * 일정 한 건의 담당자가 민수, 참석자가 지수라면 같은 일정을 두 사람 행에서 확인할 수 있습니다.
+ * 화면에 두 번 보여도 저장된 일정 객체가 두 개로 복제되는 것은 아닙니다.
+ * people은 표시할 팀원 이름 배열, items는 부모가 이번 주 범위로 이미 펼쳐 준 일정 배열입니다.
+ * filter로 한 사람이 관련된 일정만 고르고 날짜별로 묶어 월요일부터 일요일 칸에 배치합니다.
+ * expandedPerson은 현재 펼친 이름 하나를 기억합니다. null이면 모두 접혀 있습니다.
+ * React의 key는 행을 구분하는 표시이며 실제 화면에 출력하는 글자가 아닙니다.
+ */
 import React, { useState } from "react";
 import {
   getSchedulePeople,
@@ -18,11 +26,6 @@ import { ScheduleEvent } from "./ScheduleItemParts";
  * 리액트의 map이 필요한 수만큼 tr과 td를 만들고, CSS가 너비·배경·스크롤을 정합니다.
  * th의 scope='row'/'col'은 이 머리글이 행/열 중 어느 쪽을 설명하는지 알려 줍니다.
  */
-/*
- * 사람 목록은 전체 검색 결과, items는 화면 기간에 펼친 발생 목록입니다.
- * 사람마다 일정을 찾은 다음 날짜별로 묶으면 표의 셀에서 바로 찾을 수 있습니다.
- * 하나의 일정을 두 행에 보여도 저장 데이터를 복제하지 않고 같은 원본 ID를 사용합니다.
- */
 export default function ScheduleStaffWeek({
   people,
   personSearch,
@@ -32,6 +35,7 @@ export default function ScheduleStaffWeek({
   holidayDates,
   onSelectDate,
   onOpenSchedule,
+  onToggleFavorite,
 }) {
   // 이름 하나만 기억해 한 번에 한 사람의 일정만 펼칩니다. 이름 검색이면 첫 결과를 바로 엽니다.
   const [expandedPerson, setExpandedPerson] = useState(() => {
@@ -42,7 +46,6 @@ export default function ScheduleStaffWeek({
     if (expandedPerson === person) setExpandedPerson(null);
     else setExpandedPerson(person);
   }
-  const weekKeys = weekDates.map((day) => day.key);
 
   if (!people.length) {
     return (
@@ -68,7 +71,7 @@ export default function ScheduleStaffWeek({
         <thead>
           <tr>
             <th scope="col">담당자 / 참석자</th>
-            {weekDates.map(({ date, key }, index) => {
+            {weekDates.map(({ key }, index) => {
               let dayClass = "";
               if (holidayDates[key] || index === 6) dayClass = "sunday";
               else if (index === 5) dayClass = "saturday";
@@ -89,16 +92,13 @@ export default function ScheduleStaffWeek({
         </thead>
         <tbody>
           {people.map((person) => {
-            const rowItems = items.filter((item) => {
-              const isThisWeek = weekKeys.includes(item.date);
-              const isParticipant = getSchedulePeople(item).includes(person);
-              return isThisWeek && isParticipant;
-            });
+            // items는 부모에서 이미 이번 주로 제한했습니다. 여기서는 사람만 확인합니다.
+            const rowItems = items.filter((item) => getSchedulePeople(item).includes(person));
             // 사람별 목록을 다시 날짜로 묶으면 각 셀에서 dates[key]로 바로 조회할 수 있습니다.
             const dates = groupSchedulesByDate(rowItems);
             const isExpanded = expandedPerson === person;
             return (
-              <tr key={person} className={isExpanded ? "sm-staff-expanded" : "sm-staff-collapsed"}>
+              <tr key={person} className={isExpanded ? undefined : "sm-staff-collapsed"}>
                 <th scope="row">
                   <button type="button" className="sm-staff-toggle" aria-expanded={isExpanded}
                     aria-label={`${person} 일정 ${isExpanded ? "접기" : "펼치기"}`}
@@ -123,6 +123,7 @@ export default function ScheduleStaffWeek({
                           key={item.id}
                           item={item}
                           onOpen={onOpenSchedule}
+                          onToggleFavorite={onToggleFavorite}
                           roleLabel={
                             item.person.trim() === person ? "담당" : "참석"
                           }
