@@ -1,6 +1,6 @@
 
 import React, { useState } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import "./Dashboard.css";
 
 // 커뮤니티 페이지 연결
@@ -11,7 +11,6 @@ import CommunityDetailPage from "./CommunityDetailPage";
 function DashboardPage() {
 
     // 페이지 이동 및 현재 주소 확인
-    const navigate = useNavigate();
     const [searchParams] = useSearchParams();
     const page = searchParams.get("page");
 

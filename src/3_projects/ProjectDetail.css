@@ -1,0 +1,109 @@
+/* ProjectDetail.css — compact ERP detail screen */
+.pd-page { --pd-accent: #7565d8; --pd-muted: #85899a; --pd-line: #e9e9f1; min-height: 100vh; padding: 18px 24px 30px; background: #f6f7fb; color: #303348; font: 14px/1.4 Arial, sans-serif; }
+
+.pd-page, .pd-page * { box-sizing: border-box; }
+
+.pd-container { width: 100%; max-width: 1200px; margin: 0 auto; }
+
+/* Back button and header */
+.pd-back { display: inline-flex; align-items: center; padding: 0; margin-bottom: 12px; border: 0; background: none; color: var(--pd-accent); font-size: 13px; font-weight: 600; cursor: pointer; }
+
+.pd-back:hover { color: #5949be; }
+
+.pd-heading { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 16px; width: 100%; margin-bottom: 14px; }
+
+.pd-heading > div:first-child { min-width: 0; }
+
+.pd-heading-actions { display: flex; align-items: center; justify-content: flex-end; justify-self: end; gap: 10px; white-space: nowrap; }
+
+.pd-eyebrow, .pd-section-num { display: block; margin: 0 0 4px; color: var(--pd-accent); font-size: 10px; font-weight: 700; letter-spacing: 0.8px; }
+
+.pd-heading h1 { margin: 0; font-size: 24px; overflow-wrap: anywhere; }
+
+.pd-heading p:not(.pd-eyebrow) { margin: 3px 0 0; color: var(--pd-muted); font-size: 12px; }
+
+.pd-edit-btn { flex-shrink: 0; padding: 8px 16px; border: none; border-radius: 8px; background: var(--pd-accent); color: #fff; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
+
+.pd-edit-btn:hover { background: #5e4fc0; }
+
+/* Status labels */
+.pd-status, .pd-approved { display: inline-flex; align-items: center; flex-shrink: 0; padding: 5px 10px; border-radius: 20px; background: #f2f3f6; color: #77798c; font-size: 11px; font-weight: 600; white-space: nowrap; }
+
+.pd-status-진행중, .pd-approved { background: #e5f5ed; color: #34895f; }
+
+.pd-status-대기, .pd-status-납품대기 { background: #fff4df; color: #ad8033; }
+
+.pd-status-완료 { background: #e9e6fc; color: #6b5dc4; }
+
+.pd-status-지연, .pd-status-취소 { background: #fdebec; color: #c25d6d; }
+
+/* Cards and project information */
+.pd-card { margin-bottom: 12px; padding: 16px 20px; border: 1px solid var(--pd-line); border-radius: 11px; background: #fff; }
+
+.pd-card-header { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding-bottom: 10px; margin-bottom: 12px; border-bottom: 1px solid var(--pd-line); }
+
+.pd-card-header h2 { margin: 0; font-size: 17px; }
+
+.pd-number { color: var(--pd-muted); font-size: 12px; white-space: nowrap; }
+
+.pd-info-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 13px 18px; }
+
+.pd-info-item { display: flex; flex-direction: column; min-width: 0; gap: 3px; }
+
+.pd-info-item span, .pd-description > span { color: #9395a5; font-size: 11px; }
+
+.pd-info-item strong { overflow-wrap: anywhere; color: #383b52; font-size: 13px; font-weight: 600; }
+
+.pd-description { margin-top: 13px; padding-top: 10px; border-top: 1px solid var(--pd-line); }
+
+.pd-description p { margin: 5px 0 0; padding: 9px 11px; border-radius: 7px; background: #f8f8fc; color: #606476; font-size: 12px; line-height: 1.45; white-space: pre-wrap; }
+
+/* Progress bar */
+.pd-progress-percent { color: var(--pd-accent); font-size: 20px; }
+
+.pd-progress-track { height: 8px; overflow: hidden; border-radius: 20px; background: #eeedf5; }
+
+.pd-progress-fill { height: 100%; border-radius: inherit; background: var(--pd-accent); }
+
+.pd-muted { margin: 7px 0 0; color: #9497a7; font-size: 11px; }
+
+/* Quotation and tasks */
+.pd-subheading { margin: 0 0 9px; color: #45475e; font-size: 13px; }
+
+.pd-quotation { padding: 12px 14px; border: 1px solid #e6e1fa; border-radius: 9px; background: #faf9ff; }
+
+.pd-quotation-top { display: flex; align-items: center; gap: 24px; margin-bottom: 10px; }
+
+.pd-quotation-top > div { display: flex; flex-direction: column; gap: 3px; }
+
+.pd-quotation-top > div span { color: #9391a5; font-size: 11px; }
+
+.pd-quotation-top strong { color: #3b3a53; font-size: 12px; }
+
+.pd-approved { margin-left: auto; }
+
+.pd-table-wrap { overflow-x: auto; border: 1px solid #eeedf5; border-radius: 7px; background: #fff; }
+
+.pd-quotation-table { width: 100%; min-width: 490px; border-collapse: collapse; font-size: 12px; }
+
+.pd-quotation-table th { padding: 8px 10px; background: #f5f4fb; color: #797b90; font-weight: 600; text-align: left; }
+
+.pd-quotation-table td { padding: 9px 10px; border-top: 1px solid #eeedf5; color: #43465b; }
+
+.pd-quotation-table :is(th, td):not(:first-child) { text-align: right; }
+
+.pd-quotation-total { display: flex; align-items: center; justify-content: flex-end; gap: 15px; padding-top: 10px; }
+
+.pd-delete-btn {
+    padding: 8px 16px;
+    border: 1px solid #dc7e87;
+    border-radius: 8px;
+    background: white;
+    color: #c95361;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.pd-delete-btn:hover {
+    background: #fff0f2;
+}
