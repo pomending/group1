@@ -2,8 +2,9 @@ import { useState } from "react";
 import "./ProjectForm.css";
 
 function ProjectForm(props) {
+
     const [projectName, setProjectName] = useState('');
-    const [manager, setManager] = useState('김민수');
+    const [manager, setManager] = useState(props.employees[0]?.id ?? '');
     const [due, setDue] = useState('');
     const [selQuotation, setSelQuotation] = useState('')
 
@@ -20,6 +21,7 @@ function ProjectForm(props) {
     const handleSubmit = (e) => {
         e.preventDefault();
 
+        // 빈 데이터에 대한 유효성 체크들
         if (projectName.trim() === '') {
             alert('프로젝트명을 입력하세요');
             return;
@@ -35,11 +37,24 @@ function ProjectForm(props) {
             return;
         }
 
+        // 간단한 날짜 관련 유효성 체크들
+        const today = new Date().toLocaleDateString('sv-SE');
+
+        if (!due) {
+            alert('납품 예정일을 선택하세요.');
+            return;
+        }
+
+        if (due < today) {
+            alert('납품 예정일은 오늘 이후로 설정해주세요.');
+            return;
+        }
+
         props.setProjects(prev => [...prev, {
             id: Math.max(0, ...prev.map(p => Number(p.id) || 0)) + 1,
             name: projectName.trim(),
-            managerId: props.employees.find(emp => emp.name === manager)?.id ?? null,
-            startDate: "",
+            managerId: manager,
+            startDate: new Date().toLocaleDateString('sv-SE'),
             completedDate: null,
             description: "",
             dueDate: due,
@@ -192,10 +207,10 @@ function ProjectForm(props) {
                                 id="pf-manager"
                                 name="manager"
                                 value={manager}
-                                onChange={(e) => setManager(e.target.value)}
+                                onChange={(e) => setManager(Number(e.target.value))}
                             >
                                 {props.employees.map(emp => (
-                                    <option key={emp.id} value={emp.name}>
+                                    <option key={emp.id} value={emp.id}>
                                         {emp.name}
                                     </option>
                                 ))}
@@ -207,6 +222,8 @@ function ProjectForm(props) {
                             <input
                                 id="pf-due"
                                 type="date"
+                                // 납품 예정일을 오늘 날짜보다 더 이전 날짜로 할 수 없다
+                                min={new Date().toLocaleDateString('sv-SE')}
                                 value={due}
                                 onChange={(e) => setDue(e.target.value)}
                             />

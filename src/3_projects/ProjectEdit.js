@@ -22,10 +22,21 @@ function ProjectEdit(props) {
     const editProject = (e) => {
         e.preventDefault();
 
+        // 유효성 체크
         if (!selectedProject) return;
 
         if (projectName.trim() === "") {
             alert("프로젝트명을 입력하세요.");
+            return;
+        }
+
+        if (!startDate || !dueDate) {
+            alert('시작일과 납품 예정일을 모두 입력하세요.');
+            return;
+        }
+        
+        if (dueDate < startDate) {
+            alert("납품 예정일은 시작일보다 빠를 수 없습니다.");
             return;
         }
 
