@@ -1,10 +1,32 @@
+/* 전체 페이지 기본 설정 */
+html,
+body {
+    margin: 0;
+    padding: 0;
+    min-height: 100%;
+}
 
-/* ERPLayout.css */
+#root {
+    width: 100%;
+    max-width: none;
+    min-height: 100vh;
+    margin: 0;
+    padding: 0;
+}
 
+/* ERP 전체 레이아웃 */
 .erp-layout {
     display: grid;
     grid-template-columns: 220px minmax(0, 1fr);
+
+    width: 100%;
+    max-width: none;
+    min-width: 0;
     min-height: 100vh;
+
+    margin: 0;
+    padding: 0;
+
     background: #f6f7fb;
 }
 
@@ -13,21 +35,176 @@
     box-sizing: border-box;
 }
 
-.erp-main {
-    min-width: 0;
+/* 사이드바 */
+.erp-layout > .erp-sidebar {
     width: 100%;
-    min-height: 100vh;
-    background: #f6f7fb;
+    min-width: 0;
+    max-width: none;
+
+    align-self: start;
 }
 
-/* 작은 화면에서는 메뉴를 위쪽으로 이동 */
+/* Topbar + 메인 영역 */
+.erp-layout > .erp-workspace {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
 
-@media (max-width: 768px) {
-    .erp-layout {
-        grid-template-columns: 1fr;
+    width: 100%;
+    min-width: 0;
+    max-width: none;
+    min-height: 100vh;
+
+    margin: 0;
+    padding: 0;
+}
+
+/* 페이지 콘텐츠 */
+.erp-layout .erp-main {
+    display: block;
+    flex: 1 1 auto;
+
+    width: 100%;
+    min-width: 0;
+    max-width: none;
+    min-height: 0;
+
+    margin: 0;
+    padding: 0;
+
+    background: #f6f7fb;
+    text-align: left;
+}
+
+/* 팝업 모드 */
+.erp-layout.erp-popup {
+    grid-template-columns: minmax(0, 1fr);
+}
+
+/* 데스크톱 사이드바 접기 */
+@media (min-width: 769px) {
+
+    .erp-layout.erp-collapsed {
+        grid-template-columns: 76px minmax(0, 1fr);
     }
 
-    .erp-main {
+    .erp-layout.erp-collapsed .erp-sidebar-brand {
+        justify-content: center;
+        gap: 0;
+        padding-left: 8px;
+        padding-right: 8px;
+    }
+
+    .erp-layout.erp-collapsed .erp-sidebar-brand > div:last-child {
+        display: none;
+    }
+
+    .erp-layout.erp-collapsed .erp-sidebar-section {
+        display: none;
+    }
+
+    .erp-layout.erp-collapsed .erp-sidebar-link {
+        justify-content: center;
+        gap: 0;
+        padding-left: 8px;
+        padding-right: 8px;
+    }
+
+    .erp-layout.erp-collapsed .erp-sidebar-link > span:last-child {
+        display: none;
+    }
+
+    .erp-layout.erp-collapsed .erp-sidebar-footer {
+        display: none;
+    }
+}
+
+/* 화면이 좁아졌을 때 */
+@media (max-width: 768px) {
+
+    /* 1열이 아니라 좁은 사이드바 + 메인 영역 */
+    .erp-layout,
+    .erp-layout.erp-collapsed {
+        grid-template-columns: 76px minmax(0, 1fr);
+    }
+
+    /* 팝업에서는 사이드바가 없으므로 전체 너비 */
+    .erp-layout.erp-popup {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    /* 사이드바를 왼쪽 세로 형태로 유지 */
+    .erp-layout > .erp-sidebar {
+        position: sticky;
+        top: 0;
+
+        display: flex;
+        flex-direction: column;
+
+        width: 100%;
+        height: 100vh;
+        min-height: 100vh;
+
+        overflow-y: auto;
+        overflow-x: hidden;
+    }
+
+    /* 로고 아이콘만 표시 */
+    .erp-layout .erp-sidebar-brand {
+        display: flex;
+        justify-content: center;
+        gap: 0;
+
+        padding-left: 8px;
+        padding-right: 8px;
+    }
+
+    .erp-layout .erp-sidebar-brand > div:last-child {
+        display: none;
+    }
+
+    /* MAIN MENU 글자 숨기기 */
+    .erp-layout .erp-sidebar-section {
+        display: none;
+    }
+
+    /* 메뉴를 세로로 배치 */
+    .erp-layout .erp-sidebar-nav {
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+
+        width: 100%;
+    }
+
+    /* 메뉴 아이콘 중앙 정렬 */
+    .erp-layout .erp-sidebar-link {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 0;
+
+        width: 100%;
+
+        padding-left: 8px;
+        padding-right: 8px;
+    }
+
+    /* 메뉴 이름 숨기기 */
+    .erp-layout .erp-sidebar-link > span:last-child {
+        display: none;
+    }
+
+    /* 하단 안내 문구 숨기기 */
+    .erp-layout .erp-sidebar-footer {
+        display: none;
+    }
+
+    .erp-layout > .erp-workspace {
+        min-height: 100vh;
+    }
+
+    .erp-layout .erp-main {
         min-height: 0;
     }
 }
