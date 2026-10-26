@@ -478,18 +478,6 @@
   line-height: 1.6;
 }
 
-/* 선택 날짜 위의 프로젝트 표시입니다. grid로 이름과 해제 버튼을 세로로 나란히 둡니다. */
-.sm-selected-project {
-  display: grid;
-  justify-items: start;
-  gap: 8px;
-  margin-bottom: 14px;
-  padding: 12px;
-  border-radius: 8px;
-  background: var(--sm-soft);
-  overflow-wrap: anywhere;
-}
-
 /* 달력과 오른쪽 일정 패널의 배치
  * minmax(0, 1fr)은 달력이 남은 폭을 차지하되 긴 내용 때문에 최소 폭이 커지지 않게 합니다.
  * 오른쪽은 340px로 두고, align-items:start는 짧은 패널이 달력 높이만큼 늘어나는 것을 막습니다.
@@ -1986,7 +1974,6 @@
   filter: brightness(0.94);
 }
 
-.sm-detail-link,
 .sm-week-date {
   padding: 0;
   border: 0;
@@ -1994,11 +1981,6 @@
   color: inherit;
   text-align: left;
   cursor: pointer;
-}
-
-.sm-detail-link:hover {
-  color: var(--sm-accent);
-  text-decoration: underline;
 }
 
 .sm-description {
@@ -2311,3 +2293,442 @@
 .sm-extra-fields { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; padding: 10px 0; }
 .sm-agenda-item .sm-item-actions { grid-template-columns: minmax(0,1fr) auto; }
 @media(max-width:420px) { .sm-extra-fields { grid-template-columns: 1fr; } .sm-stat { min-height: 42px; padding: 9px 12px; } }
+
+/* 수정 시작: 선택한 일정 패널의 수정 버튼 */
+.sm-agenda-item .sm-item-actions { grid-template-columns: auto minmax(0, 1fr) auto; }
+.sm-edit-btn { padding: 7px 12px; border: 1px solid var(--sm-border); border-radius: 8px; background: #fff; color: var(--sm-ink); font: inherit; cursor: pointer; }
+.sm-edit-btn:hover { border-color: var(--sm-accent); color: var(--sm-accent); }
+/* 수정 끝 */
+
+
+.sm-agenda-item .sm-favorite-title { cursor: default; }
+
+
+/* 일정 패널: 날짜 헤더와 상세 카드의 위계를 분명히 합니다. */
+.sm-agenda-card {
+  border-top: 0;
+}
+
+.sm-agenda-card > .sm-panel-title {
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e8eee7;
+}
+
+.sm-agenda-date {
+  min-height: 82px;
+  margin: 14px 0 16px;
+  padding: 12px 14px;
+  border: 1px solid #e6ede3;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #f0f5ec 0%, #f8faf6 100%);
+}
+
+.sm-agenda-day {
+  width: 54px;
+  min-height: 54px;
+  border: 1px solid #e3ebdf;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 2px 7px rgba(39, 69, 51, 0.06);
+}
+
+.sm-date-subtitle {
+  color: #52665e;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.sm-agenda-item.sm-favorite-item {
+  margin-top: 12px;
+  padding: 16px;
+  border: 1px solid #e3eae1;
+  border-left: 4px solid var(--sm-event-color);
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 4px 14px rgba(34, 57, 43, 0.055);
+  transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+}
+
+.sm-agenda-item.sm-favorite-item:hover,
+.sm-agenda-item.sm-favorite-item:focus-within {
+  border-color: #cbd9ca;
+  border-left-color: var(--sm-event-color);
+  box-shadow: 0 8px 20px rgba(34, 57, 43, 0.09);
+  transform: translateY(-1px);
+}
+
+.sm-agenda-item .sm-favorite-heading {
+  align-items: center;
+  gap: 10px;
+}
+
+.sm-agenda-item .sm-favorite-title {
+  padding: 0;
+  color: #203a32;
+  font-size: 16px;
+  font-weight: 750;
+  line-height: 1.45;
+}
+
+.sm-agenda-item .sm-favorite-time-row {
+  margin-top: 10px;
+}
+
+.sm-agenda-item .sm-favorite-time {
+  gap: 7px;
+  color: #315f50;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.sm-agenda-item .sm-visibility {
+  margin-top: 0;
+  padding: 3px 8px;
+  border: 0;
+  border-radius: 999px;
+  background: #eef5ef;
+  color: #456758;
+}
+
+.sm-agenda-item .sm-favorite-info {
+  grid-template-columns: 58px minmax(0, 1fr);
+  gap: 7px 10px;
+  margin: 14px 0 12px;
+  padding: 12px 13px;
+  border: 1px solid #edf1eb;
+  border-radius: 12px;
+  background: #f8faf7;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.sm-agenda-item .sm-favorite-info dt {
+  color: #78877e;
+  font-size: 11px;
+}
+
+.sm-agenda-item .sm-favorite-info dd {
+  color: #30453b;
+  font-weight: 600;
+}
+
+.sm-agenda-item .sm-item-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 112px 48px;
+  align-items: stretch;
+  gap: 8px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid #edf1eb;
+}
+
+.sm-agenda-item .sm-edit-btn,
+.sm-agenda-item .sm-status-select,
+.sm-agenda-item .sm-delete-btn {
+  min-height: 38px;
+  border-radius: 10px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.sm-agenda-item .sm-edit-btn {
+  border: 1px solid #204b43;
+  background: #204b43;
+  color: #fff;
+  transition: background 150ms ease, transform 150ms ease;
+}
+
+.sm-agenda-item .sm-edit-btn:hover {
+  border-color: #173c35;
+  background: #173c35;
+  color: #fff;
+  transform: translateY(-1px);
+}
+
+.sm-agenda-item .sm-status-select {
+  padding: 5px 8px;
+  border-color: #e1e9e1;
+  border-radius: 10px;
+  font-size: 11px;
+}
+
+.sm-agenda-item .sm-delete-btn {
+  display: grid;
+  place-items: center;
+  min-height: 38px;
+  padding: 5px;
+  border-radius: 10px;
+  font-size: 11px;
+}
+
+@media (max-width: 420px) {
+  .sm-agenda-item.sm-favorite-item {
+    padding: 13px;
+  }
+
+  .sm-agenda-item .sm-item-actions {
+    grid-template-columns: minmax(0, 1fr) 98px 42px;
+    gap: 6px;
+  }
+}
+
+/* 날짜 표시만 선명하게 구분합니다. */
+.sm-month-view .sm-day-num {
+  width: 32px;
+  height: 32px;
+  margin: 0 0 7px;
+  border-radius: 50%;
+  font-size: 13px;
+  font-weight: 650;
+  transition: background-color 140ms ease, color 140ms ease, box-shadow 140ms ease;
+}
+
+.sm-month-view .sm-day.selected {
+  background: #f4f7f1;
+  box-shadow: inset 0 0 0 1px #d4e1d2;
+}
+
+.sm-month-view .sm-day.selected .sm-day-num {
+  background: #204b43;
+  color: #fff;
+  box-shadow: 0 2px 6px rgba(32, 75, 67, 0.22);
+}
+
+.sm-month-view .sm-day.today:not(.selected) .sm-day-num {
+  background: #eaf2e8;
+  color: #204b43;
+  box-shadow: inset 0 0 0 1px #b8cdb6;
+}
+
+.sm-month-view .sm-day.today:not(.selected) .sm-day-num.saturday {
+  color: #3976ce;
+}
+
+.sm-month-view .sm-day.today:not(.selected) .sm-day-num.sunday,
+.sm-month-view .sm-day.today:not(.selected) .sm-day-num.holiday {
+  color: #df4555;
+}
+
+.sm-agenda-date {
+  min-height: 76px;
+  padding: 12px 14px;
+  border-color: #e3e9e1;
+  border-radius: 14px;
+  background: #f7f9f6;
+}
+
+.sm-agenda-day {
+  width: 58px;
+  min-height: 58px;
+  align-content: center;
+  gap: 2px;
+  border: 0;
+  border-radius: 13px;
+  background: #204b43;
+  box-shadow: none;
+  color: #fff;
+}
+
+.sm-agenda-day strong {
+  color: #fff;
+  font-size: 26px;
+  font-weight: 750;
+}
+
+.sm-agenda-day span {
+  margin-top: 0;
+  color: #dcebad;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.sm-date-subtitle {
+  color: #334b40;
+  font-size: 13px;
+  font-weight: 650;
+  line-height: 1.6;
+}
+
+.sm-date-subtitle strong {
+  display: inline-block;
+  margin-left: 4px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: #fff0f0;
+  color: #c9424e;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+/* 날짜 강조색을 눈에 편한 저채도 세이지 톤으로 조정합니다. */
+.sm-month-view .sm-day-num.saturday {
+  color: #71879a;
+}
+
+.sm-month-view .sm-day-num.sunday,
+.sm-month-view .sm-day-num.holiday {
+  color: #b77d80;
+}
+
+.sm-month-view .sm-day.selected {
+  background: #f7f9f6;
+  box-shadow: inset 0 0 0 1px #dce5da;
+}
+
+.sm-month-view .sm-day.selected .sm-day-num {
+  background: #e1ebe0;
+  color: #3f5b4d;
+  box-shadow: inset 0 0 0 1px #c6d5c5;
+}
+
+.sm-month-view .sm-day.today:not(.selected) .sm-day-num {
+  background: #f1f4ee;
+  color: #6a7d6c;
+  box-shadow: inset 0 0 0 1px #dce4d8;
+}
+
+.sm-month-view .sm-day.today:not(.selected) .sm-day-num.saturday {
+  color: #71879a;
+}
+
+.sm-month-view .sm-day.today:not(.selected) .sm-day-num.sunday,
+.sm-month-view .sm-day.today:not(.selected) .sm-day-num.holiday {
+  color: #b77d80;
+}
+
+.sm-agenda-date {
+  border-color: #e9eee7;
+  background: #fafbf9;
+}
+
+.sm-agenda-day {
+  border: 1px solid #dfe8dd;
+  background: #e8efe6;
+  color: #425d4e;
+}
+
+.sm-agenda-day strong {
+  color: #3f5b4d;
+}
+
+.sm-agenda-day span {
+  color: #758773;
+}
+
+.sm-date-subtitle {
+  color: #617367;
+}
+
+.sm-date-subtitle strong {
+  background: #f7eeee;
+  color: #a46f72;
+}
+
+/* 주말과 공휴일은 기존 색상으로 복원합니다. */
+.sm-month-view .sm-day-num.saturday {
+  color: #3976ce;
+}
+
+.sm-month-view .sm-day-num.sunday,
+.sm-month-view .sm-day-num.holiday {
+  color: #df4555;
+}
+
+.sm-month-view .sm-day.today:not(.selected) .sm-day-num.saturday {
+  color: #3976ce;
+}
+
+.sm-month-view .sm-day.today:not(.selected) .sm-day-num.sunday,
+.sm-month-view .sm-day.today:not(.selected) .sm-day-num.holiday {
+  color: #df4555;
+}
+
+/* 일정 분류와 회의 참석자 입력 */
+.sm-category-picker {
+  display: grid;
+  gap: 8px;
+}
+
+.sm-category-label {
+  color: var(--sm-ink);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.sm-category-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.sm-category-tab {
+  min-height: 40px;
+  padding: 8px 10px;
+  border: 1px solid #dfe7df;
+  border-radius: 10px;
+  background: #fff;
+  color: #5e7065;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 650;
+  cursor: pointer;
+  transition: border-color 140ms ease, background-color 140ms ease, color 140ms ease;
+}
+
+.sm-category-tab:hover {
+  border-color: #b8cbbb;
+  background: #f7faf6;
+}
+
+.sm-category-tab.active,
+.sm-category-tab[aria-selected="true"] {
+  border-color: #a8bda9;
+  background: #edf3eb;
+  color: #3e5c4c;
+  box-shadow: inset 0 0 0 1px #d9e5d8;
+}
+
+.sm-project-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 14px;
+}
+
+.sm-meeting-attendees {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 8px;
+  padding: 12px 14px;
+  border: 1px solid #e3eae1;
+  border-radius: 12px;
+  background: #f8faf7;
+}
+
+.sm-meeting-attendees legend {
+  padding: 0 5px;
+  color: #3e5c4c;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.sm-meeting-attendees .sm-form-note {
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 520px) {
+  .sm-project-fields {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* 업무용 일정의 고객관리 연결 */
+.sm-customer-connection { grid-column: 1 / -1; border-top: 1px solid var(--sm-border); padding-top: 10px; }
+.sm-customer-connection summary { cursor: pointer; font-weight: 600; padding: 6px 0; }
+.sm-customer-connection label { display: grid; gap: 6px; margin: 10px 0; }
+.sm-customer-connection select { min-width: 0; width: 100%; }
+.sm-customer-refresh { margin: 4px 0 8px; border: 1px solid var(--sm-border); border-radius: 8px; padding: 7px 10px; background: #fff; cursor: pointer; }
+.sm-connection-summary { margin: 10px 0; padding: 12px; border-radius: 10px; background: #f4f7fb; font-size: 12px; line-height: 1.6; overflow-wrap: anywhere; }
+.sm-connection-summary p { margin: 3px 0 8px; white-space: pre-wrap; }
+.sm-connection-summary a { color: #435fbd; }
+.sm-agenda-item .sm-connection-summary { margin-top: 12px; border: 1px solid #e8eee8; background: #f7faf7; }
