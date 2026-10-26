@@ -64,7 +64,6 @@ export default function ScheduleSidebar({
             <h3 id="sm-favorites-title">★ 즐겨찾기</h3>
             <span className="sm-muted" role="status">{favoriteItems.length}건</span>
           </div>
-          <p className="sm-search-summary">별표로 모아둔 일정입니다. 반복 일정의 변경은 전체에 적용됩니다.</p>
           <div className="sm-favorite-list">
             {/* 즐겨찾기는 좁은 카드에서 읽으므로 시간과 내용을 고정된 가로 열로 나누지 않습니다.
                 map은 favoriteItems의 일정마다 아래 article을 하나씩 만듭니다. 항목의 정보와

@@ -618,6 +618,12 @@ export default function ScheduleManager() {
       color: typeColors[form.type],
       excludedDates: [],
       isFavorite: false,
+      // 회차 편집이면 원본 반복 일정과 날짜를 저장하고, 재편집이면 연결을 유지합니다.
+      replacesScheduleId: occurrenceDate
+        ? editing.id
+        : (editing?.replacesScheduleId || ""),
+      replacesOccurrenceDate: occurrenceDate
+        || (editing?.replacesOccurrenceDate || ""),
     };
     if (editing && !occurrenceDate) {
       item.id = editing.id;
@@ -676,6 +682,8 @@ export default function ScheduleManager() {
       singleSchedule.repeatType = "none";
       singleSchedule.repeatInterval = 1;
       singleSchedule.excludedDates = [];
+      singleSchedule.replacesScheduleId = item.id;
+      singleSchedule.replacesOccurrenceDate = item.occurrenceDate;
       // 한 번의 상태 변경으로 원본 즐겨찾기가 복제되지 않게 새 발생일은 별표 없이 만듭니다.
       singleSchedule.isFavorite = false;
       updated.push(singleSchedule);
@@ -814,8 +822,11 @@ export default function ScheduleManager() {
         {/* 회사와 사용자 정보를 보여주는 상단 영역 */}
         <header className="sm-top">
           <div className="sm-brand">
-            <div className="sm-mark">✦</div>메이드메이트{" "}
-            <span className="sm-muted">WORKSPACE</span>
+            <div className="sm-mark">G</div>
+            <div className="sm-brand-copy">
+              <strong>GOODS ERP</strong>
+              <span className="sm-muted">Management System</span>
+            </div>
           </div>
           <div className="sm-top-right">
             <span>굿즈 제작 운영팀</span>

@@ -13,6 +13,8 @@ import { ScheduleFavorite, ScheduleAttendees, ScheduleVisibility } from "./Sched
 import {
   compareSchedules,
   getScheduleTime,
+  getNextScheduleDate,
+  getTodayKey,
   getRepeatLabel,
   getScheduleCategories,
   scheduleScopes,
@@ -302,9 +304,37 @@ export function ScheduleListModal({
   onClose,
   onToggleFavorite,
 }) {
-  // sort는 배열 자체를 바꾸므로 복사본만 정렬합니다.
-  const sortedItems = [...items].sort(compareSchedules);
-  // 화면 안에서 여러 조건을 계산하기보다 먼저 문구를 정하고 아래 JSX에 넣습니다.
+  // An edited one-off stores the recurring schedule ID and skipped date.
+  // This lets the list show the recurring series at its next actual occurrence.
+
+  const getReplacementKey = (scheduleId, date) => `${scheduleId}:${date}`;
+  const replacementKeys = new Set();
+  for (const candidate of items) {
+    if (candidate.repeatType !== "none") continue;
+    const { replacesScheduleId, replacesOccurrenceDate } = candidate;
+    if (!replacesScheduleId || !replacesOccurrenceDate) continue;
+    replacementKeys.add(getReplacementKey(replacesScheduleId, replacesOccurrenceDate));
+  }
+  const todayKey = getTodayKey();
+  const createListEntry = (item) => {
+    const isRecurring = ["weekly", "monthly"].includes(item.repeatType);
+    const replacesRecurringOccurrence = isRecurring
+      && (item.excludedDates || []).some((date) =>
+        replacementKeys.has(getReplacementKey(item.id, date))
+      );
+    const displayDate = replacesRecurringOccurrence
+      ? getNextScheduleDate([item], todayKey) || item.date
+      : item.date;
+
+    return { item, displayDate, replacesRecurringOccurrence };
+  };
+  // 날짜 계산 결과를 항목에 함께 담아 정렬과 화면 표시에서 재사용합니다.
+  const sortedItems = items
+    .map(createListEntry)
+    .sort((left, right) =>
+      left.displayDate.localeCompare(right.displayDate)
+        || compareSchedules(left.item, right.item)
+    );
   let title = "전체 일정";
   let description = `등록된 일정 ${totalCount}건`;
   let emptyMessage = "등록된 일정이 없습니다.";
@@ -334,31 +364,36 @@ export function ScheduleListModal({
     >
       <div className="sm-list-content">
         {sortedItems.length ? (
-          sortedItems.map((item) => (
-            <article className="sm-list-item" key={item.id}>
-              {/* 목록 제목은 item을 그대로 전달해 수정 창을 엽니다. 별 버튼은 즐겨찾기만 바꿉니다. */}
-              <button
-                type="button"
-                className="sm-list-item-info"
-                aria-label={`${item.title} 일정 수정`}
-                onClick={() => onEdit(item)}
-              >
-                <span className="sm-list-date">
-                  {item.date.replaceAll("-", ".")} · {getScheduleTime(item)}
-                </span>
-                <strong>{item.title}</strong>
-                <ScheduleVisibility visibility={item.visibility} />
-                {item.repeatType !== "none" && (
-                  <small>{getRepeatLabel(item)} · 종료일 없음</small>
-                )}
-                <small>
-                  {item.scope === "개인 일정용" ? "개인 일정용" : `${item.category || (item.project ? "프로젝트" : "업무")} · ${item.project || item.person}`}
-                </small>
-                <ScheduleAttendees item={item} />
-              </button>
-              <ScheduleFavorite item={item} onToggleFavorite={onToggleFavorite} />
-            </article>
-          ))
+          sortedItems.map(
+            ({ item, displayDate, replacesRecurringOccurrence }) => (
+              <article className="sm-list-item" key={item.id}>
+                {/* 목록 제목은 item을 그대로 전달해 수정 창을 엽니다. 별 버튼은 즐겨찾기만 바꿉니다. */}
+                <button
+                  type="button"
+                  className="sm-list-item-info"
+                  aria-label={`${item.title} 일정 수정`}
+                  onClick={() => onEdit(item)}
+                >
+                  <span className="sm-list-date">
+                    {replacesRecurringOccurrence
+                      ? `다음 회차 · ${displayDate.replaceAll("-", ".")} · ${getScheduleTime(item)}`
+                      : `${item.date.replaceAll("-", ".")} · ${getScheduleTime(item)}`
+                  }
+                  </span>
+                  <strong>{item.title}</strong>
+                  <ScheduleVisibility visibility={item.visibility} />
+                  {item.repeatType !== "none" && (
+                    <small>{getRepeatLabel(item)} · 종료일 없음</small>
+                  )}
+                  <small>
+                    {item.scope === "개인 일정용" ? "개인 일정용" : `${item.category || (item.project ? "프로젝트" : "업무")} · ${item.project || item.person}`}
+                  </small>
+                  <ScheduleAttendees item={item} />
+                </button>
+                <ScheduleFavorite item={item} onToggleFavorite={onToggleFavorite} />
+              </article>
+            )
+          )
         ) : (
           <div className="sm-empty">
             {emptyMessage}

@@ -12,8 +12,6 @@ import React from "react";
 import {
   groupSchedulesByDate,
   weekDays,
-  scheduleTypes,
-  typeColors,
 } from "./scheduleData";
 import ScheduleStaffWeek from "./ScheduleStaffWeek";
 
@@ -154,16 +152,6 @@ export default function ScheduleCalendar({
         ))}
       </div>
 
-      {/* 등록 폼에서 선택할 수 있는 모든 작업 종류의 색을 설명합니다. 현재 검색 결과에 없는 종류도 안내하며, 색상과 글자를 함께 제공해
-          색을 구별하기 어려운 경우에도 의미를 알 수 있고, 필터 동작은 추가하지 않습니다. */}
-      <details className="sm-legend-details">
-        <summary>색상 안내</summary>
-      <div className="sm-calendar-legend" aria-label="일정 색상 안내">
-        {scheduleTypes.map((type) => (
-          <span key={type}><i style={{ background: typeColors[type] }} aria-hidden="true" />{type}</span>
-        ))}
-      </div>
-      </details>
       <div className="sm-holiday-error" role="status">
         {holidayError ? "공휴일 정보를 불러오지 못했습니다." : ""}
       </div>
