@@ -1,45 +1,13 @@
-/* [저장 원본과 달력 표시 자료의 차이]
- * 매주 반복 일정은 날짜별로 무한히 저장하지 않고 시작일·반복 종류·간격을 가진 원본 한 건으로 저장합니다.
- * expandSchedules(items, 시작일, 종료일)는 화면에 필요한 기간의 발생 일정만 새 배열로 만듭니다.
- * 예를 들어 매주 목요일 규칙 하나를 10월 범위에 펼치면 여러 목요일 항목이 나오지만 원본은 한 건입니다.
- * occurrenceDate는 그 규칙 중 특정 날짜의 한 번을 가리키며 excludedDates는 제외한 날짜 목록입니다.
- * 날짜는 YYYY-MM-DD, 시간은 HH:mm 형식으로 맞춰 비교하고 화면에 표시할 때만 구분자를 바꿉니다.
- * Date의 월은 0부터 시작합니다. 생성할 때 10월은 9이고 화면에서는 getMonth()에 1을 더합니다.
- * sort는 배열 자체를 바꾸므로 원본을 정렬하면 안 되는 곳에서는 먼저 [...items]로 복사합니다.
- * 이 파일은 React state를 바꾸지 않고, 계산 결과를 반환하면 호출한 Manager가 그 결과를 사용합니다.
+import { normalizeConnections } from "./scheduleConnectionsData";
+
+/* 반복 규칙은 원본 한 건으로 저장하고 화면에 필요한 날짜만 계산합니다.
+ * occurrenceDate는 반복 중 한 번, excludedDates는 제외할 날짜를 가리킵니다.
+ * 날짜와 시간은 각각 YYYY-MM-DD와 HH:mm 형식으로 비교합니다.
  */
-/*
- * [공부 순서 1] 공통 데이터와 날짜 계산
- * React 화면과 관계없이 입력값을 받아 결과를 돌려주는 함수들을 모은 파일입니다.
- * export한 값은 다른 파일에서 import해서 사용하며, 종류·색상을 한 곳에서 관리합니다.
- */
-/* 이 파일은 리액트보다 자바스크립트의 데이터 계산을 먼저 공부하기 좋은 부분입니다.
- *
- * 객체와 배열 예시:
- *   일정 객체 하나 = { id: 'a', title: '주간 회의', date: '2026-10-22', person: '민수' }
- *   일정 배열      = [일정객체1, 일정객체2, ...]
- * item.title은 객체의 제목을 읽고 items[0]은 배열의 첫 번째 일정을 읽습니다.
- *
- * 이 코드에서 자주 쓰는 배열 함수:
- * - filter(조건함수): 조건이 true인 원소만 남긴 새 배열. 예: 담당자가 민수인 일정만 남기기.
- * - map(변환함수): 각 원소를 다른 값으로 바꾼 새 배열. 예: 일정들에서 project 이름만 꺼내기.
- * - for...of: 배열의 값을 앞에서부터 하나씩 꺼내 반복합니다. 결과는 새 배열에 push로 담습니다.
- * - sort(비교함수): 순서 바꾸기. 다른 함수들과 달리 호출한 배열 자체를 수정하므로 복사 여부를 확인합니다.
- * - includes(값): 그 값이 배열에 있는지, 또는 문자열에 해당 글자가 포함되는지 확인해 true/false를 반환합니다.
- *
- * 기본 문법 예시:
- *   const getTitle = (item) => item.title;
- * =>는 함수를 만드는 문법이며 위 함수는 item을 받아 title을 반환합니다.
- * => { ... }처럼 중괄호 본문을 쓰면 값을 돌려줄 때 return을 명시해야 합니다.
- * value ?? 기본값은 value가 null/undefined일 때만 기본값을 사용합니다.
- * value || 기본값은 빈 문자열, 0, false처럼 거짓으로 취급되는 값에도 기본값을 사용합니다.
- *
- * 반복 일정에서 반드시 구분할 두 값:
- * 저장 원본은 '10월 22일부터 매주'라는 규칙 하나이고 화면 목록은 22일·29일 등 실제 발생일입니다.
- * 발생 목록을 만들 때 원본 id를 유지하고 occurrenceDate를 추가해 어느 날짜의 한 번인지 표시합니다.
- * 그래서 규칙 하나에서 여러 화면 항목이 나와도 원본 저장 개수가 그만큼 늘어나지는 않습니다.
- */
+
+
 // weekDays는 주별·담당자별 주간용 월요일 시작 순서입니다. 월별은 Calendar에서 일요일 시작으로 따로 표시합니다.
+
 export const weekDays = ["월", "화", "수", "목", "금", "토", "일"];
 export const scheduleTypes = [
   "기획",
@@ -50,14 +18,20 @@ export const scheduleTypes = [
   "출고",
   "기타",
 ];
-// value는 저장·비교에 쓰는 내부 값이고, label은 사용자에게 보여 주는 이름입니다.
-// 주간/월간은 단위이고 repeatInterval은 그 단위가 몇 번 지날 때 반복할지 나타냅니다.
-export const repeatTypes = [
-  { value: "none", label: "반복 없음" },
-  { value: "weekly", label: "주간" },
-  { value: "monthly", label: "월간" },
-];
-
+export const scheduleCategories = ["회의", "프로젝트", "업무", "외근", "휴가", "기타"];
+export const scheduleScopes = ["업무용", "개인 일정용"];
+export function getScheduleCategories() {
+  return scheduleCategories;
+}
+export function getScheduleScope(item = {}) {
+  return scheduleScopes.includes(item.scope) ? item.scope : "업무용";
+}
+export function getScheduleCategory(item = {}) {
+  if (scheduleCategories.includes(item.category)) return item.category;
+  if (item.scope === "개인 일정용") return "";
+  if (normalizeAttendees(item.attendees).length) return "회의";
+  return typeof item.project === "string" && item.project.trim() ? "프로젝트" : "업무";
+}
 export const MAX_REPEAT_INTERVAL = 120;
 // 기존 biweekly=true 데이터도 2주 간격으로 읽습니다. 새 데이터의 숫자 간격을 우선합니다.
 export const getRepeatInterval = (item) => {
@@ -175,7 +149,10 @@ export const createEmptyForm = () => ({
   endTime: "17:00",
   title: "",
   description: "",
+  connections: {},
   project: "",
+  scope: "",
+  category: "",
   person: "",
   // 입력 중에는 문자열로 둡니다. 저장 시 normalizeAttendees가 배열로 바꿉니다.
   // 예: 입력 "민수, 지수" → 저장 ["민수", "지수"] → 수정 입력 "민수, 지수".
@@ -184,6 +161,9 @@ export const createEmptyForm = () => ({
   status: "pending",
   repeatType: "none",
   repeatInterval: 1,
+  monthlyRule: "date",
+  monthlyOrdinal: 2,
+  monthlyWeekday: 3,
   visibility: "shared",
 });
 
@@ -196,9 +176,21 @@ export const createScheduleForm = (item) => {
   for (const name in form) {
     if (item[name] !== null && item[name] !== undefined) form[name] = item[name];
   }
+  form.scope = getScheduleScope(item);
+  form.connections = form.scope === "개인 일정용" ? {} : normalizeConnections(item.connections);
+  form.category = getScheduleCategory(item);
   form.attendees = normalizeAttendees(item.attendees).join(", ");
   form.repeatType = item.repeatType || "none";
   form.repeatInterval = getRepeatInterval(item);
+  form.monthlyRule = item.monthlyRule === "weekday" ? "weekday" : "date";
+  form.monthlyOrdinal = [-1, 1, 2, 3, 4].includes(Number(item.monthlyOrdinal))
+    ? Number(item.monthlyOrdinal)
+    : 2;
+  form.monthlyWeekday = Number.isInteger(Number(item.monthlyWeekday))
+    && Number(item.monthlyWeekday) >= 0
+    && Number(item.monthlyWeekday) <= 6
+    ? Number(item.monthlyWeekday)
+    : 3;
   if (item.occurrenceDate) {
     form.repeatType = "none";
     form.repeatInterval = 1;
@@ -320,6 +312,35 @@ export const expandSchedules = (items, fromKey, toKey) => {
       const monthsUntilNext = (interval - (elapsed % interval)) % interval;
       date.setMonth(date.getMonth() + monthsUntilNext);
       while (date <= to) {
+        // 월간 요일 기준은 해당 달의 첫날 또는 마지막 날에서 원하는 요일을 계산합니다.
+        if (item.monthlyRule === "weekday") {
+          const ordinal = [-1, 1, 2, 3, 4].includes(Number(item.monthlyOrdinal))
+            ? Number(item.monthlyOrdinal)
+            : 2;
+          const weekday = Number.isInteger(Number(item.monthlyWeekday))
+            && Number(item.monthlyWeekday) >= 0
+            && Number(item.monthlyWeekday) <= 6
+            ? Number(item.monthlyWeekday)
+            : 3;
+          let occurrenceDate;
+          if (ordinal === -1) {
+            occurrenceDate = new Date(date.getFullYear(), date.getMonth() + 1, 0);
+            occurrenceDate.setDate(
+              occurrenceDate.getDate() - ((occurrenceDate.getDay() - weekday + 7) % 7),
+            );
+          } else {
+            const firstDay = new Date(date.getFullYear(), date.getMonth(), 1);
+            const offset = (weekday - firstDay.getDay() + 7) % 7;
+            occurrenceDate = new Date(
+              date.getFullYear(),
+              date.getMonth(),
+              1 + offset + (ordinal - 1) * 7,
+            );
+          }
+          addOccurrence(occurrenceDate);
+          date.setMonth(date.getMonth() + interval);
+          continue;
+        }
         // new Date(연도, 다음 달, 0)은 다음 달 1일의 하루 전, 즉 현재 월의 말일입니다.
         const lastDay = new Date(
           date.getFullYear(),
@@ -435,6 +456,16 @@ export const getRepeatLabel = (item) => {
     return label + "일월화수목금토"[day] + "요일 " + getScheduleTime(item);
   }
   if (item.repeatType === "monthly") {
+    if (item.monthlyRule === "weekday") {
+      const ordinal = Number(item.monthlyOrdinal);
+      const ordinalLabel = ordinal === -1
+        ? "마지막"
+        : ["", "첫째", "둘째", "셋째", "넷째"][ordinal] || "둘째";
+      const weekday = Number(item.monthlyWeekday);
+      const weekdayLabel = "일월화수목금토"[weekday] || "수";
+      const cadence = interval === 1 ? "매월" : `${interval}개월마다`;
+      return `${cadence} ${ordinalLabel} ${weekdayLabel}요일 ${getScheduleTime(item)}`;
+    }
     const day = Number(item.date.slice(8));
     if (interval % 12 === 0) {
       const years = interval / 12;

@@ -9,24 +9,7 @@ import React, { useState } from "react";
 import ScheduleTeamEditor from "./ScheduleTeamEditor";
 import { ScheduleIcon } from "./ScheduleItemParts";
 
-/* props와 state를 이 화면에 대입해 보기
- * - props의 items: 부모가 보관하는 전체 일정입니다. 이 컴포넌트에서 마음대로 수정하지 않습니다.
- * - props의 mode: 프로젝트 목록인지 팀원 목록인지 결정하는 값입니다.
- * - props의 selectedProject: 부모가 선택해 둔 프로젝트입니다. 선택한 카드 색을 표시하는 데 사용합니다.
- * - state의 selectedPerson: 이 목록에서 현재 펼쳐 둔 팀원입니다. 펼침 상태는 이 파일만 필요합니다.
- *
- * 팀원 '김담당'을 누르는 경우:
- * ① selectedPerson이 null이었다면 setSelectedPerson('김담당')으로 바꿉니다.
- * ② 다시 렌더링하면서 filter로 담당자가 '김담당'인 일정을 찾습니다.
- * ③ 그 일정의 프로젝트명을 배열에 모으고 uniqueNames로 중복을 없앱니다.
- * ④ selectedPerson === name이 참인 팀원 아래에만 프로젝트 버튼을 표시합니다.
- *
- * 그 아래 프로젝트를 누르는 경우:
- * ① onSelectProject(project)로 부모에게 프로젝트명을 전달합니다.
- * ② Manager가 이동할 날짜를 계산하고 selectedProject와 selectedDate를 바꿉니다.
- * ③ 새 props를 받은 이 목록의 선택 배경과 Sidebar의 '선택한 날짜 일정'이 함께 바뀝니다.
- * 자식이 부모에게 직접 접근하는 대신 부모가 준 함수를 호출하는 방식입니다.
- */
+/* items에서 프로젝트를 모으고, 등록된 팀원 목록은 별도로 표시합니다. */
 /* 목록의 데이터 흐름
  * 프로젝트는 원본 items에서 추리고, 팀원은 별도 teamMembers에서 가져옵니다.
  * 이 파일은 어떤 팀원을 펼칠지만 관리하며, 날짜 이동과 프로젝트 선택은 Manager가 처리합니다.

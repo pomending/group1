@@ -7,41 +7,18 @@
  * 날짜 칸과 내부 버튼 모두 클릭 처리가 있으므로 stopPropagation으로 한 클릭이 두 동작을 실행하지 않게 합니다.
  */
 import { ScheduleEvent, ScheduleIcon } from "./ScheduleItemParts";
-/*
- * [공부 순서 3] 달력 표시 컴포넌트
- * 일정 저장이나 반복 계산을 하지 않고 부모가 계산한 visibleItems를 화면에 배치합니다.
- * 데이터는 props로 내려오고, 사용자 동작은 on... 콜백으로 부모에게 올라갑니다.
- */
+/* 부모가 계산한 일정을 표시하고 클릭 결과를 콜백으로 전달합니다. */
 import React from "react";
 import {
   groupSchedulesByDate,
   weekDays,
-  scheduleTypes,
-  typeColors,
 } from "./scheduleData";
 import ScheduleStaffWeek from "./ScheduleStaffWeek";
 
 
-/* 이 컴포넌트는 '보여주기와 클릭 전달'을 담당합니다.
- * function ScheduleCalendar({ view, onViewChange, ... })의 중괄호는 props 객체에서 필요한 값을
- * 이름별로 꺼내는 문법입니다. 부모의 <ScheduleCalendar view={view} ... />가 이 값을 전달합니다.
- * Calendar는 받은 view를 직접 변경하지 않습니다. 탭을 누르면 onViewChange('weekly')를 호출하고,
- * 부모가 state를 바꾼 다음 새 view를 내려주면 그 값으로 주간 화면을 다시 계산합니다.
- *
- * JSX를 읽는 방법:
- * - <div className="sm-card">에서 className은 CSS의 .sm-card와 연결되는 이름입니다.
- * - {periodLabel}처럼 중괄호 안에는 자바스크립트 계산 결과를 넣습니다.
- * - {view === 'monthly' && (...)}는 월별일 때만 괄호 안의 화면을 만듭니다.
- * - {조건 ? A : B}는 조건에 따라 A와 B 중 하나를 선택합니다.
- * - {배열.map(...)}은 각 원소를 화면 요소로 바꿔 여러 개를 나란히 표시합니다.
- * - key는 목록에서 같은 항목을 구분하기 위한 리액트용 표시입니다. 화면 글자로 출력되지 않습니다.
- *
- * 달력의 '선택 날짜'와 '일정 수정'은 다른 동작입니다.
- * 빈 날짜 칸 클릭 → onSelectDate(날짜) → 부모의 선택 날짜 변경.
- * 일정 버튼 클릭 → onOpenSchedule(일정 객체) → 부모가 수정 폼을 엽니다.
- * 이때 일정 버튼의 stopPropagation이 날짜 칸 클릭까지 이어지는 것을 막습니다.
+/* 선택 날짜 이동과 일정 열기는 별도 동작입니다. 날짜 이동은 Manager에 전달하고,
+ * 일정 선택은 수정 창을 엽니다. 월·주·일·담당자별 보기를 이 컴포넌트에서 표시합니다.
  */
-// 보기 방식에 맞는 일정 표를 보여주고 선택과 검색을 부모에게 전달합니다.
 export default function ScheduleCalendar({
   containerRef,
   selectedProject,
@@ -67,7 +44,7 @@ export default function ScheduleCalendar({
   todayKey,
   onSelectDate,
   onShowMore,
-  onOpenSchedule,
+  onSelectSchedule,
   onToggleFavorite,
 }) {
   // 한 번 정렬해 날짜별로 묶습니다. 날짜 칸이 늘어도 전체 배열을 매번 filter/sort하지 않습니다.
@@ -76,7 +53,7 @@ export default function ScheduleCalendar({
   const selectedItems = dateItems(selectedDate);
   const renderItems = (items) =>
     items.map((item) => (
-      <ScheduleEvent key={item.id} item={item} onOpen={onOpenSchedule}
+      <ScheduleEvent key={item.id} item={item} onSelect={onSelectSchedule}
         onToggleFavorite={onToggleFavorite} />
     ));
 
@@ -175,16 +152,6 @@ export default function ScheduleCalendar({
         ))}
       </div>
 
-      {/* 등록 폼에서 선택할 수 있는 모든 작업 종류의 색을 설명합니다. 현재 검색 결과에 없는 종류도 안내하며, 색상과 글자를 함께 제공해
-          색을 구별하기 어려운 경우에도 의미를 알 수 있고, 필터 동작은 추가하지 않습니다. */}
-      <details className="sm-legend-details">
-        <summary>색상 안내</summary>
-      <div className="sm-calendar-legend" aria-label="일정 색상 안내">
-        {scheduleTypes.map((type) => (
-          <span key={type}><i style={{ background: typeColors[type] }} aria-hidden="true" />{type}</span>
-        ))}
-      </div>
-      </details>
       <div className="sm-holiday-error" role="status">
         {holidayError ? "공휴일 정보를 불러오지 못했습니다." : ""}
       </div>
@@ -252,7 +219,7 @@ export default function ScheduleCalendar({
                       key={item.id}
                       item={item}
                       compact
-                      onOpen={onOpenSchedule}
+                      onSelect={onSelectSchedule}
                       onToggleFavorite={onToggleFavorite}
                     />
                   ))}
@@ -328,7 +295,7 @@ export default function ScheduleCalendar({
           selectedDate={selectedDate}
           holidayDates={holidayDates}
           onSelectDate={onSelectDate}
-          onOpenSchedule={onOpenSchedule}
+          onSelectSchedule={onSelectSchedule}
         />
       )}
 
