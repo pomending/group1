@@ -34,7 +34,7 @@ export default function ScheduleStaffWeek({
   selectedDate,
   holidayDates,
   onSelectDate,
-  onOpenSchedule,
+  onSelectSchedule,
   onToggleFavorite,
 }) {
   // 이름 하나만 기억해 한 번에 한 사람의 일정만 펼칩니다. 이름 검색이면 첫 결과를 바로 엽니다.
@@ -122,7 +122,7 @@ export default function ScheduleStaffWeek({
                         <ScheduleEvent
                           key={item.id}
                           item={item}
-                          onOpen={onOpenSchedule}
+                          onSelect={onSelectSchedule}
                           onToggleFavorite={onToggleFavorite}
                           roleLabel={
                             item.person.trim() === person ? "담당" : "참석"
