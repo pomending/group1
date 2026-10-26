@@ -1,0 +1,166 @@
+
+/* Sidebar.css */
+
+.erp-sidebar {
+    --erp-sidebar-bg: #293044;
+    --erp-sidebar-text: #c6ccda;
+    --erp-sidebar-active: #46506a;
+    --erp-sidebar-accent: #a99bf7;
+
+    display: flex;
+    flex-direction: column;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    min-width: 0;
+    padding: 24px 14px;
+    background: var(--erp-sidebar-bg);
+    color: var(--erp-sidebar-text);
+    font: 13px/1.5 Arial, sans-serif;
+    overflow-y: auto;
+}
+
+/* 로고 영역 */
+
+.erp-sidebar-brand {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    padding: 0 8px 24px;
+    border-bottom: 1px solid #454d61;
+}
+
+.erp-brand-logo {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: #7565d8;
+    color: white;
+    font-size: 18px;
+    font-weight: 700;
+}
+
+.erp-sidebar-brand > div:last-child {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.erp-sidebar-brand strong {
+    color: white;
+    font-size: 15px;
+    white-space: nowrap;
+}
+
+.erp-sidebar-brand span {
+    color: #9ca5ba;
+    font-size: 10px;
+    white-space: nowrap;
+}
+
+/* 메뉴 제목 */
+
+.erp-sidebar-section {
+    margin: 26px 12px 12px;
+    color: #8994ac;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1px;
+}
+
+/* 메뉴 */
+
+.erp-sidebar-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.erp-sidebar-link {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 43px;
+    padding: 10px 12px;
+    border-radius: 9px;
+    color: var(--erp-sidebar-text);
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 500;
+    transition: background 0.15s, color 0.15s;
+}
+
+.erp-sidebar-link:hover {
+    background: #394258;
+    color: white;
+}
+
+.erp-sidebar-link.active {
+    background: var(--erp-sidebar-active);
+    color: white;
+    font-weight: 600;
+}
+
+.erp-sidebar-link.active .erp-sidebar-icon {
+    color: var(--erp-sidebar-accent);
+}
+
+.erp-sidebar-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 19px;
+    color: #aeb7ca;
+    font-size: 18px;
+}
+
+/* 하단 */
+
+.erp-sidebar-footer {
+    margin-top: auto;
+    padding: 20px 12px 0;
+    color: #8994ac;
+    font-size: 10px;
+    letter-spacing: 0.5px;
+}
+
+/* 모바일 */
+
+@media (max-width: 768px) {
+    .erp-sidebar {
+        position: static;
+        height: auto;
+        padding: 12px;
+        overflow: visible;
+    }
+
+    .erp-sidebar-brand {
+        padding-bottom: 12px;
+    }
+
+    .erp-sidebar-section,
+    .erp-sidebar-footer {
+        display: none;
+    }
+
+    .erp-sidebar-nav {
+        flex-direction: row;
+        gap: 6px;
+        margin-top: 12px;
+        overflow-x: auto;
+    }
+
+    .erp-sidebar-link {
+        flex-shrink: 0;
+        min-height: 38px;
+        padding: 8px 12px;
+        white-space: nowrap;
+        font-size: 12px;
+    }
+}

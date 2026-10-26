@@ -1,10 +1,12 @@
-import React from "react";
+import React, { useState } from "react";
 import "./ProjectDetail.css";
 
 function ProjectDetail(props) {
 
     const projects = props.projects;
     const selectedProject = projects.find(project => project.id === props.selectedProjectId);
+
+    const [status, setStatus] = useState(selectedProject?.status ?? '대기');
 
     const formatQuotationId = (id) => {
         return `QT-${String(id).padStart(3, '0')}`;
@@ -39,14 +41,32 @@ function ProjectDetail(props) {
             (sum, item) => sum + item.quantity * item.unitPrice, 0
         )
         : 0;
-    
+
     const delProject = () => {
-        if(window.confirm('정말로 프로젝트를 삭제하시겠습니까?')){
+        if (window.confirm('정말로 프로젝트를 삭제하시겠습니까?')) {
             props.setProjects(projects.filter(project => project.id !== props.selectedProjectId))
             props.setPage('list')
-        }else{
+        } else {
             return
         }
+    }
+
+    const saveStatus = () => {
+        props.setProjects(prev => prev.map(project =>
+            project.id === selectedProject.id
+                ? {
+                    ...project,
+                    status: status,
+                    // 변경된 상태가 완료이면 오늘 날짜를 (YYYY-MM-DD) 형식으로 저장
+                    completedDate: status === '완료'
+                        ? (project.completedDate ?? new Date().toLocaleDateString('sv-SE'))
+                        : null
+                }
+                : project
+        ))
+
+        alert('상태 변경이 완료되었습니다')
+
     }
 
     return (
@@ -144,8 +164,38 @@ function ProjectDetail(props) {
                         <div className="pd-progress-fill" style={{ width: '80%' }} />
                     </div>
 
-                    <div>
-                        <p>현재 상태 관리</p>
+                    <div className="pd-status-section">
+                        <h3>프로젝트 상태 변경</h3>
+
+                        <div className="pd-status-grid">
+                            <div className="pd-status-field">
+                                <label>현재 상태</label>
+                                <div className="pd-current-status">
+                                    {selectedProject.status}
+                                </div>
+                            </div>
+
+                            <div className="pd-status-field">
+                                <label htmlFor="pd-status-select">변경할 상태</label>
+                                <select
+                                    id="pd-status-select"
+                                    value={status}
+                                    onChange={(e) => setStatus(e.target.value)}
+                                >
+                                    <option value="대기">대기</option>
+                                    <option value="진행 중">진행 중</option>
+                                    <option value="완료">완료</option>
+                                    <option value="지연">지연</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <button
+                            className="pd-status-save"
+                            onClick={saveStatus}
+                        >
+                            상태 변경
+                        </button>
                     </div>
                     <p className="pd-muted">현재는 임시 진행률입니다. 세부 작업 기능과 연결하면 실제 진행률로 교체할 수 있습니다.</p>
                 </section>
