@@ -1,9 +1,14 @@
+
 import React from "react";
 import { Link, useNavigate } from "react-router-dom";
+import "./Community.css";
 
+
+// 공지사항 목록 페이지
 function NoticePage({ posts }) {
 
-    const navi = useNavigate()
+    // 다른 페이지로 이동할 때 사용하는 함수
+    const navigate = useNavigate();
 
     return (
         <div className="community">
@@ -16,14 +21,12 @@ function NoticePage({ posts }) {
                 <div className="community-top">
                     <h3>공지사항 목록</h3>
 
-                    {/* 공지사항 글쓰기 이동 */}
-                    <Link to="/?page=notice-write"
-                        className="community-button">
+                    {/* 글쓰기 페이지로 이동 */}
+                    <Link to="/?page=notice-write" className="community-button">
                         글쓰기
                     </Link>
                 </div>
 
-                {/* 공지사항 목록 */}
                 <table>
                     <thead>
                         <tr>
@@ -36,35 +39,32 @@ function NoticePage({ posts }) {
                     </thead>
 
                     <tbody>
-                        {postMessage.map((posy, index) => (
-                            <tr key={post.id}
-                                onClick={() => navi("/?page=notice-detail&id=" + post.id)}
-                                style={{ cursor: "pointer" }}>
+                        {/* notice는 목록에서 현재 가져온 공지사항 하나 */}
+                        {posts.map((notice, index) =>
+                            <tr
+                                key={notice.id}
+                                onClick={() => navigate("/?page=notice-detail&id=" + notice.id)}
+                                style={{ cursor: "pointer" }}
+                            >
                                 <td>{index + 1}</td>
                                 <td>
-                                    {/* 조건이 참이면 중요공지, 거짓이면 일반공지 */}
-                                    {post.type === "important" ? (
-                                        <strong>중요공지</strong>
-                                    ) : ("일반공지")}
+                                    {notice.type === "important" ? "중요공지" : "일반 공지"}
                                 </td>
-                                <td>{post.title}</td>
-                                <td>{post.writer}</td>
-                                <td>{post.date}</td>
+                                <td>{notice.title}</td>
+                                <td>{notice.writer}</td>
+                                <td>{notice.date}</td>
                             </tr>
-                        ))}
+                        )}
                     </tbody>
                 </table>
 
+                {/* 등록된 공지가 없을 때만 보임 */}
                 {posts.length === 0 && (
-                    <p className="community-empty">
-                        등록된 공지사항이 없습니다.
-                    </p>
+                    <p className="community-empty">등록된 공지사항이 없습니다.</p>
                 )}
             </div>
-
         </div>
-    )
-
+    );
 }
 
-export default NoticePage
+export default NoticePage;
