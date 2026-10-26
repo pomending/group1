@@ -1,5 +1,8 @@
 import React from "react";
-import { BrowserRouter, Routes, Route, Link } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+
+import Sidebar from "./components/Sidebar";
+import "./ERPLayout.css";
 
 import CrmPage from "./1_crm/CrmPage";
 import QuotationPage from "./2_quotation/QuotationPage";
@@ -10,31 +13,45 @@ import DashboardPage from "./6_dashboard/DashboardPage";
 import QuotationList from "./2_quotation/QuotationList";
 import ProductPage from "./2_quotation/ProductPage";
 
-function App() {
-  return (
-    <BrowserRouter>
-      <div>
-        <nav>
-          <Link to="/">대시보드</Link> | <Link to="/crm">고객관리</Link> |{" "}
-          <Link to="/quotation">견적 및 상품관리</Link> |{" "}
-          <Link to="/projects">프로젝트관리</Link> |{" "}
-          <Link to="/tasks">세부 작업관리</Link> |{" "}
-          <Link to="/schedule">일정관리</Link>
-        </nav>
+function ERPContent() {
+  const location = useLocation();
 
-        <Routes>
-          <Route path="/" element={<DashboardPage />} />
-          <Route path="/crm/*" element={<CrmPage />} />
-          <Route path="/quotation/*" element={<QuotationPage />} />
-          <Route path="/projects/*" element={<ProjectPage />} />
-          <Route path="/tasks/*" element={<TaskPage />} />
-          <Route path="/schedule/*" element={<SchedulePage />} />
-          <Route path="/quotation/*" element={<QuotationList/>}/>
-          <Route path="/product/*" element={<ProductPage/>}/>
-        </Routes>
+  const hideSidebar =
+      new URLSearchParams(location.search).get("popup") === "1";
+
+  return (
+      <div
+          className="erp-layout"
+          style={
+              hideSidebar
+                  ? { gridTemplateColumns: "1fr" }
+                  : undefined
+          }
+      >
+          {!hideSidebar && <Sidebar />}
+
+          <main className="erp-main">
+              <Routes>
+                  <Route path="/" element={<DashboardPage />} />
+                  <Route path="/crm/*" element={<CrmPage />} />
+                  <Route path="/quotation/*" element={<QuotationPage />} />
+                  <Route path="/quotation/list" element={<QuotationList />} />
+                  <Route path="/product/*" element={<ProductPage />} />
+                  <Route path="/projects/*" element={<ProjectPage />} />
+                  <Route path="/tasks/*" element={<TaskPage />} />
+                  <Route path="/schedule/*" element={<SchedulePage />} />
+              </Routes>
+          </main>
       </div>
-    </BrowserRouter>
   );
+}
+
+function App() {
+    return (
+        <BrowserRouter>
+            <ERPContent />
+        </BrowserRouter>
+    );
 }
 
 export default App;
