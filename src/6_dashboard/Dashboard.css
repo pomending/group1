@@ -1,93 +1,193 @@
 
-/* 대시보드 전체 */
+/* ==========================
+   대시보드 전체
+========================== */
 .dashboard {
-    padding: 30px;
-    background-color: #f8f9fa;
+    background-color: #f5f7fa;
     min-height: 100vh;
+    padding: 30px;
     box-sizing: border-box;
 }
 
+/* 대시보드 제목 */
 .dashboard h1 {
     color: #263a49;
-    margin-bottom: 8px;
+    font-size: 26px;
+    margin: 0 0 25px;
 }
 
-.dashboard > p {
-    color: #888;
-    margin-bottom: 25px;
-}
 
-/* 상단 중요 공지 */
+/* ==========================
+   상단 중요 공지
+========================== */
 .dashboard-banner {
+    display: flex;
+    align-items: center;
+    gap: 20px;
     background-color: #263a49;
     color: white;
     padding: 20px;
-    border-radius: 6px;
+    border-radius: 8px;
     margin-bottom: 20px;
 }
 
 .dashboard-banner strong {
     background-color: #e1ad69;
     color: #372918;
-    padding: 6px 10px;
-    margin-right: 15px;
-    border-radius: 3px;
+    padding: 7px 12px;
+    border-radius: 4px;
 }
 
-/* 왼쪽과 오른쪽 영역 배치 */
+
+/* ==========================
+   대시보드 좌우 배치
+========================== */
 .dashboard-grid {
     display: grid;
     grid-template-columns: 2fr 1fr;
     gap: 20px;
 }
 
-/* 각 영역 안의 칸 배치 */
 .dashboard-left,
 .dashboard-right {
     display: flex;
     flex-direction: column;
     gap: 20px;
+    min-width: 0;
 }
 
-/* 공통 칸 디자인 */
+
+/* ==========================
+   공통 카드 디자인
+========================== */
 .dashboard-card {
-    background-color: white;
+    background: white;
     border: 1px solid #e2e5e8;
-    border-radius: 6px;
-    padding: 20px;
+    border-radius: 8px;
+    padding: 18px;
+    min-width: 0;
 }
 
-/* 칸 제목 */
+/* 카드 제목 */
 .dashboard-card h3 {
     color: #263a49;
     font-size: 18px;
-    margin-top: 0;
-    padding-bottom: 15px;
+    margin: 0 0 10px;
+    padding-bottom: 10px;
     border-bottom: 1px solid #ddd;
 }
 
-/* 칸 내부 내용 */
+/* 카드 일반 내용 */
 .dashboard-card p {
     color: #555;
     font-size: 14px;
-    padding: 10px 0;
     margin: 0;
+    padding: 6px 0;
     border-bottom: 1px solid #eee;
 }
 
-/* 일정 칸 */
+/* 오늘의 일정 */
 .schedule-card {
     background-color: #ebf1ee;
     min-height: 200px;
 }
 
-/* 작은 화면 */
-@media (max-width: 800px) {
-    .dashboard-grid {
-        grid-template-columns: 1fr;
-    }
 
+/* ==========================
+   사내 커뮤니티 제목 클릭
+========================== */
+
+/* 제목 칸 전체를 클릭할 수 있게 */
+.dashboard-community-heading {
+    display: block;
+    padding: 8px;
+    margin: -8px -8px 10px;
+    border-radius: 5px;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+/* 제목 아래 구분선 유지 */
+.dashboard-community-heading h3 {
+    margin: 0;
+    padding-bottom: 10px;
+}
+
+/* 마우스를 올리면 배경색 변경 */
+.dashboard-community-heading:hover {
+    background-color: #e9f0f4;
+}
+
+
+/* ==========================
+   사내 커뮤니티 최근 게시글
+========================== */
+
+/* 게시글 한 줄 */
+.dashboard-post {
+    margin: 0;
+    padding: 7px 0;
+    min-height: 0;
+    border-bottom: 1px solid #eee;
+}
+
+/* 제목은 왼쪽, 작성자와 날짜는 오른쪽 */
+.dashboard .dashboard-post > .dashboard-post-link {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    line-height: 1.35;
+    color: #263a49;
+    text-decoration: none;
+}
+
+/* 게시글 제목 */
+.dashboard-post-title {
+    flex: 1;
+    min-width: 0;
+    font-size: 14px;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+/* 게시글 작성자 */
+.dashboard-post-writer {
+    margin-left: auto;
+    flex-shrink: 0;
+    font-size: 12px;
+    color: #888;
+    white-space: nowrap;
+}
+
+/* 게시글 작성일 */
+.dashboard-post-date {
+    flex-shrink: 0;
+    font-size: 12px;
+    color: #888;
+    white-space: nowrap;
+}
+
+/* 게시글에 마우스를 올렸을 때 */
+.dashboard-post-link:hover .dashboard-post-title {
+    text-decoration: underline;
+}
+
+
+/* ==========================
+   작은 화면
+========================== */
+@media (max-width: 800px) {
     .dashboard {
         padding: 15px;
+    }
+
+    .dashboard-grid {
+        grid-template-columns: 1fr;
     }
 }

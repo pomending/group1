@@ -1,0 +1,33 @@
+
+/* ERPLayout.css */
+
+.erp-layout {
+    display: grid;
+    grid-template-columns: 220px minmax(0, 1fr);
+    min-height: 100vh;
+    background: #f6f7fb;
+}
+
+.erp-layout,
+.erp-layout * {
+    box-sizing: border-box;
+}
+
+.erp-main {
+    min-width: 0;
+    width: 100%;
+    min-height: 100vh;
+    background: #f6f7fb;
+}
+
+/* 작은 화면에서는 메뉴를 위쪽으로 이동 */
+
+@media (max-width: 768px) {
+    .erp-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .erp-main {
+        min-height: 0;
+    }
+}
