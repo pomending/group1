@@ -77,7 +77,7 @@ function CustomerList() {
 
             <button onClick={resetSearch}>초기화</button>
 
-            <button onClick={() => window.open('/customer-register?popup=1', 'customerRegister', 'width=600,height=700')}>고객 등록</button>
+            <button onClick={() => window.open('/customer-register', 'customerRegister', 'width=600,height=700')}>고객 등록</button>
             {/* 새창에서 열기 window.open(주소,창이름,크기) */}
 
             <table>
