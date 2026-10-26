@@ -5,6 +5,7 @@
 import React from "react";
 import CustomerRegister from "./CustomerRegister";
 import CustomerList from "./CustomerList";
+import CustomerEdit from "./CustomerEdit";
 //외부 컴포넌트를 사용하기 위해 사용
 import { Route, Routes } from "react-router-dom";
 
@@ -17,6 +18,8 @@ function CrmPage() {
            
             <Route path="register" element={<CustomerRegister />} />
             {/* /crm/register 주소로 접속하면 고객 등록 화면 표시 */}
+
+            <Route path="edit" element={<CustomerEdit/>}/>
         </Routes>
     )
 }

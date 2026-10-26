@@ -1,6 +1,6 @@
 //등록된 고객정보를 보여주는 컴포넌트
 
-import React, { useState } from "react";
+import React, { use, useState } from "react";
 
 // getCustomers 기존 고객정보와 신규등록 고객정보를 합쳐서 가져오는 함수
 import getCustomers from "./CustomerService";
@@ -13,9 +13,16 @@ function CustomerList() {
     //검색버튼을 눌렀을때 어떤업체명을 검색해야 되는지 기억하기위해 만듬 
     const [search, setSearch] = useState('');
 
-    // 검색 결과로 나온 고객 목록(전체정보)을 저장하는 state
+    //전체 고객 정보 저장 (등록,수정,삭제용)
+    const [customers, setCustomers] = useState(getCustomers())
+
+    // *검색 결과*로 나온 고객 목록(전체정보)을 저장하는 state
     // 처음에는 전체 고객 목록을 가져와 화면에 표시
     const [searchResult, setSearchResult] = useState(getCustomers());
+
+    //수정할 고객의 정보를 저장하는 state
+    const [editData, setEditData] = useState(null);
+
 
     // 현재 페이지 번호를 저장하고 변경하는 state
     // 처음에는 1페이지부터 시작
@@ -33,6 +40,10 @@ function CustomerList() {
     //검색된 고객 수를 기준으로 전체페이지수 계산( 소수점 올림 Math.ceil() )
     const totalPages = Math.ceil(searchResult.length / itemsPerPage);
 
+    //체크박스에 체크한 고객들의 ID를 배열로 저장
+    const [selectedIds, setSelectedIds] = useState([]);
+
+
     // 검색 버튼을 클릭하면 실행되는 함수
     function searchCustomer() {
 
@@ -41,7 +52,7 @@ function CustomerList() {
         // 검색 결과를 searchResult state에 저장
         // 전체 고객 목록에서 업체명에 검색어가 포함된 고객만 찾아 검색 결과 배열에 저장한다.
         setSearchResult(
-            getCustomers().filter((item) =>
+            customers.filter((item) =>
                 item.companyName.includes(search)
             )
         );
@@ -55,14 +66,35 @@ function CustomerList() {
     function resetSearch() {
 
         setSearch("")
-        setSearchResult(getCustomers())
+        setSearchResult(customers)
         setCurrentPage(1)
+    }
+
+    //체크한 고객들을 목록에서 삭제하는 함수
+    function deleteSelectedCustomers() {
+        const remainingCustomers = customers.filter((customer) =>
+            !selectedIds.includes(customer.id))
+
+        setCustomers(remainingCustomers)
+        setSearchResult(remainingCustomers)
+        setSearch("")
+        setSelectedIds([])
+        setCurrentPage(1)
+    }
+
+    function editCustomer() {
+        const selectedCustomer = customers.find((customer) =>
+            customer.id === selectedIds[0])
+        
+        setEditData(selectedCustomer);
+        window.open('/crm/edit?id='+selectedCustomer.id,'customerEdit','witdh=600, height=700 ')
     }
 
     return (
         <div className="crm-page">
 
             <h2>고객 관리</h2>
+            
 
             <input
                 placeholder="업체명을 입력하세요"
@@ -75,15 +107,21 @@ function CustomerList() {
 
             <button onClick={searchCustomer}>검색</button>
 
-            <button onClick={resetSearch}>초기화</button>
+            <button onClick={resetSearch}>전체보기</button>
 
             <button onClick={() => window.open('/customer-register', 'customerRegister', 'width=600,height=700')}>고객 등록</button>
             {/* 새창에서 열기 window.open(주소,창이름,크기) */}
 
+            <button disabled={selectedIds.length !== 1}
+                onClick={editCustomer}>수정</button>
+
+            <button disabled={selectedIds.length === 0}
+                onClick={deleteSelectedCustomers}>삭제</button>
             <table>
 
                 <thead>
                     <tr>
+                        <th>선택</th>
                         <th>번호</th>
                         <th>업체명</th>
                         <th>사업자 등록번호</th>
@@ -94,6 +132,7 @@ function CustomerList() {
                         <th>등록일</th>
                         <th>메모</th>
                         <th>담당자</th>
+
                     </tr>
                 </thead>
 
@@ -111,7 +150,14 @@ function CustomerList() {
                                 // key : React가 각 행을 구분하는 고유값
                                 <tr key={customer.id}>
 
-
+                                    <td><input type="checkbox"
+                                        onChange={(e) => {
+                                            if (e.target.checked) {
+                                                setSelectedIds([...selectedIds, customer.id])
+                                            } else {
+                                                setSelectedIds(selectedIds.filter((id) => id !== customer.id))
+                                            }
+                                        }} /></td>
                                     <td>{customer.id}</td>
                                     <td>{customer.companyName}</td>
                                     <td>{customer.businessNumber}</td>
@@ -122,6 +168,7 @@ function CustomerList() {
                                     <td>{customer.createdAt}</td>
                                     <td>{customer.memo}</td>
                                     <td>{customer.employeeName}</td>
+
 
                                 </tr>
                             ))}
