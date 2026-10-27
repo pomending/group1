@@ -10,6 +10,7 @@ import ProjectPage from "./3_projects/ProjectPage";
 import TaskPage from "./4_tasks/TaskPage";
 import SchedulePage from "./5_schedule/SchedulePage";
 import DashboardPage from "./6_dashboard/DashboardPage";
+
 import QuotationList from "./2_quotation/QuotationList";
 import ProductPage from "./2_quotation/ProductPage";
 import NotFoundPage from "./components/NotFoundPage";
@@ -62,6 +63,7 @@ function ERPContent() {
             </div>
         </div>
     );
+
 }
 
 function App() {

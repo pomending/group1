@@ -5,21 +5,55 @@ function ProductPage() {
     const [signup, setSignup] = useState(false);
     const [search, setSearch] = useState("");
 
-    const [products] = useState([
-        { code: "PRD-001", name: "로고 키링", type: "액세서리", price: 2000 },
-        { code: "PRD-002", name: "커스텀 텀블러", type: "생활용품", price: 8500 },
-        { code: "PRD-003", name: "로고 에코백", type: "패션잡화", price: 5000 },
-        { code: "PRD-004", name: "캐릭터 스티커", type: "문구", price: 500 },
-    ]);
+    const [products, setProducts] = useState([]);
 
+    const [code, setCode] = useState("")
+    const [name, setName] = useState("")
+    const [type, setType] = useState("")
+    const [price, setPrice] = useState("")
+
+    //상품 등록 유효성 검사
+    function valiProduct() {
+        if (code.trim() === "") {
+            alert("상품 코드를 입력해 주세요")
+            return false;
+        }
+        if (name.trim() === "") {
+            alert("상품명을 입력해 주세요")
+            return false;
+        }
+        if (type === "") {
+            alert("상품 유형을 선택해 주세요")
+            return false;
+        }
+        if (price === "") {
+            alert("기본 단가를 입력해 주세요")
+            return false;
+        }
+
+        //상품 코드 중복 검사
+        for(let i = 0; i < products.length; i++){
+            if(products[i].code.toLowerCase() === code.trim().toLowerCase()){
+                alert("이미 등록된 상품 코드입니다")
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    //상품 등록 코드
     if (signup) {
         return (
             <div>
                 <h2>상품 등록</h2>
-                <input type="text" placeholder="상품 코드" />
-                <input type="text" placeholder="상품명" />
-                <br/>
-                <select>
+                <input type="text" placeholder="상품 코드" value={code}
+                    onChange={(e) => setCode(e.target.value)} />
+                <input type="text" placeholder="상품명" value={name}
+                    onChange={(e) => setName(e.target.value)} />
+                <br />
+                <select value={type}
+                    onChange={(e) => setType(e.target.value)}>
                     <option value="">전체 유형</option>
                     <option value="액세서리">액세서리</option>
                     <option value="생활용품">생활용품</option>
@@ -28,15 +62,47 @@ function ProductPage() {
                     <option value="인쇄물">인쇄물</option>
                     <option value="기타">기타</option>
                 </select>
-                <input type="number" placeholder="기본 단가" />
+                <input type="number" placeholder="기본 단가" value={price}
+                    onChange={(e) => setPrice(e.target.value)} />
+
 
                 <div>
-                    <input type="button" value="저장" onClick={() => setSignup(false)} />
-                    <input type="button" value="취소" onClick={() => setSignup(false)} />
+                    <input type="button"
+                        value="저장"
+                        onClick={() => {
+
+                            if (!valiProduct()) {
+                                return;
+                            }
+
+                            const newProduct = {
+                                code: code.trim(),
+                                name: name.trim(),
+                                type: type,
+                                price: Number(price)
+                            }
+
+                            //상품 목록에 추가
+                            setProducts([...products, newProduct])
+
+                            //입력값 초기화
+                            setCode("");
+                            setName("");
+                            setType("");
+                            setPrice("");
+
+                            //목록화면으로 이동
+                            setSignup(false);
+
+                        }} />
+                    <input type="button"
+                        value="취소"
+                        onClick={() => setSignup(false)} />
                 </div>
             </div>
         )
     }
+
 
 
     return (
@@ -46,6 +112,7 @@ function ProductPage() {
                 <p>상품 목록을 조회하고 관리합니다.</p>
             </header>
 
+            {/* section 자동으로 개수 보이게 수정해야함 */}
             <section>
                 <div>
                     <h3>전체 상품</h3>
@@ -77,7 +144,7 @@ function ProductPage() {
                     onChange={(e) => setSearch(e.target.value)} />
             </div>
 
-            <select>
+            <select value={type} >
                 <option value="">전체 유형</option>
                 <option value="액세서리">액세서리</option>
                 <option value="생활용품">생활용품</option>
@@ -87,8 +154,31 @@ function ProductPage() {
                 <option value="기타">기타</option>
             </select>
 
+            <table>
+                <thead>
+                    <tr>
+                        <th>상품명</th>
+                        <th>상품 코드</th>
+                        <th>상품 유형</th>
+                        <th>기본 단가</th>
+                    </tr>
+                </thead>
 
-        </div>
+                <tbody>
+                    {products.filter(product =>
+                        product.name.toLowerCase().includes(search.toLowerCase()) ||
+                        product.code.toLowerCase().includes(search.toLowerCase())
+                    ).map(product => (
+                        <tr key={product.code}>
+                            <td>{product.name}</td>
+                            <td>{product.code}</td>
+                            <td>{product.type}</td>
+                            <td>{product.price}</td>
+                        </tr>
+                    ))}
+                </tbody>
+            </table>
+        </div >
     )
 }
 
