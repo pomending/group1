@@ -7,35 +7,11 @@ import { quotations, customers, employees } from "../data/mockData";
 import ProjectEdit from "./ProjectEdit";
 import NotFoundPage from "../components/NotFoundPage";
 import { Route, Routes } from "react-router-dom";
+import { useERP } from "../context/ERPContext";
 
 function ProjectPage() {
 
-    const [projects, setProjects] = useState([
-        {
-            id: 1,
-            name: "ABC대학교 텀블러 제작",
-            quotationId: 1,
-            customerId: 1,
-            managerId: 1,
-            startDate: "2026-10-21",
-            dueDate: "2026-11-20",
-            completedDate: null,
-            status: "진행 중",
-            description: "창립기념 텀블러 300개 제작"
-        },
-        {
-            id: 2,
-            name: "미래전자 에코백 제작",
-            quotationId: 2,
-            customerId: 2,
-            managerId: 2,
-            startDate: "2026-10-25",
-            dueDate: "2026-11-15",
-            completedDate: null,
-            status: "대기",
-            description: "홍보용 에코백 500개 제작"
-        }
-    ]);
+    const { projects, setProjects } = useERP()
 
     // 검색어 변수
     const [search, setSearch] = useState('');
@@ -66,15 +42,14 @@ function ProjectPage() {
                     }
                     {/* 프로젝트 상세 화면 */}
                     {page === 'detail' &&
-                        <ProjectDetail page={page} setPage={setPage} projects={projects}
-                            selectedProjectId={selectedProjectId} setProjects={setProjects}
+                        <ProjectDetail setPage={setPage} projects={projects} selectedProjectId={selectedProjectId}
                             quotations={quotations} customers={customers} employees={employees} />
                     }
+                    {/* 프로젝트 수정 화면 */}
                     {page === 'edit' &&
-                        <ProjectEdit page={page} setPage={setPage}
+                        <ProjectEdit setPage={setPage}
                             projects={projects} selectedProjectId={selectedProjectId}
-                            quotations={quotations} customers={customers} employees={employees}
-                            setProjects={setProjects} />}
+                            customers={customers} employees={employees}/>}
                 </div>} />
             <Route path='*' element={<NotFoundPage />} />
         </Routes>

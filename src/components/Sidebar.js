@@ -17,6 +17,7 @@ function Sidebar() {
     return (
         <aside className="erp-sidebar">
             <div className="erp-sidebar-brand">
+                {/* 이 부분 누르면 홈으로 갈 수 있게 하자는 제안이 있었음 */}
                 <div className="erp-brand-logo">G</div>
                 <div>
                     <strong>GOODS ERP</strong>
