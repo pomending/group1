@@ -1,0 +1,262 @@
+/* 상단 헤더 전체 */
+.erp-layout .erp-topbar {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 20px;
+
+    flex: 0 0 74px;
+
+    width: 100%;
+    min-width: 0;
+    max-width: none;
+    height: 74px;
+    min-height: 74px;
+
+    margin: 0;
+    padding: 0 28px;
+
+    background: #ffffff;
+    border: none;
+    border-bottom: 1px solid #e8eaf0;
+    border-radius: 0;
+    box-shadow: none;
+
+    text-align: left;
+}
+
+/* 왼쪽 영역 */
+.erp-layout .erp-topbar-left {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 18px;
+
+    flex: 1 1 auto;
+
+    width: auto;
+    min-width: 0;
+
+    margin: 0;
+    padding: 0;
+}
+
+/* 사이드바 접기 버튼 */
+.erp-layout .erp-topbar-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    flex: 0 0 38px;
+
+    width: 38px;
+    height: 38px;
+    min-width: 38px;
+
+    margin: 0;
+    padding: 0;
+
+    background: #ffffff;
+    border: 1px solid #e3e5eb;
+    border-radius: 9px;
+
+    color: #50586a;
+    font-size: 20px;
+    line-height: 1;
+
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.erp-layout .erp-topbar-toggle:hover {
+    background: #f2f3f8;
+}
+
+.erp-layout .erp-topbar-toggle:focus-visible {
+    outline: 2px solid #7565d8;
+    outline-offset: 2px;
+}
+
+/* 현재 페이지 정보 */
+.erp-layout .erp-topbar-page {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 5px;
+
+    flex: 1 1 auto;
+
+    width: auto;
+    min-width: 0;
+    max-width: 100%;
+
+    margin: 0;
+    padding: 0;
+}
+
+/* 홈 / 프로젝트 관리 */
+.erp-layout .erp-topbar-breadcrumb {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    flex-wrap: nowrap;
+    gap: 9px;
+
+    width: auto;
+    max-width: 100%;
+    min-width: 0;
+
+    margin: 0;
+    padding: 0;
+
+    color: #8991a1;
+    font-size: 12px;
+    font-weight: 400;
+    line-height: 1.4;
+
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+.erp-layout .erp-topbar-breadcrumb a {
+    color: #8991a1;
+    text-decoration: none;
+}
+
+.erp-layout .erp-topbar-breadcrumb a:hover {
+    color: #7565d8;
+}
+
+.erp-layout .erp-topbar-breadcrumb span {
+    flex-shrink: 0;
+    white-space: nowrap;
+}
+
+/* 현재 페이지 제목 */
+.erp-layout .erp-topbar-title {
+    display: block;
+
+    width: 100%;
+    min-width: 0;
+
+    margin: 0;
+    padding: 0;
+
+    color: #293044;
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 1.35;
+
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* 오른쪽 영역 */
+.erp-layout .erp-topbar-user {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 12px;
+
+    flex: 0 0 auto;
+
+    width: auto;
+    min-width: 0;
+
+    margin: 0;
+    padding: 0;
+}
+
+/* 사용자 정보 */
+.erp-layout .erp-topbar-user-info {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    justify-content: center;
+    gap: 4px;
+
+    margin: 0;
+    padding: 0;
+}
+
+.erp-layout .erp-topbar-user-info strong {
+    color: #293044;
+    font-size: 13px;
+    font-weight: 700;
+    line-height: 1.3;
+    white-space: nowrap;
+}
+
+.erp-layout .erp-topbar-user-info span {
+    color: #8991a1;
+    font-size: 11px;
+    line-height: 1.3;
+    white-space: nowrap;
+}
+
+/* 원형 아바타 */
+.erp-layout .erp-topbar-avatar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    flex: 0 0 36px;
+
+    width: 36px;
+    height: 36px;
+
+    margin: 0;
+    padding: 0;
+
+    background: #eeeafd;
+    border-radius: 50%;
+
+    color: #7565d8;
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 1;
+}
+
+/* 모바일 */
+@media (max-width: 768px) {
+
+    .erp-layout .erp-topbar {
+        flex-basis: 64px;
+        height: 64px;
+        min-height: 64px;
+
+        padding: 0 16px;
+        gap: 10px;
+    }
+
+    .erp-layout .erp-topbar-toggle {
+        display: none;
+    }
+
+    .erp-layout .erp-topbar-left {
+        gap: 10px;
+    }
+
+    .erp-layout .erp-topbar-title {
+        font-size: 14px;
+    }
+
+    .erp-layout .erp-topbar-user-info {
+        display: none;
+    }
+
+    .erp-layout .erp-topbar-avatar {
+        flex-basis: 32px;
+        width: 32px;
+        height: 32px;
+    }
+}

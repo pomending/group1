@@ -1,40 +1,24 @@
-/*
- * [공부 순서 3] 달력 표시 컴포넌트
- * 일정 저장이나 반복 계산을 하지 않고 부모가 계산한 visibleItems를 화면에 배치합니다.
- * 데이터는 props로 내려오고, 사용자 동작은 on... 콜백으로 부모에게 올라갑니다.
+/* [달력에서 누른 버튼이 데이터를 바꾸는 과정]
+ * 이 파일은 부모가 준 일정을 표시합니다. 여기서 localStorage를 직접 수정하지 않습니다.
+ * 예를 들어 별표를 누르면 자식 부품 → onToggleFavorite(item) → Manager의 원본 변경으로 이어집니다.
+ * Manager가 새 원본을 계산해 다시 전달하면 달력의 별 색깔도 그 값에 맞춰 다시 표시됩니다.
+ * view가 monthly면 월간, weekly면 주간, daily면 하루, staff면 사람별 주간 화면을 만듭니다.
+ * 조건 && JSX는 조건이 참일 때만 해당 화면 조각을 생성한다는 뜻입니다.
+ * 날짜 칸과 내부 버튼 모두 클릭 처리가 있으므로 stopPropagation으로 한 클릭이 두 동작을 실행하지 않게 합니다.
  */
+import { ScheduleEvent, ScheduleIcon } from "./ScheduleItemParts";
+/* 부모가 계산한 일정을 표시하고 클릭 결과를 콜백으로 전달합니다. */
 import React from "react";
 import {
   groupSchedulesByDate,
   weekDays,
-  scheduleStatuses,
-  scheduleTypes,
-  typeColors,
 } from "./scheduleData";
 import ScheduleStaffWeek from "./ScheduleStaffWeek";
-import { ScheduleEvent } from "./ScheduleItemParts";
-import ScheduleIcon from "./ScheduleIcon";
 
-/* 이 컴포넌트는 '보여주기와 클릭 전달'을 담당합니다.
- * function ScheduleCalendar({ view, onViewChange, ... })의 중괄호는 props 객체에서 필요한 값을
- * 이름별로 꺼내는 문법입니다. 부모의 <ScheduleCalendar view={view} ... />가 이 값을 전달합니다.
- * Calendar는 받은 view를 직접 변경하지 않습니다. 탭을 누르면 onViewChange('weekly')를 호출하고,
- * 부모가 state를 바꾼 다음 새 view를 내려주면 그 값으로 주간 화면을 다시 계산합니다.
- *
- * JSX를 읽는 방법:
- * - <div className="sm-card">에서 className은 CSS의 .sm-card와 연결되는 이름입니다.
- * - {periodLabel}처럼 중괄호 안에는 자바스크립트 계산 결과를 넣습니다.
- * - {view === 'monthly' && (...)}는 월별일 때만 괄호 안의 화면을 만듭니다.
- * - {조건 ? A : B}는 조건에 따라 A와 B 중 하나를 선택합니다.
- * - {배열.map(...)}은 각 원소를 화면 요소로 바꿔 여러 개를 나란히 표시합니다.
- * - key는 목록에서 같은 항목을 구분하기 위한 리액트용 표시입니다. 화면 글자로 출력되지 않습니다.
- *
- * 달력의 '선택 날짜'와 '일정 수정'은 다른 동작입니다.
- * 빈 날짜 칸 클릭 → onSelectDate(날짜) → 부모의 선택 날짜 변경.
- * 일정 버튼 클릭 → onOpenSchedule(일정 객체) → 부모가 수정 폼을 엽니다.
- * 이때 일정 버튼의 stopPropagation이 날짜 칸 클릭까지 이어지는 것을 막습니다.
+
+/* 선택 날짜 이동과 일정 열기는 별도 동작입니다. 날짜 이동은 Manager에 전달하고,
+ * 일정 선택은 수정 창을 엽니다. 월·주·일·담당자별 보기를 이 컴포넌트에서 표시합니다.
  */
-// 보기 방식에 맞는 일정 표를 보여주고 선택과 검색을 부모에게 전달합니다.
 export default function ScheduleCalendar({
   containerRef,
   selectedProject,
@@ -46,8 +30,6 @@ export default function ScheduleCalendar({
   weekDates,
   scopeFilter,
   onScopeFilterChange,
-  statusFilter,
-  onStatusFilterChange,
   query,
   onQueryChange,
   holidayError,
@@ -62,19 +44,17 @@ export default function ScheduleCalendar({
   todayKey,
   onSelectDate,
   onShowMore,
-  onOpenSchedule,
+  onSelectSchedule,
   onToggleFavorite,
 }) {
   // 한 번 정렬해 날짜별로 묶습니다. 날짜 칸이 늘어도 전체 배열을 매번 filter/sort하지 않습니다.
   const schedulesByDate = groupSchedulesByDate(visibleItems);
   const dateItems = (date) => schedulesByDate[date] || [];
   const selectedItems = dateItems(selectedDate);
-  // 숫자를 하나씩 넣어 시간대별 화면에 사용할 0~23시를 만듭니다.
-  const hours = [];
-  for (let hour = 0; hour < 24; hour += 1) hours.push(hour);
   const renderItems = (items) =>
     items.map((item) => (
-      <ScheduleEvent key={item.id} item={item} onOpen={onOpenSchedule} />
+      <ScheduleEvent key={item.id} item={item} onSelect={onSelectSchedule}
+        onToggleFavorite={onToggleFavorite} />
     ));
 
   return (
@@ -112,10 +92,10 @@ export default function ScheduleCalendar({
         </div>
         {/* value는 부모의 현재 값입니다. onChange가 부모를 갱신하면 새 value가 props로 다시 내려옵니다. */}
         <div className="sm-calendar-filters">
-          {/* label이 입력창과 아이콘을 하나의 검색 영역으로 묶습니다.
+          {/* div가 입력창과 아이콘 버튼을 하나의 검색 영역으로 묶습니다.
               화면에 보이는 순서대로 JSX를 배치해 Tab 키도 검색 → 필터 순으로 이동합니다.
               검색 값과 onChange는 그대로 두고, 외형만 공통 입력 영역으로 꾸밉니다. */}
-          <label className="sm-search-field">
+          <div className="sm-search-field">
             <ScheduleIcon name="search" />
             <input
               className="sm-search"
@@ -124,7 +104,12 @@ export default function ScheduleCalendar({
               value={query}
               onChange={(event) => onQueryChange(event.target.value)}
             />
-          </label>
+            {/* 검색어만 비웁니다. 기간·공개 범위·업무 상태는 변경하지 않습니다. */}
+            <button type="button" className="sm-search-reset" aria-label="검색 초기화"
+              title="검색 초기화" disabled={!query} onClick={() => onQueryChange("")}>
+              <ScheduleIcon name="reset" />
+            </button>
+          </div>
           <select
             aria-label="일정 구분"
             value={scopeFilter}
@@ -134,18 +119,6 @@ export default function ScheduleCalendar({
             <option value="shared">회사 공유</option>
             <option value="private">개인 일정</option>
           </select>
-          <select
-            aria-label="업무 상태 필터"
-            value={statusFilter}
-            onChange={(event) => onStatusFilterChange(event.target.value)}
-          >
-            <option value="all">모든 업무 상태</option>
-            {scheduleStatuses.map(({ value, label }) => (
-              <option key={value} value={value}>
-                {label}
-              </option>
-            ))}
-          </select>
         </div>
       </div>
 
@@ -153,7 +126,6 @@ export default function ScheduleCalendar({
       {query.trim() && (
         <div className="sm-calendar-search-summary">
           <span>검색 결과 {visibleItems.length}건</span>
-          <button type="button" className="sm-list-all-btn" onClick={() => onQueryChange("")}>검색 초기화</button>
         </div>
       )}
 
@@ -162,7 +134,6 @@ export default function ScheduleCalendar({
           role과 aria-selected는 보조 기기에 탭과 선택 상태를 설명합니다. */}
       <div className="sm-view-tabs" role="tablist" aria-label="일정 보기 방식">
         {[
-          ["hourly", "시간대별"],
           ["daily", "일별"],
           ["weekly", "주별"],
           ["staff", "담당자별 주간"],
@@ -181,13 +152,6 @@ export default function ScheduleCalendar({
         ))}
       </div>
 
-      {/* 현재 필터로 표시 중인 일정의 작업 종류를 설명합니다. 색상과 글자를 함께 제공해
-          색을 구별하기 어려운 경우에도 의미를 알 수 있고, 필터 동작은 추가하지 않습니다. */}
-      <div className="sm-calendar-legend" aria-label="일정 색상 안내">
-        {scheduleTypes.map((type) => (
-          <span key={type}><i style={{ background: typeColors[type] }} aria-hidden="true" />{type}</span>
-        ))}
-      </div>
       <div className="sm-holiday-error" role="status">
         {holidayError ? "공휴일 정보를 불러오지 못했습니다." : ""}
       </div>
@@ -202,9 +166,9 @@ export default function ScheduleCalendar({
           tabIndex={0}
         >
           <div className="sm-grid">
-            {weekDays.map((day, index) => (
+            {["일", "월", "화", "수", "목", "금", "토"].map((day, index) => (
               <div
-                className={`sm-weekday ${index === 5 ? "saturday" : ""} ${index === 6 ? "sunday" : ""}`}
+                className={`sm-weekday ${index === 6 ? "saturday" : ""} ${index === 0 ? "sunday" : ""}`}
                 key={day}
               >
                 {day}
@@ -226,7 +190,7 @@ export default function ScheduleCalendar({
               const holidayName = holidayDates[cell.key];
               const weekday = cell.date.getDay();
               // 공휴일 조건을 먼저 검사해 공휴일 색상이 주말 색상보다 우선하게 합니다.
-              // getDay()는 일요일=0, 토요일=6입니다. 앞의 weekDays 배열 인덱스와는 순서가 다릅니다.
+              // getDay()는 일요일=0, 토요일=6이며 월별 헤더의 순서와 같습니다. 주간용 weekDays 배열은 월요일 시작입니다.
               let dateColor = "";
               if (holidayName) dateColor = "holiday";
               else if (weekday === 0) dateColor = "sunday";
@@ -255,7 +219,7 @@ export default function ScheduleCalendar({
                       key={item.id}
                       item={item}
                       compact
-                      onOpen={onOpenSchedule}
+                      onSelect={onSelectSchedule}
                       onToggleFavorite={onToggleFavorite}
                     />
                   ))}
@@ -323,6 +287,7 @@ export default function ScheduleCalendar({
       {view === "staff" && (
         <ScheduleStaffWeek
           key={staffPersonSearch || "all"}
+          onToggleFavorite={onToggleFavorite}
           people={staffPeople}
           personSearch={staffPersonSearch}
           weekDates={weekDates}
@@ -330,31 +295,15 @@ export default function ScheduleCalendar({
           selectedDate={selectedDate}
           holidayDates={holidayDates}
           onSelectDate={onSelectDate}
-          onOpenSchedule={onOpenSchedule}
+          onSelectSchedule={onSelectSchedule}
         />
       )}
 
-      {/* 일별은 선택 날짜의 모든 일정을 시간순으로, 시간대별은 같은 목록을 시간별로 나눠 표시합니다. */}
-      {(view === "daily" || view === "hourly") && (
+      {/* 일별은 선택 날짜의 일정을 시간순으로 보여줍니다. */}
+      {view === "daily" && (
         <div className="sm-day-view">
-          {view === "hourly" && hours.map((hour) => {
-              // "15:30"에서 앞 두 글자 "15"만 잘라 숫자로 바꾸면 15시 행에 배치됩니다.
-              // 분 정보는 없애지 않으며 renderItems가 원본 time 전체를 표시합니다.
-              const hourItems = selectedItems.filter(
-                (item) => Number(item.time.slice(0, 2)) === hour,
-              );
-              return (
-                <div className="sm-hour-row" key={hour}>
-                  <time>{String(hour).padStart(2, "0")}:00</time>
-                  <div>{renderItems(hourItems)}</div>
-                </div>
-              );
-            })}
-          {/* 중첩 삼항 연산자 대신 조건을 나눕니다. 일별일 때만 일정 또는 빈 안내를 표시합니다. */}
-          {view === "daily" && renderItems(selectedItems)}
-          {view === "daily" && selectedItems.length === 0 && (
-            <p className="sm-empty">선택한 날짜에 등록된 일정이 없습니다.</p>
-          )}
+          {renderItems(selectedItems)}
+          {selectedItems.length === 0 && <p className="sm-empty">선택한 날짜에 등록된 일정이 없습니다.</p>}
         </div>
       )}
     </section>

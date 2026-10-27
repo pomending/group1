@@ -1,35 +1,13 @@
-/*
- * [공부 순서 1] 공통 데이터와 날짜 계산
- * React 화면과 관계없이 입력값을 받아 결과를 돌려주는 함수들을 모은 파일입니다.
- * export한 값은 다른 파일에서 import해서 사용하며, 종류·색상을 한 곳에서 관리합니다.
+import { normalizeConnections } from "./scheduleConnectionsData";
+
+/* 반복 규칙은 원본 한 건으로 저장하고 화면에 필요한 날짜만 계산합니다.
+ * occurrenceDate는 반복 중 한 번, excludedDates는 제외할 날짜를 가리킵니다.
+ * 날짜와 시간은 각각 YYYY-MM-DD와 HH:mm 형식으로 비교합니다.
  */
-/* 이 파일은 리액트보다 자바스크립트의 데이터 계산을 먼저 공부하기 좋은 부분입니다.
- *
- * 객체와 배열 예시:
- *   일정 객체 하나 = { id: 'a', title: '주간 회의', date: '2026-10-22', person: '민수' }
- *   일정 배열      = [일정객체1, 일정객체2, ...]
- * item.title은 객체의 제목을 읽고 items[0]은 배열의 첫 번째 일정을 읽습니다.
- *
- * 이 코드에서 자주 쓰는 배열 함수:
- * - filter(조건함수): 조건이 true인 원소만 남긴 새 배열. 예: 담당자가 민수인 일정만 남기기.
- * - map(변환함수): 각 원소를 다른 값으로 바꾼 새 배열. 예: 일정들에서 project 이름만 꺼내기.
- * - for...of: 배열의 값을 앞에서부터 하나씩 꺼내 반복합니다. 결과는 새 배열에 push로 담습니다.
- * - sort(비교함수): 순서 바꾸기. 다른 함수들과 달리 호출한 배열 자체를 수정하므로 복사 여부를 확인합니다.
- * - includes(값): 그 값이 배열에 있는지, 또는 문자열에 해당 글자가 포함되는지 확인해 true/false를 반환합니다.
- *
- * 기본 문법 예시:
- *   const getTitle = (item) => item.title;
- * =>는 함수를 만드는 문법이며 위 함수는 item을 받아 title을 반환합니다.
- * => { ... }처럼 중괄호 본문을 쓰면 값을 돌려줄 때 return을 명시해야 합니다.
- * value ?? 기본값은 value가 null/undefined일 때만 기본값을 사용합니다.
- * value || 기본값은 빈 문자열, 0, false처럼 거짓으로 취급되는 값에도 기본값을 사용합니다.
- *
- * 반복 일정에서 반드시 구분할 두 값:
- * 저장 원본은 '10월 22일부터 매주'라는 규칙 하나이고 화면 목록은 22일·29일 등 실제 발생일입니다.
- * 발생 목록을 만들 때 원본 id를 유지하고 occurrenceDate를 추가해 어느 날짜의 한 번인지 표시합니다.
- * 그래서 규칙 하나에서 여러 화면 항목이 나와도 원본 저장 개수가 그만큼 늘어나지는 않습니다.
- */
-// 달력의 요일 순서와 등록 폼에서 선택할 수 있는 작업 종류입니다.
+
+
+// weekDays는 주별·담당자별 주간용 월요일 시작 순서입니다. 월별은 Calendar에서 일요일 시작으로 따로 표시합니다.
+
 export const weekDays = ["월", "화", "수", "목", "금", "토", "일"];
 export const scheduleTypes = [
   "기획",
@@ -40,14 +18,20 @@ export const scheduleTypes = [
   "출고",
   "기타",
 ];
-// value는 저장·비교에 쓰는 내부 값이고, label은 사용자에게 보여 주는 이름입니다.
-// 주간/월간은 단위이고 repeatInterval은 그 단위가 몇 번 지날 때 반복할지 나타냅니다.
-export const repeatTypes = [
-  { value: "none", label: "반복 없음" },
-  { value: "weekly", label: "주간" },
-  { value: "monthly", label: "월간" },
-];
-
+export const scheduleCategories = ["회의", "프로젝트", "업무", "외근", "휴가", "기타"];
+export const scheduleScopes = ["업무용", "개인 일정용"];
+export function getScheduleCategories() {
+  return scheduleCategories;
+}
+export function getScheduleScope(item = {}) {
+  return scheduleScopes.includes(item.scope) ? item.scope : "업무용";
+}
+export function getScheduleCategory(item = {}) {
+  if (scheduleCategories.includes(item.category)) return item.category;
+  if (item.scope === "개인 일정용") return "";
+  if (normalizeAttendees(item.attendees).length) return "회의";
+  return typeof item.project === "string" && item.project.trim() ? "프로젝트" : "업무";
+}
 export const MAX_REPEAT_INTERVAL = 120;
 // 기존 biweekly=true 데이터도 2주 간격으로 읽습니다. 새 데이터의 숫자 간격을 우선합니다.
 export const getRepeatInterval = (item) => {
@@ -64,11 +48,10 @@ export const getRepeatInterval = (item) => {
 
 // 화면 문구와 저장값을 구분합니다. 작업 종류(디자인/제작 등)와 진행 상태는 별개입니다.
 export const scheduleStatuses = [
-  { value: "pending", label: "업무 진행 전", shortLabel: "진행 전" },
-  { value: "in_progress", label: "업무 중", shortLabel: "업무 중" },
-  { value: "completed", label: "업무 완료", shortLabel: "완료" },
+  { value: "pending", label: "예정" },
+  { value: "completed", label: "완료" },
 ];
-// 저장값이 기존 코드에 없는 상태이거나 누락됐을 때 기본값을 반환합니다.
+// 기존 업무 중(in_progress)도 예정으로 읽고, 완료 여부만 관리합니다.
 export function normalizeStatus(value) {
   for (const status of scheduleStatuses) {
     if (status.value === value) return value;
@@ -118,8 +101,7 @@ export const compareSchedules = (a, b) =>
 
 // 시작 시간은 기존 time에 유지합니다. 예전 자료는 종료 시간이 없으므로 오후 5시로 표시합니다.
 export function getScheduleTime(item) {
-  const endTime = item.endTime || "17:00";
-  return item.time + "~" + endTime;
+  return item.time + "~" + (item.endTime || "17:00");
 }
 
 // 선택 날짜를 복사해 월요일로 되돌린 뒤 7일을 만듭니다. state의 Date를 직접 바꾸지 않습니다.
@@ -167,7 +149,10 @@ export const createEmptyForm = () => ({
   endTime: "17:00",
   title: "",
   description: "",
+  connections: {},
   project: "",
+  scope: "",
+  category: "",
   person: "",
   // 입력 중에는 문자열로 둡니다. 저장 시 normalizeAttendees가 배열로 바꿉니다.
   // 예: 입력 "민수, 지수" → 저장 ["민수", "지수"] → 수정 입력 "민수, 지수".
@@ -176,6 +161,9 @@ export const createEmptyForm = () => ({
   status: "pending",
   repeatType: "none",
   repeatInterval: 1,
+  monthlyRule: "date",
+  monthlyOrdinal: 2,
+  monthlyWeekday: 3,
   visibility: "shared",
 });
 
@@ -188,9 +176,21 @@ export const createScheduleForm = (item) => {
   for (const name in form) {
     if (item[name] !== null && item[name] !== undefined) form[name] = item[name];
   }
+  form.scope = getScheduleScope(item);
+  form.connections = form.scope === "개인 일정용" ? {} : normalizeConnections(item.connections);
+  form.category = getScheduleCategory(item);
   form.attendees = normalizeAttendees(item.attendees).join(", ");
   form.repeatType = item.repeatType || "none";
   form.repeatInterval = getRepeatInterval(item);
+  form.monthlyRule = item.monthlyRule === "weekday" ? "weekday" : "date";
+  form.monthlyOrdinal = [-1, 1, 2, 3, 4].includes(Number(item.monthlyOrdinal))
+    ? Number(item.monthlyOrdinal)
+    : 2;
+  form.monthlyWeekday = Number.isInteger(Number(item.monthlyWeekday))
+    && Number(item.monthlyWeekday) >= 0
+    && Number(item.monthlyWeekday) <= 6
+    ? Number(item.monthlyWeekday)
+    : 3;
   if (item.occurrenceDate) {
     form.repeatType = "none";
     form.repeatInterval = 1;
@@ -221,13 +221,13 @@ export const normalizeAttendees = (value) => {
   return result;
 };
 
-// 담당자와 참석자를 하나의 이름 배열로 합쳐 사람별 표·검색·팀원 수에서 재사용합니다.
+// 담당자와 참석자를 하나의 이름 배열로 합쳐 사람별 표와 검색에서 사용합니다. 등록 팀원 수는 별도 명단을 셉니다.
 // 담당자="민수", 참석자=["민수", "지수"]이면 중복을 제거한 ["민수", "지수"]를 반환합니다.
 // 현재는 이름 문자열로 사람을 구분하므로 같은 이름은 한 사람으로 취급합니다.
 export const getSchedulePeople = (item) =>
   normalizeAttendees([
-    // ||는 왼쪽이 빈 문자열/undefined 등 거짓으로 평가되면 오른쪽 기본값을 사용합니다.
-    item.person || "",
+    // 담당자가 비어 있거나 문자열이 아니어도 normalizeAttendees가 알아서 건너뜁니다.
+    item.person,
     // ...가 없으면 [담당자, [참석자들]]로 중첩됩니다. 펼쳐야 이름들이 한 배열에 나란히 들어갑니다.
     // normalizeAttendees가 누락값도 배열로 보장하므로 펼치기를 안전하게 사용할 수 있습니다.
     ...normalizeAttendees(item.attendees),
@@ -312,6 +312,35 @@ export const expandSchedules = (items, fromKey, toKey) => {
       const monthsUntilNext = (interval - (elapsed % interval)) % interval;
       date.setMonth(date.getMonth() + monthsUntilNext);
       while (date <= to) {
+        // 월간 요일 기준은 해당 달의 첫날 또는 마지막 날에서 원하는 요일을 계산합니다.
+        if (item.monthlyRule === "weekday") {
+          const ordinal = [-1, 1, 2, 3, 4].includes(Number(item.monthlyOrdinal))
+            ? Number(item.monthlyOrdinal)
+            : 2;
+          const weekday = Number.isInteger(Number(item.monthlyWeekday))
+            && Number(item.monthlyWeekday) >= 0
+            && Number(item.monthlyWeekday) <= 6
+            ? Number(item.monthlyWeekday)
+            : 3;
+          let occurrenceDate;
+          if (ordinal === -1) {
+            occurrenceDate = new Date(date.getFullYear(), date.getMonth() + 1, 0);
+            occurrenceDate.setDate(
+              occurrenceDate.getDate() - ((occurrenceDate.getDay() - weekday + 7) % 7),
+            );
+          } else {
+            const firstDay = new Date(date.getFullYear(), date.getMonth(), 1);
+            const offset = (weekday - firstDay.getDay() + 7) % 7;
+            occurrenceDate = new Date(
+              date.getFullYear(),
+              date.getMonth(),
+              1 + offset + (ordinal - 1) * 7,
+            );
+          }
+          addOccurrence(occurrenceDate);
+          date.setMonth(date.getMonth() + interval);
+          continue;
+        }
         // new Date(연도, 다음 달, 0)은 다음 달 1일의 하루 전, 즉 현재 월의 말일입니다.
         const lastDay = new Date(
           date.getFullYear(),
@@ -357,29 +386,32 @@ const getScheduleLookaheadEnd = (item, fromKey, count) => {
 // 프로젝트 선택 시 오늘 이후 첫 발생일로 이동합니다. 모두 과거라면 마지막 저장 날짜를 사용합니다.
 // 반복은 시작일만 비교하지 않고 실제 발생일을 구하며, 삭제한 발생일은 건너뜁니다.
 export const getNextScheduleDate = (items, fromKey) => {
-  const upcoming = [];
+  let nextDate;
+  let latestDate;
   for (const item of items) {
+    // 날짜 하나만 필요하므로 목록 전체를 복사·정렬하지 않고 가장 늦은 저장 날짜만 기억합니다.
+    if (!latestDate || item.date > latestDate) latestDate = item.date;
     const endKey = getScheduleLookaheadEnd(item, fromKey, 1);
     const dates = expandSchedules([item], fromKey, endKey);
-    if (dates.length > 0) upcoming.push(dates[0]);
+    // 각 규칙의 첫 발생일 중 가장 빠른 날짜를 남깁니다. 같은 날짜의 시간 순서는 필요하지 않습니다.
+    if (dates.length > 0 && (!nextDate || dates[0].date < nextDate)) nextDate = dates[0].date;
   }
-  upcoming.sort(compareSchedules);
-  if (upcoming.length > 0) return upcoming[0].date;
-
-  // 미래 일정이 없으면 가장 최근 저장 날짜를 사용합니다. 빈 배열이면 이동할 날짜도 없습니다.
-  const pastItems = [...items].sort(compareSchedules);
-  if (pastItems.length > 0) return pastItems[pastItems.length - 1].date;
-  return undefined;
+  // 미래 일정이 없으면 가장 최근 저장 날짜를 사용합니다. 빈 목록이면 두 값 모두 undefined입니다.
+  return nextDate || latestDate;
 };
 
 /* '다가오는 일정'은 시작 전 작업과 아직 끝나지 않은 작업을 함께 보여줍니다.
  * now는 밀리초 숫자입니다. YYYY-MM-DDTHH:mm을 Date로 바꾸면 브라우저의 현지 시각이 됩니다.
  * 09:00~17:00 작업은 09시 이후에도 남겨 두고 17시가 되면 제외합니다. 완료된 일정도 제외합니다.
- * 반복은 각 규칙에서 가까운 limit개만 후보로 만들고, 전체를 시간순 정렬해 최종 limit개를 남깁니다.
+ * 반복은 각 규칙에서 가까운 limit개를 후보로 만들고, days가 있으면 기간 밖 후보를 제외한 뒤 가까운 limit개를 남깁니다.
  * 오늘 이미 지난 반복 한 건을 건너뛸 수 있도록 조회 횟수에는 1을 더합니다.
- * 연간 반복처럼 먼 미래의 일정도 찾되, 종료일 없는 반복 전체를 생성하지 않습니다. */
-export const getUpcomingSchedules = (items, now, limit = 5) => {
+ * days를 생략한 프로젝트 이동용 조회는 먼 미래도 찾습니다. 오른쪽 목록은 days=7로 기간을 제한합니다. */
+export const getUpcomingSchedules = (items, now, limit = 5, days) => {
   const fromKey = dateKey(new Date(now));
+  // 기간 제한은 오른쪽 목록에서만 사용합니다. 프로젝트 이동은 먼 미래 일정도 찾을 수 있습니다.
+  const windowEnd = new Date(now);
+  windowEnd.setHours(0, 0, 0, 0);
+  windowEnd.setDate(windowEnd.getDate() + (days || 0));
   const upcoming = [];
   for (const item of items) {
     if (item.status === "completed") continue;
@@ -390,6 +422,7 @@ export const getUpcomingSchedules = (items, now, limit = 5) => {
       const startTime = new Date(`${occurrence.date}T${occurrence.time}`).getTime();
       const endTime = new Date(`${occurrence.date}T${occurrence.endTime || "17:00"}`).getTime();
       if (Number.isNaN(startTime) || Number.isNaN(endTime)) continue;
+      if (days && startTime >= windowEnd.getTime()) break;
       // 시작 전이라면 계속 표시합니다. 이미 시작했다면 종료 시간까지 남겨 둡니다.
       // 기존 자료에 시작보다 이른 기본 종료 시간(17시)이 있어도 미래의 시작 일정은 숨기지 않습니다.
       if (startTime <= now && endTime <= now) continue;
@@ -423,6 +456,16 @@ export const getRepeatLabel = (item) => {
     return label + "일월화수목금토"[day] + "요일 " + getScheduleTime(item);
   }
   if (item.repeatType === "monthly") {
+    if (item.monthlyRule === "weekday") {
+      const ordinal = Number(item.monthlyOrdinal);
+      const ordinalLabel = ordinal === -1
+        ? "마지막"
+        : ["", "첫째", "둘째", "셋째", "넷째"][ordinal] || "둘째";
+      const weekday = Number(item.monthlyWeekday);
+      const weekdayLabel = "일월화수목금토"[weekday] || "수";
+      const cadence = interval === 1 ? "매월" : `${interval}개월마다`;
+      return `${cadence} ${ordinalLabel} ${weekdayLabel}요일 ${getScheduleTime(item)}`;
+    }
     const day = Number(item.date.slice(8));
     if (interval % 12 === 0) {
       const years = interval / 12;

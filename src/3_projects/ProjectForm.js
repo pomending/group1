@@ -1,99 +1,14 @@
-
 import { useState } from "react";
 import "./ProjectForm.css";
 
 function ProjectForm(props) {
+
     const [projectName, setProjectName] = useState('');
-    const [manager, setManager] = useState('김민수');
+    const [manager, setManager] = useState(props.employees[0]?.id ?? '');
     const [due, setDue] = useState('');
     const [selQuotation, setSelQuotation] = useState('')
 
-    const quotations = [
-        {
-            id: 1,
-            customerId: 1,
-            status: "승인",
-            items: [
-                {
-                    productId: 1,
-                    productName: "스테인리스 텀블러",
-                    quantity: 300,
-                    unitPrice: 8000
-                }
-            ]
-        },
-        {
-            id: 2,
-            customerId: 2,
-            status: "승인",
-            items: [
-                {
-                    productId: 2,
-                    productName: "캔버스 에코백",
-                    quantity: 500,
-                    unitPrice: 5000
-                }
-            ]
-        },
-        {
-            id: 3,
-            customerId: 3,
-            status: "승인",
-            items: [
-                {
-                    productId: 3,
-                    productName: "세라믹 머그컵",
-                    quantity: 400,
-                    unitPrice: 6000
-                },
-                {
-                    productId: 2,
-                    productName: "캔버스 에코백",
-                    quantity: 200,
-                    unitPrice: 5000
-                }
-            ]
-        },
-        {
-            id: 4,
-            customerId: 1,
-            status: "승인 대기",
-            items: [
-                {
-                    productId: 4,
-                    productName: "아크릴 키링",
-                    quantity: 1000,
-                    unitPrice: 2500
-                }
-            ]
-        },
-        {
-            id: 5,
-            customerId: 4,
-            status: "거절",
-            items: [
-                {
-                    productId: 1,
-                    productName: "스테인리스 텀블러",
-                    quantity: 100,
-                    unitPrice: 8500
-                }
-            ]
-        },
-        {
-            id: 6,
-            customerId: 4,
-            status: "승인",
-            items: [
-                {
-                    productId: 4,
-                    productName: "아크릴 키링",
-                    quantity: 800,
-                    unitPrice: 2300
-                }
-            ]
-        }
-    ];
+    const quotations = props.quotations;
 
     const selectedQuotation = quotations.find(
         q => q.id === Number(selQuotation)
@@ -106,6 +21,7 @@ function ProjectForm(props) {
     const handleSubmit = (e) => {
         e.preventDefault();
 
+        // 빈 데이터에 대한 유효성 체크들
         if (projectName.trim() === '') {
             alert('프로젝트명을 입력하세요');
             return;
@@ -116,10 +32,31 @@ function ProjectForm(props) {
             return;
         }
 
+        if (props.projects.some(p => p.quotationId === selectedQuotation.id)) {
+            alert("이미 다른 프로젝트에 연결된 견적입니다.");
+            return;
+        }
+
+        // 간단한 날짜 관련 유효성 체크들
+        const today = new Date().toLocaleDateString('sv-SE');
+
+        if (!due) {
+            alert('납품 예정일을 선택하세요.');
+            return;
+        }
+
+        if (due < today) {
+            alert('납품 예정일은 오늘 이후로 설정해주세요.');
+            return;
+        }
+
         props.setProjects(prev => [...prev, {
             id: Math.max(0, ...prev.map(p => Number(p.id) || 0)) + 1,
-            projectName: projectName.trim(),
-            manager: manager,
+            name: projectName.trim(),
+            managerId: manager,
+            startDate: new Date().toLocaleDateString('sv-SE'),
+            completedDate: null,
+            description: "",
             dueDate: due,
             quotationId: Number(selQuotation),
             customerId: selectedQuotation.customerId,
@@ -171,7 +108,7 @@ function ProjectForm(props) {
                                 프로젝트명 <span className="pf-required">*</span>
                             </label>
 
-                            <input value={projectName} onChange={(e) => { setProjectName(e.target.value) }} />
+                            <input id="pf-name" value={projectName} onChange={(e) => { setProjectName(e.target.value) }} />
 
                             <label htmlFor="pf-quotation">연결 견적 선택</label>
 
@@ -184,7 +121,9 @@ function ProjectForm(props) {
                                 <option value="">견적을 선택하세요</option>
 
                                 {quotations
-                                    .filter(q => q.status === "승인")
+                                    .filter(q => q.status === "승인" &&
+                                        !props.projects.some(p => p.quotationId === q.id)
+                                    )
                                     .map(q => (
                                         <option key={q.id} value={q.id}>
                                             {formatQuotationId(q.id)} | 고객 {q.customerId}
@@ -210,7 +149,10 @@ function ProjectForm(props) {
 
                                         <div>
                                             <span>고객 ID</span>
-                                            <strong>{selectedQuotation.customerId}</strong>
+                                            <strong>
+                                                {props.customers.find(c => c.id === selectedQuotation.customerId)?.name
+                                                    ?? `고객 ${selectedQuotation.customerId}`}
+                                            </strong>
                                         </div>
                                     </div>
 
@@ -265,11 +207,13 @@ function ProjectForm(props) {
                                 id="pf-manager"
                                 name="manager"
                                 value={manager}
-                                onChange={(e) => setManager(e.target.value)}
+                                onChange={(e) => setManager(Number(e.target.value))}
                             >
-                                <option value="김민수">김민수</option>
-                                <option value="이지현">이지현</option>
-                                <option value="박준호">박준호</option>
+                                {props.employees.map(emp => (
+                                    <option key={emp.id} value={emp.id}>
+                                        {emp.name}
+                                    </option>
+                                ))}
                             </select>
                         </div>
 
@@ -278,6 +222,8 @@ function ProjectForm(props) {
                             <input
                                 id="pf-due"
                                 type="date"
+                                // 납품 예정일을 오늘 날짜보다 더 이전 날짜로 할 수 없다
+                                min={new Date().toLocaleDateString('sv-SE')}
                                 value={due}
                                 onChange={(e) => setDue(e.target.value)}
                             />

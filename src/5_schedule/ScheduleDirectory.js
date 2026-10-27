@@ -1,25 +1,15 @@
+/* [목록의 이름과 실제 저장 자료를 구분하기]
+ * 프로젝트 목록은 일정에 적힌 프로젝트명을 모은 결과입니다. 다른 파트의 프로젝트 데이터베이스가 아닙니다.
+ * 팀원 목록은 별도로 등록된 teamMembers 배열이며, 단순히 과거 일정에 이름이 있다고 자동 등록하지 않습니다.
+ * uniqueNames는 빈 이름과 중복을 제거하고 한글 이름순으로 정렬하는 작은 함수입니다.
+ * 선택한 사람의 담당 프로젝트를 찾을 때는 person을 비교하며 참석자만인 경우에는 포함하지 않습니다.
+ * 프로젝트 버튼은 이름 전체가 같은 항목으로 이동하므로 test와 test2를 서로 다른 프로젝트로 처리합니다.
+ */
 import React, { useState } from "react";
 import ScheduleTeamEditor from "./ScheduleTeamEditor";
-import ScheduleIcon from "./ScheduleIcon";
+import { ScheduleIcon } from "./ScheduleItemParts";
 
-/* props와 state를 이 화면에 대입해 보기
- * - props의 items: 부모가 보관하는 전체 일정입니다. 이 컴포넌트에서 마음대로 수정하지 않습니다.
- * - props의 mode: 프로젝트 목록인지 팀원 목록인지 결정하는 값입니다.
- * - props의 selectedProject: 부모가 선택해 둔 프로젝트입니다. 선택한 카드 색을 표시하는 데 사용합니다.
- * - state의 selectedPerson: 이 목록에서 현재 펼쳐 둔 팀원입니다. 펼침 상태는 이 파일만 필요합니다.
- *
- * 팀원 '김담당'을 누르는 경우:
- * ① selectedPerson이 null이었다면 setSelectedPerson('김담당')으로 바꿉니다.
- * ② 다시 렌더링하면서 for문으로 담당자가 '김담당'인 일정을 찾습니다.
- * ③ 그 일정의 프로젝트명을 배열에 모으고 uniqueNames로 중복을 없앱니다.
- * ④ selectedPerson === name이 참인 팀원 아래에만 프로젝트 버튼을 표시합니다.
- *
- * 그 아래 프로젝트를 누르는 경우:
- * ① onSelectProject(project)로 부모에게 프로젝트명을 전달합니다.
- * ② Manager가 이동할 날짜를 계산하고 selectedProject와 selectedDate를 바꿉니다.
- * ③ 새 props를 받은 이 목록의 선택 배경과 Sidebar의 '선택한 날짜 일정'이 함께 바뀝니다.
- * 자식이 부모에게 직접 접근하는 대신 부모가 준 함수를 호출하는 방식입니다.
- */
+/* items에서 프로젝트를 모으고, 등록된 팀원 목록은 별도로 표시합니다. */
 /* 목록의 데이터 흐름
  * 프로젝트는 원본 items에서 추리고, 팀원은 별도 teamMembers에서 가져옵니다.
  * 이 파일은 어떤 팀원을 펼칠지만 관리하며, 날짜 이동과 프로젝트 선택은 Manager가 처리합니다.
@@ -39,17 +29,13 @@ export default function ScheduleDirectory({ mode, items, teamMembers, onAddTeamM
   const [selectedPerson, setSelectedPerson] = useState(null);
   // 프로젝트명은 일정에서 모으고, 사람 이름은 별도 등록 목록을 사용합니다.
   const isPeople = mode === "people";
-  const listNames = [];
-  const assignedNames = [];
-  for (const item of items) {
-    if (!isPeople) listNames.push(item.project);
-    if (item.person.trim() === selectedPerson) assignedNames.push(item.project);
-  }
-  let names = uniqueNames(listNames);
-  if (isPeople) names = teamMembers;
-  // '담당 프로젝트'는 등록한 팀원의 이름과 담당자 필드가 일치하는 것만 셉니다.
-  // 참석만 한 프로젝트를 담당 프로젝트로 잘못 표시하지 않기 위해 두 역할을 구분합니다.
-  const assignedProjects = uniqueNames(assignedNames);
+  let names = teamMembers;
+  if (!isPeople) names = uniqueNames(items.map((item) => item.project));
+  // filter는 담당 일정만 남기고 map은 그 일정의 프로젝트 이름을 꺼냅니다.
+  // 참석한 일정은 담당 프로젝트에 포함하지 않습니다.
+  const assignedProjects = uniqueNames(items
+    .filter((item) => item.person.trim() === selectedPerson)
+    .map((item) => item.project));
   function togglePerson(name) {
     if (selectedPerson === name) setSelectedPerson(null);
     else setSelectedPerson(name);
@@ -85,7 +71,7 @@ export default function ScheduleDirectory({ mode, items, teamMembers, onAddTeamM
   };
 
   return (
-    <section className="sm-card sm-directory" aria-labelledby="sm-directory-title">
+    <section className="sm-card" aria-labelledby="sm-directory-title">
       <div className="sm-panel-title">
         <h3 id="sm-directory-title">{isPeople ? "팀원 목록" : "프로젝트 목록"}</h3>
         <button type="button" className="sm-close" aria-label="목록 닫기" onClick={onClose}>×</button>
