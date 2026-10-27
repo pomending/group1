@@ -8,6 +8,7 @@
  * 화면의 배지 색은 분류를 표현하며 접근 권한을 검사하거나 저장을 실행하는 기능은 아닙니다.
  */
 import React from "react";
+import { ScheduleConnectionSummary } from "./ScheduleConnections";
 import {
   normalizeAttendees,
   scheduleStatuses,
@@ -78,26 +79,27 @@ export function ScheduleFavorite({ item, onToggleFavorite }) {
 }
 
 // compact이면 월간 칸에 맞춰 제목과 시간·별표를 나누고, 나머지 보기는 한 버튼으로 만듭니다.
-export function ScheduleEvent({ item, onOpen, compact = false, roleLabel, onToggleFavorite }) {
+export function ScheduleEvent({ item, onSelect, compact = false, roleLabel, onToggleFavorite }) {
   const status = getStatusOption(item.status);
   const time = getScheduleTime(item);
-  const label = `${item.date} ${time} ${item.title} 상세 내용 확인 및 수정`;
-  const help = `${item.title} · ${time} · ${item.project} · ${item.person} · ${status.label}`;
-  // 두 배치에서 같은 클릭 처리를 사용합니다. 날짜 칸의 클릭까지 실행되지 않게 막은 뒤 수정 창을 엽니다.
-  function openSchedule(event) {
+  const label = `${item.date} ${time} ${item.title} 선택한 날짜 일정에서 보기`;
+  const help = item.scope === "개인 일정용"
+    ? `${item.title} · ${time}`
+    : `${item.title} · ${time} · ${item.project} · ${item.person} · ${status.label}`;
+  // 일정 상자를 누르면 날짜 칸 클릭은 막고, 선택한 날짜 일정 패널을 갱신합니다.
+  function selectSchedule(event) {
     event.stopPropagation();
-    onOpen(item);
+    onSelect(item);
   }
   // 버튼 안에 별 버튼을 중첩하지 않고, 일정 박스 안에 제목 버튼과 별 버튼을 나란히 둡니다.
   // 제목은 상세창, 별은 즐겨찾기만 실행하므로 서로의 동작이 섞이지 않습니다.
   if (compact) {
     return (
       <div className="sm-event sm-event-compact" style={{ "--sm-event-color": item.color }}
-        onClick={openSchedule} title={help}>
-        {/* 제목뿐 아니라 시간·배지·빈 여백에서도 한 번 클릭하면 같은 수정 창을 엽니다.
-            별 버튼은 더블클릭 전파를 막아 즐겨찾기 조작이 수정 창까지 열지 않게 합니다. */}
+        onClick={selectSchedule} title={help}>
+        {/* 일정 영역을 누르면 상세 패널을 선택하고, 별 버튼은 즐겨찾기만 바꿉니다. */}
         <button type="button" className="sm-event-open"
-          aria-label={label} title={help} onClick={openSchedule}>
+          aria-label={label} title={help} onClick={selectSchedule}>
           <strong className="sm-event-title">{item.title}</strong>
         </button>
         <div className="sm-event-time-row">
@@ -105,7 +107,7 @@ export function ScheduleEvent({ item, onOpen, compact = false, roleLabel, onTogg
           <ScheduleFavorite item={item} onToggleFavorite={onToggleFavorite} />
         </div>
         <span className="sm-event-meta">
-          <ScheduleStatus status={item.status} />
+          {item.scope !== "개인 일정용" && <ScheduleStatus status={item.status} />}
           <ScheduleVisibility visibility={item.visibility} />
         </span>
       </div>
@@ -116,18 +118,18 @@ export function ScheduleEvent({ item, onOpen, compact = false, roleLabel, onTogg
       type="button"
       className="sm-event"
       style={{ "--sm-event-color": item.color }}
-      onClick={openSchedule}
+      onClick={selectSchedule}
       aria-label={label}
       title={help}
     >
       <time>{time}</time>
       <span>{item.title}</span>
       <small>{roleLabel || item.person}</small>
-      <ScheduleStatus status={item.status} />
+      {item.scope !== "개인 일정용" && <ScheduleStatus status={item.status} />}
       <ScheduleVisibility visibility={item.visibility} />
     </button>
   );
-  // 별표를 일정 버튼 밖에 나란히 두어 버튼 중첩과 수정 창 열림을 막습니다.
+  // 별표를 일정 선택 버튼 바깥에 둡니다.
   return (
     <div className="sm-event-shell" style={{ "--sm-event-color": item.color }}>
       {eventButton}
@@ -136,8 +138,8 @@ export function ScheduleEvent({ item, onOpen, compact = false, roleLabel, onTogg
   );
 }
 
-// 선택 날짜 카드의 완료 여부 변경과 삭제 버튼입니다. 수정은 카드 제목 클릭으로 처리합니다.
-export function ScheduleActions({ item, onDelete, onStatusChange }) {
+// 선택 날짜 카드에서 일정 수정·상태 변경·삭제를 실행합니다.
+export function ScheduleActions({ item, onEdit, onDelete, onStatusChange }) {
   const status = getStatusOption(item.status);
   let statusHelp = "이 일정의 상태 변경";
   if (item.repeatType !== "none" && !item.occurrenceDate) {
@@ -145,7 +147,8 @@ export function ScheduleActions({ item, onDelete, onStatusChange }) {
   }
   return (
     <div className="sm-item-actions">
-        <select
+      <button type="button" className="sm-edit-btn" onClick={() => onEdit(item)} aria-label={`${item.title} 일정 수정`}>수정</button>
+      {item.scope !== "개인 일정용" && <select
           className={`sm-status-select ${status.value}`}
           aria-label={`${item.title} 일정 상태`}
           title={statusHelp}
@@ -157,7 +160,7 @@ export function ScheduleActions({ item, onDelete, onStatusChange }) {
               {label}
             </option>
           ))}
-        </select>
+        </select>}
       <button
         type="button"
         className="sm-delete-btn"
@@ -185,9 +188,7 @@ export function ScheduleAgendaItem({ item, onEdit, onDelete, onStatusChange, onT
     <article className="sm-agenda-item sm-favorite-item" style={{ "--sm-event-color": item.color }}>
       {/* 즐겨찾기와 같은 배치를 재사용합니다. 제목과 별을 분리하고 정보마다 이름을 붙입니다. */}
       <div className="sm-favorite-heading">
-        <button type="button" className="sm-favorite-title" aria-label={`${item.title} 일정 수정`} onClick={() => onEdit(item)}>
-          <strong>{item.title}</strong>
-        </button>
+        <strong className="sm-favorite-title">{item.title}</strong>
         <ScheduleFavorite item={item} onToggleFavorite={onToggleFavorite} />
       </div>
       <div className="sm-favorite-time-row">
@@ -195,14 +196,17 @@ export function ScheduleAgendaItem({ item, onEdit, onDelete, onStatusChange, onT
         <ScheduleVisibility visibility={item.visibility} />
       </div>
       <dl className="sm-favorite-info">
-        <dt>프로젝트</dt><dd>{item.project || "프로젝트 없음"}</dd>
-        <dt>담당자</dt><dd>{item.person}</dd>
-        <dt>작업 구분</dt><dd>{item.type}</dd>
+        <dt>일정 종류</dt><dd>{item.scope || "업무용"}</dd>
+        {item.scope !== "개인 일정용" && <><dt>분류</dt><dd>{item.category || (item.project ? "프로젝트" : "업무")}</dd></>}
+        {item.scope !== "개인 일정용" && item.project && <><dt>프로젝트</dt><dd>{item.project}</dd></>}
+        {item.scope !== "개인 일정용" && <><dt>담당자</dt><dd>{item.person}</dd></>}
+        {item.category === "프로젝트" && <><dt>작업 구분</dt><dd>{item.type}</dd></>}
       </dl>
       <ScheduleAttendees item={item} paragraph />
+      {item.scope !== "개인 일정용" && <ScheduleConnectionSummary value={item.connections} />}
       {/* 메모가 있을 때만 별도 영역을 만들고 입력한 줄바꿈을 그대로 보여 줍니다. */}
       {item.description && <p className="sm-description">{item.description}</p>}
-      <ScheduleActions item={item} onDelete={onDelete} onStatusChange={onStatusChange} />
+      <ScheduleActions item={item} onEdit={onEdit} onDelete={onDelete} onStatusChange={onStatusChange} />
     </article>
   );
 }

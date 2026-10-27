@@ -10,6 +10,7 @@ import { ScheduleAgendaItem, ScheduleAttendees, ScheduleFavorite, ScheduleVisibi
 import React from "react";
 import { weekDays, getScheduleTime, getRepeatLabel } from "./scheduleData";
 import ScheduleDirectory from "./ScheduleDirectory";
+import { ScheduleConnectionSummary } from "./ScheduleConnections";
 
 /* 같은 원본 일정에서 여러 화면용 목록이 나오는 이유
  * directoryItems: 전체 원본입니다. 프로젝트·팀원 목록은 현재 월에 일정이 없어도 사람/이름을 보여줍니다.
@@ -33,7 +34,6 @@ export default function ScheduleSidebar({
   onRemoveTeamMember,
   selectedProject,
   onSelectProject,
-  onClearProject,
   onCloseDirectory,
   favoriteItems,
   onToggleFavorite,
@@ -64,7 +64,6 @@ export default function ScheduleSidebar({
             <h3 id="sm-favorites-title">★ 즐겨찾기</h3>
             <span className="sm-muted" role="status">{favoriteItems.length}건</span>
           </div>
-          <p className="sm-search-summary">별표로 모아둔 일정입니다. 반복 일정의 변경은 전체에 적용됩니다.</p>
           <div className="sm-favorite-list">
             {/* 즐겨찾기는 좁은 카드에서 읽으므로 시간과 내용을 고정된 가로 열로 나누지 않습니다.
                 map은 favoriteItems의 일정마다 아래 article을 하나씩 만듭니다. 항목의 정보와
@@ -88,12 +87,13 @@ export default function ScheduleSidebar({
                 </div>
                 {/* dl은 이름과 값의 묶음입니다. dt는 '프로젝트' 같은 설명 이름,
                     dd는 실제 값입니다. 두 줄로 나눠 제목·프로젝트·담당자가 섞이지 않게 합니다. */}
-                <dl className="sm-favorite-info">
+                {item.scope !== "개인 일정용" && <dl className="sm-favorite-info">
                   <dt>프로젝트</dt><dd>{item.project || "프로젝트 없음"}</dd>
                   <dt>담당자</dt><dd>{item.person}</dd>
-                </dl>
+                </dl>}
                 {/* 참석자가 있는 일정은 기존처럼 명단도 표시하고, 없으면 이 부품이 아무것도 만들지 않습니다. */}
                 <ScheduleAttendees item={item} paragraph />
+                {item.scope !== "개인 일정용" && <ScheduleConnectionSummary value={item.connections} />}
                 <button type="button" className="sm-favorite-date"
                   aria-label={`${item.title} 즐겨찾기 일정으로 이동`} onClick={() => onSelectFavorite(item)}>
                   <span>
@@ -116,14 +116,6 @@ export default function ScheduleSidebar({
           <h3>선택한 날짜 일정</h3>
           <span className="sm-muted">{selectedItems.length}건</span>
         </div>
-        {/* 프로젝트 선택이 적용 중임을 표시하고 해제하면 해당 날짜의 전체 검색 결과로 돌아갑니다. */}
-        {selectedProject && (
-          <div className="sm-selected-project">
-            <strong>{selectedProject}</strong>
-            {/* 해제는 프로젝트 조건만 없앱니다. 선택한 날짜와 나머지 검색 조건은 유지됩니다. */}
-            <button type="button" className="sm-list-all-btn" onClick={onClearProject}>프로젝트 선택 해제</button>
-          </div>
-        )}
         {/* replaceAll은 저장 형식을 바꾸지 않고 표시용 점 구분 날짜를 만듭니다.
             getDay의 일요일=0을 월요일 시작 배열에 맞추려 (요일+6)%7로 변환합니다. */}
         <div className="sm-agenda-date">

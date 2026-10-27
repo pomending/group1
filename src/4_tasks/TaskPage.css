@@ -1,0 +1,343 @@
+
+/* 메인 화면 */
+.production-page {
+  min-height: 100vh;
+  padding: 40px 25px;
+  background: #f5f6f2;
+  color: #17233c;
+  font-family: Arial, "Malgun Gothic", sans-serif;
+}
+
+.production-header,
+.detail-header,
+.product-list-header,
+.work-list-header,
+.work-summary-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+
+.production-header {
+  margin-bottom: 32px;
+}
+
+.production-header h1,
+.detail-header h1 {
+  margin: 0 0 10px;
+  font-size: 28px;
+}
+
+.production-header p,
+.detail-header p,
+.work-list-header p {
+  color: #778398;
+  font-size: 13px;
+}
+
+.product-count-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 180px));
+  gap: 20px;
+  margin-bottom: 0;
+}
+
+.product-count-card {
+  padding: 18px 20px;
+  border: 1px solid #e0e4eb;
+  border-radius: 9px;
+  background: #fff;
+}
+
+.product-count-title {
+  margin: 0 0 12px;
+  color: #62738e;
+  font-size: 13px;
+}
+
+.product-count-number {
+  margin: 0;
+  font-size: 25px;
+}
+
+.add-button {
+  padding: 11px 17px;
+  border: none;
+  border-radius: 8px;
+  background: #7561df;
+  color: white;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.add-button:hover {
+  background: #604bc9;
+}
+
+/* 탭 메뉴 */
+.tab-menu {
+  display: flex;
+  gap: 8px;
+  margin-top: 20px;
+  border-bottom: 1px solid #dfe3eb;
+}
+
+.tab-menu button {
+  padding: 13px 20px;
+  border: none;
+  border-bottom: 3px solid transparent;
+  background: transparent;
+  color: #64748b;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.tab-menu button.active {
+  border-bottom-color: #6650ff;
+  color: #6650ff;
+  font-weight: 700;
+}
+
+/* 상품 목록 */
+.product-list {
+  margin-top: 32px;
+  padding: 28px;
+  border: 1px solid #e0e4eb;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.product-list-header {
+  margin-bottom: 20px;
+}
+
+.product-list-header h2,
+.work-list-header h2,
+.work-summary h2 {
+  margin: 0;
+  font-size: 19px;
+}
+
+.product-list-header > span {
+  color: #7c879a;
+  font-size: 13px;
+}
+
+.product-list-items {
+  display: flex;
+  flex-direction: column;
+}
+
+.product-item {
+  display: grid;
+  grid-template-columns: minmax(140px, 1fr) 110px 100px 100px;
+  align-items: center;
+  gap: 15px;
+  padding: 18px 10px;
+  border-bottom: 1px solid #edf0f5;
+}
+
+.product-info,
+.work-info {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.product-info strong,
+.work-info strong {
+  font-size: 14px;
+}
+
+.product-info span,
+.work-info span {
+  color: #8a95a7;
+  font-size: 12px;
+}
+
+.product-status,
+.product-progress {
+  color: #6653c8;
+  font-size: 12px;
+}
+
+.detail-button {
+  padding: 9px 10px;
+  border: 1px solid #e1dcfa;
+  border-radius: 7px;
+  background: white;
+  color: #6653c8;
+  cursor: pointer;
+}
+
+.detail-button:hover {
+  background: #f4f1ff;
+}
+
+.empty-message {
+  padding: 30px 10px;
+  color: #8a95a7;
+  font-size: 13px;
+  text-align: center;
+}
+
+/* 세부 작업관리 */
+.back-button {
+  margin-bottom: 25px;
+  padding: 10px 13px;
+  border: 1px solid #e0e4eb;
+  border-radius: 7px;
+  background: white;
+  color: #53627a;
+  cursor: pointer;
+}
+
+.detail-header {
+  margin-bottom: 25px;
+}
+
+.page-label {
+  color: #7561df !important;
+  font-size: 11px !important;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+.product-status-select,
+.task-status-select {
+  padding: 10px;
+  border: 1px solid #dce1eb;
+  border-radius: 7px;
+  background: #fff;
+  color: #526079;
+  font-size: 13px;
+}
+
+.work-summary,
+.work-list {
+  margin-top: 25px;
+  padding: 26px;
+  border: 1px solid #e0e4eb;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.work-summary-top {
+  margin-bottom: 20px;
+}
+
+.work-summary-top strong {
+  color: #7561df;
+  font-size: 22px;
+}
+
+.progress-track {
+  height: 8px;
+  overflow: hidden;
+  border-radius: 10px;
+  background: #eeedf5;
+}
+
+.progress-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: #7561df;
+  transition: width 0.2s ease;
+}
+
+.work-list-header {
+  margin-bottom: 18px;
+}
+
+.work-list-header p {
+  margin-bottom: 0;
+}
+
+.work-item {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 18px 0;
+  border-bottom: 1px solid #edf0f5;
+}
+
+.work-item:last-child {
+  border-bottom: none;
+}
+
+.work-number {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background: #f0edff;
+  color: #6653c8;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.work-info {
+  flex: 1;
+}
+
+.delete-button {
+  padding: 8px 10px;
+  border: 1px solid #f0dada;
+  border-radius: 7px;
+  background: white;
+  color: #bd5252;
+  cursor: pointer;
+}
+
+@media (max-width: 700px) {
+  .production-page {
+    padding: 25px 15px;
+  }
+
+  .product-count-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .product-item {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 12px;
+  }
+
+  .product-info {
+    min-width: 0;
+  }
+
+  .product-list,
+  .work-summary,
+  .work-list {
+    padding: 18px 14px;
+  }
+
+  .tab-menu {
+    overflow-x: auto;
+  }
+
+  .tab-menu button {
+    flex-shrink: 0;
+    padding: 13px 12px;
+  }
+
+  .work-item {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .work-info {
+    min-width: calc(100% - 55px);
+  }
+
+  .task-status-select {
+    flex: 1;
+  }
+}

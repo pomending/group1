@@ -7,6 +7,7 @@
     min-height: 100vh;
     padding: 30px;
     box-sizing: border-box;
+    container-type: inline-size;
 }
 
 /* 대시보드 제목 */
@@ -38,14 +39,43 @@
     border-radius: 4px;
 }
 
+/* 중요공지 제목 링크 */
+/* 보라색과 밑줄을 없애고 흰색으로 표시 */
+.dashboard .dashboard-banner .notice-banner-link,
+.dashboard .dashboard-banner .notice-banner-link:visited {
+    display: block;
+    flex: 1;
+    min-width: 0;
+    color: #ffffff;
+    font-size: 15px;
+    font-weight: 600;
+    line-height: 1.5;
+    text-decoration: none;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+/* 중요공지 제목에 마우스를 올렸을 때 */
+.dashboard .dashboard-banner .notice-banner-link:hover {
+    color: #f5d7a2;
+    text-decoration: none;
+}
+
+/* NOTICE 표시가 줄어들지 않도록 */
+.dashboard .dashboard-banner strong {
+    flex-shrink: 0;
+}
+
 
 /* ==========================
    대시보드 좌우 배치
 ========================== */
 .dashboard-grid {
     display: grid;
-    grid-template-columns: 2fr 1fr;
+    grid-template-columns: minmax(0, 1.15fr) minmax(350px, 0.85fr);
     gap: 20px;
+    align-items: start;
 }
 
 .dashboard-left,
@@ -90,6 +120,94 @@
 .schedule-card {
     background-color: #ebf1ee;
     min-height: 200px;
+}
+
+
+/* ==========================
+   오늘의 일정 카드 크기 조정
+========================== */
+
+/* 왼쪽 게시글의 높이에 맞춰 오른쪽 카드가 늘어나지 않도록 */
+.dashboard .dashboard-right {
+    align-self: start;
+}
+
+.dashboard .dashboard-right .schedule-card {
+    width: 100%;
+    height: auto;
+    min-height: 0;
+    box-sizing: border-box;
+    align-self: start;
+    display: block;
+}
+
+/* 달력을 카드의 왼쪽부터 채움 */
+.dashboard .dashboard-right .today-box {
+    width: 100%;
+    max-width: none;
+    min-width: 0;
+    height: auto;
+    margin: 0;
+}
+
+.dashboard .dashboard-right .today-month {
+    text-align: left;
+    margin: 4px 0 8px;
+}
+
+/* 요일과 날짜는 같은 폭의 7칸을 사용 */
+.dashboard .dashboard-right .schedule-card .today-weekdays,
+.dashboard .dashboard-right .schedule-card .today-days {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 3px;
+    width: 100%;
+    min-width: 0;
+    align-content: start;
+}
+
+/* 날짜 한 줄 높이를 46px로 고정 */
+.dashboard .dashboard-right .schedule-card .today-days {
+    grid-template-rows: none;
+    grid-auto-rows: 46px;
+    height: auto;
+}
+
+.dashboard .dashboard-right .schedule-card .today-day,
+.dashboard .dashboard-right .schedule-card .today-blank {
+    width: 100%;
+    min-width: 0;
+    min-height: 0;
+    height: 46px;
+}
+
+.dashboard .dashboard-right .schedule-card .today-day {
+    padding: 3px 2px;
+    gap: 2px;
+    overflow: hidden;
+}
+
+.dashboard .dashboard-right .schedule-card .today-date {
+    line-height: 14px;
+    text-align: left;
+}
+
+/* 작은 날짜 칸에서도 프로젝트명을 한 줄로 표시 */
+.dashboard .dashboard-right .schedule-card .today-project {
+    max-width: 100%;
+    min-width: 0;
+    padding: 1px 2px;
+    font-size: 9px;
+    line-height: 12px;
+    text-align: left;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.dashboard .dashboard-right .schedule-card .today-more {
+    text-align: left;
+    line-height: 10px;
 }
 
 
@@ -186,8 +304,11 @@
     .dashboard {
         padding: 15px;
     }
+}
 
-    .dashboard-grid {
-        grid-template-columns: 1fr;
+/* 창 폭이 실제로 좁아질 때만 한 줄로 배치 */
+@container (max-width: 700px) {
+    .dashboard .dashboard-grid {
+        grid-template-columns: minmax(0, 1fr);
     }
 }

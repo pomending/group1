@@ -1,7 +1,10 @@
 import React, { useState } from "react";
 import "./ProjectDetail.css";
+import { useERP } from "../context/ERPContext";
 
 function ProjectDetail(props) {
+
+    const { updateProject, deleteProject } = useERP()
 
     const projects = props.projects;
     const selectedProject = projects.find(project => project.id === props.selectedProjectId);
@@ -44,26 +47,20 @@ function ProjectDetail(props) {
 
     const delProject = () => {
         if (window.confirm('정말로 프로젝트를 삭제하시겠습니까?')) {
-            props.setProjects(projects.filter(project => project.id !== props.selectedProjectId))
+            deleteProject(selectedProject.id)
             props.setPage('list')
-        } else {
-            return
         }
     }
 
     const saveStatus = () => {
-        props.setProjects(prev => prev.map(project =>
-            project.id === selectedProject.id
-                ? {
-                    ...project,
-                    status: status,
-                    // 변경된 상태가 완료이면 오늘 날짜를 (YYYY-MM-DD) 형식으로 저장
-                    completedDate: status === '완료'
-                        ? (project.completedDate ?? new Date().toLocaleDateString('sv-SE'))
-                        : null
-                }
-                : project
-        ))
+        updateProject({
+            id: selectedProject.id,
+            status: status,
+            // 변경된 상태가 완료이면 오늘 날짜를 (YYYY-MM-DD) 형식으로 저장
+            completedDate: status === '완료'
+                ? (selectedProject.completedDate ?? new Date().toLocaleDateString('sv-SE'))
+                : null
+        })
 
         alert('상태 변경이 완료되었습니다')
 

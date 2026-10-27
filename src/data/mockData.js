@@ -102,3 +102,30 @@ export const employees = [
     { id: 2, name: "이지현" },
     { id: 3, name: "박준호" }
 ];
+
+export const initialProjects = [
+    {
+        id: 1,
+        name: "ABC대학교 텀블러 제작",
+        quotationId: 1,
+        customerId: 1,
+        managerId: 1,
+        startDate: "2026-10-21",
+        dueDate: "2026-11-20",
+        completedDate: null,
+        status: "진행 중",
+        description: "창립기념 텀블러 300개 제작"
+    },
+    {
+        id: 2,
+        name: "미래전자 에코백 제작",
+        quotationId: 2,
+        customerId: 2,
+        managerId: 2,
+        startDate: "2026-10-25",
+        dueDate: "2026-11-15",
+        completedDate: null,
+        status: "대기",
+        description: "홍보용 에코백 500개 제작"
+    }
+]
