@@ -39,6 +39,58 @@ import "./scheduleStyles.css";
 const createScheduleId = () =>
   `schedule-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
+// 일정 한 건의 시작·종료 시각을 밀리초 숫자로 바꾸어 겹치는지 비교합니다.
+// 종일 일정은 날짜 전체, 여러 날 일정은 마지막 날까지를 범위로 계산합니다.
+function getScheduleInterval(item) {
+  const startTime = item.isAllDay ? "00:00" : item.time;
+  const endDate = item.endDate && item.endDate > item.date ? item.endDate : item.date;
+  const endTime = item.isAllDay ? "23:59" : (item.endTime || "17:00");
+  const start = new Date(`${item.date}T${startTime}`).getTime();
+  const end = new Date(`${endDate}T${endTime}`).getTime();
+  return { start, end };
+}
+
+// 새 일정의 발생 날짜와 기존 일정의 발생 날짜를 같은 범위에서 펼쳐 충돌을 찾습니다.
+// ignoredId는 전체 수정에서 기존 일정을 제외하고, ignoredOccurrenceDate는 한 회차만 비교에서 제외합니다.
+function findScheduleConflicts(
+  candidate, items, fromKey, toKey, holidays, ignoredId, ignoredOccurrenceDate,
+) {
+  const proposedDates = expandSchedules([candidate], fromKey, toKey, holidays);
+  const editingOneOccurrence = Boolean(ignoredOccurrenceDate);
+  const otherItems = items.filter(item => item.id !== ignoredId || editingOneOccurrence);
+  const existingDates = expandSchedules(otherItems, fromKey, toKey, holidays);
+  const conflicts = [];
+
+  for (const proposed of proposedDates) {
+    const proposedInterval = getScheduleInterval(proposed);
+    for (const existing of existingDates) {
+      // 회차 하나를 수정하는 경우 원래 반복 일정의 해당 날짜만 빼고 다른 회차는 계속 비교합니다.
+      if (existing.id === ignoredId && existing.occurrenceDate === ignoredOccurrenceDate) continue;
+      if (existing.date !== proposed.date) continue;
+
+      // 같은 제목과 같은 시간의 중복, 또는 같은 업무 담당자의 시간 겹침을 각각 확인합니다.
+      const sameAllDayType = Boolean(existing.isAllDay) === Boolean(candidate.isAllDay);
+      const sameTime = sameAllDayType && (
+        candidate.isAllDay ||
+        (existing.time === candidate.time && (existing.endTime || "17:00") === candidate.endTime)
+      );
+      const duplicate = existing.title.trim().toLowerCase() === candidate.title.toLowerCase() && sameTime;
+      const sharedPerson = candidate.scope === "업무용"
+        && existing.scope === "업무용"
+        && getSchedulePeople(candidate).some(name => getSchedulePeople(existing).includes(name));
+      const existingInterval = getScheduleInterval(existing);
+      const timeOverlap = proposedInterval.start < existingInterval.end
+        && existingInterval.start < proposedInterval.end;
+
+      if (duplicate || (sharedPerson && timeOverlap)) {
+        conflicts.push({ date: proposed.date, title: existing.title, person: existing.person });
+        break;
+      }
+    }
+  }
+  return conflicts;
+}
+
 // 브라우저에 저장된 JSON과 일정 필수 항목을 검사해 안전한 배열로 돌려줍니다.
 // localStorage는 문자열만 저장합니다. JSON.parse가 저장 문자열을 배열·객체로 복원합니다.
 // 이 목록은 현재 브라우저에만 저장되며 MySQL 서버에서 가져오는 데이터는 아닙니다.
@@ -69,6 +121,16 @@ function loadSchedules() {
       let endTime = "17:00";
       if (isValidScheduleTime(item.endTime)) endTime = item.endTime;
       else if (item.endTime) needsBackup = true;
+      // 새 필드는 값 목록을 확인해 잘못된 자료는 백업 대상으로 표시하고 기본값으로 읽습니다.
+      const validReminder = [0, 10, 30, 1440].includes(Number(item.reminderMinutes));
+      const validHolidayRule = ["keep", "skip", "nextWorkday"].includes(item.holidayRule);
+      const validEndDate = isValidScheduleDate(item.endDate)
+        && item.endDate >= item.date
+        && !["weekly", "monthly"].includes(item.repeatType);
+      if (item.reminderMinutes !== undefined && !validReminder) needsBackup = true;
+      if (item.holidayRule !== undefined && !validHolidayRule) needsBackup = true;
+      if (item.endDate && !validEndDate) needsBackup = true;
+      if (item.isAllDay !== undefined && typeof item.isAllDay !== "boolean") needsBackup = true;
       const schedule = { ...item };
       normalized.push({
         // 원본을 먼저 복사하고 아래 속성으로 덮어써 과거 데이터의 누락값도 보완합니다.
@@ -76,6 +138,19 @@ function loadSchedules() {
         connections: getScheduleScope(item) === "개인 일정용" ? {} : normalizeConnections(item.connections),
         // 기존 일정에 종료 시간이 없으면 17:00을 채웁니다. 저장 effect가 보완된 자료를 기록합니다.
         endTime,
+        // 반복 항목에는 종료 날짜를 두지 않고, 올바른 단일·여러 날 일정만 날짜를 유지합니다.
+        endDate: item.repeatType !== "weekly" && item.repeatType !== "monthly"
+          && isValidScheduleDate(item.endDate) && item.endDate >= item.date
+          ? item.endDate
+          : "",
+        // 예전 저장 자료에 새 필드가 없으면 종일 해제·알림 없음·기준일 진행으로 보완합니다.
+        isAllDay: item.isAllDay === true,
+        reminderMinutes: [0, 10, 30, 1440].includes(Number(item.reminderMinutes))
+          ? Number(item.reminderMinutes)
+          : 0,
+        holidayRule: ["keep", "skip", "nextWorkday"].includes(item.holidayRule)
+          ? item.holidayRule
+          : "keep",
         excludedDates,
         project: typeof item.project === "string" ? item.project : "",
         scope: getScheduleScope(item),
@@ -185,6 +260,8 @@ export default function ScheduleManager() {
   // form=null이면 닫힌 상태입니다. 열림 여부를 별도 state로 중복 보관하지 않습니다.
   const [form, setForm] = useState(null);
   const [formError, setFormError] = useState("");
+  const [reminderNotice, setReminderNotice] = useState(null);
+  const firedReminders = useRef(new Set());
   // null이면 신규 등록, 객체이면 수정할 원본 ID와 특정 반복 날짜를 함께 보관합니다.
   const [editing, setEditing] = useState(null);
   const calendarYear = month.getFullYear();
@@ -254,8 +331,27 @@ export default function ScheduleManager() {
     holidayInfo.year === selectedDateObject.getFullYear()
       ? holidayInfo.dates[selectedDate]
       : "";
-  const holidayDates =
-    holidayInfo.year === calendarYear ? holidayInfo.dates : {};
+  const holidayDates = holidayInfo.dates;
+
+  // 알림은 앱 화면이 열려 있을 때만 확인하며, 발생 일정별로 한 번만 표시합니다.
+  useEffect(() => {
+    if (reminderNotice) return;
+    const now = new Date(currentTime);
+    const end = new Date(now); end.setDate(end.getDate() + 2);
+    const occurrences = expandSchedules(items, dateKey(now), dateKey(end), holidayDates);
+    for (const item of occurrences) {
+      if (!item.reminderMinutes || item.status === "completed" || item.multiDayOccurrence) continue;
+      // 종일 일정은 시작일 자정을 기준으로 알림 시각을 계산합니다.
+      const start = new Date(`${item.date}T${item.isAllDay ? "00:00" : item.time}`).getTime();
+      const reminderAt = start - Number(item.reminderMinutes) * 60000;
+      // 반복 일정은 원래 회차 날짜를 키로 써 화면 갱신 때 같은 알림을 다시 띄우지 않습니다.
+      const key = `${item.id}:${item.occurrenceDate || item.date}`;
+      // 알림 시각부터 일정 시작 전까지만 노출하고, 이미 시작한 일정은 건너뜁니다.
+      if (currentTime >= reminderAt && currentTime < start && !firedReminders.current.has(key)) {
+        firedReminders.current.add(key); setReminderNotice(item); break;
+      }
+    }
+  }, [items, currentTime, holidayDates, reminderNotice]);
 
   // 일정 목록이 바뀔 때 브라우저 저장소를 갱신해 새로고침 뒤에도 유지합니다.
   /* 일정 저장과 타이머·공휴일 요청 등 화면 외부 작업을 연결합니다. */
@@ -366,19 +462,24 @@ export default function ScheduleManager() {
 
     async function loadHolidays() {
       try {
-        const response = await fetch(`https://date.nager.at/api/v3/PublicHolidays/${calendarYear}/KR`);
-        // fetch는 HTTP 오류여도 응답할 수 있어 ok를 직접 확인합니다.
-        // throw는 catch로 보내고, 정상 응답은 response.json()으로 비동기 변환합니다.
-        if (!response.ok) throw new Error("Holiday request failed");
-        const holidays = await response.json();
-        // API 응답 배열을 { 날짜: 공휴일 이름 } 형태로 바꾸어 달력에서 조회합니다.
-        // 날짜를 속성 이름으로 사용합니다. 예: dates["2026-10-09"] = "한글날".
-        // 달력에서는 날짜 문자열을 키로 사용해 공휴일 이름을 바로 찾습니다.
+        // 반복 일정은 연말을 넘어갈 수 있어 표시 연도와 앞뒤 연도를 함께 조회합니다.
+        const years = [calendarYear - 1, calendarYear, calendarYear + 1];
+        const results = await Promise.allSettled(years.map(async year => {
+          const response = await fetch(`https://date.nager.at/api/v3/PublicHolidays/${year}/KR`);
+          if (!response.ok) throw new Error("Holiday request failed");
+          return { year, holidays: await response.json() };
+        }));
+        // 실패한 인접 연도는 건너뛰고, 현재 달력 연도의 성공 여부만 오류 표시 기준으로 씁니다.
         const dates = {};
-        for (const holiday of holidays) {
-          dates[holiday.date] = holiday.localName || holiday.name;
+        let currentYearLoaded = false;
+        for (const result of results) {
+          if (result.status !== "fulfilled" || !Array.isArray(result.value.holidays)) continue;
+          if (result.value.year === calendarYear) currentYearLoaded = true;
+          for (const holiday of result.value.holidays) {
+            dates[holiday.date] = holiday.localName || holiday.name;
+          }
         }
-        if (active) setHolidayInfo({ year: calendarYear, dates, error: false });
+        if (active) setHolidayInfo({ year: calendarYear, dates, error: !currentYearLoaded });
       } catch {
         if (active)
           setHolidayInfo({ year: calendarYear, dates: {}, error: true });
@@ -420,9 +521,9 @@ export default function ScheduleManager() {
     from = weekDates[0].key;
     to = weekDates[6].key;
   }
-  const visibleItems = expandSchedules(filteredItems, from, to);
+  const visibleItems = expandSchedules(filteredItems, from, to, holidayDates);
   // 선택 날짜가 표시 월 밖일 수도 있어 선택 날짜 패널은 별도 하루 범위로 계산합니다.
-  const selectedItems = expandSchedules(filteredItems, selectedDate, selectedDate);
+  const selectedItems = expandSchedules(filteredItems, selectedDate, selectedDate, holidayDates);
 
   // 월별 달력은 일요일 시작 격자로 계산합니다. 주간 보기는 기존 월요일 시작을 유지합니다.
   const calendarDays = [];
@@ -474,6 +575,7 @@ export default function ScheduleManager() {
     const name = event.target.name;
     let value = event.target.value;
     if (event.target.type === "number" && value !== "") value = Number(value);
+    if (event.target.type === "checkbox") value = event.target.checked;
     setForm((current) => {
       // state 객체를 직접 바꾸지 않고 복사한 뒤, 입력한 항목 하나만 바꿉니다.
       const nextForm = { ...current };
@@ -481,10 +583,11 @@ export default function ScheduleManager() {
         const parts = value.split(":");
         nextForm.repeatType = parts[0];
         nextForm.repeatInterval = Number(parts[1]) || 1;
+        // 반복 일정에는 여러 날 종료일을 함께 쓸 수 없으므로 선택 즉시 숨겨진 값을 비웁니다.
+        if (parts[0] !== "none") nextForm.endDate = "";
       } else if (name === "monthlyOrdinal" || name === "monthlyWeekday") {
         nextForm[name] = Number(value);
       } else nextForm[name] = value;
-      if (name === "repeatType") nextForm.repeatInterval = 1;
       return nextForm;
     });
   };
@@ -552,6 +655,10 @@ export default function ScheduleManager() {
       setFormError("올바른 날짜와 시작·종료 시간을 입력해 주세요.");
       return;
     }
+    if (form.endDate && (!isValidScheduleDate(form.endDate) || form.endDate < form.date || form.repeatType !== "none")) {
+      setFormError("여러 날 일정의 종료 날짜는 시작일 이후여야 하며 반복 일정에는 지정할 수 없습니다.");
+      return;
+    }
     if (form.repeatType !== "none") {
       const interval = Number(form.repeatInterval);
       if (!Number.isInteger(interval) || interval < 1 || interval > MAX_REPEAT_INTERVAL) {
@@ -561,7 +668,7 @@ export default function ScheduleManager() {
     }
     // HH:mm은 자릿수가 같아 문자열 비교로도 시간 순서를 확인할 수 있습니다.
     // 같은 날짜 안의 일정이므로 종료 시간은 시작 시간보다 늦어야 합니다.
-    if (form.endTime <= form.time) {
+    if (!form.isAllDay && (!form.endDate || form.endDate === form.date) && form.endTime <= form.time) {
       setFormError("종료 시간은 시작 시간보다 늦게 입력해 주세요.");
       return;
     }
@@ -583,14 +690,54 @@ export default function ScheduleManager() {
         setFormError("팀원 목록에서 제외된 이름은 참석자로 추가할 수 없습니다.");
         return;
       }
-    }    // 수정 대상을 먼저 확인합니다. 새 등록이면 editing은 null이라 이 검사를 건너뜁니다.
+    }
+
+    // 수정 대상을 먼저 확인합니다. 새 등록이면 editing은 null이라 이 검사를 건너뜁니다.
     let occurrenceDate = null;
     if (editing) occurrenceDate = editing.occurrenceDate;
 
+    // 저장 전에 중복 일정과 담당자·참석자의 시간 겹침을 확인합니다.
+    // 폼 문자열과 체크박스 값을 충돌 비교에 사용할 일정 형태로 정리합니다.
+    const candidate = {
+      ...form,
+      date: form.date,
+      endDate: form.endDate || "",
+      isAllDay: Boolean(form.isAllDay),
+      title,
+      person,
+      attendees,
+      scope: form.scope,
+      project,
+      time: form.time,
+      endTime: form.endTime,
+    };
+    // 반복 규칙은 다음 1년을 확인하고, 휴일 이동 설정은 범위 끝에서 밀릴 날짜도 포함합니다.
+    let conflictEndKey = form.endDate || form.date;
+    if (form.repeatType !== "none") {
+      const checkEnd = new Date(`${form.date}T00:00:00`);
+      checkEnd.setDate(checkEnd.getDate() + 365 + (form.holidayRule === "keep" ? 0 : 14));
+      conflictEndKey = dateKey(checkEnd);
+    }
+    // 현재 편집 중인 전체 일정 또는 한 회차만 비교 목록에서 제외합니다.
+    const overlaps = findScheduleConflicts(
+      candidate,
+      items,
+      form.date,
+      conflictEndKey,
+      holidayDates,
+      editing?.id,
+      occurrenceDate,
+    );
+    if (overlaps.length) {
+      const summary = overlaps.slice(0, 3)
+        .map(item => `${item.date} · ${item.title}${item.person ? ` (${item.person})` : ""}`)
+        .join("\n");
+      const more = overlaps.length > 3 ? `\n외 ${overlaps.length - 3}건` : "";
+      if (!window.confirm(`중복되거나 담당자 시간이 겹치는 일정이 있습니다.\n${summary}${more}\n그래도 저장할까요?`)) return;
+    }
+
     // 담당자와 새 참석자는 일정 저장과 함께 팀원 후보로 등록합니다.
-    const namesToRegister = form.scope === "업무용"
-      ? [...new Set([person, ...attendees])]
-      : [];
+    const namesToRegister = form.scope === "업무용" ? [...new Set([person, ...attendees])] : [];
     for (const name of namesToRegister) {
       const wasExisting = teamMembers.includes(name)
         || (editing && (editing.person === name || previousAttendees.includes(name)));
@@ -608,6 +755,8 @@ export default function ScheduleManager() {
     // 먼저 새 일정 한 건을 만듭니다. 일반 수정인 경우에만 기존 ID와 제외 날짜를 이어받습니다.
     const item = {
       ...form,
+      endDate: form.repeatType === "none" ? (form.endDate || "") : "",
+      reminderMinutes: Number(form.reminderMinutes) || 0,
       connections: form.scope === "업무용" ? normalizeConnections(form.connections) : {},
       status: form.scope === "업무용" ? form.status : "pending",
       title,
@@ -746,7 +895,7 @@ export default function ScheduleManager() {
   // 필터 때문에 선택한 일정이 숨지 않게 초기화하고, 반복을 포함한 가까운 발생일로 이동합니다.
   const showProjectSchedules = (project) => {
     const projectItems = items.filter((item) => item.project === project);
-    const date = getScheduleFocusDate(projectItems, Date.now());
+    const date = getScheduleFocusDate(projectItems, Date.now(), holidayDates);
     // 목록이 열린 뒤 데이터가 바뀌어 프로젝트 일정이 없어졌다면 잘못된 날짜로 이동하지 않습니다.
     if (!date) return;
     // 가까운 일정이 있는 날짜를 일별 화면으로 열면 월별 칸의 말줄임 없이 바로 확인할 수 있습니다.
@@ -760,9 +909,9 @@ export default function ScheduleManager() {
   // 통계는 검색과 무관합니다.
   // 오늘 작업은 해당 날짜의 실제 발생 횟수이므로 반복 일정도 포함됩니다.
   // 오늘 일정은 작업 구분과 관계없이 실제 발생하는 모든 일정을 셉니다.
-  const todayWorkCount = expandSchedules(items, todayKey, todayKey).length;
+  const todayWorkCount = expandSchedules(items, todayKey, todayKey, holidayDates).length;
   // 다가오는 목록은 검색과 무관하게 오늘 포함 7일 이내의 미완료 발생 일정 중 가까운 5건을 보여줍니다.
-  const upcomingSchedules = getUpcomingSchedules(items, currentTime, 5, 7);
+  const upcomingSchedules = getUpcomingSchedules(items, currentTime, 5, 7, holidayDates);
   const favoriteItems = items.filter((item) => item.isFavorite);
   // 상태별 진행 수가 아니라 일정에 입력된 서로 다른 프로젝트명 개수입니다.
   // 이름을 처음 만났을 때만 배열에 넣습니다. 배열 길이가 중복을 뺀 프로젝트 수입니다.
@@ -819,6 +968,12 @@ export default function ScheduleManager() {
   return (
     <main className="schedule-app">
       <div className="sm-shell">
+        {/* 알림이 여러 건이면 한 건씩 보여 기존 화면을 가리지 않게 합니다. */}
+        {reminderNotice && <aside className="sm-reminder-notice" role="status">
+          <span><strong>일정 알림</strong> · {reminderNotice.title} · {reminderNotice.date} {reminderNotice.isAllDay ? "종일" : reminderNotice.time}</span>
+          <button type="button" onClick={() => { const date = reminderNotice.date; setReminderNotice(null); showCurrentPeriod("daily", date); focusCalendar(); }}>일정 보기</button>
+          <button type="button" aria-label="알림 닫기" onClick={() => setReminderNotice(null)}>닫기</button>
+        </aside>}
         {/* 회사와 사용자 정보를 보여주는 상단 영역 */}
         <header className="sm-top">
           <div className="sm-brand">
@@ -927,7 +1082,7 @@ export default function ScheduleManager() {
             favoriteItems={favoriteItems}
             onToggleFavorite={toggleFavorite}
             onSelectFavorite={(item) => {
-              const date = getScheduleFocusDate([item], Date.now());
+              const date = getScheduleFocusDate([item], Date.now(), holidayDates);
               if (!date) return;
               showCurrentPeriod("daily", date);
               focusCalendar();
@@ -971,7 +1126,7 @@ export default function ScheduleManager() {
         <ScheduleListModal
           items={
             listDateFilter
-              ? expandSchedules(filteredItems, listDateFilter, listDateFilter)
+              ? expandSchedules(filteredItems, listDateFilter, listDateFilter, holidayDates)
               : items
           }
           filterDate={listDateFilter}

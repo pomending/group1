@@ -2958,3 +2958,25 @@
   color: #46506a;
 }
 .schedule-app .sm-staff-count:hover { background: #e8e4ff; }
+
+
+/* 알림은 한 건씩 표시하고, 작은 화면에서는 글과 버튼을 다음 줄로 감쌉니다. */
+.schedule-app .sm-reminder-notice { display:flex; align-items:center; gap:10px; margin:0 0 12px; padding:10px 12px; border:1px solid #d8d2fb; border-radius:10px; background:#f3f1ff; color:#293044; font-size:13px; }
+.schedule-app .sm-reminder-notice span { flex:1; }
+.schedule-app .sm-reminder-notice button { border:0; border-radius:7px; padding:6px 9px; background:#fff; color:#5145a5; cursor:pointer; }
+@media (max-width: 600px) { .schedule-app .sm-reminder-notice { align-items:flex-start; flex-wrap:wrap; } .schedule-app .sm-reminder-notice span { flex-basis:100%; } }
+
+/* 종일 체크박스는 입력 칸처럼 늘어나지 않도록 작은 크기로 고정합니다. */
+.schedule-app .sm-form .sm-form-check { display:grid; gap:6px; }
+.schedule-app .sm-form-check-control { display:flex; align-items:center; height:42px; box-sizing:border-box; padding:0 10px; border:1px solid #dfe2ea; border-radius:8px; background:#fff; }
+.schedule-app .sm-form .sm-form-check input[type="checkbox"] { width:18px; height:18px; margin:0; accent-color:#7565d8; }
+
+/* 날짜를 단독 행으로 두고 시작·종료 시간을 나란히 배치해 입력 열을 맞춥니다. */
+.schedule-app .sm-date-time-fields { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px 14px; }
+.schedule-app .sm-date-time-fields > label:first-child { grid-column:1 / -1; }
+/* 반복 없음일 때 반복 설정만 한 칸에 남지 않도록 두 열을 사용합니다. */
+.schedule-app .sm-extra-fields .sm-extra-field-wide { grid-column:1 / -1; }
+@media (max-width:420px) {
+  .schedule-app .sm-date-time-fields { grid-template-columns:minmax(0,1fr); }
+  .schedule-app .sm-date-time-fields > label:first-child { grid-column:auto; }
+}
