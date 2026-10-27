@@ -1,6 +1,10 @@
 import React from "react";
+import { useERP } from "../context/ERPContext";
 
 function ProjectList(props) {
+
+    const { resetProjects } = useERP()
+
     return (
         <div className="project-app">
             <div className="pm-shell">
@@ -14,6 +18,17 @@ function ProjectList(props) {
                         <h2>프로젝트 관리</h2>
                         <p>프로젝트 진행 현황을 한눈에 확인하세요.</p>
                     </div>
+
+                    <button
+                        type="button"
+                        onClick={() => {
+                            if (window.confirm("프로젝트 데이터를 초기 상태로 되돌리시겠습니까?")) {
+                                resetProjects();
+                            }
+                        }}
+                    >
+                        프로젝트 데이터 초기화
+                    </button>
 
                     <button className="pm-btn" onClick={() => { props.setPage('newproject') }}>
                         + 새 프로젝트

@@ -1,10 +1,14 @@
 import React, { useState } from "react";
 import "./ProjectEdit.css";
+import { useERP } from "../context/ERPContext";
 
 function ProjectEdit(props) {
+
     const selectedProject = props.projects.find(
         project => project.id === props.selectedProjectId
     );
+
+    const { updateProject } = useERP()
 
     // 수정 중에는 기존 프로젝트를 직접 변경하지 않고 입력값을 별도 관리
     const [projectName, setProjectName] = useState(selectedProject?.name ?? "");
@@ -34,24 +38,20 @@ function ProjectEdit(props) {
             alert('시작일과 납품 예정일을 모두 입력하세요.');
             return;
         }
-        
+
         if (dueDate < startDate) {
             alert("납품 예정일은 시작일보다 빠를 수 없습니다.");
             return;
         }
 
-        props.setProjects(prev => prev.map(project =>
-            project.id === selectedProject.id
-                ? {
-                    ...project,
-                    name: projectName.trim(),
-                    managerId: managerId === "" ? null : managerId,
-                    startDate: startDate,
-                    dueDate: dueDate,
-                    description: description
-                }
-                : project
-        ));
+        updateProject({
+            id: selectedProject.id,
+            name: projectName.trim(),
+            managerId: managerId === "" ? null : managerId,
+            startDate: startDate,
+            dueDate: dueDate,
+            description: description
+        })
 
         props.setPage("list");
     };

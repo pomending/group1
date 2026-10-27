@@ -1,5 +1,6 @@
 import { useState } from "react";
 import "./ProjectForm.css";
+import { useERP } from "../context/ERPContext";
 
 function ProjectForm(props) {
 
@@ -7,6 +8,7 @@ function ProjectForm(props) {
     const [manager, setManager] = useState(props.employees[0]?.id ?? '');
     const [due, setDue] = useState('');
     const [selQuotation, setSelQuotation] = useState('')
+    const { addProject } = useERP()
 
     const quotations = props.quotations;
 
@@ -21,7 +23,7 @@ function ProjectForm(props) {
     const handleSubmit = (e) => {
         e.preventDefault();
 
-        // 빈 데이터에 대한 유효성 체크들
+        // 데이터에 대한 유효성 체크들
         if (projectName.trim() === '') {
             alert('프로젝트명을 입력하세요');
             return;
@@ -50,8 +52,7 @@ function ProjectForm(props) {
             return;
         }
 
-        props.setProjects(prev => [...prev, {
-            id: Math.max(0, ...prev.map(p => Number(p.id) || 0)) + 1,
+        addProject({
             name: projectName.trim(),
             managerId: manager,
             startDate: new Date().toLocaleDateString('sv-SE'),
@@ -61,7 +62,7 @@ function ProjectForm(props) {
             quotationId: Number(selQuotation),
             customerId: selectedQuotation.customerId,
             status: '대기'
-        }]);
+        });
 
         props.setPage('list');
     };
