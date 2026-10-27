@@ -2,6 +2,7 @@
 import React, { useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import "./Dashboard.css";
+import DashboardToday from "./DashboardToday";
 
 // 커뮤니티 페이지 연결
 import CommunityPage from "./CommunityPage";
@@ -251,10 +252,15 @@ function DashboardPage() {
 
                 <div className="dashboard-right">
 
-                    {/* 기존 오늘의 일정 */}
+                    {/* 오늘의 일정 */}
                     <div className="dashboard-card schedule-card">
-                        <h3>오늘의 일정</h3>
-                        <p>오늘의 업무일정 표시</p>
+
+                        <Link to="/schedule" className="dashboard-community-heading">
+                            <h3>오늘의 일정</h3>
+                        </Link>
+
+                        <DashboardToday />
+
                     </div>
 
                 </div>
