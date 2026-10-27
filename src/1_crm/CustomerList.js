@@ -108,7 +108,7 @@ function CustomerList() {
     }
 
     function addCustomer(newCustomer) {
-        console.log("고객 추가 함수 실행:", newCustomer);
+
         const newId = Math.max(0, ...customers.map((customer) => customer.id || 0)) + 1;
         const updatedCustomers = [
             { ...newCustomer, id: newId },
@@ -118,7 +118,7 @@ function CustomerList() {
         setCustomers(updatedCustomers)
         setSearchResult(updatedCustomers)
         setSearch("")
-        
+
     }
 
 
@@ -127,94 +127,187 @@ function CustomerList() {
     window.addCustomer = addCustomer;
     return (
         <div className="crm-page">
+            <div className="crm-header">
+                <div>
+                    <p className="crm-path">CRM / 고객 관리</p>
+                    <h2>고객 관리</h2>
+                    <p className="crm-description">고객사 정보 조회 및 관리</p>
+                </div>
+            </div>
 
-            <h2>고객 관리</h2>
+            <div className="crm-summary">
+                <div className="crm-summary-card">
+                    <span>전체 고객사</span>
+                    <strong>{customers.length}개</strong>
+                </div>
+                <div className="crm-summary-card">
+                    <span>현재 조회 결과</span>
+                    <strong>{searchResult.length}개</strong>
+                </div>
+            </div>
 
-            <form onSubmit={searchCustomer}>
-            <input
-                placeholder="업체명을 입력하세요"
-                value={search}
+            <div className="crm-content">
+                <div className="crm-content-header">
+                    <h3>고객사 목록</h3>
+                    <span>총 {searchResult.length}건</span>
+                </div>
 
-                // 입력할 때마다 search state 업데이트
-                onChange={(e) => setSearch((e.target.value))}
-            />
+                <form className="crm-search" onSubmit={searchCustomer}>
+                    <input
+                        placeholder="고객사명을 입력하세요"
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                    />
+                    <button type="submit" className="crm-btn-primary">
+                        검색
+                    </button>
+                    <button
+                        type="button"
+                        className="crm-btn-secondary"
+                        onClick={resetSearch}
+                    >
+                        초기화
+                    </button>
+                </form>
 
-            <button type="submit">검색</button>
-            </form>
+                <div className="crm-toolbar">
+                    <span>선택한 고객: {selectedIds.length}건</span>
 
-            <button onClick={resetSearch}>처음으로</button>
+                    <div className="crm-actions">
+                        <button
+                            className="crm-btn-primary"
+                            onClick={() => window.open(
+                                "/crm/register?popup=1",
+                                "customerRegister",
+                                "width=600,height=700"
+                            )}
+                        >
+                            + 고객 등록
+                        </button>
 
-            <button onClick={() => window.open('/crm/register?popup=1', 'customerRegister', 'width=600,height=700')}
-            >고객 등록</button>
-            {/* 새창에서 열기 window.open(주소,창이름,크기) */}
+                        <button
+                            className="crm-btn-secondary"
+                            disabled={selectedIds.length !== 1}
+                            onClick={editCustomer}
+                        >
+                            수정
+                        </button>
 
-            <button disabled={selectedIds.length !== 1}
-                onClick={editCustomer}>수정</button>
+                        <button
+                            className="crm-btn-delete"
+                            disabled={selectedIds.length === 0}
+                            onClick={deleteSelectedCustomers}
+                        >
+                            삭제
+                        </button>
+                    </div>
+                </div>
 
-            <button disabled={selectedIds.length === 0}
-                onClick={deleteSelectedCustomers}>삭제</button>
-            <table>
-
-                <thead>
-                    <tr>
-                        <th>선택</th>
-                        <th>번호</th>
-                        <th>업체명</th>
-                        <th>사업자 등록번호</th>
-                        <th>고객사 담당자</th>
-                        <th>연락처</th>
-                        <th>이메일</th>
-                        <th>주소</th>
-                        <th>등록일</th>
-                        <th>메모</th>
-                        <th>담당자</th>
-
-                    </tr>
-                </thead>
-
-
-                <tbody>
-                    {
-                        (currentCustomers.length === 0) ?
+                <div className="crm-table-wrap">
+                    <table className="crm-table">
+                        <thead>
                             <tr>
-                                <td colSpan={10}>검색된 결과가 없습니다</td>
+                                <th>선택</th>
+                                <th>번호</th>
+                                <th>고객사명</th>
+                                <th>사업자등록번호</th>
+                                <th>고객사 담당자</th>
+                                <th>연락처</th>
+                                <th>이메일</th>
+                                <th>주소</th>
+                                <th>등록일</th>
+                                <th>메모</th>
+                                <th>내부 담당자</th>
                             </tr>
-                            :
+                        </thead>
 
-                            currentCustomers.map((customer) => (
-                                // 고객 한 명당 하나의 행(tr) 생성
-                                // key : React가 각 행을 구분하는 고유값
-                                <tr key={customer.id}>
-
-                                    <td><input type="checkbox"
-                                        onChange={(e) => {
-                                            if (e.target.checked) {
-                                                setSelectedIds([...selectedIds, customer.id])
-                                            } else {
-                                                setSelectedIds(selectedIds.filter((id) => id !== customer.id))
-                                            }
-                                        }} /></td>
-                                    <td>{customer.id}</td>
-                                    <td>{customer.companyName}</td>
-                                    <td>{customer.businessNumber}</td>
-                                    <td>{customer.customerManager}</td>
-                                    <td>{customer.phone}</td>
-                                    <td>{customer.email}</td>
-                                    <td>{customer.address}</td>
-                                    <td>{customer.createdAt}</td>
-                                    <td>{customer.memo}</td>
-                                    <td>{customer.employeeName}</td>
-
-
+                        <tbody>
+                            {currentCustomers.length === 0 ? (
+                                <tr>
+                                    <td colSpan={11} className="crm-empty">
+                                        검색된 결과가 없습니다.
+                                    </td>
                                 </tr>
-                            ))}
-                </tbody>
-            </table>
-            <button onClick={() => setCurrentPage(currentPage - 1)}
-                disabled={currentPage === 1}>◀</button>
-            <span>{currentPage}</span>
-            <button onClick={() => setCurrentPage(currentPage + 1)}
-                disabled={currentPage === totalPages}>▶</button>
+                            ) : (
+                                currentCustomers.map((customer) => (
+                                    <tr key={customer.id}>
+                                        <td>
+                                            <input
+                                                type="checkbox"
+                                                checked={selectedIds.includes(customer.id)}
+                                                onChange={(e) => {
+                                                    if (e.target.checked) {
+                                                        setSelectedIds([
+                                                            ...selectedIds,
+                                                            customer.id
+                                                        ]);
+                                                    } else {
+                                                        setSelectedIds(
+                                                            selectedIds.filter(
+                                                                (id) => id !== customer.id
+                                                            )
+                                                        );
+                                                    }
+                                                }}
+                                            />
+                                        </td>
+                                        <td>{customer.id}</td>
+                                        <td className="crm-company">{customer.companyName}</td>
+                                        <td>{customer.businessNumber}</td>
+                                        <td>{customer.customerManager}</td>
+                                        <td>{customer.phone}</td>
+                                        <td>{customer.email}</td>
+                                        <td>{customer.address}</td>
+                                        <td>{customer.createdAt}</td>
+                                        <td>{customer.memo}</td>
+                                        <td>{customer.employeeName}</td>
+                                    </tr>
+                                ))
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+
+                <div className="crm-pagination">
+                    <span className="crm-page-info">
+                        {searchResult.length === 0
+                            ? "0건"
+                            : `${(currentPage - 1) * itemsPerPage + 1}-${Math.min(
+                                currentPage * itemsPerPage,
+                                searchResult.length
+                            )} / ${searchResult.length}건`}
+                    </span>
+
+                    <div className="crm-page-buttons">
+                        <button
+                            disabled={currentPage === 1}
+                            onClick={() => setCurrentPage(currentPage - 1)}
+                        >
+                            ◀
+                        </button>
+
+                        {Array.from(
+                            { length: totalPages },
+                            (_, index) => index + 1
+                        ).map((page) => (
+                            <button
+                                key={page}
+                                className={currentPage === page ? "active" : ""}
+                                onClick={() => setCurrentPage(page)}
+                            >
+                                {page}
+                            </button>
+                        ))}
+
+                        <button
+                            disabled={currentPage >= totalPages}
+                            onClick={() => setCurrentPage(currentPage + 1)}
+                        >
+                            ▶
+                        </button>
+                    </div>
+                </div>
+            </div>
         </div>
     );
 }
