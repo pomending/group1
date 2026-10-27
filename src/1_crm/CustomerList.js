@@ -45,7 +45,7 @@ function CustomerList() {
 
 
     // 검색 버튼을 클릭하면 실행되는 함수
-    function searchCustomer() {
+    function searchCustomer(e) {
 
         // 전체 고객 목록(customerList)에서
         // 업체명(companyName)에 검색어(search)가 포함된 고객만 찾기
@@ -59,19 +59,23 @@ function CustomerList() {
         //검색했을때 페이지가 1이아닌 다른페이지일경우 검색결과가 1페이지에 있어 다른페이지에서 보이지않음
         //검색할때 자동으로 1페이지로 돌아가게 설정
         setCurrentPage(1);
+        e.preventDefault()
 
     }
 
     //검색후 다시 초기 전체목록으로 초기화시키는 버튼만드는 함수
     function resetSearch() {
-
+        //창비우기
         setSearch("")
+        //현재 전체 고객 목록 다시 표시
         setSearchResult(customers)
+        //첫페이지로 이동
         setCurrentPage(1)
     }
 
     //체크한 고객들을 목록에서 삭제하는 함수
     function deleteSelectedCustomers() {
+        //전체  고객목록에서 체크한 고객을 제외하고 나머지만 가져오기
         const remainingCustomers = customers.filter((customer) =>
             !selectedIds.includes(customer.id))
 
@@ -85,17 +89,48 @@ function CustomerList() {
     function editCustomer() {
         const selectedCustomer = customers.find((customer) =>
             customer.id === selectedIds[0])
-        
+
         setEditData(selectedCustomer);
-        window.open('/crm/edit?id='+selectedCustomer.id,'customerEdit','witdh=600, height=700 ')
+        window.open('/crm/edit?id=' + selectedCustomer.id, 'customerEdit', 'witdh=600, height=700 ')
     }
 
+    function saveEditedCustomer(updateCustomer) {
+        const updateCustomers = customers.map((customer) =>
+            customer.id === updateCustomer.id
+                ? updateCustomer
+                : customer
+        )
+        setCustomers(updateCustomers)
+        setSearchResult(updateCustomers)
+        setSearch("")
+
+
+    }
+
+    function addCustomer(newCustomer) {
+        console.log("고객 추가 함수 실행:", newCustomer);
+        const newId = Math.max(0, ...customers.map((customer) => customer.id || 0)) + 1;
+        const updatedCustomers = [
+            { ...newCustomer, id: newId },
+            ...customers
+        ];
+
+        setCustomers(updatedCustomers)
+        setSearchResult(updatedCustomers)
+        setSearch("")
+        
+    }
+
+
+    window.saveEditedCustomer = saveEditedCustomer
+    window.getCurrentCustomers = () => customers;
+    window.addCustomer = addCustomer;
     return (
         <div className="crm-page">
 
             <h2>고객 관리</h2>
-            
 
+            <form onSubmit={searchCustomer}>
             <input
                 placeholder="업체명을 입력하세요"
                 value={search}
@@ -104,12 +139,13 @@ function CustomerList() {
                 onChange={(e) => setSearch((e.target.value))}
             />
 
+            <button type="submit">검색</button>
+            </form>
 
-            <button onClick={searchCustomer}>검색</button>
+            <button onClick={resetSearch}>처음으로</button>
 
-            <button onClick={resetSearch}>전체보기</button>
-
-            <button onClick={() => window.open('/customer-register', 'customerRegister', 'width=600,height=700')}>고객 등록</button>
+            <button onClick={() => window.open('/crm/register?popup=1', 'customerRegister', 'width=600,height=700')}
+            >고객 등록</button>
             {/* 새창에서 열기 window.open(주소,창이름,크기) */}
 
             <button disabled={selectedIds.length !== 1}
