@@ -155,58 +155,62 @@ export default function ScheduleFormModal({
         {form.scope === "업무용" && <ScheduleConnections value={form.connections} onChange={onChange} />}
         {/* 날짜 입력의 value는 YYYY-MM-DD, 시간은 HH:mm 형식입니다.
               반복 일정에서는 이 날짜가 기준일이고 시간은 각 발생 항목에 그대로 복사됩니다. */}
-        <label>
-          날짜
-          <input
-            type="date"
-            name="date"
-            value={form.date}
-            onChange={onChange}
-            required
-          />
-        </label>
-        <label>
-          시작 시간
-          <input
-            type="time"
-            name="time"
-            value={form.time}
-            onChange={onChange}
-            required
-          />
-        </label>
-        {/* 종료 시간도 form의 한 항목입니다. 입력·저장 방식은 시작 시간과 같습니다.
-            min은 시작보다 이른 값을 막고, 같은 시각인지 여부는 저장 함수에서 추가로 확인합니다. */}
-        <label>
-          종료 시간
-          <input
-            type="time"
-            name="endTime"
-            value={form.endTime}
-            onChange={onChange}
-            min={form.time}
-            required
-          />
-        </label>
+        {/* 날짜는 한 줄 전체에 두고, 시간은 두 칸으로 묶어 기본 입력 행을 맞춥니다. */}
+        <div className="sm-date-time-fields sm-form-wide">
+          <label>
+            날짜
+            <input type="date" name="date" value={form.date} onChange={onChange} required />
+          </label>
+          {/* 종일 일정은 시간 입력을 숨기며, 저장된 기본 시간은 폼 값에 계속 보관합니다. */}
+          {!form.isAllDay && <>
+            <label>시작 시간
+              <input type="time" name="time" value={form.time} onChange={onChange} required />
+            </label>
+            <label>종료 시간
+              <input type="time" name="endTime" value={form.endTime} onChange={onChange} min={form.time} required />
+            </label>
+          </>}
+        </div>
         {form.scope === "업무용" && <label>일정 상태
           <select name="status" value={form.status} onChange={onChange}>
             {scheduleStatuses.map(({ value, label }) => <option key={value} value={value}>{label}</option>)}
           </select>
         </label>}
         {/* 자주 바꾸지 않는 설정은 접어 두되, 신규와 수정 모두에서 변경할 수 있습니다. */}
+        {/* 반복·휴일·알림처럼 매번 바꾸지 않는 항목은 접어서 기본 입력을 간결하게 둡니다. */}
         <details className="sm-extra-settings sm-form-wide">
-          <summary>추가 설정 · 공개 범위, 반복</summary>
+          <summary>추가 설정 · 공개 범위·반복·알림</summary>
           <div className="sm-extra-fields">
+            {/* 종일 선택 시 위의 시작·종료 시간 입력란은 숨기지만 기존 값은 저장용으로 유지합니다. */}
+            <label className="sm-form-check">종일 일정
+              <span className="sm-form-check-control"><input type="checkbox" name="isAllDay" checked={Boolean(form.isAllDay)} onChange={onChange} /></span>
+            </label>
+            {/* 종료 날짜는 반복 없는 일정에서만 열어 여러 날 범위를 지정할 수 있습니다. */}
+            {form.repeatType === "none" && <label>종료 날짜 (여러 날 일정)
+              <input type="date" name="endDate" value={form.endDate || ""} min={form.date} onChange={onChange} />
+            </label>}
+            {/* 선택한 분 단위는 일정 시작 전에 화면 알림을 표시하는 데 사용합니다. */}
+            <label>알림
+              <select name="reminderMinutes" value={form.reminderMinutes || 0} onChange={onChange}>
+                <option value={0}>알림 없음</option><option value={10}>10분 전</option><option value={30}>30분 전</option><option value={1440}>하루 전</option>
+              </select>
+            </label>
             <label>일정 공개 범위
               <select name="visibility" value={form.visibility} onChange={onChange}>
                 <option value="shared">회사 공유 일정</option><option value="private">개인 일정</option>
               </select>
             </label>
-            {!isOccurrence && <label>반복 설정
+            {!isOccurrence && <label className={form.repeatType === "none" ? "sm-extra-field-wide" : ""}>반복 설정
               <select name="repeatPreset" value={repeatValue} onChange={onChange}>
                 <option value="none:1">반복 없음</option><option value="weekly:1">매주</option>
                 <option value="weekly:2">격주</option><option value="monthly:1">매월</option>
                 {!commonRepeat && <option value={repeatValue}>기존 설정 · {getRepeatLabel(form)}</option>}
+              </select>
+            </label>}
+            {/* 휴일 처리 규칙은 반복 일정에서만 선택할 수 있습니다. */}
+            {form.repeatType !== "none" && <label>주말·공휴일 처리
+              <select name="holidayRule" value={form.holidayRule || "keep"} onChange={onChange}>
+                <option value="keep">기준일에 진행</option><option value="skip">건너뛰기</option><option value="nextWorkday">다음 근무일로 이동</option>
               </select>
             </label>}
             {form.repeatType === "monthly" && (
@@ -243,9 +247,9 @@ export default function ScheduleFormModal({
             )}
           </div>
           <p className="sm-form-note">개인 일정 구분은 열람 권한을 제한하지 않습니다.</p>
-          {form.repeatType !== "none" && <p className="sm-form-note">{getRepeatLabel(form)} · 저장하면 전체 반복에 적용됩니다.</p>}
+          {form.repeatType !== "none" && <p className="sm-form-note">{getRepeatLabel(form)} · 휴일 규칙도 반복 전체에 적용됩니다.</p>}
           {form.repeatType === "monthly" && form.monthlyRule === "weekday" && (
-            <p className="sm-form-note">공휴일에 겹치면 해당 날짜의 일정만 수정하거나 제외할 수 있습니다.</p>
+            <p className="sm-form-note">주말·공휴일 일정은 위의 휴일 규칙에 따라 건너뛰거나 다음 근무일로 옮길 수 있습니다.</p>
           )}
         </details>
         {isOccurrence && <p className="sm-form-note sm-form-wide">선택한 날짜의 일정만 수정합니다. 다른 반복 일정은 유지됩니다.</p>}
