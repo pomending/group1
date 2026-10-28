@@ -10,7 +10,6 @@ import { ScheduleAgendaItem, ScheduleAttendees, ScheduleFavorite, ScheduleVisibi
 import React from "react";
 import { weekDays, getScheduleTime, getRepeatLabel } from "./scheduleData";
 import ScheduleDirectory from "./ScheduleDirectory";
-import { ScheduleConnectionSummary } from "./ScheduleConnections";
 
 /* 같은 원본 일정에서 여러 화면용 목록이 나오는 이유
  * directoryItems: 전체 원본입니다. 프로젝트·팀원 목록은 현재 월에 일정이 없어도 사람/이름을 보여줍니다.
@@ -93,7 +92,6 @@ export default function ScheduleSidebar({
                 </dl>}
                 {/* 참석자가 있는 일정은 기존처럼 명단도 표시하고, 없으면 이 부품이 아무것도 만들지 않습니다. */}
                 <ScheduleAttendees item={item} paragraph />
-                {item.scope !== "개인 일정용" && <ScheduleConnectionSummary value={item.connections} />}
                 <button type="button" className="sm-favorite-date"
                   aria-label={`${item.title} 즐겨찾기 일정으로 이동`} onClick={() => onSelectFavorite(item)}>
                   <span>

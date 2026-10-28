@@ -10,7 +10,7 @@
 import React from "react";
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import ScheduleManager from "./ScheduleManager";
-import { mergeScheduleChanges } from "./scheduleStorage";
+import { loadSchedules, mergeScheduleChanges } from "./scheduleStorage";
 import {
   dateKey, getTodayKey, getNextScheduleDate, getUpcomingSchedules,
   normalizeAttendees, createScheduleForm, excludeOccurrence, expandSchedules,
@@ -69,6 +69,25 @@ const makeSchedule = (overrides = {}) => ({
   status: "pending",
   repeatType: "none",
   ...overrides,
+});
+
+test("고객관리 연결을 제거한 뒤에도 기존 일정과 담당자 정보를 유지한다", () => {
+  const schedule = makeSchedule({
+    person: "일정 담당자",
+    connections: { customer: { name: "이전 고객사", phone: "010-0000-0000" } },
+  });
+  localStorage.setItem(storageKey, JSON.stringify([schedule]));
+
+  const result = loadSchedules();
+
+  expect(result.readError).toBe(false);
+  expect(result.items).toHaveLength(1);
+  expect(result.items[0]).toMatchObject({
+    id: schedule.id,
+    title: schedule.title,
+    person: "일정 담당자",
+  });
+  expect(result.items[0]).not.toHaveProperty("connections");
 });
 
 // 코드 표현을 바꾼 뒤에도 공백·중복 이름 정리와 원본 보존이 유지되는지 확인합니다.
@@ -962,7 +981,7 @@ test.each(["shared", "private"])("수정 창의 추가 설정은 접힌 채 기�
   for (const label of ["일정 공개 범위", "반복 설정"]) {
     expect(within(dialog).getByLabelText(label)).not.toBeVisible();
   }
-  fireEvent.click(within(dialog).getByText("추가 설정 · 공개 범위, 반복"));
+  fireEvent.click(within(dialog).getByText("추가 설정 · 공개 범위·반복·알림"));
   fireEvent.change(within(dialog).getByLabelText("일정 이름"), { target: { value: "간단히 수정" } });
   fireEvent.click(within(dialog).getByRole("button", { name: "수정 저장" }));
   expect(JSON.parse(localStorage.getItem(storageKey))[0]).toMatchObject({ title: "간단히 수정", type: "검수", visibility, repeatType: "none" });
@@ -996,7 +1015,7 @@ test("기존 사용자 지정 반복은 보존하며 간단한 반복 선택으�
   render(<ScheduleManager />);
   fireEvent.click(screen.getByRole("button", { name: "전체 일정 (1)" }));
   fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "검증용 마감 일정 수정" }));
-  fireEvent.click(screen.getByText("추가 설정 · 공개 범위, 반복"));
+  fireEvent.click(screen.getByText("추가 설정 · 공개 범위·반복·알림"));
   const repeat = screen.getByLabelText("반복 설정");
   expect(repeat).toHaveValue("monthly:12");
   expect(within(repeat).getAllByRole("option")).toHaveLength(5);
@@ -1004,7 +1023,7 @@ test("기존 사용자 지정 반복은 보존하며 간단한 반복 선택으�
   expect(JSON.parse(localStorage.getItem(storageKey))[0].repeatInterval).toBe(12);
   fireEvent.click(screen.getByRole("button", { name: "전체 일정 (1)" }));
   fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "검증용 마감 일정 수정" }));
-  fireEvent.click(screen.getByText("추가 설정 · 공개 범위, 반복"));
+  fireEvent.click(screen.getByText("추가 설정 · 공개 범위·반복·알림"));
   fireEvent.change(screen.getByLabelText("반복 설정"), { target: { value: "weekly:2" } });
   fireEvent.click(screen.getByRole("button", { name: "수정 저장" }));
   expect(JSON.parse(localStorage.getItem(storageKey))[0]).toMatchObject({ repeatType: "weekly", repeatInterval: 2 });
@@ -1070,3 +1089,22 @@ test("다른 탭 저장 이벤트를 받으면 화면에 최신 일정을 반영
   await act(async () => {});
 });
 
+
+test("업무에서 개인으로 전환하면 숨겨진 담당자와 상태를 초기화한다", async () => {
+  saveSchedules([makeSchedule({ person: "담당자", status: "completed" })]);
+  render(<ScheduleManager />);
+  fireEvent.click(screen.getByRole("button", { name: "전체 일정 (1)" }));
+  fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "검증용 마감 일정 수정" }));
+  fireEvent.click(screen.getByRole("button", { name: "개인 일정용", exact: true }));
+  fireEvent.click(screen.getByRole("button", { name: "업무용", exact: true }));
+  expect(screen.getByRole("combobox", { name: "담당자", exact: true })).toHaveValue("");
+  expect(screen.getByLabelText("일정 상태")).toHaveValue("pending");
+  await act(async () => {});
+});
+
+test("다음 근무일 탐색 범위를 넘는 연속 휴일은 휴일에 일정을 표시하지 않는다", () => {
+  const holidays = {};
+  for (let day = 1; day <= 20; day += 1) holidays[`2026-11-${String(day).padStart(2, "0")}`] = "휴일";
+  const items = [makeSchedule({ date: "2026-11-01", repeatType: "monthly", holidayRule: "nextWorkday" })];
+  expect(expandSchedules(items, "2026-11-01", "2026-11-30", holidays)).toEqual([]);
+});

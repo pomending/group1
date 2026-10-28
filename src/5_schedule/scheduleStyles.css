@@ -2718,18 +2718,6 @@
   }
 }
 
-/* 업무용 일정의 고객관리 연결 */
-.sm-customer-connection { grid-column: 1 / -1; border-top: 1px solid var(--sm-border); padding-top: 10px; }
-.sm-customer-connection summary { cursor: pointer; font-weight: 600; padding: 6px 0; }
-.sm-customer-connection label { display: grid; gap: 6px; margin: 10px 0; }
-.sm-customer-connection select { min-width: 0; width: 100%; }
-.sm-customer-refresh { margin: 4px 0 8px; border: 1px solid var(--sm-border); border-radius: 8px; padding: 7px 10px; background: #fff; cursor: pointer; }
-.sm-connection-summary { margin: 10px 0; padding: 12px; border-radius: 10px; background: #f4f7fb; font-size: 12px; line-height: 1.6; overflow-wrap: anywhere; }
-.sm-connection-summary p { margin: 3px 0 8px; white-space: pre-wrap; }
-.sm-connection-summary a { color: #435fbd; }
-.sm-agenda-item .sm-connection-summary { margin-top: 12px; border: 1px solid #e8eee8; background: #f7faf7; }
-
-
 /* 사이드바 팔레트와 일정 화면의 인터랙션 색상을 연결합니다.
    일정 유형·완료 상태·주말 색상은 의미 전달을 위해 기존 색을 유지합니다. */
 .schedule-app {
@@ -2980,3 +2968,9 @@
   .schedule-app .sm-date-time-fields { grid-template-columns:minmax(0,1fr); }
   .schedule-app .sm-date-time-fields > label:first-child { grid-column:auto; }
 }
+/* 프로젝트 시작일과 마감일은 저장 일정과 구분해 읽기 전용으로 표시합니다. */
+.schedule-app .sm-event-project { border-style:dashed; }
+.schedule-app .sm-project-milestone-tag { display:inline-flex; align-items:center; width:max-content; padding:2px 6px; border-radius:999px; background:#f1efff; color:#5b4db1; font-size:10px; font-weight:700; }
+.schedule-app .sm-project-milestone-item { border-style:dashed; }
+/* 긴 담당자·프로젝트명도 상세 패널 안에서 줄바꿈합니다. */
+.schedule-app .sm-favorite-info dd { min-width: 0; overflow-wrap: anywhere; }

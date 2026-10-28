@@ -1,4 +1,4 @@
-
+import"./03_CustomerForm.css";
 import React, { useState } from "react";
 import { useLocation } from "react-router-dom";
 
@@ -65,21 +65,29 @@ function CustomerEdit() {
     }
 
     return (
-        <form onSubmit={updateCustomer}>
-            <div>
-                {fields.map(field => (
-                    <div key={field.name}>
-                        <label>{field.label}</label>
-
+        <div className="crm-form-page">
+    
+            <div className="crm-form-header">
+                <h2>고객정보 수정</h2>
+                <p>기존 고객사 정보를 수정해 주세요.</p>
+            </div>
+    
+            <form className="crm-form" onSubmit={updateCustomer}>
+                {fields.map((field) => (
+                    <div className="crm-form-field" key={field.name}>
+                        <label>
+                            {field.label}
+                            {["companyName", "customerManager", "phone"].includes(field.name) && (
+                                <span className="crm-required"> *</span>
+                            )}
+                        </label>
+    
                         <input
                             value={formData[field.name] || ""}
-                            onChange={e => {
+                            onChange={(e) => {
                                 const value = e.target.value;
-
-                                if (
-                                    field.name === "businessNumber" ||
-                                    field.name === "phone"
-                                ) {
+    
+                                if (field.name === "businessNumber" || field.name === "phone") {
                                     if (/[^0-9]/.test(value.replace(/-/g, ""))) {
                                         alert(
                                             field.name === "businessNumber"
@@ -89,14 +97,14 @@ function CustomerEdit() {
                                         return;
                                     }
                                 }
-
+    
                                 let formatted = value;
-
+    
                                 if (field.name === "businessNumber") {
                                     const numbers = value.replace(/-/g, "").slice(0, 10);
-
+    
                                     formatted = numbers;
-
+    
                                     if (numbers.length > 5) {
                                         formatted = numbers.slice(0, 3) + "-"
                                             + numbers.slice(3, 5) + "-"
@@ -106,14 +114,14 @@ function CustomerEdit() {
                                             + numbers.slice(3);
                                     }
                                 }
-
+    
                                 let formattedPhone = value;
-
+    
                                 if (field.name === "phone") {
                                     const phoneNumbers = value.replace(/-/g, "").slice(0, 11);
-
+    
                                     formattedPhone = phoneNumbers;
-
+    
                                     if (phoneNumbers.startsWith("02")) {
                                         if (phoneNumbers.length > 6) {
                                             formattedPhone = phoneNumbers.slice(0, 2) + "-"
@@ -134,7 +142,7 @@ function CustomerEdit() {
                                         }
                                     }
                                 }
-
+    
                                 setFormData({
                                     ...formData,
                                     [field.name]: field.name === "businessNumber"
@@ -147,10 +155,10 @@ function CustomerEdit() {
                         />
                     </div>
                 ))}
-
+    
                 <button type="submit">수정완료</button>
-            </div>
-        </form>
+            </form>
+        </div>
     );
 }
 

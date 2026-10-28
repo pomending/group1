@@ -7,8 +7,7 @@
  * name="title"처럼 name과 객체 속성을 맞추면 부모의 공통 입력 함수가 어느 값을 바꿀지 알 수 있습니다.
  * 일정 종류를 먼저 고르고, 업무용이면 분류를 선택합니다. 공개 범위와 반복은 추가 설정에서 바꿉니다.
  */
-import React, { useMemo } from "react";
-import ScheduleConnections, { getEmployeeSuggestions } from "./ScheduleConnections";
+import React from "react";
 import { ScheduleFavorite, ScheduleAttendees, ScheduleVisibility } from "./ScheduleItemParts";
 import {
   compareSchedules,
@@ -47,16 +46,16 @@ export default function ScheduleFormModal({
   // 기존의 사용자 지정 간격은 선택지에 남겨 수정 없이 저장해도 반복 규칙이 바뀌지 않게 합니다.
   const repeatValue = form.repeatType + ":" + form.repeatInterval;
   const commonRepeat = ["none:1", "weekly:1", "weekly:2", "monthly:1"].includes(repeatValue);
-  const employeeSuggestions = useMemo(getEmployeeSuggestions, []);
   const selectedAttendees = normalizeAttendees(form.attendees);
-  const attendeeOptions = [...new Set([...teamMembers, ...employeeSuggestions, form.person.trim(), ...selectedAttendees].filter(Boolean))];
+  const attendeeOptions = [...new Set([...teamMembers, form.person.trim(), ...selectedAttendees].filter(Boolean))];
   function selectScope(scope) {
     if (form.scope === scope) return;
     onChange({ target: { name: "scope", value: scope } });
     onChange({ target: { name: "category", value: "" } });
     onChange({ target: { name: "project", value: "" } });
     onChange({ target: { name: "attendees", value: "" } });
-    onChange({ target: { name: "connections", value: {} } });
+    onChange({ target: { name: "person", value: "" } });
+    onChange({ target: { name: "status", value: "pending" } });
   }
   function selectCategory(category) {
     onChange({ target: { name: "category", value: category } });
@@ -129,13 +128,13 @@ export default function ScheduleFormModal({
             </datalist>
           </div>
         )}
-        {form.scope === "업무용" && <div className="sm-assignee-field">
+        {form.scope === "업무용" && <div className="sm-assignee-field sm-form-wide">
           <label htmlFor="sm-assignee">담당자</label>
           {/* 기존 이름은 자동완성으로 선택하고, 새 이름은 일정 저장 시 함께 등록합니다. */}
           <input id="sm-assignee" name="person" list="sm-team-suggestions" value={form.person}
             onChange={onChange} placeholder="담당자 이름 입력" maxLength={30} required />
           <datalist id="sm-team-suggestions">
-            {[...new Set([...teamMembers, ...employeeSuggestions])].map((name) => <option key={name} value={name} />)}
+            {[...new Set(teamMembers)].map((name) => <option key={name} value={name} />)}
           </datalist>
         </div>}
         {/* 회의 분류를 선택하면 참석자 선택을 표시합니다. */}
@@ -152,7 +151,6 @@ export default function ScheduleFormModal({
             {attendeeOptions.length === 0 && <p className="sm-form-note">담당자를 입력하거나 팀원 일정이 등록되면 참석자를 선택할 수 있습니다.</p>}
           </fieldset>
         )}
-        {form.scope === "업무용" && <ScheduleConnections value={form.connections} onChange={onChange} />}
         {/* 날짜 입력의 value는 YYYY-MM-DD, 시간은 HH:mm 형식입니다.
               반복 일정에서는 이 날짜가 기준일이고 시간은 각 발생 항목에 그대로 복사됩니다. */}
         {/* 날짜는 한 줄 전체에 두고, 시간은 두 칸으로 묶어 기본 입력 행을 맞춥니다. */}
@@ -171,7 +169,7 @@ export default function ScheduleFormModal({
             </label>
           </>}
         </div>
-        {form.scope === "업무용" && <label>일정 상태
+        {form.scope === "업무용" && <label className="sm-form-wide">일정 상태
           <select name="status" value={form.status} onChange={onChange}>
             {scheduleStatuses.map(({ value, label }) => <option key={value} value={value}>{label}</option>)}
           </select>

@@ -1,6 +1,6 @@
 //고객 등록 화면
 import react, { useState } from "react";
-import "./CustomerForm.css";
+import "./03_CustomerForm.css";
 function CustomerRegister() {
 
     //고객정보를 저장할 state
