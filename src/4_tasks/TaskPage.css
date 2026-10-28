@@ -341,3 +341,50 @@
     flex: 1;
   }
 }
+
+
+.task-tabs {
+  display: flex;
+  gap: 12px;
+  border-bottom: 1px solid #dce1eb;
+  margin: 24px 0;
+}
+
+.task-tabs button {
+  padding: 14px 20px;
+  border: none;
+  border-bottom: 3px solid transparent;
+  background: transparent;
+  color: #64748b;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.task-tabs button.active {
+  color: #684cff;
+  border-bottom-color: #684cff;
+  font-weight: 700;
+}
+
+.task-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px 10px;
+  border-bottom: 1px solid #e5e9f0;
+}
+
+.task-item p {
+  color: #7b879b;
+  font-size: 13px;
+}
+
+.task-item button {
+  padding: 10px 14px;
+  color: #684cff;
+  background: white;
+  border: 1px solid #ddd6fe;
+  border-radius: 8px;
+  cursor: pointer;
+}
