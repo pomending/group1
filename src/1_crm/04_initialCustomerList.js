@@ -1,4 +1,4 @@
-export const customerList = [
+export const initialCustomerList = [
         {
             id: 1,
             companyName: "삼성전자",

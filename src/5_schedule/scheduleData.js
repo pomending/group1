@@ -1,5 +1,3 @@
-import { normalizeConnections } from "./scheduleConnectionsData";
-
 /* 반복 규칙은 원본 한 건으로 저장하고 화면에 필요한 날짜만 계산합니다.
  * occurrenceDate는 반복 중 한 번, excludedDates는 제외할 날짜를 가리킵니다.
  * 날짜와 시간은 각각 YYYY-MM-DD와 HH:mm 형식으로 비교합니다.
@@ -154,7 +152,6 @@ export const createEmptyForm = () => ({
   endTime: "17:00",
   title: "",
   description: "",
-  connections: {},
   project: "",
   scope: "",
   category: "",
@@ -183,7 +180,6 @@ export const createScheduleForm = (item) => {
     if (item[name] !== null && item[name] !== undefined) form[name] = item[name];
   }
   form.scope = getScheduleScope(item);
-  form.connections = form.scope === "개인 일정용" ? {} : normalizeConnections(item.connections);
   form.category = getScheduleCategory(item);
   form.attendees = normalizeAttendees(item.attendees).join(", ");
   form.repeatType = item.repeatType || "none";
@@ -300,6 +296,8 @@ export const expandSchedules = (items, fromKey, toKey, holidays = {}) => {
       if (holidayRule === "nextWorkday" && isNonWorkday(displayDate)) {
         let attempts = 0;
         do { displayDate.setDate(displayDate.getDate() + 1); attempts += 1; } while (isNonWorkday(displayDate) && attempts < 14);
+        // 탐색 범위를 넘는 연속 휴일에는 휴일 날짜로 잘못 표시하지 않습니다.
+        if (isNonWorkday(displayDate)) return;
       }
       const displayKey = dateKey(displayDate);
       if (

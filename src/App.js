@@ -4,7 +4,7 @@ import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import Sidebar from "./components/Sidebar";
 import "./ERPLayout.css";
 
-import CrmPage from "./1_crm/CrmPage";
+import CrmPage from "./1_crm/01_CrmPage";
 import QuotationPage from "./2_quotation/QuotationPage";
 import ProjectPage from "./3_projects/ProjectPage";
 import TaskPage from "./4_tasks/TaskPage";

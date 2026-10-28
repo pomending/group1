@@ -8,7 +8,6 @@
  * 화면의 배지 색은 분류를 표현하며 접근 권한을 검사하거나 저장을 실행하는 기능은 아닙니다.
  */
 import React from "react";
-import { ScheduleConnectionSummary } from "./ScheduleConnections";
 import {
   normalizeAttendees,
   scheduleStatuses,
@@ -80,6 +79,7 @@ export function ScheduleFavorite({ item, onToggleFavorite }) {
 
 // compact이면 월간 칸에 맞춰 제목과 시간·별표를 나누고, 나머지 보기는 한 버튼으로 만듭니다.
 export function ScheduleEvent({ item, onSelect, compact = false, roleLabel, onToggleFavorite }) {
+  const isProjectMilestone = Boolean(item.isProjectMilestone);
   const status = getStatusOption(item.status);
   const time = getScheduleTime(item);
   const label = `${item.date} ${time} ${item.title} 선택한 날짜 일정에서 보기`;
@@ -95,7 +95,7 @@ export function ScheduleEvent({ item, onSelect, compact = false, roleLabel, onTo
   // 제목은 상세창, 별은 즐겨찾기만 실행하므로 서로의 동작이 섞이지 않습니다.
   if (compact) {
     return (
-      <div className="sm-event sm-event-compact" style={{ "--sm-event-color": item.color }}
+      <div className={"sm-event sm-event-compact " + (isProjectMilestone ? "sm-event-project" : "")} style={{ "--sm-event-color": item.color }}
         onClick={selectSchedule} title={help}>
         {/* 일정 영역을 누르면 상세 패널을 선택하고, 별 버튼은 즐겨찾기만 바꿉니다. */}
         <button type="button" className="sm-event-open"
@@ -104,11 +104,12 @@ export function ScheduleEvent({ item, onSelect, compact = false, roleLabel, onTo
         </button>
         <div className="sm-event-time-row">
           <time>{time}</time>
-          <ScheduleFavorite item={item} onToggleFavorite={onToggleFavorite} />
+          {!isProjectMilestone && <ScheduleFavorite item={item} onToggleFavorite={onToggleFavorite} />}
         </div>
         <span className="sm-event-meta">
-          {item.scope !== "개인 일정용" && <ScheduleStatus status={item.status} />}
-          <ScheduleVisibility visibility={item.visibility} />
+          {isProjectMilestone
+            ? <span className="sm-project-milestone-tag">프로젝트 {item.milestoneType}</span>
+            : <>{item.scope !== "개인 일정용" && <ScheduleStatus status={item.status} />}<ScheduleVisibility visibility={item.visibility} /></>}
         </span>
       </div>
     );
@@ -116,7 +117,7 @@ export function ScheduleEvent({ item, onSelect, compact = false, roleLabel, onTo
   const eventButton = (
     <button
       type="button"
-      className="sm-event"
+      className={"sm-event " + (isProjectMilestone ? "sm-event-project" : "")}
       style={{ "--sm-event-color": item.color }}
       onClick={selectSchedule}
       aria-label={label}
@@ -124,16 +125,18 @@ export function ScheduleEvent({ item, onSelect, compact = false, roleLabel, onTo
     >
       <time>{time}</time>
       <span>{item.title}</span>
-      <small>{roleLabel || item.person}</small>
-      {item.scope !== "개인 일정용" && <ScheduleStatus status={item.status} />}
-      <ScheduleVisibility visibility={item.visibility} />
+      <small>{isProjectMilestone ? "프로젝트" : (roleLabel || item.person)}</small>
+      {!isProjectMilestone && item.scope !== "개인 일정용" && <ScheduleStatus status={item.status} />}
+      {isProjectMilestone
+        ? <span className="sm-project-milestone-tag">{item.milestoneType}</span>
+        : <ScheduleVisibility visibility={item.visibility} />}
     </button>
   );
   // 별표를 일정 선택 버튼 바깥에 둡니다.
   return (
-    <div className="sm-event-shell" style={{ "--sm-event-color": item.color }}>
+    <div className={"sm-event-shell " + (isProjectMilestone ? "sm-event-project-shell" : "")} style={{ "--sm-event-color": item.color }}>
       {eventButton}
-      <ScheduleFavorite item={item} onToggleFavorite={onToggleFavorite} />
+      {!isProjectMilestone && <ScheduleFavorite item={item} onToggleFavorite={onToggleFavorite} />}
     </div>
   );
 }
@@ -184,29 +187,34 @@ export function ScheduleAttendees({ item, paragraph = false }) {
 // 선택 날짜 패널의 일정 한 건입니다. 작업 구분·참석자·메모를 함께 표시합니다.
 // 실제 수정·삭제는 이 컴포넌트가 하지 않고 부모가 전달한 함수에 item을 넘깁니다.
 export function ScheduleAgendaItem({ item, onEdit, onDelete, onStatusChange, onToggleFavorite }) {
+  const isProjectMilestone = Boolean(item.isProjectMilestone);
   return (
-    <article className="sm-agenda-item sm-favorite-item" style={{ "--sm-event-color": item.color }}>
+    <article className={"sm-agenda-item sm-favorite-item " + (isProjectMilestone ? "sm-project-milestone-item" : "")} style={{ "--sm-event-color": item.color }}>
       {/* 즐겨찾기와 같은 배치를 재사용합니다. 제목과 별을 분리하고 정보마다 이름을 붙입니다. */}
       <div className="sm-favorite-heading">
         <strong className="sm-favorite-title">{item.title}</strong>
-        <ScheduleFavorite item={item} onToggleFavorite={onToggleFavorite} />
+        {!isProjectMilestone && <ScheduleFavorite item={item} onToggleFavorite={onToggleFavorite} />}
       </div>
       <div className="sm-favorite-time-row">
         <span className="sm-favorite-time"><ScheduleIcon name="clock" /><time>{getScheduleTime(item)}</time></span>
-        <ScheduleVisibility visibility={item.visibility} />
+        {!isProjectMilestone && <ScheduleVisibility visibility={item.visibility} />}
       </div>
       <dl className="sm-favorite-info">
-        <dt>일정 종류</dt><dd>{item.scope || "업무용"}</dd>
-        {item.scope !== "개인 일정용" && <><dt>분류</dt><dd>{item.category || (item.project ? "프로젝트" : "업무")}</dd></>}
-        {item.scope !== "개인 일정용" && item.project && <><dt>프로젝트</dt><dd>{item.project}</dd></>}
-        {item.scope !== "개인 일정용" && <><dt>담당자</dt><dd>{item.person}</dd></>}
-        {item.category === "프로젝트" && <><dt>작업 구분</dt><dd>{item.type}</dd></>}
+        {isProjectMilestone
+          ? <><dt>구분</dt><dd>프로젝트 일정</dd><dt>프로젝트</dt><dd>{item.project}</dd><dt>담당자</dt><dd>{item.projectManager || "미지정"}</dd><dt>기준일</dt><dd>{item.milestoneType}</dd></>
+          : <>
+            <dt>일정 구분</dt><dd>{item.scope || "업무용"}</dd>
+            {item.scope !== "개인 일정용" && <><dt>분류</dt><dd>{item.category || (item.project ? "프로젝트" : "업무")}</dd></>}
+            {item.scope !== "개인 일정용" && item.project && <><dt>프로젝트</dt><dd>{item.project}</dd></>}
+            {item.scope !== "개인 일정용" && <><dt>담당자</dt><dd>{item.person}</dd></>}
+            {item.category === "프로젝트" && <><dt>업무 유형</dt><dd>{item.type}</dd></>}
+          </>}
       </dl>
-      <ScheduleAttendees item={item} paragraph />
-      {item.scope !== "개인 일정용" && <ScheduleConnectionSummary value={item.connections} />}
-      {/* 메모가 있을 때만 별도 영역을 만들고 입력한 줄바꿈을 그대로 보여 줍니다. */}
-      {item.description && <p className="sm-description">{item.description}</p>}
-      <ScheduleActions item={item} onEdit={onEdit} onDelete={onDelete} onStatusChange={onStatusChange} />
+      {!isProjectMilestone && <ScheduleAttendees item={item} paragraph />}
+      {!isProjectMilestone && item.description && <p className="sm-description">{item.description}</p>}
+      {isProjectMilestone
+        ? <p className="sm-form-note">프로젝트 관리에서 날짜를 수정합니다.</p>
+        : <ScheduleActions item={item} onEdit={onEdit} onDelete={onDelete} onStatusChange={onStatusChange} />}
     </article>
   );
 }

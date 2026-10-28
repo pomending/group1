@@ -17,11 +17,7 @@ import { ScheduleIcon } from "./ScheduleItemParts";
 // 팀원은 별도 등록 목록만 표시합니다. 다른 파트의 프로젝트/직원 데이터를 수정하지 않습니다.
 // 이미 결과 배열에 있는 이름은 넣지 않습니다. 마지막 sort는 한글 이름순으로 정렬합니다.
 function uniqueNames(names) {
-  const result = [];
-  for (const name of names) {
-    if (name && !result.includes(name)) result.push(name);
-  }
-  return result.sort((a, b) => a.localeCompare(b, "ko"));
+  return [...new Set(names.filter(Boolean))].sort((a, b) => a.localeCompare(b, "ko"));
 }
 
 export default function ScheduleDirectory({ mode, items, teamMembers, onAddTeamMember, onRemoveTeamMember, selectedProject, onSelectProject, onClose }) {
@@ -37,14 +33,19 @@ export default function ScheduleDirectory({ mode, items, teamMembers, onAddTeamM
     .filter((item) => item.person.trim() === selectedPerson)
     .map((item) => item.project));
   function togglePerson(name) {
-    if (selectedPerson === name) setSelectedPerson(null);
-    else setSelectedPerson(name);
+    setSelectedPerson(current => current === name ? null : name);
   }
   // 프로젝트명만 나열하는 대신 저장된 일정 수와 담당자를 요약합니다.
   // 반복 일정은 원본 규칙 한 건으로 세며, 버튼은 두 목록에서 같은 이동 콜백을 호출합니다.
+  // 프로젝트별 목록을 한 번 만들어 카드마다 전체 일정을 다시 검색하지 않습니다.
+  const schedulesByProject = new Map();
+  for (const item of items) {
+    if (!schedulesByProject.has(item.project)) schedulesByProject.set(item.project, []);
+    schedulesByProject.get(item.project).push(item);
+  }
   const renderProject = (project) => {
     // ===로 이름 전체를 비교합니다. 예를 들어 test 선택에 test2의 일정은 포함되지 않습니다.
-    const schedules = items.filter((item) => item.project === project);
+    const schedules = schedulesByProject.get(project) || [];
     const people = uniqueNames(schedules.map((item) => item.person));
     // aria-pressed는 현재 선택 여부를 보조 기기에 알려 주며 CSS의 선택 배경에도 사용합니다.
     // () => ...로 함수를 감싸야 렌더링할 때가 아니라 실제 클릭할 때 부모 함수가 실행됩니다.
