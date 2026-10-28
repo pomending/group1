@@ -1,4 +1,9 @@
-import { normalizeConnections } from "./scheduleConnectionsData";
+/* [파일 안내] 일정 공통 정의와 계산 함수
+ * 읽는 순서: 분류·상태 → 날짜·시간 → 폼 생성 → 참여자 정리 → 반복 계산 → 표시 문구 → 충돌 검사
+ * 입력: 일정 객체·날짜 범위·공휴일 정보 / 출력: 계산된 값과 새 배열·객체
+ * 화면 렌더링과 localStorage 저장은 하지 않습니다.
+ * 주요 호출처: Manager·Storage·Hooks 및 각 화면 컴포넌트
+ */
 
 /* 반복 규칙은 원본 한 건으로 저장하고 화면에 필요한 날짜만 계산합니다.
  * occurrenceDate는 반복 중 한 번, excludedDates는 제외할 날짜를 가리킵니다.
@@ -154,7 +159,6 @@ export const createEmptyForm = () => ({
   endTime: "17:00",
   title: "",
   description: "",
-  connections: {},
   project: "",
   scope: "",
   category: "",
@@ -183,7 +187,6 @@ export const createScheduleForm = (item) => {
     if (item[name] !== null && item[name] !== undefined) form[name] = item[name];
   }
   form.scope = getScheduleScope(item);
-  form.connections = form.scope === "개인 일정용" ? {} : normalizeConnections(item.connections);
   form.category = getScheduleCategory(item);
   form.attendees = normalizeAttendees(item.attendees).join(", ");
   form.repeatType = item.repeatType || "none";
@@ -300,6 +303,8 @@ export const expandSchedules = (items, fromKey, toKey, holidays = {}) => {
       if (holidayRule === "nextWorkday" && isNonWorkday(displayDate)) {
         let attempts = 0;
         do { displayDate.setDate(displayDate.getDate() + 1); attempts += 1; } while (isNonWorkday(displayDate) && attempts < 14);
+        // 탐색 범위를 넘는 연속 휴일에는 휴일 날짜로 잘못 표시하지 않습니다.
+        if (isNonWorkday(displayDate)) return;
       }
       const displayKey = dateKey(displayDate);
       if (
@@ -521,3 +526,70 @@ export const getRepeatLabel = (item) => {
   }
   return "반복 없음";
 };
+
+
+// 일정 중복과 담당자 시간 충돌 검사
+// 날짜와 시각을 밀리초로 바꿔 두 구간의 겹침을 비교합니다.
+// 종일은 현재 구현 기준 00:00~23:59이며, 여러 날 일정은 종료 날짜까지 포함해 계산합니다.
+// 종료 시간이 없는 이전 저장 자료에는 기존 기본값 17:00을 적용합니다.
+function getScheduleInterval(item) {
+  const startTime = item.isAllDay ? "00:00" : item.time;
+  const endDate = item.endDate && item.endDate > item.date ? item.endDate : item.date;
+  const endTime = item.isAllDay ? "23:59" : (item.endTime || "17:00");
+  const start = new Date(`${item.date}T${startTime}`).getTime();
+  const end = new Date(`${endDate}T${endTime}`).getTime();
+  return { start, end };
+}
+
+// 반복 일정을 실제 발생일로 펼쳐 날짜와 담당자 기준의 충돌을 찾습니다.
+/* candidate: 저장 직전 폼을 정리한 일정, items: 현재 저장된 원본 일정 목록입니다.
+ * fromKey~toKey: 검사할 날짜 범위, holidays: 날짜를 키로 하는 공휴일 정보입니다.
+ * ignoredId: 수정 중인 원본 ID, ignoredOccurrenceDate: 한 회차 수정 시 제외할 원래 발생일입니다.
+ * 저장이나 확인창 표시는 하지 않고, 경고에 사용할 날짜·제목·담당자만 반환합니다.
+ */
+export function findScheduleConflicts(
+  candidate, items, fromKey, toKey, holidays, ignoredId, ignoredOccurrenceDate,
+) {
+  const proposedDates = expandSchedules([candidate], fromKey, toKey, holidays);
+  // 전체 수정은 자기 원본을 비교에서 빼고, 한 회차 수정은 다른 회차와의 충돌도 확인합니다.
+  const editingOneOccurrence = Boolean(ignoredOccurrenceDate);
+  const otherItems = items.filter(item => item.id !== ignoredId || editingOneOccurrence);
+  const existingDates = expandSchedules(otherItems, fromKey, toKey, holidays);
+  const conflicts = [];
+  const candidateTitle = candidate.title.toLowerCase();
+  // 새 일정의 이름과 참여자는 모든 비교에 공통이므로 반복문 밖에서 한 번만 계산합니다.
+  const candidatePeople = new Set(getSchedulePeople(candidate));
+
+  for (const proposed of proposedDates) {
+    const proposedInterval = getScheduleInterval(proposed);
+    for (const existing of existingDates) {
+      // 같은 원본의 수정 대상 회차는 자기 자신이므로 건너뜁니다.
+      // 현재 구현은 실제 표시 날짜가 같은 항목끼리만 충돌을 비교합니다.
+      if (existing.id === ignoredId && existing.occurrenceDate === ignoredOccurrenceDate) continue;
+      if (existing.date !== proposed.date) continue;
+
+      const sameAllDayType = Boolean(existing.isAllDay) === Boolean(candidate.isAllDay);
+      // 동일 제목·동일 시간 중복과, 업무 참여자의 시간 충돌은 별개의 경고 조건입니다.
+      // 종일과 시간 지정 일정은 제목이 같아도 동일 시간의 중복으로 취급하지 않습니다.
+      const sameTime = sameAllDayType && (
+        candidate.isAllDay
+        || (existing.time === candidate.time && (existing.endTime || "17:00") === candidate.endTime)
+      );
+      const duplicate = existing.title.trim().toLowerCase() === candidateTitle && sameTime;
+      const sharedPerson = candidate.scope === "업무용"
+        && existing.scope === "업무용"
+        && getSchedulePeople(existing).some(name => candidatePeople.has(name));
+      const existingInterval = getScheduleInterval(existing);
+      // 끝 시각과 시작 시각이 맞닿는 경우(10~11시, 11~12시)는 겹침에 포함하지 않습니다.
+      const timeOverlap = proposedInterval.start < existingInterval.end
+        && existingInterval.start < proposedInterval.end;
+
+      if (duplicate || (sharedPerson && timeOverlap)) {
+        conflicts.push({ date: proposed.date, title: existing.title, person: existing.person });
+        // 새 일정의 같은 발생일에는 첫 충돌 한 건만 담아 경고가 과도하게 길어지지 않게 합니다.
+        break;
+      }
+    }
+  }
+  return conflicts;
+}

@@ -1,3 +1,9 @@
+/* [파일 안내] 일정관리 자동 회귀 검사
+ * 실행: npm test -- --watchAll=false --runInBand src/5_schedule/ScheduleManager.test.js
+ * 테스트용 DOM·저장소에서 동작하며 실제 크롬 데이터는 사용하지 않습니다.
+ * 날짜·반복 계산과 화면 입력·저장 결과를 검사합니다. CSS의 실제 배치는 브라우저 검사가 필요합니다.
+ */
+
 /* [자동 검사를 읽는 실제 방법]
  * 각 test는 서로 영향을 주지 않는 사용 상황 하나를 만듭니다. beforeEach가 저장소와 서버 응답을 준비합니다.
  * saveSchedules는 검사에 쓸 일정과 팀원 자료를 준비하는 도우미이며 실제 앱의 저장 동작과는 별개입니다.
@@ -10,7 +16,7 @@
 import React from "react";
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import ScheduleManager from "./ScheduleManager";
-import { mergeScheduleChanges } from "./scheduleStorage";
+import { loadSchedules, mergeScheduleChanges } from "./scheduleStorage";
 import {
   dateKey, getTodayKey, getNextScheduleDate, getUpcomingSchedules,
   normalizeAttendees, createScheduleForm, excludeOccurrence, expandSchedules,
@@ -36,6 +42,25 @@ import {
  * 내부 함수의 모양보다 검색·등록·반복 수정 후 화면과 저장 데이터가 맞는지를 검사합니다.
  */
 const storageKey = "made-mate-schedules";
+test.each(["input", "change"])("날짜·시간 %s 이벤트 후 포커스를 옮기지 않고 제출해도 입력값을 저장한다", async eventType => {
+  render(<ScheduleManager />);
+  fireEvent.click(screen.getByRole("button", { name: "일정 등록", exact: true }));
+  fireEvent.click(screen.getByRole("button", { name: "개인 일정용", exact: true }));
+  fireEvent.change(screen.getByLabelText("일정 이름"), { target: { value: "[테스트] 즉시 저장" } });
+  const date = screen.getByLabelText("날짜");
+  const start = screen.getByLabelText("시작 시간");
+  const end = screen.getByLabelText("종료 시간");
+  fireEvent[eventType](date, { target: { value: "2026-11-04" } });
+  fireEvent[eventType](start, { target: { value: "10:00" } });
+  end.focus();
+  fireEvent[eventType](end, { target: { value: "11:00" } });
+  expect(end).toHaveFocus();
+  fireEvent.submit(end.closest("form"));
+  expect(JSON.parse(localStorage.getItem(storageKey))).toEqual(expect.arrayContaining([
+    expect.objectContaining({ title: "[테스트] 즉시 저장", date: "2026-11-04", time: "10:00", endTime: "11:00" }),
+  ]));
+  await act(async () => {});
+});
 // 기존 시나리오의 테스트 준비입니다. 실제 앱은 일정에서 팀원을 자동 등록하지 않습니다.
 function saveSchedules(schedules) {
   localStorage.setItem(storageKey, JSON.stringify(schedules));
@@ -69,6 +94,25 @@ const makeSchedule = (overrides = {}) => ({
   status: "pending",
   repeatType: "none",
   ...overrides,
+});
+
+test("고객관리 연결을 제거한 뒤에도 기존 일정과 담당자 정보를 유지한다", () => {
+  const schedule = makeSchedule({
+    person: "일정 담당자",
+    connections: { customer: { name: "이전 고객사", phone: "010-0000-0000" } },
+  });
+  localStorage.setItem(storageKey, JSON.stringify([schedule]));
+
+  const result = loadSchedules();
+
+  expect(result.readError).toBe(false);
+  expect(result.items).toHaveLength(1);
+  expect(result.items[0]).toMatchObject({
+    id: schedule.id,
+    title: schedule.title,
+    person: "일정 담당자",
+  });
+  expect(result.items[0]).not.toHaveProperty("connections");
 });
 
 // 코드 표현을 바꾼 뒤에도 공백·중복 이름 정리와 원본 보존이 유지되는지 확인합니다.
@@ -962,7 +1006,7 @@ test.each(["shared", "private"])("수정 창의 추가 설정은 접힌 채 기�
   for (const label of ["일정 공개 범위", "반복 설정"]) {
     expect(within(dialog).getByLabelText(label)).not.toBeVisible();
   }
-  fireEvent.click(within(dialog).getByText("추가 설정 · 공개 범위, 반복"));
+  fireEvent.click(within(dialog).getByText("추가 설정 · 공개 범위·반복·알림"));
   fireEvent.change(within(dialog).getByLabelText("일정 이름"), { target: { value: "간단히 수정" } });
   fireEvent.click(within(dialog).getByRole("button", { name: "수정 저장" }));
   expect(JSON.parse(localStorage.getItem(storageKey))[0]).toMatchObject({ title: "간단히 수정", type: "검수", visibility, repeatType: "none" });
@@ -996,7 +1040,7 @@ test("기존 사용자 지정 반복은 보존하며 간단한 반복 선택으�
   render(<ScheduleManager />);
   fireEvent.click(screen.getByRole("button", { name: "전체 일정 (1)" }));
   fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "검증용 마감 일정 수정" }));
-  fireEvent.click(screen.getByText("추가 설정 · 공개 범위, 반복"));
+  fireEvent.click(screen.getByText("추가 설정 · 공개 범위·반복·알림"));
   const repeat = screen.getByLabelText("반복 설정");
   expect(repeat).toHaveValue("monthly:12");
   expect(within(repeat).getAllByRole("option")).toHaveLength(5);
@@ -1004,7 +1048,7 @@ test("기존 사용자 지정 반복은 보존하며 간단한 반복 선택으�
   expect(JSON.parse(localStorage.getItem(storageKey))[0].repeatInterval).toBe(12);
   fireEvent.click(screen.getByRole("button", { name: "전체 일정 (1)" }));
   fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "검증용 마감 일정 수정" }));
-  fireEvent.click(screen.getByText("추가 설정 · 공개 범위, 반복"));
+  fireEvent.click(screen.getByText("추가 설정 · 공개 범위·반복·알림"));
   fireEvent.change(screen.getByLabelText("반복 설정"), { target: { value: "weekly:2" } });
   fireEvent.click(screen.getByRole("button", { name: "수정 저장" }));
   expect(JSON.parse(localStorage.getItem(storageKey))[0]).toMatchObject({ repeatType: "weekly", repeatInterval: 2 });
@@ -1070,3 +1114,22 @@ test("다른 탭 저장 이벤트를 받으면 화면에 최신 일정을 반영
   await act(async () => {});
 });
 
+
+test("업무에서 개인으로 전환하면 숨겨진 담당자와 상태를 초기화한다", async () => {
+  saveSchedules([makeSchedule({ person: "담당자", status: "completed" })]);
+  render(<ScheduleManager />);
+  fireEvent.click(screen.getByRole("button", { name: "전체 일정 (1)" }));
+  fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "검증용 마감 일정 수정" }));
+  fireEvent.click(screen.getByRole("button", { name: "개인 일정용", exact: true }));
+  fireEvent.click(screen.getByRole("button", { name: "업무용", exact: true }));
+  expect(screen.getByRole("combobox", { name: "담당자", exact: true })).toHaveValue("");
+  expect(screen.getByLabelText("일정 상태")).toHaveValue("pending");
+  await act(async () => {});
+});
+
+test("다음 근무일 탐색 범위를 넘는 연속 휴일은 휴일에 일정을 표시하지 않는다", () => {
+  const holidays = {};
+  for (let day = 1; day <= 20; day += 1) holidays[`2026-11-${String(day).padStart(2, "0")}`] = "휴일";
+  const items = [makeSchedule({ date: "2026-11-01", repeatType: "monthly", holidayRule: "nextWorkday" })];
+  expect(expandSchedules(items, "2026-11-01", "2026-11-30", holidays)).toEqual([]);
+});

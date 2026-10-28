@@ -1,14 +1,24 @@
-/* items는 저장된 일정, form은 저장 전 입력값입니다. 저장 검증과 로컬 저장은 이 컴포넌트가 관리합니다. */
+/* [파일 안내] 일정 화면의 상태·계산·사용자 동작 연결
+ * 입력: ERPContext의 프로젝트, scheduleHooks의 일정·팀원·공휴일 상태
+ * 계산: scheduleData에서 반복 발생일·검색 대상·시간 충돌을 계산합니다.
+ * 출력: Calendar·Sidebar·Directory·FormModal에 표시값과 콜백을 전달합니다.
+ * 저장 흐름: FormModal → updateForm → addSchedule → setItems → useScheduleStorage
+ * 수정 위치: 입력 검증은 addSchedule, 회차 상태 변경은 changeScheduleStatus, 삭제는 deleteSchedule
+ */
+
+/* 일정 화면의 상태와 사용자 동작을 연결합니다. */
 import React, { useEffect, useRef, useState } from "react";
-import { mergeScheduleChanges } from "./scheduleStorage";
-import { normalizeConnections } from "./scheduleConnectionsData";
+import { useScheduleClock, useScheduleHolidays, useScheduleStorage, useScheduleTeam } from "./scheduleHooks";
+import { loadSchedules } from "./scheduleStorage";
+import { createProjectMilestones, getProjectScheduleSummaries } from "./ScheduleProjectBridge";
 import ScheduleCalendar from "./ScheduleCalendar";
 import ScheduleFormModal, { ScheduleListModal } from "./ScheduleFormModal";
 import ScheduleSidebar from "./ScheduleSidebar";
 import { ScheduleIcon } from "./ScheduleItemParts";
-import { loadTeamMembers } from "./ScheduleTeamEditor";
+import { useERP } from "../context/ERPContext";
 import {
   createScheduleForm,
+  findScheduleConflicts,
   compareSchedules,
   excludeOccurrence,
   getWeekDates,
@@ -19,257 +29,84 @@ import {
   getTodayKey,
   normalizeAttendees,
   getSchedulePeople,
-  scheduleTypes,
   scheduleScopes,
   getScheduleCategories,
-  getScheduleScope,
-  getScheduleCategory,
   normalizeStatus,
-  getRepeatInterval,
   typeColors,
   isValidScheduleDate,
   isValidScheduleTime,
   MAX_REPEAT_INTERVAL,
 } from "./scheduleData";
 import "./scheduleStyles.css";
-
-/* 검색·보기 상태와 일정 저장 상태를 이 컴포넌트에서 관리하고 화면 부품에 전달합니다. */
-// 새 일정과 반복에서 분리한 일정 모두 같은 방식으로 ID를 만듭니다.
-// 시간에 난수를 더해 같은 밀리초에 여러 건을 만들어도 ID가 겹칠 가능성을 줄입니다.
+const EMPTY_PROJECTS = [];
 const createScheduleId = () =>
   `schedule-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
-// 일정 한 건의 시작·종료 시각을 밀리초 숫자로 바꾸어 겹치는지 비교합니다.
-// 종일 일정은 날짜 전체, 여러 날 일정은 마지막 날까지를 범위로 계산합니다.
-function getScheduleInterval(item) {
-  const startTime = item.isAllDay ? "00:00" : item.time;
-  const endDate = item.endDate && item.endDate > item.date ? item.endDate : item.date;
-  const endTime = item.isAllDay ? "23:59" : (item.endTime || "17:00");
-  const start = new Date(`${item.date}T${startTime}`).getTime();
-  const end = new Date(`${endDate}T${endTime}`).getTime();
-  return { start, end };
-}
-
-// 새 일정의 발생 날짜와 기존 일정의 발생 날짜를 같은 범위에서 펼쳐 충돌을 찾습니다.
-// ignoredId는 전체 수정에서 기존 일정을 제외하고, ignoredOccurrenceDate는 한 회차만 비교에서 제외합니다.
-function findScheduleConflicts(
-  candidate, items, fromKey, toKey, holidays, ignoredId, ignoredOccurrenceDate,
-) {
-  const proposedDates = expandSchedules([candidate], fromKey, toKey, holidays);
-  const editingOneOccurrence = Boolean(ignoredOccurrenceDate);
-  const otherItems = items.filter(item => item.id !== ignoredId || editingOneOccurrence);
-  const existingDates = expandSchedules(otherItems, fromKey, toKey, holidays);
-  const conflicts = [];
-
-  for (const proposed of proposedDates) {
-    const proposedInterval = getScheduleInterval(proposed);
-    for (const existing of existingDates) {
-      // 회차 하나를 수정하는 경우 원래 반복 일정의 해당 날짜만 빼고 다른 회차는 계속 비교합니다.
-      if (existing.id === ignoredId && existing.occurrenceDate === ignoredOccurrenceDate) continue;
-      if (existing.date !== proposed.date) continue;
-
-      // 같은 제목과 같은 시간의 중복, 또는 같은 업무 담당자의 시간 겹침을 각각 확인합니다.
-      const sameAllDayType = Boolean(existing.isAllDay) === Boolean(candidate.isAllDay);
-      const sameTime = sameAllDayType && (
-        candidate.isAllDay ||
-        (existing.time === candidate.time && (existing.endTime || "17:00") === candidate.endTime)
-      );
-      const duplicate = existing.title.trim().toLowerCase() === candidate.title.toLowerCase() && sameTime;
-      const sharedPerson = candidate.scope === "업무용"
-        && existing.scope === "업무용"
-        && getSchedulePeople(candidate).some(name => getSchedulePeople(existing).includes(name));
-      const existingInterval = getScheduleInterval(existing);
-      const timeOverlap = proposedInterval.start < existingInterval.end
-        && existingInterval.start < proposedInterval.end;
-
-      if (duplicate || (sharedPerson && timeOverlap)) {
-        conflicts.push({ date: proposed.date, title: existing.title, person: existing.person });
-        break;
-      }
-    }
-  }
-  return conflicts;
-}
-
-// 브라우저에 저장된 JSON과 일정 필수 항목을 검사해 안전한 배열로 돌려줍니다.
-// localStorage는 문자열만 저장합니다. JSON.parse가 저장 문자열을 배열·객체로 복원합니다.
-// 이 목록은 현재 브라우저에만 저장되며 MySQL 서버에서 가져오는 데이터는 아닙니다.
-function loadSchedules() {
-  // 손상된 자료는 백업하고 읽기 실패 시 자동 저장을 막습니다.
-  try {
-    const raw = localStorage.getItem("made-mate-schedules");
-    const savedItems = JSON.parse(raw || "[]");
-    if (!Array.isArray(savedItems)) throw new Error("Invalid schedule data");
-
-    // 일정 필수값과 날짜별 반복 제외값을 확인하고 이전 형식의 누락값을 보완합니다.
-    const normalized = [];
-    let needsBackup = false;
-    for (const item of savedItems) {
-      if (!item || typeof item !== "object") continue;
-      if (typeof item.id !== "string" && typeof item.id !== "number") continue;
-      if (!isValidScheduleDate(item.date)) continue;
-      if (!isValidScheduleTime(item.time) || typeof item.title !== "string") continue;
-      const excludedDates = [];
-      if (Array.isArray(item.excludedDates)) {
-        for (const date of item.excludedDates) {
-          if (isValidScheduleDate(date) && !excludedDates.includes(date)) excludedDates.push(date);
-          else needsBackup = true;
-        }
-      } else if (item.excludedDates !== undefined && item.excludedDates !== null) {
-        needsBackup = true;
-      }
-      let endTime = "17:00";
-      if (isValidScheduleTime(item.endTime)) endTime = item.endTime;
-      else if (item.endTime) needsBackup = true;
-      // 새 필드는 값 목록을 확인해 잘못된 자료는 백업 대상으로 표시하고 기본값으로 읽습니다.
-      const validReminder = [0, 10, 30, 1440].includes(Number(item.reminderMinutes));
-      const validHolidayRule = ["keep", "skip", "nextWorkday"].includes(item.holidayRule);
-      const validEndDate = isValidScheduleDate(item.endDate)
-        && item.endDate >= item.date
-        && !["weekly", "monthly"].includes(item.repeatType);
-      if (item.reminderMinutes !== undefined && !validReminder) needsBackup = true;
-      if (item.holidayRule !== undefined && !validHolidayRule) needsBackup = true;
-      if (item.endDate && !validEndDate) needsBackup = true;
-      if (item.isAllDay !== undefined && typeof item.isAllDay !== "boolean") needsBackup = true;
-      const schedule = { ...item };
-      normalized.push({
-        // 원본을 먼저 복사하고 아래 속성으로 덮어써 과거 데이터의 누락값도 보완합니다.
-        ...schedule,
-        connections: getScheduleScope(item) === "개인 일정용" ? {} : normalizeConnections(item.connections),
-        // 기존 일정에 종료 시간이 없으면 17:00을 채웁니다. 저장 effect가 보완된 자료를 기록합니다.
-        endTime,
-        // 반복 항목에는 종료 날짜를 두지 않고, 올바른 단일·여러 날 일정만 날짜를 유지합니다.
-        endDate: item.repeatType !== "weekly" && item.repeatType !== "monthly"
-          && isValidScheduleDate(item.endDate) && item.endDate >= item.date
-          ? item.endDate
-          : "",
-        // 예전 저장 자료에 새 필드가 없으면 종일 해제·알림 없음·기준일 진행으로 보완합니다.
-        isAllDay: item.isAllDay === true,
-        reminderMinutes: [0, 10, 30, 1440].includes(Number(item.reminderMinutes))
-          ? Number(item.reminderMinutes)
-          : 0,
-        holidayRule: ["keep", "skip", "nextWorkday"].includes(item.holidayRule)
-          ? item.holidayRule
-          : "keep",
-        excludedDates,
-        project: typeof item.project === "string" ? item.project : "",
-        scope: getScheduleScope(item),
-        category: getScheduleCategory(item),
-        person: typeof item.person === "string" ? item.person : "",
-        // 이전 일정에는 attendees가 없을 수 있습니다. []로 보완하면 새 표에서도 안전하게 읽습니다.
-        // 저장 배열에 중복/공백이 있더라도 불러오는 시점에 같은 정리 규칙을 다시 적용합니다.
-        attendees: normalizeAttendees(item.attendees),
-        description:
-          typeof item.description === "string" ? item.description : "",
-        type: scheduleTypes.includes(item.type) ? item.type : "기획",
-        // 과거 저장 데이터의 상태가 없거나 업무 중이면 예정으로 보완하고, 완료는 유지합니다.
-        status: getScheduleScope(item) === "개인 일정용" ? "pending" : normalizeStatus(item.status),
-        visibility: item.visibility === "private" ? "private" : "shared",
-        repeatInterval: getRepeatInterval(item),
-        repeatType: ["weekly", "monthly"].includes(item.repeatType)
-          ? item.repeatType
-          : "none",
-        monthlyRule: item.monthlyRule === "weekday" ? "weekday" : "date",
-        monthlyOrdinal: [-1, 1, 2, 3, 4].includes(Number(item.monthlyOrdinal))
-          ? Number(item.monthlyOrdinal)
-          : 2,
-        monthlyWeekday: Number.isInteger(Number(item.monthlyWeekday))
-          && Number(item.monthlyWeekday) >= 0
-          && Number(item.monthlyWeekday) <= 6
-          ? Number(item.monthlyWeekday)
-          : 3,
-        color: typeColors[item.type] || typeColors["기획"],
-      });
-    }
-    // 이전 버전에서 날짜별로 저장한 반복 항목은 하나의 반복 규칙으로 합칩니다.
-    // 이미 읽은 seriesId는 배열에 기억하고, 같은 그룹을 다시 만나면 건너뜁니다.
-    const seenSeries = [];
-    const items = [];
-    normalized.sort((a, b) => a.date.localeCompare(b.date));
-    for (const item of normalized) {
-      if (item.seriesId && item.repeatType !== "none") {
-        if (seenSeries.includes(item.seriesId)) continue;
-        seenSeries.push(item.seriesId);
-      }
-      // 복사본에서 과거 버전의 속성만 제거합니다. 반복 간격은 위에서 이미 새 형식으로 읽었습니다.
-      const schedule = { ...item };
-      delete schedule.repeatUntil;
-      delete schedule.seriesId;
-      delete schedule.biweekly;
-      items.push(schedule);
-    }
-    // 일부 항목이 잘못되어 제외되더라도 정리 전 원본은 복구할 수 있게 남깁니다.
-    if (needsBackup || normalized.length !== savedItems.length) {
-      localStorage.setItem(`made-mate-schedules-backup-${Date.now()}`, raw);
-    }
-    return { items, readError: false, raw };
-  } catch {
-    // 읽기 실패 시 자동 저장을 막아 기존 원본을 빈 배열로 덮어쓰지 않습니다.
-    return { items: [], readError: true };
-  }
-}
-
-/*
- * [공부 순서 2] 상태와 화면이 연결되는 흐름
- * loadSchedules → items state → 검색 필터 → 반복 날짜 계산 → 자식 컴포넌트의 props 순서입니다.
- * 자식에서 입력·클릭하면 부모가 전달한 함수를 호출하고, 그 함수가 state를 바꿉니다.
- * React는 바뀐 state로 다시 렌더링하며, 저장 effect는 새 원본 목록을 localStorage에 기록합니다.
- * items는 저장 원본, filteredItems는 검색 결과, visibleItems는 날짜별 반복 계산 결과입니다.
- */
+/* 화면과 일정 관리 훅을 연결하는 조정 컴포넌트입니다. */
 export default function ScheduleManager() {
-  // 화면 상태는 렌더링에 사용하고, DOM 참조와 저장 기준은 ref에 보관합니다.
-  // month는 표시할 연·월을 결정하는 Date입니다. 초기값은 1일이고, 날짜 선택 시 선택 날짜로 바뀔 수 있습니다.
+  // [1. 상태 준비] 프로젝트·일정·팀원·선택 날짜를 준비합니다. 저장 관련 세부 처리는 scheduleHooks에서 확인합니다.
+  const erp = useERP();
+  const projects = erp?.projects || EMPTY_PROJECTS;
+  const updateProject = erp?.updateProject;
+
+  // 월간 달력의 기준 월과 현재 선택 날짜입니다.
   const [month, setMonth] = useState(() => {
     const today = new Date();
     return new Date(today.getFullYear(), today.getMonth(), 1);
   });
-  // 오늘 날짜를 state로 두어 자정이 지난 뒤에도 최신 날짜 기준을 유지합니다.
-  const [todayKey, setTodayKey] = useState(getTodayKey);
-  // 날짜만으로는 오늘 이미 지난 작업을 구별할 수 없어 현재 시각도 따로 기억합니다.
-  const [currentTime, setCurrentTime] = useState(Date.now);
-  // ref는 달력의 실제 HTML 요소를 가리킵니다. 프로젝트 선택 후 화면 이동과 초점에 사용합니다.
+  const [selectedDate, setSelectedDate] = useState(getTodayKey);
+  const { todayKey, currentTime } = useScheduleClock(selectedDate, setSelectedDate, setMonth);
   const calendarRef = useRef(null);
-  // selectedDate는 선택한 날짜를 YYYY-MM-DD 문자열로 보관합니다.
-  const [selectedDate, setSelectedDate] = useState(todayKey);
-  // query=검색 문자열, view=일별/주별/담당자별 주간/월별 보기, scopeFilter=전체/공유/개인 분류입니다.
-  // 개인/공유는 화면 분류 값이며 사용자별 접근 권한을 검사하는 기능은 아닙니다.
+
+  // 검색·보기·프로젝트 선택은 달력과 사이드바가 공유합니다.
   const [query, setQuery] = useState("");
   const [view, setView] = useState("monthly");
   const [scopeFilter, setScopeFilter] = useState("all");
-  // null은 목록을 닫은 상태, projects/people은 오른쪽에 열 목록의 종류입니다.
   const [directoryMode, setDirectoryMode] = useState(null);
-  // 프로젝트 이름은 부분 검색과 달리 정확히 일치시켜 test와 test2가 섞이지 않게 합니다.
   const [selectedProject, setSelectedProject] = useState(null);
-  // 저장값 중 형식이 올바른 일정만 state로 불러옵니다.
-  const [loadedSchedules] = useState(loadSchedules);
-  const [items, setItems] = useState(loadedSchedules.items);
-  // 수정 시작: 탭이 마지막으로 확인한 저장 원본과 실제 변경을 비교합니다.
-  const savedVersion = useRef({ raw: loadedSchedules.raw, items: loadedSchedules.items });
-  const [storageConflict, setStorageConflict] = useState(false);
-  const editingVersion = useRef(null);
-  // 수정 끝
-  const [loadedTeam] = useState(loadTeamMembers);
-  const [teamMembers, setTeamMembers] = useState(loadedTeam.members);
-  const [excludedTeamMembers, setExcludedTeamMembers] = useState(loadedTeam.excluded);
-  const [teamStorageError, setTeamStorageError] = useState(false);
-  const [storageError, setStorageError] = useState(false);
-  // 등록·수정용 form, 전체 목록 열림 여부, 수정 대상 editing 객체를 각각 관리합니다.
+
+  const {
+    loadedSchedules,
+    items,
+    setItems,
+    editingVersion,
+    storageConflict,
+    setStorageConflict,
+    storageError,
+    reloadConflictingSchedules,
+  } = useScheduleStorage();
+  const {
+    teamMembers,
+    excludedTeamMembers,
+    teamStorageUnavailable,
+    addTeamMember,
+    removeTeamMember,
+  } = useScheduleTeam();
+
+  // 모달·알림·수정 중인 일정의 상태입니다.
   const [listOpen, setListOpen] = useState(false);
-  // null이면 원본 전체 목록, 날짜 문자열이면 그날에 실제 발생하는 목록을 표시합니다.
   const [listDateFilter, setListDateFilter] = useState(null);
-  // form=null이면 닫힌 상태입니다. 열림 여부를 별도 state로 중복 보관하지 않습니다.
   const [form, setForm] = useState(null);
   const [formError, setFormError] = useState("");
   const [reminderNotice, setReminderNotice] = useState(null);
   const firedReminders = useRef(new Set());
-  // null이면 신규 등록, 객체이면 수정할 원본 ID와 특정 반복 날짜를 함께 보관합니다.
   const [editing, setEditing] = useState(null);
+
   const calendarYear = month.getFullYear();
-  const [holidayInfo, setHolidayInfo] = useState({
-    year: null,
-    dates: {},
-    error: false,
-  });
+  const holidayInfo = useScheduleHolidays(calendarYear);
+
+  // 저장 일정 중 해당 프로젝트에 연결된 항목을 projects[].schedules 요약으로 함께 보관합니다.
+  // 새 일정은 프로젝트 ID로 연결하고, ID가 없는 기존 일정은 프로젝트명으로 찾습니다.
+  // 비교 후 달라진 경우에만 갱신해 Context 변경으로 인한 반복 업데이트를 막습니다.
+  useEffect(() => {
+    if (typeof updateProject !== "function") return;
+    for (const project of projects) {
+      const linkedSchedules = getProjectScheduleSummaries(project, items);
+      if (JSON.stringify(project.schedules || []) !== JSON.stringify(linkedSchedules)) {
+        updateProject({ id: project.id, schedules: linkedSchedules });
+      }
+    }
+  }, [items, projects, updateProject]);
 
   // 선택한 프로젝트의 마지막 일정을 지웠다면 더 이상 없는 프로젝트 필터도 함께 해제합니다.
   useEffect(() => {
@@ -278,38 +115,7 @@ export default function ScheduleManager() {
     if (!exists) setSelectedProject(null);
   }, [items, selectedProject]);
 
-  // 등록 팀원과 제외한 이름을 별도로 저장합니다. 제외 목록은 새 일정 저장에 의한 자동 재등록을 막습니다.
-  // 명시적으로 팀원 등록을 하면 제외 목록에서도 지워 다시 사용할 수 있습니다.
-  useEffect(() => {
-    if (loadedTeam.readError) return;
-    try {
-      localStorage.setItem("made-mate-schedule-team", JSON.stringify(teamMembers));
-      localStorage.setItem("made-mate-excluded-team", JSON.stringify(excludedTeamMembers));
-      setTeamStorageError(false);
-    } catch {
-      setTeamStorageError(true);
-    }
-  }, [teamMembers, excludedTeamMembers, loadedTeam.readError]);
-
-  function addTeamMember(value) {
-    if (loadedTeam.readError) return "팀원 목록을 읽지 못했습니다. 기존 저장 자료를 확인해 주세요.";
-    const name = value.trim();
-    if (!name) return "팀원 이름을 입력해 주세요.";
-    if (name.length > 30) return "팀원 이름은 30자 이내로 입력해 주세요.";
-    if (teamMembers.includes(name)) return "이미 등록된 팀원입니다.";
-    setExcludedTeamMembers((current) => current.filter(person => person !== name));
-    setTeamMembers((current) => [...current, name].sort((a, b) => a.localeCompare(b, "ko")));
-    return "";
-  }
-
-  function removeTeamMember(name) {
-    // 일정 기록을 삭제하는 동작이 아닙니다. 다시 같은 이름을 등록하면 기존 담당 기록도 연결됩니다.
-    const message = `${name}님을 팀원 목록에서 제외할까요? 기존 일정의 담당·참석 기록은 유지됩니다.`;
-    if (!window.confirm(message)) return;
-    setTeamMembers((current) => current.filter((person) => person !== name));
-    setExcludedTeamMembers((current) => current.includes(name) ? current : [...current, name]);
-  }
-
+  // 회의 참석자 목록에서 이름을 선택할 때 폼의 문자열을 갱신합니다.
   function toggleAttendee(name) {
     setFormError("");
     setForm((current) => {
@@ -353,158 +159,15 @@ export default function ScheduleManager() {
     }
   }, [items, currentTime, holidayDates, reminderNotice]);
 
-  // 일정 목록이 바뀔 때 브라우저 저장소를 갱신해 새로고침 뒤에도 유지합니다.
-  /* 일정 저장과 타이머·공휴일 요청 등 화면 외부 작업을 연결합니다. */
-  // 수정 시작: 다른 탭 변경을 덮어쓰지 않고 세 버전을 비교해 합칩니다.
-  useEffect(() => {
-    if (loadedSchedules.readError || storageConflict) return;
-    let active = true;
-    function persist() {
-    if (!active) return;
-    try {
-      let next = items;
-      const raw = localStorage.getItem("made-mate-schedules");
-      if (raw !== savedVersion.current.raw) {
-        const remote = loadSchedules();
-        if (remote.readError) { setStorageConflict(true); return; }
-        const merged = mergeScheduleChanges(savedVersion.current.items, items, remote.items);
-        if (merged.conflict) { setStorageConflict(true); return; }
-        next = merged.items.sort(compareSchedules);
-      }
-      const serialized = JSON.stringify(next);
-      localStorage.setItem("made-mate-schedules", serialized);
-      savedVersion.current = { raw: serialized, items: next };
-      if (JSON.stringify(items) !== serialized) setItems(next);
-      setStorageError(false);
-    } catch { setStorageError(true); }
-    }
-    // 같은 앱의 탭들이 동시에 쓰는 경우 Web Locks로 읽기·비교·저장을 직렬 처리합니다.
-    if (navigator.locks?.request) {
-      navigator.locks.request("made-mate-schedules-write", persist).catch(() => { if (active) setStorageError(true); });
-    } else persist();
-    return () => { active = false; };
-  }, [items, loadedSchedules.readError, storageConflict]);
-
-  useEffect(() => {
-    function checkOtherTab(event) {
-      if (event.key === "made-mate-schedules" || event.key === null) {
-        setItems(current => [...current]);
-      }
-    }
-    window.addEventListener("storage", checkOtherTab);
-    return () => window.removeEventListener("storage", checkOtherTab);
-  }, []);
-
-  function reloadConflictingSchedules() {
-    const remote = loadSchedules();
-    if (remote.readError) { setStorageError(true); return; }
-    savedVersion.current = { raw: remote.raw, items: remote.items };
-    setItems(remote.items);
-    setStorageConflict(false);
-  }
-  // 수정 끝
-
-  // 다음 자정에 오늘 날짜를 갱신합니다. 오늘을 보고 있었다면 새 날짜를 선택합니다.
-  /* effect 안에서 return하는 함수는 화면에 표시할 JSX가 아니라 '정리 함수'입니다.
-   * 이전 effect를 다시 실행하기 전이나 컴포넌트를 없앨 때 리액트가 호출합니다.
-   * 타이머를 해제하지 않으면 이전 선택 날짜를 기억한 타이머와 새 타이머가 함께 실행될 수 있습니다.
-   * 이 effect는 selectedDate도 의존하므로 사용자가 날짜를 바꿀 때 새 선택값으로 타이머를 설정합니다.
-   */
-  useEffect(() => {
-    const now = new Date();
-    // 오늘의 다음 날을 만들고 시간을 생략하면 자정입니다. 월말·연말도 Date가 계산합니다.
-    const nextMidnight = new Date(
-      now.getFullYear(),
-      now.getMonth(),
-      now.getDate() + 1,
-    );
-    const timer = window.setTimeout(() => {
-      const nextTodayKey = getTodayKey();
-      setTodayKey(nextTodayKey);
-      // 오늘을 선택한 경우에만 날짜와 표시 월을 함께 이동합니다.
-      // 다른 날짜를 보고 있다면 월말·연말 자정에도 현재 화면을 유지합니다.
-      if (selectedDate === todayKey) {
-        setSelectedDate(nextTodayKey);
-        setMonth(new Date(`${nextTodayKey}T00:00:00`));
-      }
-    }, nextMidnight.getTime() - now.getTime());
-
-    // effect 재실행 전이나 화면이 사라질 때 이전 타이머를 지워 중복 실행을 막습니다.
-    // 선택 날짜가 바뀌면 최신 선택을 기준으로, 오늘이 바뀌면 다음 자정으로 다시 설정합니다.
-    return () => window.clearTimeout(timer);
-  }, [todayKey, selectedDate]);
-
-  /* 분이 바뀌거나 다른 탭에서 돌아오면 다가오는 일정을 다시 계산합니다.
-   * 새로고침 없이 시작 시각에는 다가오는 목록의 표시를 진행 중으로 바꾸고, 종료 시각에는 목록에서 빼기 위한 타이머입니다.
-   * Date.now()%60000은 이번 분에서 흐른 밀리초이며, 남은 시간 뒤에 다음 분을 갱신합니다.
-   * cleanup은 타이머와 이벤트 연결을 해제해 화면을 닫은 뒤에도 갱신하지 않게 합니다. */
-  useEffect(() => {
-    const refreshTime = () => setCurrentTime(Date.now());
-    const timer = window.setTimeout(refreshTime, 60000 - (Date.now() % 60000));
-    document.addEventListener("visibilitychange", refreshTime);
-    return () => {
-      window.clearTimeout(timer);
-      document.removeEventListener("visibilitychange", refreshTime);
-    };
-  }, [currentTime]);
-
-  // 현재 연도의 한국 공휴일을 가져와 날짜별로 빠르게 찾을 수 있게 정리합니다.
-  /* fetch는 서버 응답을 기다리는 동안 화면 전체를 멈추지 않고 Promise를 반환합니다.
-   * async 함수 안의 await는 응답을 받은 뒤 다음 줄을 실행하게 합니다. 화면 전체를 멈추지는 않습니다.
-   * try 안에서 요청하거나 해석하다 실패하면 catch로 이동해 오류 안내를 표시합니다.
-   * 예를 들어 2026년 요청 후 곧바로 2027년으로 이동하면 2026년 응답이 더 늦게 올 수도 있습니다.
-   * active는 이 effect 실행만의 변수입니다. 정리 함수가 이전 실행의 active를 false로 바꾸면
-   * 이전 응답이 도착해도 새 연도의 상태를 덮어쓰지 않습니다. 요청 자체를 취소하는 것은 아닙니다.
-   */
-  useEffect(() => {
-    // 아래 정리 함수가 false로 바꾸면 이 요청의 응답은 화면에 반영하지 않습니다.
-    let active = true;
-
-    async function loadHolidays() {
-      try {
-        // 반복 일정은 연말을 넘어갈 수 있어 표시 연도와 앞뒤 연도를 함께 조회합니다.
-        const years = [calendarYear - 1, calendarYear, calendarYear + 1];
-        const results = await Promise.allSettled(years.map(async year => {
-          const response = await fetch(`https://date.nager.at/api/v3/PublicHolidays/${year}/KR`);
-          if (!response.ok) throw new Error("Holiday request failed");
-          return { year, holidays: await response.json() };
-        }));
-        // 실패한 인접 연도는 건너뛰고, 현재 달력 연도의 성공 여부만 오류 표시 기준으로 씁니다.
-        const dates = {};
-        let currentYearLoaded = false;
-        for (const result of results) {
-          if (result.status !== "fulfilled" || !Array.isArray(result.value.holidays)) continue;
-          if (result.value.year === calendarYear) currentYearLoaded = true;
-          for (const holiday of result.value.holidays) {
-            dates[holiday.date] = holiday.localName || holiday.name;
-          }
-        }
-        if (active) setHolidayInfo({ year: calendarYear, dates, error: !currentYearLoaded });
-      } catch {
-        if (active)
-          setHolidayInfo({ year: calendarYear, dates: {}, error: true });
-      }
-    }
-    loadHolidays();
-
-    // 연도를 바꾼 뒤 늦게 도착한 이전 요청이 상태를 덮어쓰지 않게 합니다.
-    return () => {
-      active = false;
-    };
-  }, [calendarYear]);
-
-  /* 화면용 자료는 저장용 items에서 매번 새로 계산합니다.
-   * 별도의 state나 최적화 Hook 없이 위에서 아래로 읽을 수 있도록 작성했습니다.
-   * 조건에 맞지 않으면 continue로 건너뛰고, 모든 검사를 통과한 일정만 결과에 넣습니다.
-   * 검색 결과가 없어도 items는 건드리지 않으므로 저장된 일정은 그대로 남습니다. */
+  // 검색어, 프로젝트, 공개 범위 조건으로 저장된 일정을 먼저 거릅니다.
+  // [2. 표시 데이터 계산] 원본 items → 검색·공개 범위 필터 → 반복 발생일 → 달력·선택 날짜 목록
   const keyword = query.trim().toLowerCase();
   const filteredItems = [];
   for (const item of items) {
     if (selectedProject && item.project !== selectedProject) continue;
     if (scopeFilter !== "all" && item.visibility !== scopeFilter) continue;
     const people = getSchedulePeople(item).join(" ");
-    const customer = normalizeConnections(item.connections).customer;
-    const searchText = `${item.title} ${item.project} ${people} ${customer ? Object.values(customer).join(" ") : ""}`.toLowerCase();
+    const searchText = `${item.title} ${item.project} ${people}`.toLowerCase();
     if (!searchText.includes(keyword)) continue;
     filteredItems.push(item);
   }
@@ -521,9 +184,24 @@ export default function ScheduleManager() {
     from = weekDates[0].key;
     to = weekDates[6].key;
   }
-  const visibleItems = expandSchedules(filteredItems, from, to, holidayDates);
-  // 선택 날짜가 표시 월 밖일 수도 있어 선택 날짜 패널은 별도 하루 범위로 계산합니다.
-  const selectedItems = expandSchedules(filteredItems, selectedDate, selectedDate, holidayDates);
+  // 프로젝트 날짜도 검색·프로젝트 선택 조건을 따르며, 회사 공유 일정 필터에서만 달력에 표시합니다.
+  const projectMilestones = createProjectMilestones(projects).filter((item) => {
+    if (selectedProject && item.project !== selectedProject) return false;
+    if (scopeFilter === "private") return false;
+    return (item.title + " " + item.project).toLowerCase().includes(keyword);
+  });
+  const visibleProjectMilestones = projectMilestones.filter(
+    (item) => item.date >= from && item.date <= to,
+  );
+  const selectedProjectMilestones = projectMilestones.filter((item) => item.date === selectedDate);
+  const visibleItems = [
+    ...expandSchedules(filteredItems, from, to, holidayDates),
+    ...visibleProjectMilestones,
+  ];
+  const selectedItems = [
+    ...expandSchedules(filteredItems, selectedDate, selectedDate, holidayDates),
+    ...selectedProjectMilestones,
+  ];
 
   // 월별 달력은 일요일 시작 격자로 계산합니다. 주간 보기는 기존 월요일 시작을 유지합니다.
   const calendarDays = [];
@@ -570,6 +248,7 @@ export default function ScheduleManager() {
   // 예: name="title"이면 [event.target.name]이 title이 되어 그 속성만 덮어씁니다.
   // 숫자 입력은 빈칸일 때만 ""로 유지해 편집을 허용하고, 나머지는 숫자로 저장합니다.
   // 주간/월간 단위를 바꾸면 간격을 1로 초기화해 24개월이 24주로 잘못 이어지지 않게 합니다.
+  // [3. 입력 처리] FormModal 입력 이벤트 → form 갱신. 여기서는 아직 일정 목록을 저장하지 않습니다.
   const updateForm = (event) => {
     setFormError("");
     const name = event.target.name;
@@ -618,6 +297,7 @@ export default function ScheduleManager() {
   }
 
   // 입력값은 이 시점에 저장 형태로 바꿉니다. 참석자 미입력은 []이며 필수 항목이 아닙니다.
+  // [4. 저장 처리] 입력 검증 → 시간 충돌 확인 → 팀원 확인 → 일정 생성·교체 → 필터·폼 정리
   const addSchedule = (event) => {
     // 브라우저는 form 제출 시 페이지 이동을 시도합니다. preventDefault로 막고 아래 state 갱신으로 처리합니다.
     event.preventDefault();
@@ -634,6 +314,8 @@ export default function ScheduleManager() {
     // 수정 끝
     const title = form.title.trim();
     const project = form.project.trim();
+    // 새 일정에는 프로젝트 ID도 저장해, 나중에 프로젝트 이름이 바뀌어도 연결을 유지합니다.
+    const linkedProject = projects.find((entry) => entry.name === project);
     if (!scheduleScopes.includes(form.scope)) {
       setFormError("업무용 또는 개인 일정용을 먼저 선택해 주세요.");
       return;
@@ -693,23 +375,21 @@ export default function ScheduleManager() {
     }
 
     // 수정 대상을 먼저 확인합니다. 새 등록이면 editing은 null이라 이 검사를 건너뜁니다.
-    let occurrenceDate = null;
-    if (editing) occurrenceDate = editing.occurrenceDate;
+    const occurrenceDate = editing?.occurrenceDate;
 
     // 저장 전에 중복 일정과 담당자·참석자의 시간 겹침을 확인합니다.
     // 폼 문자열과 체크박스 값을 충돌 비교에 사용할 일정 형태로 정리합니다.
     const candidate = {
+      // 폼의 원본 값은 복사하고, 공백 정리·참석자 배열 변환 등이 끝난 값으로 덮어씁니다.
+      // 이 객체를 충돌 검사와 실제 저장에서 함께 사용해 서로 다른 값이 검사되는 것을 막습니다.
       ...form,
-      date: form.date,
       endDate: form.endDate || "",
       isAllDay: Boolean(form.isAllDay),
       title,
       person,
       attendees,
-      scope: form.scope,
       project,
-      time: form.time,
-      endTime: form.endTime,
+      projectId: linkedProject?.id ?? null,
     };
     // 반복 규칙은 다음 1년을 확인하고, 휴일 이동 설정은 범위 끝에서 밀릴 날짜도 포함합니다.
     let conflictEndKey = form.endDate || form.date;
@@ -754,16 +434,12 @@ export default function ScheduleManager() {
     }
     // 먼저 새 일정 한 건을 만듭니다. 일반 수정인 경우에만 기존 ID와 제외 날짜를 이어받습니다.
     const item = {
-      ...form,
+      ...candidate,
+      // 저장 전용 필드만 추가합니다. 반복 일정에는 여러 날 종료일을 남기지 않습니다.
       endDate: form.repeatType === "none" ? (form.endDate || "") : "",
       reminderMinutes: Number(form.reminderMinutes) || 0,
-      connections: form.scope === "업무용" ? normalizeConnections(form.connections) : {},
       status: form.scope === "업무용" ? form.status : "pending",
-      title,
-      project,
-      person,
       id: createScheduleId(),
-      attendees,
       color: typeColors[form.type],
       excludedDates: [],
       isFavorite: false,
@@ -780,27 +456,16 @@ export default function ScheduleManager() {
       item.isFavorite = Boolean(editing.isFavorite);
     }
 
+    // 한 회차 수정은 원본에서 제외하고, 새 일정으로 추가합니다.
     setItems((current) => {
-      // current는 최신 저장 목록입니다. 결과를 담을 next만 수정하고 current는 직접 바꾸지 않습니다.
-      // 저장 방법을 세 경우로 나눠 읽습니다: 1. 새 등록  2. 반복 한 번 수정  3. 일반/전체 수정.
-      let next;
-      if (!editing) {
-        next = [...current, item];
-      } else if (occurrenceDate) {
-        // 원래 반복 규칙에서 그 날짜를 제외한 뒤, 수정한 일정 한 건을 따로 추가합니다.
-        next = current.map((schedule) => {
-          if (schedule.id === editing.id) return excludeOccurrence(schedule, occurrenceDate);
-          return schedule;
-        });
-        next.push(item);
-      } else {
-        // 같은 ID의 일정만 새 내용으로 교체합니다. 다른 일정은 그대로 돌려줍니다.
-        next = current.map((schedule) => {
-          if (schedule.id === editing.id) return item;
-          return schedule;
-        });
-      }
-      return next.sort(compareSchedules);
+      if (!editing) return [...current, item].sort(compareSchedules);
+      // 전체 수정은 기존 ID를 교체합니다. 한 회차 수정은 원본에 제외 날짜를 남긴 뒤
+      // 새 ID의 일반 일정을 추가하므로 다른 회차의 내용과 반복 규칙은 유지됩니다.
+      const next = current.map(schedule => {
+        if (schedule.id !== editing.id) return schedule;
+        return occurrenceDate ? excludeOccurrence(schedule, occurrenceDate) : item;
+      });
+      return (occurrenceDate ? [...next, item] : next).sort(compareSchedules);
     });
     selectDate(form.date);
     // 저장 후 프로젝트명·공개 범위가 바뀌어도 방금 저장한 일정이 필터에 가리지 않게 합니다.
@@ -809,20 +474,15 @@ export default function ScheduleManager() {
   };
   // 날짜별 반복 항목의 상태를 바꾸면 그날만 일반 항목으로 분리합니다.
   // 원본 규칙의 status를 바꾸지 않아 다음 주/다음 달의 업무까지 완료되지 않습니다.
+  // [5. 저장된 일정 변경] 상태·삭제는 원본 전체인지 한 회차인지 구분한 뒤 setItems로 반영합니다.
   const changeScheduleStatus = (item, value) => {
     const status = normalizeStatus(value);
     if (status === item.status) return;
     setItems((current) => {
       if (!item.occurrenceDate) {
-        return current.map((schedule) => {
-          if (schedule.id === item.id) return { ...schedule, status };
-          return schedule;
-        });
+        return current.map(schedule => schedule.id === item.id ? { ...schedule, status } : schedule);
       }
-      const updated = current.map((schedule) => {
-        if (schedule.id === item.id) return excludeOccurrence(schedule, item.occurrenceDate);
-        return schedule;
-      });
+      const updated = current.map(schedule => schedule.id === item.id ? excludeOccurrence(schedule, item.occurrenceDate) : schedule);
       // 그날 일정만 복사해 일반 일정으로 저장합니다. occurrenceDate는 화면용 표시라 제거합니다.
       const singleSchedule = { ...item };
       delete singleSchedule.occurrenceDate;
@@ -852,16 +512,14 @@ export default function ScheduleManager() {
       return false;
     setItems((current) => {
       if (item.occurrenceDate) {
-        return current.map((schedule) => {
-          if (schedule.id === item.id) return excludeOccurrence(schedule, item.occurrenceDate);
-          return schedule;
-        });
+        return current.map(schedule => schedule.id === item.id ? excludeOccurrence(schedule, item.occurrenceDate) : schedule);
       }
       return current.filter((schedule) => schedule.id !== item.id);
     });
     return true;
   };
   // 날짜를 주면 그날의 더보기, 생략하면 전체 목록입니다. 같은 모달의 열기 처리를 한 곳에 둡니다.
+  // [6. 화면 이동] 목록·보기·프로젝트 선택을 바꿉니다. 일정 내용의 저장과는 별개입니다.
   const showScheduleList = (date = null) => {
     if (date) setSelectedDate(date);
     setListDateFilter(date);
@@ -909,16 +567,18 @@ export default function ScheduleManager() {
   // 통계는 검색과 무관합니다.
   // 오늘 작업은 해당 날짜의 실제 발생 횟수이므로 반복 일정도 포함됩니다.
   // 오늘 일정은 작업 구분과 관계없이 실제 발생하는 모든 일정을 셉니다.
+  // [7. 요약·부가 표시] 통계·즐겨찾기·다가오는 일정 등 각 화면에 전달할 값을 만듭니다.
   const todayWorkCount = expandSchedules(items, todayKey, todayKey, holidayDates).length;
   // 다가오는 목록은 검색과 무관하게 오늘 포함 7일 이내의 미완료 발생 일정 중 가까운 5건을 보여줍니다.
   const upcomingSchedules = getUpcomingSchedules(items, currentTime, 5, 7, holidayDates);
   const favoriteItems = items.filter((item) => item.isFavorite);
   // 상태별 진행 수가 아니라 일정에 입력된 서로 다른 프로젝트명 개수입니다.
   // 이름을 처음 만났을 때만 배열에 넣습니다. 배열 길이가 중복을 뺀 프로젝트 수입니다.
-  const projectNames = [];
-  for (const item of items) {
-    if (item.project && !projectNames.includes(item.project)) projectNames.push(item.project);
-  }
+  const projectNames = [...new Set(items.map((item) => item.project).filter(Boolean))];
+  const projectSuggestions = [...new Set([
+    ...projects.map((project) => project.name),
+    ...projectNames,
+  ].filter((name) => typeof name === "string" && name.trim()).map((name) => name.trim()))];
   // staff도 weekly와 같은 첫날~마지막 날 제목을 사용합니다. 보기만 바뀌고 날짜 기준은 같습니다.
   let periodLabel = `${calendarYear}년 ${month.getMonth() + 1}월`;
   if (view === "weekly" || view === "staff") {
@@ -933,7 +593,9 @@ export default function ScheduleManager() {
 
   // 직원 행은 별도 등록 목록을 기준으로 합니다. 일정에만 적힌 미등록 이름은 행으로 만들지 않습니다.
   // 아래에서 배열 내용을 바꾸지 않고 다른 결과 배열을 대입하므로 복사본을 만들 필요는 없습니다.
-  let staffPeople = teamMembers;
+  let staffPeople = visibleProjectMilestones.length > 0
+    ? [...teamMembers, "프로젝트 일정"]
+    : teamMembers;
   // 이름을 검색했다면 함께 참석한 다른 사람의 행까지 늘어나지 않게 검색한 사람만 남깁니다.
   // 이름과 일치하는 팀원이 없으면 일정 검색 결과에 담당·참석으로 연결된 등록 팀원만 남깁니다.
   let staffPersonSearch = "";
@@ -950,8 +612,9 @@ export default function ScheduleManager() {
       staffPersonSearch = query.trim();
     } else {
       // some은 조건에 맞는 일정이 하나라도 있으면 true입니다.
-      staffPeople = teamMembers.filter((person) =>
-        filteredItems.some((item) => getSchedulePeople(item).includes(person)));
+      staffPeople = staffPeople.filter((person) =>
+        person === "프로젝트 일정"
+          || filteredItems.some((item) => getSchedulePeople(item).includes(person)));
     }
   }
 
@@ -965,6 +628,7 @@ export default function ScheduleManager() {
     setDirectoryMode(directoryMode === action ? null : action);
   }
 
+  // [8. 화면 구성] 위에서 만든 데이터와 콜백을 각 화면 부품의 props에 연결합니다.
   return (
     <main className="schedule-app">
       <div className="sm-shell">
@@ -1021,7 +685,7 @@ export default function ScheduleManager() {
               : "브라우저에 일정을 저장하지 못했습니다. 새로고침하면 변경 내용이 사라질 수 있습니다."}
           </p>
         )}
-        {(teamStorageError || loadedTeam.readError) && (
+        {teamStorageUnavailable && (
           <p className="sm-storage-warning" role="alert">팀원 목록을 저장하거나 읽지 못했습니다. 기존 자료를 보호하기 위해 저장소를 확인해 주세요.</p>
         )}
 
@@ -1109,7 +773,7 @@ export default function ScheduleManager() {
       {form && (
         <ScheduleFormModal
           form={form}
-          projectSuggestions={[...new Set(items.map(item => item.project).filter(Boolean))]}
+          projectSuggestions={projectSuggestions}
           teamMembers={teamMembers}
           onDelete={() => { if (deleteSchedule(editing)) closeScheduleForm(); }}
           onToggleAttendee={toggleAttendee}

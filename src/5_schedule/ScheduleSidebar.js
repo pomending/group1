@@ -1,3 +1,9 @@
+/* [파일 안내] 즐겨찾기·선택 날짜·다가오는 일정 표시
+ * 입력: Manager가 각 목록의 기준에 맞게 계산한 일정
+ * 연결: ScheduleItemParts의 일정 카드·배지·버튼을 재사용합니다.
+ * 출력: 수정·삭제·상태 변경·날짜 이동 요청 → Manager
+ */
+
 /* [오른쪽 목록의 기준이 서로 다른 이유]
  * 즐겨찾기는 검색과 날짜 이동에 관계없이 고정해 둔 원본 일정을 보여줍니다.
  * 선택한 날짜 일정은 현재 선택 날짜에 실제로 발생하는 일정과 필터 결과를 보여줍니다.
@@ -10,7 +16,6 @@ import { ScheduleAgendaItem, ScheduleAttendees, ScheduleFavorite, ScheduleVisibi
 import React from "react";
 import { weekDays, getScheduleTime, getRepeatLabel } from "./scheduleData";
 import ScheduleDirectory from "./ScheduleDirectory";
-import { ScheduleConnectionSummary } from "./ScheduleConnections";
 
 /* 같은 원본 일정에서 여러 화면용 목록이 나오는 이유
  * directoryItems: 전체 원본입니다. 프로젝트·팀원 목록은 현재 월에 일정이 없어도 사람/이름을 보여줍니다.
@@ -93,7 +98,6 @@ export default function ScheduleSidebar({
                 </dl>}
                 {/* 참석자가 있는 일정은 기존처럼 명단도 표시하고, 없으면 이 부품이 아무것도 만들지 않습니다. */}
                 <ScheduleAttendees item={item} paragraph />
-                {item.scope !== "개인 일정용" && <ScheduleConnectionSummary value={item.connections} />}
                 <button type="button" className="sm-favorite-date"
                   aria-label={`${item.title} 즐겨찾기 일정으로 이동`} onClick={() => onSelectFavorite(item)}>
                   <span>

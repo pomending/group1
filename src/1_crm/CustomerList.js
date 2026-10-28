@@ -1,9 +1,10 @@
 //등록된 고객정보를 보여주는 컴포넌트
-
+import ExcelJS from "exceljs";
+import { saveAs } from "file-saver";
 import React, { use, useState } from "react";
 
-// getCustomers 기존 고객정보와 신규등록 고객정보를 합쳐서 가져오는 함수
-import getCustomers from "./CustomerService";
+
+import { customerList } from "./CustomerDummy";
 
 import './CrmPage.css';
 
@@ -13,12 +14,8 @@ function CustomerList() {
     //검색버튼을 눌렀을때 어떤업체명을 검색해야 되는지 기억하기위해 만듬 
     const [search, setSearch] = useState('');
 
-    //전체 고객 정보 저장 (등록,수정,삭제용)
-    const [customers, setCustomers] = useState(getCustomers())
-
-    // *검색 결과*로 나온 고객 목록(전체정보)을 저장하는 state
-    // 처음에는 전체 고객 목록을 가져와 화면에 표시
-    const [searchResult, setSearchResult] = useState(getCustomers());
+    const [customers, setCustomers] = useState(customerList);
+const [searchResult, setSearchResult] = useState(customerList);
 
     //수정할 고객의 정보를 저장하는 state
     const [editData, setEditData] = useState(null);
@@ -91,7 +88,11 @@ function CustomerList() {
             customer.id === selectedIds[0])
 
         setEditData(selectedCustomer);
-        window.open('/crm/edit?id=' + selectedCustomer.id, 'customerEdit', 'witdh=600, height=700 ')
+        window.open(
+            "/crm/edit?id=" + selectedCustomer.id + "&popup=1",
+            "customerEdit",
+            "width=600,height=700"
+        );
     }
 
     function saveEditedCustomer(updateCustomer) {
@@ -125,6 +126,46 @@ function CustomerList() {
     window.saveEditedCustomer = saveEditedCustomer
     window.getCurrentCustomers = () => customers;
     window.addCustomer = addCustomer;
+
+    async function downloadExcel(data = searchResult) {
+        const workbook = new ExcelJS.Workbook();
+        const worksheet = workbook.addWorksheet("고객 목록");
+
+        worksheet.columns = [
+            { header: "번호", key: "id", width: 10 },
+            { header: "고객사명", key: "companyName", width: 25 },
+            { header: "사업자등록번호", key: "businessNumber", width: 20 },
+            { header: "고객사 담당자", key: "customerManager", width: 20 },
+            { header: "연락처", key: "phone", width: 20 },
+            { header: "이메일", key: "email", width: 30 },
+            { header: "주소", key: "address", width: 40 },
+            { header: "등록일", key: "createdAt", width: 18 },
+            { header: "메모", key: "memo", width: 35 },
+            { header: "내부 담당자", key: "employeeName", width: 20 }
+        ];
+
+        data.forEach((customer) => {
+            worksheet.addRow(customer);
+        });
+
+        const buffer = await workbook.xlsx.writeBuffer();
+
+        const blob = new Blob([buffer], {
+            type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        });
+
+        saveAs(blob, "고객목록.xlsx");
+
+
+
+    }
+
+    async function downloadSelectedExcel() {
+        const selectedCustomers = customers.filter(customer =>
+            selectedIds.includes(customer.id)
+        );
+        await downloadExcel(selectedCustomers);
+    }
     return (
         <div className="crm-page">
             <div className="crm-header">
@@ -140,10 +181,7 @@ function CustomerList() {
                     <span>전체 고객사</span>
                     <strong>{customers.length}개</strong>
                 </div>
-                <div className="crm-summary-card">
-                    <span>현재 조회 결과</span>
-                    <strong>{searchResult.length}개</strong>
-                </div>
+
             </div>
 
             <div className="crm-content">
@@ -166,7 +204,7 @@ function CustomerList() {
                         className="crm-btn-secondary"
                         onClick={resetSearch}
                     >
-                        초기화
+                        전체목록으로
                     </button>
                 </form>
 
@@ -199,6 +237,21 @@ function CustomerList() {
                             onClick={deleteSelectedCustomers}
                         >
                             삭제
+                        </button>
+
+                        <button
+                            className="crm-btn-secondary"
+                            onClick={() => downloadExcel()}
+                        >
+                            전체/검색결과 다운로드
+                        </button>
+
+                        <button
+                            className="crm-btn-secondary"
+                            disabled={selectedIds.length === 0}
+                            onClick={downloadSelectedExcel}
+                        >
+                            선택 고객 다운로드
                         </button>
                     </div>
                 </div>
