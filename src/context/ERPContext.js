@@ -1,12 +1,19 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { initialProjects } from "../data/mockData";
+import {
+    initialProjects,
+    customers as initialCustomers
+} from "../data/mockData";
 
 const ERPContext = createContext(null)
 
 const STORAGE_KEY = 'erp_projects'
 const NEXT_ID_KEY = 'erp_project_next_id'
+const NEXT_PH_ID_KEY = 'erp_project_history_next_id'
+const PH_KEY = 'erp_project_history'
 
 export function ERPProvider({ children }) {
+
+    const [customers, setCustomers] = useState(initialCustomers)
 
     // localStorage에서 저장된 프로젝트를 불러와 useState의 초기값으로 설정
     const [projects, setProjects] = useState(() => {
@@ -30,6 +37,31 @@ export function ERPProvider({ children }) {
         }
         // 에러가 났거나, if문을 통과 못했다면 initialProjects를 가져온다
         return initialProjects
+
+    })
+
+    const [projectHistory, setProjectHistory] = useState(() => {
+
+        try {
+
+            const savedHistory = localStorage.getItem(PH_KEY)
+
+            if (savedHistory !== null) {
+                // JSON 문자열을 JavaScript 배열로 변환
+                const parsedHistory = JSON.parse(savedHistory)
+                // projects는 배열 형태이므로 배열인지 체크
+                if (Array.isArray(parsedHistory)) {
+                    return parsedHistory
+                }
+
+            }
+
+        } catch (error) {
+            console.error('project history 불러오기 실패', error)
+        }
+        // 에러가 났거나, if문을 통과 못했다면 initialProjects를 가져온다
+        return []
+
     })
 
     useEffect(() => {
@@ -64,11 +96,45 @@ export function ERPProvider({ children }) {
     }
 
     const updateProject = (updatedProject) => {
+
+        const original = projects.find(p => p.id === updatedProject.id)
+
+        if (!original) {
+            return
+        }
+
+        const changes = Object.keys(updatedProject)
+            .filter(key =>
+                key !== 'id' &&
+                original[key] !== updatedProject[key]
+            ).map(key => ({
+                field: key,
+                oldValue: original[key],
+                newValue: updatedProject[key]
+            }))
+
+        if (changes.length === 0) {
+            return
+        }
+
+        const nextId = Number(localStorage.getItem(NEXT_PH_ID_KEY)) || 1
+
         setProjects(prev => prev.map(project =>
             project.id === updatedProject.id
                 ? { ...project, ...updatedProject }
                 : project
         ))
+
+        setProjectHistory(prev =>
+            [...prev, {
+                id: nextId,
+                projectId: original.id,
+                changedAt: new Date().toISOString(),
+                changes: changes
+            }])
+
+        localStorage.setItem(NEXT_PH_ID_KEY, String(nextId + 1))
+
     }
 
     const deleteProject = (id) => {
@@ -95,7 +161,11 @@ export function ERPProvider({ children }) {
             addProject,
             updateProject,
             deleteProject,
-            resetProjects
+            resetProjects,
+            projectHistory,
+
+            customers,
+            setCustomers
         }}>
             {children}
         </ERPContext.Provider>

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import "./ProjectForm.css";
 import { useERP } from "../context/ERPContext";
+import { formatPrice, formatQuotationId } from "../utils/formatUtils";
 
 function ProjectForm(props) {
 
@@ -8,17 +9,13 @@ function ProjectForm(props) {
     const [manager, setManager] = useState(props.employees[0]?.id ?? '');
     const [due, setDue] = useState('');
     const [selQuotation, setSelQuotation] = useState('')
-    const { addProject } = useERP()
+    const { projects, addProject, customers } = useERP()
 
     const quotations = props.quotations;
 
     const selectedQuotation = quotations.find(
         q => q.id === Number(selQuotation)
     )
-
-    const formatQuotationId = (id) => {
-        return `QT-${String(id).padStart(3, '0')}`;
-    };
 
     const handleSubmit = (e) => {
         e.preventDefault();
@@ -34,7 +31,7 @@ function ProjectForm(props) {
             return;
         }
 
-        if (props.projects.some(p => p.quotationId === selectedQuotation.id)) {
+        if (projects.some(p => p.quotationId === selectedQuotation.id)) {
             alert("이미 다른 프로젝트에 연결된 견적입니다.");
             return;
         }
@@ -123,11 +120,14 @@ function ProjectForm(props) {
 
                                 {quotations
                                     .filter(q => q.status === "승인" &&
-                                        !props.projects.some(p => p.quotationId === q.id)
+                                        !projects.some(p => p.quotationId === q.id)
                                     )
                                     .map(q => (
                                         <option key={q.id} value={q.id}>
-                                            {formatQuotationId(q.id)} | 고객 {q.customerId}
+                                            {formatQuotationId(q.id)} | {
+                                                customers.find(c => c.id === q.customerId)?.companyName
+                                                ?? `고객 ID ${q.customerId}`
+                                            }
                                         </option>
                                     ))}
                             </select>
@@ -149,9 +149,9 @@ function ProjectForm(props) {
                                         </div>
 
                                         <div>
-                                            <span>고객 ID</span>
+                                            <span>고객사</span>
                                             <strong>
-                                                {props.customers.find(c => c.id === selectedQuotation.customerId)?.name
+                                                {customers.find(c => c.id === selectedQuotation.customerId)?.companyName
                                                     ?? `고객 ${selectedQuotation.customerId}`}
                                             </strong>
                                         </div>
@@ -174,11 +174,10 @@ function ProjectForm(props) {
                                                         <td>{product.productName}</td>
                                                         <td>{product.quantity}개</td>
                                                         <td>
-                                                            {product.unitPrice.toLocaleString()}원
+                                                            {formatPrice(product.unitPrice)}
                                                         </td>
                                                         <td>
-                                                            {(product.quantity * product.unitPrice)
-                                                                .toLocaleString()}원
+                                                            {formatPrice(product.quantity * product.unitPrice)}
                                                         </td>
                                                     </tr>
                                                 ))}
@@ -189,11 +188,11 @@ function ProjectForm(props) {
                                     <div className="pf-quotation-summary">
                                         <span>총 견적 금액</span>
                                         <strong>
-                                            {selectedQuotation.items.reduce(
+                                            {formatPrice(selectedQuotation.items.reduce(
                                                 (sum, product) =>
                                                     sum + product.quantity * product.unitPrice,
                                                 0
-                                            ).toLocaleString()}원
+                                            ))}
                                         </strong>
                                     </div>
 
