@@ -1,14 +1,16 @@
 import React, { useState } from "react";
 import "./ProjectEdit.css";
 import { useERP } from "../context/ERPContext";
+import { formatProjectId, formatQuotationId } from "../utils/formatUtils";
+import { getProjectStatus } from "../utils/projectStatus";
 
 function ProjectEdit(props) {
 
-    const selectedProject = props.projects.find(
+    const { projects, updateProject, customers } = useERP()
+
+    const selectedProject = projects.find(
         project => project.id === props.selectedProjectId
     );
-
-    const { updateProject } = useERP()
 
     // 수정 중에는 기존 프로젝트를 직접 변경하지 않고 입력값을 별도 관리
     const [projectName, setProjectName] = useState(selectedProject?.name ?? "");
@@ -17,11 +19,9 @@ function ProjectEdit(props) {
     const [dueDate, setDueDate] = useState(selectedProject?.dueDate ?? "");
     const [description, setDescription] = useState(selectedProject?.description ?? "");
 
-    const customer = props.customers.find(
+    const customer = customers.find(
         c => c.id === selectedProject?.customerId
     );
-
-    const formatQuotationId = (id) => `QT-${String(id).padStart(3, "0")}`;
 
     const editProject = (e) => {
         e.preventDefault();
@@ -83,7 +83,7 @@ function ProjectEdit(props) {
                         <p className="pe-subtitle">기존 프로젝트 정보를 확인하고 필요한 항목을 변경하세요.</p>
                     </div>
                     <span className="pe-project-number">
-                        PRJ-{String(selectedProject.id).padStart(3, "0")}
+                        {formatProjectId(selectedProject.id)}
                     </span>
                 </header>
 
@@ -111,7 +111,7 @@ function ProjectEdit(props) {
                         <div className="pe-field">
                             <label>고객사</label>
                             <div className="pe-readonly">
-                                {customer?.name ?? `고객 ID ${selectedProject.customerId}`}
+                                {customer?.companyName ?? `고객 ID ${selectedProject.customerId}`}
                             </div>
                         </div>
 
@@ -143,7 +143,7 @@ function ProjectEdit(props) {
                             <label>진행 상태</label>
                             <div className="pe-readonly pe-readonly-status">
                                 <span className="pe-status-dot" />
-                                {selectedProject.status}
+                                {getProjectStatus(selectedProject)}
                             </div>
                         </div>
 
