@@ -67,6 +67,11 @@ function CustomerManagement() {
         setSearch("");
     }
 
+    const aa = () =>{
+        addCustomer({aa})
+        setSearch("") 
+    }
+
     //선택한 고객의 수정팝업 열기
     function openEditCustomer() {
         const selectedCustomer = customerList.find((customer) =>

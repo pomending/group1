@@ -6,7 +6,7 @@ import { getProjectStatus } from "../utils/projectStatus";
 
 function ProjectDetail(props) {
 
-    const { projects, updateProject, deleteProject, customers } = useERP()
+    const { projects, updateProject, deleteProject, customers, projectHistory, employees } = useERP()
 
     const selectedProject = projects.find(project => project.id === props.selectedProjectId);
 
@@ -32,9 +32,46 @@ function ProjectDetail(props) {
     const customer = customers.find(
         c => c.id === selectedProject.customerId
     );
-    const manager = props.employees.find(
+    const manager = employees.find(
         emp => emp.id === selectedProject.managerId
     );
+
+    const histories = projectHistory
+        .filter(history => history.projectId === selectedProject.id)
+        .sort((a, b) => new Date(b.changedAt) - new Date(a.changedAt))
+
+    const fieldLabels = {
+        name: '프로젝트명',
+        status: '진행 상태',
+        managerId: '담당자',
+        customerId: '고객사',
+        quotationId: '견적 번호',
+        startDate: '시작 예정일',
+        dueDate: '납품 예정일',
+        completedDate: '실제 완료일',
+        description: '프로젝트 설명'
+    }
+
+    const formatHistoryValue = (field, value) => {
+
+        if (value === null || value === undefined || value === '') {
+            return '없음'
+        }
+
+        if (field === 'managerId') {
+            return employees.find(emp => emp.id === value)?.name ?? `직원 ID ${value}`
+        }
+
+        if (field === 'customerId') {
+            return customers.find(c => c.id === value)?.companyName ?? `고객 ID ${value}`
+        }
+
+        if (field === 'quotationId') {
+            return formatQuotationId(value)
+        }
+
+        return String(value)
+    }
 
     const quotationTotal = selectedQuotation
         ? selectedQuotation.items.reduce(
@@ -246,6 +283,44 @@ function ProjectDetail(props) {
                         </button>
                     </div>
                     <p className="pd-muted">현재는 임시 진행률입니다. 세부 작업 기능과 연결하면 실제 진행률로 교체할 수 있습니다.</p>
+                </section>
+
+                {/* 프로젝트 변경 이력 */}
+                <section className="pd-card">
+                    <div className="pd-card-header">
+                        <div>
+                            <span className="pd-section-num">PROJECT HISTORY</span>
+                            <h2>프로젝트 변경 이력</h2>
+                        </div>
+                    </div>
+
+                    {histories.length === 0 ? (
+                        <p className="pd-empty">변경 이력이 없습니다.</p>
+                    ) : (
+                        <div className="pd-history-list">
+                            {histories.map(history => (
+                                <div className="pd-history-item" key={history.id}>
+
+                                    <strong>
+                                        {new Date(history.changedAt).toLocaleString('ko-KR')}
+                                    </strong>
+
+                                    <ul>
+                                        {history.changes.map((change, index) => (
+                                            <li key={`${change.field}-${index}`}>
+                                                {fieldLabels[change.field] ?? change.field} :
+                                                {' '}
+                                                {formatHistoryValue(change.field, change.oldValue)}
+                                                {' → '}
+                                                {formatHistoryValue(change.field, change.newValue)}
+                                            </li>
+                                        ))}
+                                    </ul>
+
+                                </div>
+                            ))}
+                        </div>
+                    )}
                 </section>
 
                 {/* 연결된 견적 내역 */}
