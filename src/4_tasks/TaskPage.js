@@ -1,381 +1,373 @@
 
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import "./TaskPage.css";
 
-const initialProducts = [
-  {
-    id: 1,
-    name: "오버핏 후드티",
-    status: "제작중",
-    manager: "김민지",
-    tasks: [
-      { id: 1, name: "상품 디자인 제작", status: "완료" },
-      { id: 2, name: "디자인 파일 업로드", status: "진행중" },
-      { id: 3, name: "디자인 검수", status: "대기" },
-      { id: 4, name: "상품 포장", status: "대기" },
-      { id: 5, name: "쇼핑몰 상품 등록", status: "대기" },
-    ],
-  },
-  {
-    id: 2,
-    name: "캔버스 에코백",
-    status: "검수대기",
-    manager: "이서준",
-    tasks: [
-      { id: 6, name: "상품 디자인 제작", status: "완료" },
-      { id: 7, name: "디자인 파일 업로드", status: "완료" },
-      { id: 8, name: "디자인 검수", status: "대기" },
-      { id: 9, name: "상품 포장", status: "대기" },
-      { id: 10, name: "쇼핑몰 상품 등록", status: "대기" },
-    ],
-  },
+// 실제 더미 데이터 파일 경로에 맞게 수정하세요.
+import {
+  quotations,
+  customers,
+  employees,
+  initialProjects,
+} from "../data/mockData";
+
+const WORK_STATUSES = [
+  "제작중",
+  "검수대기",
+  "포장중",
+  "등록완료",
+  "배송",
+  "취소",
+  "교환",
+  "반품",
 ];
 
-function TaskPage() {
-  const [products, setProducts] = useState(initialProducts);
-  const [activeTab, setActiveTab] = useState("all");
-  const [selectedProductId, setSelectedProductId] = useState(null);
 
-  // 현재 선택한 상품
-  const selectedProduct = products.find(
-    (product) => product.id === selectedProductId
+function TaskPage() {
+  const [tasks, setTasks] = useState(() =>
+    initialProjects.map((project) => {
+      //프로젝트 데이터를 작업 데이터로 변환
+      const quotation = quotations.find(
+        (item) => item.id === project.quotationId
+      );
+
+      const customer = customers.find(
+        (item) => item.id === project.customerId
+      );
+
+      const employee = employees.find(
+        (item) => item.id === project.managerId
+      );
+
+      const product = quotation?.items?.[0];
+
+      return {
+        ...project,
+        companyName: customer?.companyName ?? "거래처 미등록",
+        customerManager: customer?.customerManager ?? "-",
+        employeeName: employee?.name ?? "-",
+        productName: product?.productName ?? project.name,
+        quantity: product?.quantity ?? 0,
+        unitPrice: product?.unitPrice ?? 0,
+        workStatus:
+          project.status === "대기" ? "검수대기" : "제작중",
+      };
+    })
   );
 
-  // 상태별 상품 개수
-  const makingCount = products.filter(
-    (product) => product.status === "제작중"
-  ).length;
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("전체");
+  const [selectedTask, setSelectedTask] = useState(null);
 
-  const makingWaiting = products.filter(
-    (product) => product.status === "검수대기"
-  ).length;
+  // 상태별 작업 개수
+  const statusCounts = useMemo(() => {
+    return WORK_STATUSES.reduce(
+      (counts, status) => {
+        counts[status] = tasks.filter(
+          (task) => task.workStatus === status
+        ).length;
+        return counts;
+      },
+      {}
+    );
+  }, [tasks]);
 
-  const Packaging = products.filter(
-    (product) => product.status === "포장중"
-  ).length;
+  // 검색 및 상태 필터
+  const filteredTasks = tasks.filter((task) => {
+    const keyword = search.trim().toLowerCase();
 
-  const complete = products.filter(
-    (product) => product.status === "등록완료"
-  ).length;
+    const matchesSearch =
+      task.productName.toLowerCase().includes(keyword) ||
+      task.companyName.toLowerCase().includes(keyword) ||
+      task.name.toLowerCase().includes(keyword);
 
-  // 탭에 따라 상품 목록 필터링
-  const filteredProducts = products.filter((product) => {
-    if (activeTab === "all") return true;
-    if (activeTab === "making") return product.status === "제작중";
-    if (activeTab === "waiting") return product.status === "검수대기";
-    if (activeTab === "packing") return product.status === "포장중";
-    if (activeTab === "complete") return product.status === "등록완료";
+    const matchesStatus =
+      statusFilter === "전체" ||
+      task.workStatus === statusFilter;
 
-    return true;
+    return matchesSearch && matchesStatus;
   });
 
-  // 상품 추가
-  const addProduct = () => {
-    const name = window.prompt("상품명을 입력하세요.");
-
-    if (!name || !name.trim()) return;
-
-    const newProduct = {
-      id: Date.now(),
-      name: name.trim(),
-      status: "제작중",
-      manager: "미지정",
-      tasks: [
-        { id: Date.now() + 1, name: "상품 디자인 제작", status: "대기" },
-        { id: Date.now() + 2, name: "디자인 파일 업로드", status: "대기" },
-        { id: Date.now() + 3, name: "디자인 검수", status: "대기" },
-        { id: Date.now() + 4, name: "상품 포장", status: "대기" },
-        { id: Date.now() + 5, name: "쇼핑몰 상품 등록", status: "대기" },
-      ],
-    };
-
-    setProducts((prev) => [...prev, newProduct]);
-    setActiveTab("all");
-  };
-
-  // 상품 상태 변경
-  const changeProductStatus = (productId, newStatus) => {
-    setProducts((prev) =>
-      prev.map((product) =>
-        product.id === productId
-          ? { ...product, status: newStatus }
-          : product
+  // 작업 상태 변경
+  const changeStatus = (taskId, nextStatus) => {
+    setTasks((prevTasks) =>
+      prevTasks.map((task) =>
+        task.id === taskId
+          ? { ...task, workStatus: nextStatus }
+          : task
       )
     );
-  };
 
-  // 세부 작업 상태 변경
-  const changeTaskStatus = (productId, taskId, newStatus) => {
-    setProducts((prev) =>
-      prev.map((product) =>
-        product.id === productId
-          ? {
-              ...product,
-              tasks: product.tasks.map((task) =>
-                task.id === taskId
-                  ? { ...task, status: newStatus }
-                  : task
-              ),
-            }
-          : product
-      )
+    setSelectedTask((prev) =>
+      prev?.id === taskId
+        ? { ...prev, workStatus: nextStatus }
+        : prev
     );
   };
 
-  // 세부 작업 추가
-  const addTask = (productId) => {
-    const name = window.prompt("추가할 작업명을 입력하세요.");
-
-    if (!name || !name.trim()) return;
-
-    setProducts((prev) =>
-      prev.map((product) =>
-        product.id === productId
-          ? {
-              ...product,
-              tasks: [
-                ...product.tasks,
-                {
-                  id: Date.now(),
-                  name: name.trim(),
-                  status: "대기",
-                },
-              ],
-            }
-          : product
-      )
-    );
-  };
-
-  // 세부 작업 삭제
-  const deleteTask = (productId, taskId) => {
-    if (!window.confirm("이 작업을 삭제하시겠습니까?")) return;
-
-    setProducts((prev) =>
-      prev.map((product) =>
-        product.id === productId
-          ? {
-              ...product,
-              tasks: product.tasks.filter((task) => task.id !== taskId),
-            }
-          : product
-      )
-    );
-  };
-
-  // 작업 완료율 계산
-  const getProgress = (tasks) => {
-    if (tasks.length === 0) return 0;
-
-    const done = tasks.filter(
-      (task) => task.status === "완료"
-    ).length;
-
-    return Math.round((done / tasks.length) * 100);
-  };
-
-  // 선택한 상품의 세부 작업관리 화면
-  if (selectedProduct) {
-    const progress = getProgress(selectedProduct.tasks);
-
-    return (
-      <div className="production-page">
-        <button
-          className="back-button"
-          onClick={() => setSelectedProductId(null)}
-        >
-          ← 상품 목록
-        </button>
-
-        <div className="detail-header">
-          <div>
-            <p className="page-label">PRODUCT DETAIL</p>
-            <h1>{selectedProduct.name}</h1>
-            <p>담당자: {selectedProduct.manager}</p>
-          </div>
-
-          <select
-            className="product-status-select"
-            value={selectedProduct.status}
-            onChange={(e) =>
-              changeProductStatus(selectedProduct.id, e.target.value)
-            }
-          >
-            <option value="제작중">제작중</option>
-            <option value="검수대기">검수대기</option>
-            <option value="포장중">포장중</option>
-            <option value="등록완료">등록완료</option>
-          </select>
-        </div>
-
-        <section className="work-summary">
-          <div className="work-summary-top">
-            <h2>작업 진행률</h2>
-            <strong>{progress}%</strong>
-          </div>
-
-          <div className="progress-track">
-            <div
-              className="progress-fill"
-              style={{ width: `${progress}%` }}
-            />
-          </div>
-        </section>
-
-        <section className="work-list">
-          <div className="work-list-header">
-            <div>
-              <h2>세부 작업 목록</h2>
-              <p>작업별 상태를 변경하고 진행 상황을 관리하세요.</p>
-            </div>
-
-            <button className="add-button" onClick={() => addTask(selectedProduct.id)}>
-              + 작업 추가
-            </button>
-          </div>
-
-          {selectedProduct.tasks.map((task, index) => (
-            <div className="work-item" key={task.id}>
-              <span className="work-number">{index + 1}</span>
-
-              <div className="work-info">
-                <strong>{task.name}</strong>
-                <span>세부 작업 {index + 1}</span>
-              </div>
-
-              <select
-                className="task-status-select"
-                value={task.status}
-                onChange={(e) =>
-                  changeTaskStatus(
-                    selectedProduct.id,
-                    task.id,
-                    e.target.value
-                  )
-                }
-              >
-                <option value="대기">대기</option>
-                <option value="진행중">진행중</option>
-                <option value="완료">완료</option>
-              </select>
-
-              <button
-                className="delete-button"
-                onClick={() => deleteTask(selectedProduct.id, task.id)}
-              >
-                삭제
-              </button>
-            </div>
-          ))}
-
-          {selectedProduct.tasks.length === 0 && (
-            <p className="empty-message">등록된 작업이 없습니다.</p>
-          )}
-        </section>
-      </div>
-    );
-  }
-
-  // 상품제작관리 메인 화면
   return (
-    <div className="production-page">
-      <div className="production-header">
+    <div className="task-page">
+      <div className="task-header">
         <div>
-          <h1>상품제작관리</h1>
-          <p>상품 제작부터 최종 등록까지 관리하세요.</p>
+          <p className="task-eyebrow">PRODUCT WORKSPACE</p>
+          <h1>제품 세부상황관리</h1>
+          <p className="task-subtitle">
+            제품별 제작부터 검수, 포장, 등록까지 관리합니다.
+          </p>
         </div>
 
-        <button className="add-button" onClick={addProduct}>
-          + 새 상품 등록
-        </button>
-      </div>
-
-      <div className="product-count-grid">
-        <div className="product-count-card">
-          <p className="product-count-title">디자인 제작 중</p>
-          <h2 className="product-count-number">{makingCount}</h2>
-        </div>
-
-        <div className="product-count-card">
-          <p className="product-count-title">검수대기</p>
-          <h2 className="product-count-number">{makingWaiting}</h2>
-        </div>
-
-        <div className="product-count-card">
-          <p className="product-count-title">포장 진행 중</p>
-          <h2 className="product-count-number">{Packaging}</h2>
-        </div>
-
-        <div className="product-count-card">
-          <p className="product-count-title">등록완료</p>
-          <h2 className="product-count-number">{complete}</h2>
+        <div className="task-total">
+          전체 작업
+          <strong>{tasks.length}건</strong>
         </div>
       </div>
 
-      <div className="tab-menu">
-        {[
-          { id: "all", label: "전체 상품" },
-          { id: "making", label: "제작 중" },
-          { id: "waiting", label: "검수대기" },
-          { id: "packing", label: "포장 진행 중" },
-          { id: "complete", label: "등록완료" },
-        ].map((tab) => (
+      {/* 상태별 요약 카드 */}
+      <div className="task-summary">
+        {WORK_STATUSES.map((status) => (
           <button
-            key={tab.id}
-            className={activeTab === tab.id ? "active" : ""}
-            onClick={() => setActiveTab(tab.id)}
+            type="button"
+            key={status}
+            className={`summary-card ${
+              statusFilter === status ? "active" : ""
+            }`}
+            onClick={() =>
+              setStatusFilter(
+                statusFilter === status ? "전체" : status
+              )
+            }
           >
-            {tab.label}
+            <span>{status}</span>
+            <strong>{statusCounts[status]}</strong>
           </button>
         ))}
       </div>
 
-      <section className="product-list">
-        <div className="product-list-header">
-          <h2>
-            {activeTab === "all"
-              ? "전체 상품 목록"
-              : `${{
-                  making: "제작 중",
-                  waiting: "검수대기",
-                  packing: "포장 진행 중",
-                  complete: "등록완료",
-                }[activeTab]} 상품 목록`}
-          </h2>
-
-          <span>총 {filteredProducts.length}개</span>
+      {/* 검색 및 필터 */}
+      <div className="task-toolbar">
+        <div className="task-search">
+          <span>⌕</span>
+          <input
+            type="text"
+            placeholder="제품명 또는 거래처 검색"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
         </div>
 
-        {filteredProducts.length === 0 ? (
-          <p className="empty-message">등록된 상품이 없습니다.</p>
-        ) : (
-          <div className="product-list-items">
-            {filteredProducts.map((product) => (
-              <div className="product-item" key={product.id}>
-                <div className="product-info">
-                  <strong>{product.name}</strong>
-                  <span>담당자: {product.manager}</span>
-                </div>
+        <select
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+          aria-label="작업 상태 필터"
+        >
+          <option value="전체">전체 상태</option>
+          {WORK_STATUSES.map((status) => (
+            <option key={status} value={status}>
+              {status}
+            </option>
+          ))}
+        </select>
+      </div>
 
-                <span className="product-status">
-                  {product.status}
-                </span>
+      {/* 제품 작업 목록 */}
+      <div className="task-list-panel">
+        <div className="task-list-heading">
+          <h2>제품 작업 목록</h2>
+          <span>{filteredTasks.length}건 조회</span>
+        </div>
 
-                <span className="product-progress">
-                  진행률 {getProgress(product.tasks)}%
-                </span>
+        <div className="task-table-wrap">
+          <table className="task-table">
+            <thead>
+              <tr>
+                <th>제품 / 프로젝트</th>
+                <th>거래처</th>
+                <th>담당자</th>
+                <th>수량</th>
+                <th>납기일</th>
+                <th>진행 상태</th>
+                <th>상세</th>
+              </tr>
+            </thead>
 
-                <button
-                  className="detail-button"
-                  onClick={() => setSelectedProductId(product.id)}
-                >
-                  상세 관리 →
-                </button>
+            <tbody>
+              {filteredTasks.map((task) => (
+                <tr key={task.id}>
+                  <td>
+                    <div className="product-cell">
+                      <strong>{task.productName}</strong>
+                      <small>{task.name}</small>
+                    </div>
+                  </td>
+
+                  <td>{task.companyName}</td>
+                  <td>{task.employeeName}</td>
+                  <td>{task.quantity.toLocaleString()}개</td>
+                  <td>{task.dueDate}</td>
+
+                  <td>
+                    <select
+                      className={`status-select status-${WORK_STATUSES.indexOf(
+                        task.workStatus
+                      )}`}
+                      value={task.workStatus}
+                      onChange={(e) =>
+                        changeStatus(task.id, e.target.value)
+                      }
+                      aria-label={`${task.productName} 진행 상태`}
+                    >
+                      {WORK_STATUSES.map((status) => (
+                        <option key={status} value={status}>
+                          {status}
+                        </option>
+                      ))}
+                    </select>
+                  </td>
+
+                  <td>
+                    <button
+                      type="button"
+                      className="detail-button"
+                      onClick={() => setSelectedTask(task)}
+                    >
+                      상세보기
+                    </button>
+                  </td>
+                </tr>
+              ))}
+
+              {filteredTasks.length === 0 && (
+                <tr>
+                  <td colSpan="7" className="empty-state">
+                    검색 결과가 없습니다.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* 제품 상세정보 */}
+      {selectedTask && (
+        <div
+          className="task-modal-backdrop"
+          onClick={() => setSelectedTask(null)}
+        >
+          <section
+            className="task-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="task-modal-title"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="modal-heading">
+              <div>
+                <p>PRODUCT DETAIL</p>
+                <h2 id="task-modal-title">제품 상세정보</h2>
               </div>
-            ))}
-          </div>
-        )}
-      </section>
+
+              <button
+                type="button"
+                className="modal-close"
+                onClick={() => setSelectedTask(null)}
+                aria-label="상세정보 닫기"
+              >
+                ×
+              </button>
+            </div>
+
+            <h3>{selectedTask.productName}</h3>
+            <p className="modal-project-name">
+              {selectedTask.name}
+            </p>
+
+            <div className="detail-grid">
+              <div>
+                <span>거래처</span>
+                <strong>{selectedTask.companyName}</strong>
+              </div>
+
+              <div>
+                <span>거래처 담당자</span>
+                <strong>{selectedTask.customerManager}</strong>
+              </div>
+
+              <div>
+                <span>사내 작업 담당자</span>
+                <strong>{selectedTask.employeeName}</strong>
+              </div>
+
+              <div>
+                <span>제작 수량</span>
+                <strong>
+                  {selectedTask.quantity.toLocaleString()}개
+                </strong>
+              </div>
+
+              <div>
+                <span>단가</span>
+                <strong>
+                  {selectedTask.unitPrice.toLocaleString()}원
+                </strong>
+              </div>
+
+              <div>
+                <span>예상 금액</span>
+                <strong>
+                  {(
+                    selectedTask.quantity *
+                    selectedTask.unitPrice
+                  ).toLocaleString()}
+                  원
+                </strong>
+              </div>
+
+              <div>
+                <span>제작 시작일</span>
+                <strong>{selectedTask.startDate}</strong>
+              </div>
+
+              <div>
+                <span>납기일</span>
+                <strong>{selectedTask.dueDate}</strong>
+              </div>
+            </div>
+
+            <div className="modal-description">
+              <span>작업 내용</span>
+              <p>{selectedTask.description}</p>
+            </div>
+
+            <div className="modal-status">
+              <label htmlFor="detail-status">
+                작업 진행 상태
+              </label>
+
+              <select
+                id="detail-status"
+                value={selectedTask.workStatus}
+                onChange={(e) =>
+                  changeStatus(selectedTask.id, e.target.value)
+                }
+              >
+                {WORK_STATUSES.map((status) => (
+                  <option key={status} value={status}>
+                    {status}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <button
+              type="button"
+              className="modal-confirm"
+              onClick={() => setSelectedTask(null)}
+            >
+              확인
+            </button>
+          </section>
+        </div>
+      )}
     </div>
   );
 }
