@@ -2,91 +2,91 @@
 // 나중에 팀원들의 데이터 구조가 정해지면 Context에서 관리하도록 옮길 수 있습니다.
 
 export const quotations = [
-        {
-            id: 1,
-            customerId: 1,
-            status: "승인",
-            items: [
-                {
-                    productId: 1,
-                    productName: "스테인리스 텀블러",
-                    quantity: 300,
-                    unitPrice: 8000
-                }
-            ]
-        },
-        {
-            id: 2,
-            customerId: 2,
-            status: "승인",
-            items: [
-                {
-                    productId: 2,
-                    productName: "캔버스 에코백",
-                    quantity: 500,
-                    unitPrice: 5000
-                }
-            ]
-        },
-        {
-            id: 3,
-            customerId: 3,
-            status: "승인",
-            items: [
-                {
-                    productId: 3,
-                    productName: "세라믹 머그컵",
-                    quantity: 400,
-                    unitPrice: 6000
-                },
-                {
-                    productId: 2,
-                    productName: "캔버스 에코백",
-                    quantity: 200,
-                    unitPrice: 5000
-                }
-            ]
-        },
-        {
-            id: 4,
-            customerId: 1,
-            status: "승인 대기",
-            items: [
-                {
-                    productId: 4,
-                    productName: "아크릴 키링",
-                    quantity: 1000,
-                    unitPrice: 2500
-                }
-            ]
-        },
-        {
-            id: 5,
-            customerId: 4,
-            status: "거절",
-            items: [
-                {
-                    productId: 1,
-                    productName: "스테인리스 텀블러",
-                    quantity: 100,
-                    unitPrice: 8500
-                }
-            ]
-        },
-        {
-            id: 6,
-            customerId: 4,
-            status: "승인",
-            items: [
-                {
-                    productId: 4,
-                    productName: "아크릴 키링",
-                    quantity: 800,
-                    unitPrice: 2300
-                }
-            ]
-        }
-    ];
+    {
+        id: 1,
+        customerId: 1,
+        status: "승인",
+        items: [
+            {
+                productId: 1,
+                productName: "스테인리스 텀블러",
+                quantity: 300,
+                unitPrice: 8000
+            }
+        ]
+    },
+    {
+        id: 2,
+        customerId: 2,
+        status: "승인",
+        items: [
+            {
+                productId: 2,
+                productName: "캔버스 에코백",
+                quantity: 500,
+                unitPrice: 5000
+            }
+        ]
+    },
+    {
+        id: 3,
+        customerId: 3,
+        status: "승인",
+        items: [
+            {
+                productId: 3,
+                productName: "세라믹 머그컵",
+                quantity: 400,
+                unitPrice: 6000
+            },
+            {
+                productId: 2,
+                productName: "캔버스 에코백",
+                quantity: 200,
+                unitPrice: 5000
+            }
+        ]
+    },
+    {
+        id: 4,
+        customerId: 1,
+        status: "승인 대기",
+        items: [
+            {
+                productId: 4,
+                productName: "아크릴 키링",
+                quantity: 1000,
+                unitPrice: 2500
+            }
+        ]
+    },
+    {
+        id: 5,
+        customerId: 4,
+        status: "거절",
+        items: [
+            {
+                productId: 1,
+                productName: "스테인리스 텀블러",
+                quantity: 100,
+                unitPrice: 8500
+            }
+        ]
+    },
+    {
+        id: 6,
+        customerId: 4,
+        status: "승인",
+        items: [
+            {
+                productId: 4,
+                productName: "아크릴 키링",
+                quantity: 800,
+                unitPrice: 2300
+            }
+        ]
+    }
+];
 
 // 고객/직원 이름을 보여주기 위한 임시 데이터입니다.
 // CRM 및 직원 데이터 구조가 확정되면 공통 데이터로 교체하세요.
@@ -391,307 +391,307 @@ export const customers = [
         createdAt: "2026-09-27",
         memo: "여행사 홍보용 여권 케이스"
     },
-    
-{
-id: 26,
-companyName: "한빛테크",
-businessNumber: "123-45-67826",
-customerManager: "김도윤",
-employeeName: "이준혁",
-phone: "010-2000-0026",
-email: "contact26@example.com",
-address: "서울특별시 강남구 테헤란로 126",
-createdAt: "2026-08-01",
-memo: "기업 굿즈 제작 문의"
-},
-{
-id: 27,
-companyName: "미래솔루션",
-businessNumber: "123-45-67827",
-customerManager: "박서연",
-employeeName: "최민수",
-phone: "010-2000-0027",
-email: "contact27@example.com",
-address: "서울특별시 송파구 올림픽로 227",
-createdAt: "2026-08-03",
-memo: "홍보용 텀블러 견적 요청"
-},
-{
-id: 28,
-companyName: "그린웨이브",
-businessNumber: "123-45-67828",
-customerManager: "이하준",
-employeeName: "김지훈",
-phone: "010-2000-0028",
-email: "contact28@example.com",
-address: "경기도 성남시 분당구 판교로 128",
-createdAt: "2026-08-05",
-memo: "친환경 굿즈 관심"
-},
-{
-id: 29,
-companyName: "블루핀미디어",
-businessNumber: "123-45-67829",
-customerManager: "최유진",
-employeeName: "박지은",
-phone: "010-2000-0029",
-email: "contact29@example.com",
-address: "서울특별시 마포구 월드컵북로 29",
-createdAt: "2026-08-07",
-memo: "행사용 기념품 제작"
-},
-{
-id: 30,
-companyName: "에이원디자인",
-businessNumber: "123-45-67830",
-customerManager: "정민재",
-employeeName: "이준혁",
-phone: "010-2000-0030",
-email: "contact30@example.com",
-address: "서울특별시 서초구 서초대로 130",
-createdAt: "2026-08-10",
-memo: "로고 인쇄 상담"
-},
-{
-id: 31,
-companyName: "다온컴퍼니",
-businessNumber: "123-45-67831",
-customerManager: "강수빈",
-employeeName: "최민수",
-phone: "010-2000-0031",
-email: "contact31@example.com",
-address: "경기도 하남시 미사강변대로 31",
-createdAt: "2026-08-12",
-memo: "신규 거래처"
-},
-{
-id: 32,
-companyName: "넥스트랩",
-businessNumber: "123-45-67832",
-customerManager: "윤지호",
-employeeName: "김지훈",
-phone: "010-2000-0032",
-email: "contact32@example.com",
-address: "서울특별시 강동구 천호대로 132",
-createdAt: "2026-08-14",
-memo: "직원 웰컴키트 문의"
-},
-{
-id: 33,
-companyName: "오렌지팩토리",
-businessNumber: "123-45-67833",
-customerManager: "한예린",
-employeeName: "박지은",
-phone: "010-2000-0033",
-email: "contact33@example.com",
-address: "인천광역시 연수구 센트럴로 33",
-createdAt: "2026-08-17",
-memo: "판촉물 대량 제작 문의"
-},
-{
-id: 34,
-companyName: "스마트링크",
-businessNumber: "123-45-67834",
-customerManager: "서준영",
-employeeName: "이준혁",
-phone: "010-2000-0034",
-email: "contact34@example.com",
-address: "서울특별시 구로구 디지털로 134",
-createdAt: "2026-08-19",
-memo: "IT 행사 굿즈 제작"
-},
-{
-id: 35,
-companyName: "모먼트스튜디오",
-businessNumber: "123-45-67835",
-customerManager: "배하은",
-employeeName: "최민수",
-phone: "010-2000-0035",
-email: "contact35@example.com",
-address: "서울특별시 성동구 성수이로 35",
-createdAt: "2026-08-21",
-memo: "브랜드 패키지 제작"
-},
-{
-id: 36,
-companyName: "에코플러스",
-businessNumber: "123-45-67836",
-customerManager: "임도현",
-employeeName: "김지훈",
-phone: "010-2000-0036",
-email: "contact36@example.com",
-address: "경기도 수원시 영통구 광교로 136",
-createdAt: "2026-08-24",
-memo: "재활용 소재 굿즈 문의"
-},
-{
-id: 37,
-companyName: "비전파트너스",
-businessNumber: "123-45-67837",
-customerManager: "신가은",
-employeeName: "박지은",
-phone: "010-2000-0037",
-email: "contact37@example.com",
-address: "서울특별시 영등포구 국제금융로 37",
-createdAt: "2026-08-26",
-memo: "기업 선물세트 견적"
-},
-{
-id: 38,
-companyName: "라온마케팅",
-businessNumber: "123-45-67838",
-customerManager: "오태민",
-employeeName: "이준혁",
-phone: "010-2000-0038",
-email: "contact38@example.com",
-address: "서울특별시 종로구 종로 138",
-createdAt: "2026-08-28",
-memo: "캠페인 홍보물 제작"
-},
-{
-id: 39,
-companyName: "코어시스템즈",
-businessNumber: "123-45-67839",
-customerManager: "유나경",
-employeeName: "최민수",
-phone: "010-2000-0039",
-email: "contact39@example.com",
-address: "경기도 안양시 동안구 시민대로 139",
-createdAt: "2026-09-01",
-memo: "사내 행사 기념품 문의"
-},
-{
-id: 40,
-companyName: "프라임유통",
-businessNumber: "123-45-67840",
-customerManager: "조현우",
-employeeName: "김지훈",
-phone: "010-2000-0040",
-email: "contact40@example.com",
-address: "경기도 광명시 일직로 40",
-createdAt: "2026-09-03",
-memo: "정기 발주 상담"
-},
-{
-id: 41,
-companyName: "베스트크리에이티브",
-businessNumber: "123-45-67841",
-customerManager: "문서아",
-employeeName: "박지은",
-phone: "010-2000-0041",
-email: "contact41@example.com",
-address: "서울특별시 용산구 한강대로 141",
-createdAt: "2026-09-07",
-memo: "신제품 론칭 굿즈"
-},
-{
-id: 42,
-companyName: "플러스네트워크",
-businessNumber: "123-45-67842",
-customerManager: "백지훈",
-employeeName: "이준혁",
-phone: "010-2000-0042",
-email: "contact42@example.com",
-address: "서울특별시 금천구 가산디지털로 142",
-createdAt: "2026-09-09",
-memo: "사원증 케이스 제작 문의"
-},
-{
-id: 43,
-companyName: "더나은교육",
-businessNumber: "123-45-67843",
-customerManager: "노예지",
-employeeName: "최민수",
-phone: "010-2000-0043",
-email: "contact43@example.com",
-address: "서울특별시 동작구 상도로 43",
-createdAt: "2026-09-11",
-memo: "교육생 수료 기념품"
-},
-{
-id: 44,
-companyName: "아이디어웍스",
-businessNumber: "123-45-67844",
-customerManager: "남승현",
-employeeName: "김지훈",
-phone: "010-2000-0044",
-email: "contact44@example.com",
-address: "경기도 고양시 일산동구 중앙로 144",
-createdAt: "2026-09-14",
-memo: "맞춤형 문구류 제작"
-},
-{
-id: 45,
-companyName: "퍼스트이벤트",
-businessNumber: "123-45-67845",
-customerManager: "홍채원",
-employeeName: "박지은",
-phone: "010-2000-0045",
-email: "contact45@example.com",
-address: "서울특별시 중구 세종대로 45",
-createdAt: "2026-09-16",
-memo: "박람회 기념품 대량 문의"
-},
-{
-id: 46,
-companyName: "세움테크놀로지",
-businessNumber: "123-45-67846",
-customerManager: "고민준",
-employeeName: "이준혁",
-phone: "010-2000-0046",
-email: "contact46@example.com",
-address: "경기도 용인시 기흥구 동백중앙로 146",
-createdAt: "2026-09-18",
-memo: "기술 세미나 굿즈"
-},
-{
-id: 47,
-companyName: "리버스컴퍼니",
-businessNumber: "123-45-67847",
-customerManager: "차서윤",
-employeeName: "최민수",
-phone: "010-2000-0047",
-email: "contact47@example.com",
-address: "서울특별시 광진구 아차산로 47",
-createdAt: "2026-09-21",
-memo: "브랜드 리뉴얼 기념품"
-},
-{
-id: 48,
-companyName: "온누리서비스",
-businessNumber: "123-45-67848",
-customerManager: "주하람",
-employeeName: "김지훈",
-phone: "010-2000-0048",
-email: "contact48@example.com",
-address: "경기도 부천시 원미구 길주로 148",
-createdAt: "2026-09-23",
-memo: "고객 감사 선물 제작"
-},
-{
-id: 49,
-companyName: "디지털브릿지",
-businessNumber: "123-45-67849",
-customerManager: "송다인",
-employeeName: "박지은",
-phone: "010-2000-0049",
-email: "contact49@example.com",
-address: "서울특별시 강서구 마곡중앙로 49",
-createdAt: "2026-09-25",
-memo: "콘퍼런스 웰컴키트"
-},
-{
-id: 50,
-companyName: "유니온브랜드",
-businessNumber: "123-45-67850",
-customerManager: "장시우",
-employeeName: "이준혁",
-phone: "010-2000-0050",
-email: "contact50@example.com",
-address: "경기도 남양주시 다산중앙로 150",
-createdAt: "2026-09-28",
-memo: "연말 굿즈 제작 상담"
-}
+
+    {
+        id: 26,
+        companyName: "한빛테크",
+        businessNumber: "123-45-67826",
+        customerManager: "김도윤",
+        employeeName: "이준혁",
+        phone: "010-2000-0026",
+        email: "contact26@example.com",
+        address: "서울특별시 강남구 테헤란로 126",
+        createdAt: "2026-08-01",
+        memo: "기업 굿즈 제작 문의"
+    },
+    {
+        id: 27,
+        companyName: "미래솔루션",
+        businessNumber: "123-45-67827",
+        customerManager: "박서연",
+        employeeName: "최민수",
+        phone: "010-2000-0027",
+        email: "contact27@example.com",
+        address: "서울특별시 송파구 올림픽로 227",
+        createdAt: "2026-08-03",
+        memo: "홍보용 텀블러 견적 요청"
+    },
+    {
+        id: 28,
+        companyName: "그린웨이브",
+        businessNumber: "123-45-67828",
+        customerManager: "이하준",
+        employeeName: "김지훈",
+        phone: "010-2000-0028",
+        email: "contact28@example.com",
+        address: "경기도 성남시 분당구 판교로 128",
+        createdAt: "2026-08-05",
+        memo: "친환경 굿즈 관심"
+    },
+    {
+        id: 29,
+        companyName: "블루핀미디어",
+        businessNumber: "123-45-67829",
+        customerManager: "최유진",
+        employeeName: "박지은",
+        phone: "010-2000-0029",
+        email: "contact29@example.com",
+        address: "서울특별시 마포구 월드컵북로 29",
+        createdAt: "2026-08-07",
+        memo: "행사용 기념품 제작"
+    },
+    {
+        id: 30,
+        companyName: "에이원디자인",
+        businessNumber: "123-45-67830",
+        customerManager: "정민재",
+        employeeName: "이준혁",
+        phone: "010-2000-0030",
+        email: "contact30@example.com",
+        address: "서울특별시 서초구 서초대로 130",
+        createdAt: "2026-08-10",
+        memo: "로고 인쇄 상담"
+    },
+    {
+        id: 31,
+        companyName: "다온컴퍼니",
+        businessNumber: "123-45-67831",
+        customerManager: "강수빈",
+        employeeName: "최민수",
+        phone: "010-2000-0031",
+        email: "contact31@example.com",
+        address: "경기도 하남시 미사강변대로 31",
+        createdAt: "2026-08-12",
+        memo: "신규 거래처"
+    },
+    {
+        id: 32,
+        companyName: "넥스트랩",
+        businessNumber: "123-45-67832",
+        customerManager: "윤지호",
+        employeeName: "김지훈",
+        phone: "010-2000-0032",
+        email: "contact32@example.com",
+        address: "서울특별시 강동구 천호대로 132",
+        createdAt: "2026-08-14",
+        memo: "직원 웰컴키트 문의"
+    },
+    {
+        id: 33,
+        companyName: "오렌지팩토리",
+        businessNumber: "123-45-67833",
+        customerManager: "한예린",
+        employeeName: "박지은",
+        phone: "010-2000-0033",
+        email: "contact33@example.com",
+        address: "인천광역시 연수구 센트럴로 33",
+        createdAt: "2026-08-17",
+        memo: "판촉물 대량 제작 문의"
+    },
+    {
+        id: 34,
+        companyName: "스마트링크",
+        businessNumber: "123-45-67834",
+        customerManager: "서준영",
+        employeeName: "이준혁",
+        phone: "010-2000-0034",
+        email: "contact34@example.com",
+        address: "서울특별시 구로구 디지털로 134",
+        createdAt: "2026-08-19",
+        memo: "IT 행사 굿즈 제작"
+    },
+    {
+        id: 35,
+        companyName: "모먼트스튜디오",
+        businessNumber: "123-45-67835",
+        customerManager: "배하은",
+        employeeName: "최민수",
+        phone: "010-2000-0035",
+        email: "contact35@example.com",
+        address: "서울특별시 성동구 성수이로 35",
+        createdAt: "2026-08-21",
+        memo: "브랜드 패키지 제작"
+    },
+    {
+        id: 36,
+        companyName: "에코플러스",
+        businessNumber: "123-45-67836",
+        customerManager: "임도현",
+        employeeName: "김지훈",
+        phone: "010-2000-0036",
+        email: "contact36@example.com",
+        address: "경기도 수원시 영통구 광교로 136",
+        createdAt: "2026-08-24",
+        memo: "재활용 소재 굿즈 문의"
+    },
+    {
+        id: 37,
+        companyName: "비전파트너스",
+        businessNumber: "123-45-67837",
+        customerManager: "신가은",
+        employeeName: "박지은",
+        phone: "010-2000-0037",
+        email: "contact37@example.com",
+        address: "서울특별시 영등포구 국제금융로 37",
+        createdAt: "2026-08-26",
+        memo: "기업 선물세트 견적"
+    },
+    {
+        id: 38,
+        companyName: "라온마케팅",
+        businessNumber: "123-45-67838",
+        customerManager: "오태민",
+        employeeName: "이준혁",
+        phone: "010-2000-0038",
+        email: "contact38@example.com",
+        address: "서울특별시 종로구 종로 138",
+        createdAt: "2026-08-28",
+        memo: "캠페인 홍보물 제작"
+    },
+    {
+        id: 39,
+        companyName: "코어시스템즈",
+        businessNumber: "123-45-67839",
+        customerManager: "유나경",
+        employeeName: "최민수",
+        phone: "010-2000-0039",
+        email: "contact39@example.com",
+        address: "경기도 안양시 동안구 시민대로 139",
+        createdAt: "2026-09-01",
+        memo: "사내 행사 기념품 문의"
+    },
+    {
+        id: 40,
+        companyName: "프라임유통",
+        businessNumber: "123-45-67840",
+        customerManager: "조현우",
+        employeeName: "김지훈",
+        phone: "010-2000-0040",
+        email: "contact40@example.com",
+        address: "경기도 광명시 일직로 40",
+        createdAt: "2026-09-03",
+        memo: "정기 발주 상담"
+    },
+    {
+        id: 41,
+        companyName: "베스트크리에이티브",
+        businessNumber: "123-45-67841",
+        customerManager: "문서아",
+        employeeName: "박지은",
+        phone: "010-2000-0041",
+        email: "contact41@example.com",
+        address: "서울특별시 용산구 한강대로 141",
+        createdAt: "2026-09-07",
+        memo: "신제품 론칭 굿즈"
+    },
+    {
+        id: 42,
+        companyName: "플러스네트워크",
+        businessNumber: "123-45-67842",
+        customerManager: "백지훈",
+        employeeName: "이준혁",
+        phone: "010-2000-0042",
+        email: "contact42@example.com",
+        address: "서울특별시 금천구 가산디지털로 142",
+        createdAt: "2026-09-09",
+        memo: "사원증 케이스 제작 문의"
+    },
+    {
+        id: 43,
+        companyName: "더나은교육",
+        businessNumber: "123-45-67843",
+        customerManager: "노예지",
+        employeeName: "최민수",
+        phone: "010-2000-0043",
+        email: "contact43@example.com",
+        address: "서울특별시 동작구 상도로 43",
+        createdAt: "2026-09-11",
+        memo: "교육생 수료 기념품"
+    },
+    {
+        id: 44,
+        companyName: "아이디어웍스",
+        businessNumber: "123-45-67844",
+        customerManager: "남승현",
+        employeeName: "김지훈",
+        phone: "010-2000-0044",
+        email: "contact44@example.com",
+        address: "경기도 고양시 일산동구 중앙로 144",
+        createdAt: "2026-09-14",
+        memo: "맞춤형 문구류 제작"
+    },
+    {
+        id: 45,
+        companyName: "퍼스트이벤트",
+        businessNumber: "123-45-67845",
+        customerManager: "홍채원",
+        employeeName: "박지은",
+        phone: "010-2000-0045",
+        email: "contact45@example.com",
+        address: "서울특별시 중구 세종대로 45",
+        createdAt: "2026-09-16",
+        memo: "박람회 기념품 대량 문의"
+    },
+    {
+        id: 46,
+        companyName: "세움테크놀로지",
+        businessNumber: "123-45-67846",
+        customerManager: "고민준",
+        employeeName: "이준혁",
+        phone: "010-2000-0046",
+        email: "contact46@example.com",
+        address: "경기도 용인시 기흥구 동백중앙로 146",
+        createdAt: "2026-09-18",
+        memo: "기술 세미나 굿즈"
+    },
+    {
+        id: 47,
+        companyName: "리버스컴퍼니",
+        businessNumber: "123-45-67847",
+        customerManager: "차서윤",
+        employeeName: "최민수",
+        phone: "010-2000-0047",
+        email: "contact47@example.com",
+        address: "서울특별시 광진구 아차산로 47",
+        createdAt: "2026-09-21",
+        memo: "브랜드 리뉴얼 기념품"
+    },
+    {
+        id: 48,
+        companyName: "온누리서비스",
+        businessNumber: "123-45-67848",
+        customerManager: "주하람",
+        employeeName: "김지훈",
+        phone: "010-2000-0048",
+        email: "contact48@example.com",
+        address: "경기도 부천시 원미구 길주로 148",
+        createdAt: "2026-09-23",
+        memo: "고객 감사 선물 제작"
+    },
+    {
+        id: 49,
+        companyName: "디지털브릿지",
+        businessNumber: "123-45-67849",
+        customerManager: "송다인",
+        employeeName: "박지은",
+        phone: "010-2000-0049",
+        email: "contact49@example.com",
+        address: "서울특별시 강서구 마곡중앙로 49",
+        createdAt: "2026-09-25",
+        memo: "콘퍼런스 웰컴키트"
+    },
+    {
+        id: 50,
+        companyName: "유니온브랜드",
+        businessNumber: "123-45-67850",
+        customerManager: "장시우",
+        employeeName: "이준혁",
+        phone: "010-2000-0050",
+        email: "contact50@example.com",
+        address: "경기도 남양주시 다산중앙로 150",
+        createdAt: "2026-09-28",
+        memo: "연말 굿즈 제작 상담"
+    }
 
 ];
 
@@ -720,7 +720,7 @@ export const initialProjects = [
         name: "한국대학교 에코백 제작",
         quotationId: 2,
         customerId: 2,
-        managerId: 2,
+        managerId: 13,
         startDate: "2026-10-25",
         dueDate: "2026-11-15",
         completedDate: null,
@@ -728,3 +728,187 @@ export const initialProjects = [
         description: "홍보용 에코백 500개 제작"
     }
 ]
+
+
+export const initialEmployees = [
+    {
+        id: 1,
+        name: "김민수",
+        department: "생산관리팀",
+        position: "과장",
+        status: "재직",
+        email: "minsu@example.com",
+        phone: "010-0000-0001",
+        hireDate: "2022-03-15"
+    },
+    {
+        id: 2,
+        name: "이지현",
+        department: "영업팀",
+        position: "대리",
+        status: "재직",
+        email: "jihyun@example.com",
+        phone: "010-0000-0002",
+        hireDate: "2023-05-10"
+    },
+    {
+        id: 3,
+        name: "박준호",
+        department: "디자인팀",
+        position: "사원",
+        status: "재직",
+        email: "junho@example.com",
+        phone: "010-0000-0003",
+        hireDate: "2025-01-06"
+    },
+    {
+        id: 4,
+        name: "최유진",
+        department: "영업팀",
+        position: "과장",
+        status: "재직",
+        email: "yujin@example.com",
+        phone: "010-0000-0004",
+        hireDate: "2021-08-23"
+    },
+    {
+        id: 5,
+        name: "정하늘",
+        department: "디자인팀",
+        position: "대리",
+        status: "재직",
+        email: "haneul@example.com",
+        phone: "010-0000-0005",
+        hireDate: "2023-11-13"
+    },
+    {
+        id: 6,
+        name: "오세훈",
+        department: "생산관리팀",
+        position: "사원",
+        status: "재직",
+        email: "sehun@example.com",
+        phone: "010-0000-0006",
+        hireDate: "2025-04-01"
+    },
+    {
+        id: 7,
+        name: "한서연",
+        department: "품질관리팀",
+        position: "대리",
+        status: "재직",
+        email: "seoyeon@example.com",
+        phone: "010-0000-0007",
+        hireDate: "2023-02-20"
+    },
+    {
+        id: 8,
+        name: "윤태호",
+        department: "품질관리팀",
+        position: "사원",
+        status: "휴직",
+        email: "taeho@example.com",
+        phone: "010-0000-0008",
+        hireDate: "2024-07-08"
+    },
+    {
+        id: 9,
+        name: "강지우",
+        department: "물류팀",
+        position: "사원",
+        status: "재직",
+        email: "jiwoo@example.com",
+        phone: "010-0000-0009",
+        hireDate: "2024-09-02"
+    },
+    {
+        id: 10,
+        name: "배현우",
+        department: "경영지원팀",
+        position: "과장",
+        status: "재직",
+        email: "hyunwoo@example.com",
+        phone: "010-0000-0010",
+        hireDate: "2020-06-15"
+    },
+    {
+        id: 11,
+        name: "서도윤",
+        department: "영업팀",
+        position: "사원",
+        status: "재직",
+        email: "doyun@example.com",
+        phone: "010-0000-0011",
+        hireDate: "2025-06-09"
+    },
+    {
+        id: 12,
+        name: "김나연",
+        department: "디자인팀",
+        position: "사원",
+        status: "재직",
+        email: "nayeon@example.com",
+        phone: "010-0000-0012",
+        hireDate: "2026-02-02"
+    },
+    {
+        id: 13,
+        name: "이승우",
+        department: "생산관리팀",
+        position: "대리",
+        status: "재직",
+        email: "seungwoo@example.com",
+        phone: "010-0000-0013",
+        hireDate: "2023-09-18"
+    },
+    {
+        id: 14,
+        name: "조수빈",
+        department: "품질관리팀",
+        position: "과장",
+        status: "재직",
+        email: "subin@example.com",
+        phone: "010-0000-0014",
+        hireDate: "2021-04-12"
+    },
+    {
+        id: 15,
+        name: "임재혁",
+        department: "물류팀",
+        position: "대리",
+        status: "재직",
+        email: "jaehyuk@example.com",
+        phone: "010-0000-0015",
+        hireDate: "2022-10-17"
+    },
+    {
+        id: 16,
+        name: "신예린",
+        department: "물류팀",
+        position: "사원",
+        status: "재직",
+        email: "yerin@example.com",
+        phone: "010-0000-0016",
+        hireDate: "2025-08-04"
+    },
+    {
+        id: 17,
+        name: "문지훈",
+        department: "경영지원팀",
+        position: "대리",
+        status: "재직",
+        email: "jihoon@example.com",
+        phone: "010-0000-0017",
+        hireDate: "2023-01-09"
+    },
+    {
+        id: 18,
+        name: "백소희",
+        department: "경영지원팀",
+        position: "사원",
+        status: "재직",
+        email: "sohee@example.com",
+        phone: "010-0000-0018",
+        hireDate: "2026-03-02"
+    }
+];
