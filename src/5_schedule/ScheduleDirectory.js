@@ -1,3 +1,9 @@
+/* [파일 안내] 프로젝트·팀원 목록과 팀원 등록 입력
+ * 입력: Manager의 일정·팀원 목록과 등록·제외 콜백
+ * 구성: 위쪽은 목록, 아래 ScheduleTeamEditor는 이 화면 전용 입력 부품입니다.
+ * 출력: 프로젝트 선택·팀원 등록·제외 → Manager → 관련 상태 훅
+ */
+
 /* [목록의 이름과 실제 저장 자료를 구분하기]
  * 프로젝트 목록은 일정에 적힌 프로젝트명을 모은 결과입니다. 다른 파트의 프로젝트 데이터베이스가 아닙니다.
  * 팀원 목록은 별도로 등록된 teamMembers 배열이며, 단순히 과거 일정에 이름이 있다고 자동 등록하지 않습니다.
@@ -6,7 +12,6 @@
  * 프로젝트 버튼은 이름 전체가 같은 항목으로 이동하므로 test와 test2를 서로 다른 프로젝트로 처리합니다.
  */
 import React, { useState } from "react";
-import ScheduleTeamEditor from "./ScheduleTeamEditor";
 import { ScheduleIcon } from "./ScheduleItemParts";
 
 /* items에서 프로젝트를 모으고, 등록된 팀원 목록은 별도로 표시합니다. */
@@ -121,5 +126,37 @@ export default function ScheduleDirectory({ mode, items, teamMembers, onAddTeamM
       {/* 배열 길이가 0일 때만 안내합니다. 빈 목록도 오류 없이 하나의 정상 화면으로 취급합니다. */}
       {!names.length && <div className="sm-empty">{isPeople ? "등록된 팀원이 없습니다." : "일정에 등록된 프로젝트가 없습니다."}</div>}
     </section>
+  );
+}
+
+/* 일정 입력과 팀원 등록은 다른 작업입니다.
+ * 이름을 입력하고 등록 버튼을 눌렀을 때만 부모가 팀원 목록에 추가합니다.
+ * onAdd는 성공하면 빈 문자열, 실패하면 안내 문장을 돌려줍니다. */
+function ScheduleTeamEditor({ onAdd }) {
+  const [name, setName] = useState("");
+  const [error, setError] = useState("");
+
+  function addMember() {
+    const message = onAdd(name);
+    setError(message);
+    if (!message) setName("");
+  }
+
+  return (
+    <div className="sm-team-editor">
+      <label>새 팀원 이름
+        <input value={name} maxLength={30} onKeyDown={(event) => {
+          // 등록창 안에서도 Enter가 일정 저장으로 이어지지 않고 팀원 등록만 실행되게 합니다.
+          if (event.key !== "Enter" || event.nativeEvent.isComposing) return;
+          event.preventDefault();
+          addMember();
+        }} onChange={(event) => {
+          setName(event.target.value);
+          setError("");
+        }} />
+      </label>
+      <button type="button" className="sm-secondary-btn" onClick={addMember}>팀원 등록</button>
+      {error && <p className="sm-form-error" role="alert">{error}</p>}
+    </div>
   );
 }

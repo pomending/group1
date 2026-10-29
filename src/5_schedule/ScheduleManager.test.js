@@ -1,3 +1,9 @@
+/* [파일 안내] 일정관리 자동 회귀 검사
+ * 실행: npm test -- --watchAll=false --runInBand src/5_schedule/ScheduleManager.test.js
+ * 테스트용 DOM·저장소에서 동작하며 실제 크롬 데이터는 사용하지 않습니다.
+ * 날짜·반복 계산과 화면 입력·저장 결과를 검사합니다. CSS의 실제 배치는 브라우저 검사가 필요합니다.
+ */
+
 /* [자동 검사를 읽는 실제 방법]
  * 각 test는 서로 영향을 주지 않는 사용 상황 하나를 만듭니다. beforeEach가 저장소와 서버 응답을 준비합니다.
  * saveSchedules는 검사에 쓸 일정과 팀원 자료를 준비하는 도우미이며 실제 앱의 저장 동작과는 별개입니다.
@@ -36,6 +42,25 @@ import {
  * 내부 함수의 모양보다 검색·등록·반복 수정 후 화면과 저장 데이터가 맞는지를 검사합니다.
  */
 const storageKey = "made-mate-schedules";
+test.each(["input", "change"])("날짜·시간 %s 이벤트 후 포커스를 옮기지 않고 제출해도 입력값을 저장한다", async eventType => {
+  render(<ScheduleManager />);
+  fireEvent.click(screen.getByRole("button", { name: "일정 등록", exact: true }));
+  fireEvent.click(screen.getByRole("button", { name: "개인 일정용", exact: true }));
+  fireEvent.change(screen.getByLabelText("일정 이름"), { target: { value: "[테스트] 즉시 저장" } });
+  const date = screen.getByLabelText("날짜");
+  const start = screen.getByLabelText("시작 시간");
+  const end = screen.getByLabelText("종료 시간");
+  fireEvent[eventType](date, { target: { value: "2026-11-04" } });
+  fireEvent[eventType](start, { target: { value: "10:00" } });
+  end.focus();
+  fireEvent[eventType](end, { target: { value: "11:00" } });
+  expect(end).toHaveFocus();
+  fireEvent.submit(end.closest("form"));
+  expect(JSON.parse(localStorage.getItem(storageKey))).toEqual(expect.arrayContaining([
+    expect.objectContaining({ title: "[테스트] 즉시 저장", date: "2026-11-04", time: "10:00", endTime: "11:00" }),
+  ]));
+  await act(async () => {});
+});
 // 기존 시나리오의 테스트 준비입니다. 실제 앱은 일정에서 팀원을 자동 등록하지 않습니다.
 function saveSchedules(schedules) {
   localStorage.setItem(storageKey, JSON.stringify(schedules));

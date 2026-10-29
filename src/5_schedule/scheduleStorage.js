@@ -1,3 +1,10 @@
+/* [파일 안내] 저장 데이터 읽기·검증·이전 형식 정리·탭 간 병합
+ * loadSchedules: 일정 저장값 → 검증·정리된 items와 읽기 상태
+ * loadTeamMembers: 팀원·제외 목록 → 검증된 목록과 읽기 상태
+ * mergeScheduleChanges: 기준·현재·다른 탭 목록 → 병합 결과 또는 충돌 표시
+ * 호출처: scheduleHooks와 Manager. 자동 저장 effect는 scheduleHooks에 있습니다.
+ */
+
 /* 일정 로드·정리·저장 충돌 병합을 담당합니다. */
 import {
   getScheduleCategory,
@@ -153,3 +160,28 @@ export function loadSchedules() {
     return { items: [], readError: true };
   }
 }
+
+// 저장된 팀원과 일정 등록에서 제외한 이름을 검증해 읽습니다.
+export function loadTeamMembers() {
+  // 등록 목록과 제외 목록은 별도 저장소입니다. 제외 목록은 과거 일정의 이름이
+  // 새 일정 저장 과정에서 의도치 않게 팀원으로 다시 등록되는 것을 막는 데 사용합니다.
+  try {
+    const saved = JSON.parse(localStorage.getItem("made-mate-schedule-team") || "[]");
+    if (!Array.isArray(saved)) throw new Error("Invalid team data");
+    const excluded = JSON.parse(localStorage.getItem("made-mate-excluded-team") || "[]");
+    if (!Array.isArray(excluded) || excluded.some(name => typeof name !== "string")) {
+      throw new Error("Invalid excluded team");
+    }
+    if (saved.some(name => typeof name !== "string" || !name.trim() || name.trim().length > 30)) {
+      throw new Error("Invalid team member");
+    }
+    const members = [...new Set(saved.map(name => name.trim()))]
+      .sort((a, b) => a.localeCompare(b, "ko"));
+    return { members, excluded, readError: false };
+  } catch {
+    // 빈 배열은 화면의 안전한 기본값이며, 저장 자료가 실제로 비어 있다는 뜻은 아닙니다.
+    // useScheduleTeam은 readError가 true이면 자동 저장을 중지해 손상된 원본을 보호합니다.
+    return { members: [], excluded: [], readError: true };
+  }
+}
+

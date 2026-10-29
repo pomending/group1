@@ -1,3 +1,10 @@
+/* [파일 안내] 기존 프로젝트 데이터와 달력 표시 사이의 변환
+ * 입력: Manager가 ERPContext에서 읽은 프로젝트·일정
+ * createProjectMilestones: 시작일·마감일을 읽기 전용 달력 항목으로 변환
+ * getProjectScheduleSummaries: 프로젝트에 해당하는 일정 요약 생성
+ * 이 파일은 변환만 하며 Context 업데이트는 Manager에서 실행합니다.
+ */
+
 import { isValidScheduleDate, normalizeAttendees, typeColors } from "./scheduleData";
 import { employees } from "../data/mockData";
 

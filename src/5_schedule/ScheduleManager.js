@@ -1,8 +1,15 @@
+/* [파일 안내] 일정 화면의 상태·계산·사용자 동작 연결
+ * 입력: ERPContext의 프로젝트, scheduleHooks의 일정·팀원·공휴일 상태
+ * 계산: scheduleData에서 반복 발생일·검색 대상·시간 충돌을 계산합니다.
+ * 출력: Calendar·Sidebar·Directory·FormModal에 표시값과 콜백을 전달합니다.
+ * 저장 흐름: FormModal → updateForm → addSchedule → setItems → useScheduleStorage
+ * 수정 위치: 입력 검증은 addSchedule, 회차 상태 변경은 changeScheduleStatus, 삭제는 deleteSchedule
+ */
+
 /* 일정 화면의 상태와 사용자 동작을 연결합니다. */
 import React, { useEffect, useRef, useState } from "react";
 import { useScheduleClock, useScheduleHolidays, useScheduleStorage, useScheduleTeam } from "./scheduleHooks";
 import { loadSchedules } from "./scheduleStorage";
-import { findScheduleConflicts } from "./scheduleConflicts";
 import { createProjectMilestones, getProjectScheduleSummaries } from "./ScheduleProjectBridge";
 import ScheduleCalendar from "./ScheduleCalendar";
 import ScheduleFormModal, { ScheduleListModal } from "./ScheduleFormModal";
@@ -11,6 +18,7 @@ import { ScheduleIcon } from "./ScheduleItemParts";
 import { useERP } from "../context/ERPContext";
 import {
   createScheduleForm,
+  findScheduleConflicts,
   compareSchedules,
   excludeOccurrence,
   getWeekDates,
@@ -36,6 +44,7 @@ const createScheduleId = () =>
 
 /* 화면과 일정 관리 훅을 연결하는 조정 컴포넌트입니다. */
 export default function ScheduleManager() {
+  // [1. 상태 준비] 프로젝트·일정·팀원·선택 날짜를 준비합니다. 저장 관련 세부 처리는 scheduleHooks에서 확인합니다.
   const erp = useERP();
   const projects = erp?.projects || EMPTY_PROJECTS;
   const updateProject = erp?.updateProject;
@@ -151,6 +160,7 @@ export default function ScheduleManager() {
   }, [items, currentTime, holidayDates, reminderNotice]);
 
   // 검색어, 프로젝트, 공개 범위 조건으로 저장된 일정을 먼저 거릅니다.
+  // [2. 표시 데이터 계산] 원본 items → 검색·공개 범위 필터 → 반복 발생일 → 달력·선택 날짜 목록
   const keyword = query.trim().toLowerCase();
   const filteredItems = [];
   for (const item of items) {
@@ -238,6 +248,7 @@ export default function ScheduleManager() {
   // 예: name="title"이면 [event.target.name]이 title이 되어 그 속성만 덮어씁니다.
   // 숫자 입력은 빈칸일 때만 ""로 유지해 편집을 허용하고, 나머지는 숫자로 저장합니다.
   // 주간/월간 단위를 바꾸면 간격을 1로 초기화해 24개월이 24주로 잘못 이어지지 않게 합니다.
+  // [3. 입력 처리] FormModal 입력 이벤트 → form 갱신. 여기서는 아직 일정 목록을 저장하지 않습니다.
   const updateForm = (event) => {
     setFormError("");
     const name = event.target.name;
@@ -286,6 +297,7 @@ export default function ScheduleManager() {
   }
 
   // 입력값은 이 시점에 저장 형태로 바꿉니다. 참석자 미입력은 []이며 필수 항목이 아닙니다.
+  // [4. 저장 처리] 입력 검증 → 시간 충돌 확인 → 팀원 확인 → 일정 생성·교체 → 필터·폼 정리
   const addSchedule = (event) => {
     // 브라우저는 form 제출 시 페이지 이동을 시도합니다. preventDefault로 막고 아래 state 갱신으로 처리합니다.
     event.preventDefault();
@@ -363,24 +375,21 @@ export default function ScheduleManager() {
     }
 
     // 수정 대상을 먼저 확인합니다. 새 등록이면 editing은 null이라 이 검사를 건너뜁니다.
-    let occurrenceDate = null;
-    if (editing) occurrenceDate = editing.occurrenceDate;
+    const occurrenceDate = editing?.occurrenceDate;
 
     // 저장 전에 중복 일정과 담당자·참석자의 시간 겹침을 확인합니다.
     // 폼 문자열과 체크박스 값을 충돌 비교에 사용할 일정 형태로 정리합니다.
     const candidate = {
+      // 폼의 원본 값은 복사하고, 공백 정리·참석자 배열 변환 등이 끝난 값으로 덮어씁니다.
+      // 이 객체를 충돌 검사와 실제 저장에서 함께 사용해 서로 다른 값이 검사되는 것을 막습니다.
       ...form,
-      date: form.date,
       endDate: form.endDate || "",
       isAllDay: Boolean(form.isAllDay),
       title,
       person,
       attendees,
-      scope: form.scope,
       project,
       projectId: linkedProject?.id ?? null,
-      time: form.time,
-      endTime: form.endTime,
     };
     // 반복 규칙은 다음 1년을 확인하고, 휴일 이동 설정은 범위 끝에서 밀릴 날짜도 포함합니다.
     let conflictEndKey = form.endDate || form.date;
@@ -425,16 +434,12 @@ export default function ScheduleManager() {
     }
     // 먼저 새 일정 한 건을 만듭니다. 일반 수정인 경우에만 기존 ID와 제외 날짜를 이어받습니다.
     const item = {
-      ...form,
+      ...candidate,
+      // 저장 전용 필드만 추가합니다. 반복 일정에는 여러 날 종료일을 남기지 않습니다.
       endDate: form.repeatType === "none" ? (form.endDate || "") : "",
       reminderMinutes: Number(form.reminderMinutes) || 0,
       status: form.scope === "업무용" ? form.status : "pending",
-      title,
-      project,
-      projectId: linkedProject?.id ?? null,
-      person,
       id: createScheduleId(),
-      attendees,
       color: typeColors[form.type],
       excludedDates: [],
       isFavorite: false,
@@ -454,6 +459,8 @@ export default function ScheduleManager() {
     // 한 회차 수정은 원본에서 제외하고, 새 일정으로 추가합니다.
     setItems((current) => {
       if (!editing) return [...current, item].sort(compareSchedules);
+      // 전체 수정은 기존 ID를 교체합니다. 한 회차 수정은 원본에 제외 날짜를 남긴 뒤
+      // 새 ID의 일반 일정을 추가하므로 다른 회차의 내용과 반복 규칙은 유지됩니다.
       const next = current.map(schedule => {
         if (schedule.id !== editing.id) return schedule;
         return occurrenceDate ? excludeOccurrence(schedule, occurrenceDate) : item;
@@ -467,6 +474,7 @@ export default function ScheduleManager() {
   };
   // 날짜별 반복 항목의 상태를 바꾸면 그날만 일반 항목으로 분리합니다.
   // 원본 규칙의 status를 바꾸지 않아 다음 주/다음 달의 업무까지 완료되지 않습니다.
+  // [5. 저장된 일정 변경] 상태·삭제는 원본 전체인지 한 회차인지 구분한 뒤 setItems로 반영합니다.
   const changeScheduleStatus = (item, value) => {
     const status = normalizeStatus(value);
     if (status === item.status) return;
@@ -511,6 +519,7 @@ export default function ScheduleManager() {
     return true;
   };
   // 날짜를 주면 그날의 더보기, 생략하면 전체 목록입니다. 같은 모달의 열기 처리를 한 곳에 둡니다.
+  // [6. 화면 이동] 목록·보기·프로젝트 선택을 바꿉니다. 일정 내용의 저장과는 별개입니다.
   const showScheduleList = (date = null) => {
     if (date) setSelectedDate(date);
     setListDateFilter(date);
@@ -558,6 +567,7 @@ export default function ScheduleManager() {
   // 통계는 검색과 무관합니다.
   // 오늘 작업은 해당 날짜의 실제 발생 횟수이므로 반복 일정도 포함됩니다.
   // 오늘 일정은 작업 구분과 관계없이 실제 발생하는 모든 일정을 셉니다.
+  // [7. 요약·부가 표시] 통계·즐겨찾기·다가오는 일정 등 각 화면에 전달할 값을 만듭니다.
   const todayWorkCount = expandSchedules(items, todayKey, todayKey, holidayDates).length;
   // 다가오는 목록은 검색과 무관하게 오늘 포함 7일 이내의 미완료 발생 일정 중 가까운 5건을 보여줍니다.
   const upcomingSchedules = getUpcomingSchedules(items, currentTime, 5, 7, holidayDates);
@@ -618,6 +628,7 @@ export default function ScheduleManager() {
     setDirectoryMode(directoryMode === action ? null : action);
   }
 
+  // [8. 화면 구성] 위에서 만든 데이터와 콜백을 각 화면 부품의 props에 연결합니다.
   return (
     <main className="schedule-app">
       <div className="sm-shell">

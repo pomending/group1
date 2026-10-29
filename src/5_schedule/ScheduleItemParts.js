@@ -1,3 +1,10 @@
+/* [파일 안내] 일정 카드·배지·즐겨찾기·동작 버튼 공통 부품
+ * 사용처: Calendar·Sidebar·FormModal·StaffWeek·Directory
+ * 입력: 일정 item과 부모에서 받은 콜백
+ * 출력: 선택·즐겨찾기·수정·삭제·상태 변경 요청을 부모로 전달합니다.
+ * 화면 모양은 scheduleStyles.css의 같은 sm- 클래스에서 수정합니다.
+ */
+
 /* [재사용 부품의 입력과 출력]
  * item은 표시할 일정 한 건입니다. 같은 부품도 item이 다르면 다른 제목과 시간을 보여줍니다.
  * onEdit 같은 on으로 시작하는 props는 사용자 동작을 부모에게 전달하는 함수입니다.
@@ -102,6 +109,11 @@ export function ScheduleEvent({ item, onSelect, compact = false, roleLabel, onTo
           aria-label={label} title={help} onClick={selectSchedule}>
           <strong className="sm-event-title">{item.title}</strong>
         </button>
+        {/* 터치·키보드에서도 달력을 떠나지 않고 전체 이름을 펼칠 수 있습니다. */}
+        <details className="sm-event-full-title" onClick={event => event.stopPropagation()}>
+          <summary>전체 이름</summary>
+          <p>{item.title}</p>
+        </details>
         <div className="sm-event-time-row">
           <time>{time}</time>
           {!isProjectMilestone && <ScheduleFavorite item={item} onToggleFavorite={onToggleFavorite} />}

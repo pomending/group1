@@ -1,6 +1,14 @@
+/* [파일 안내] React 상태와 외부 환경 연결
+ * useScheduleClock: 오늘 날짜·현재 시각 갱신
+ * useScheduleHolidays: 공휴일 API 조회
+ * useScheduleStorage: 일정 상태·localStorage 저장·다른 탭 변경 처리
+ * useScheduleTeam: 팀원 상태·등록·제외·localStorage 저장
+ * 저장값 검증·병합은 scheduleStorage, 날짜 계산은 scheduleData를 확인합니다.
+ */
+
 import { useEffect, useRef, useState } from "react";
 import { compareSchedules, getTodayKey } from "./scheduleData";
-import { loadSchedules, mergeScheduleChanges } from "./scheduleStorage";
+import { loadSchedules, loadTeamMembers, mergeScheduleChanges } from "./scheduleStorage";
 
 // 오늘 표시와 분 단위 현재 시각을 갱신하고, 자정에 오늘 날짜를 넘깁니다.
 export function useScheduleClock(selectedDate, setSelectedDate, setMonth) {
@@ -156,26 +164,6 @@ export function useScheduleStorage() {
     storageError,
     reloadConflictingSchedules,
   };
-}
-
-// 저장된 팀원과 일정 등록에서 제외한 이름을 검증해 읽습니다.
-export function loadTeamMembers() {
-  try {
-    const saved = JSON.parse(localStorage.getItem("made-mate-schedule-team") || "[]");
-    if (!Array.isArray(saved)) throw new Error("Invalid team data");
-    const excluded = JSON.parse(localStorage.getItem("made-mate-excluded-team") || "[]");
-    if (!Array.isArray(excluded) || excluded.some(name => typeof name !== "string")) {
-      throw new Error("Invalid excluded team");
-    }
-    if (saved.some(name => typeof name !== "string" || !name.trim() || name.trim().length > 30)) {
-      throw new Error("Invalid team member");
-    }
-    const members = [...new Set(saved.map(name => name.trim()))]
-      .sort((a, b) => a.localeCompare(b, "ko"));
-    return { members, excluded, readError: false };
-  } catch {
-    return { members: [], excluded: [], readError: true };
-  }
 }
 
 // 팀원 상태와 등록·삭제 규칙, 브라우저 저장을 함께 관리합니다.

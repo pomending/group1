@@ -1,3 +1,10 @@
+/* [파일 안내] 일정 입력·전체 목록·공통 모달
+ * 읽는 순서: ScheduleFormModal → ScheduleListModal → ScheduleModal
+ * 입력 흐름: input의 name/value → onChange → Manager.updateForm → 새 form 전달
+ * 제출 흐름: onSubmit → Manager.addSchedule에서 검증·저장
+ * 목록 항목 선택: onEdit(item) → Manager가 수정 폼을 열어 저장값을 표시합니다.
+ */
+
 /* [이 파일에는 세 가지 화면 부품이 있습니다]
  * 기본 export인 ScheduleFormModal은 새 일정 등록과 기존 일정 수정을 함께 담당합니다.
  * 이름을 붙여 export한 ScheduleListModal은 전체 일정 또는 특정 날짜의 일정 목록입니다.
@@ -306,11 +313,12 @@ export function ScheduleListModal({
   onClose,
   onToggleFavorite,
 }) {
-  // An edited one-off stores the recurring schedule ID and skipped date.
-  // This lets the list show the recurring series at its next actual occurrence.
+  // 한 회차를 수정하면 원본 반복 규칙과 분리된 일반 일정이 생깁니다.
+  // 일반 일정의 원본 ID·발생일을 모아, 목록에서 해당 반복 규칙의 다음 발생일을 표시합니다.
 
   const getReplacementKey = (scheduleId, date) => `${scheduleId}:${date}`;
   const replacementKeys = new Set();
+  // ID만 비교하면 다른 날짜의 회차까지 섞이므로 '원본 ID:원래 발생일'을 한 쌍으로 사용합니다.
   for (const candidate of items) {
     if (candidate.repeatType !== "none") continue;
     const { replacesScheduleId, replacesOccurrenceDate } = candidate;
@@ -328,7 +336,14 @@ export function ScheduleListModal({
       ? getNextScheduleDate([item], todayKey) || item.date
       : item.date;
 
-    return { item, displayDate, replacesRecurringOccurrence };
+    const dateLabel = `${replacesRecurringOccurrence ? "다음 회차 · " : ""}${displayDate.replaceAll("-", ".")} · ${getScheduleTime(item)}`;
+    // 표시 문구를 여기서 완성해 JSX에서는 배치만 담당하도록 합니다.
+    const category = item.category || (item.project ? "프로젝트" : "업무");
+    const detailLabel = item.scope === "개인 일정용"
+      ? "개인 일정용"
+      : `${category} · ${item.project || item.person}`;
+
+    return { item, displayDate, dateLabel, detailLabel };
   };
   // 날짜 계산 결과를 항목에 함께 담아 정렬과 화면 표시에서 재사용합니다.
   const sortedItems = items
@@ -367,7 +382,7 @@ export function ScheduleListModal({
       <div className="sm-list-content">
         {sortedItems.length ? (
           sortedItems.map(
-            ({ item, displayDate, replacesRecurringOccurrence }) => (
+            ({ item, dateLabel, detailLabel }) => (
               <article className="sm-list-item" key={item.id}>
                 {/* 목록 제목은 item을 그대로 전달해 수정 창을 엽니다. 별 버튼은 즐겨찾기만 바꿉니다. */}
                 <button
@@ -377,19 +392,14 @@ export function ScheduleListModal({
                   onClick={() => onEdit(item)}
                 >
                   <span className="sm-list-date">
-                    {replacesRecurringOccurrence
-                      ? `다음 회차 · ${displayDate.replaceAll("-", ".")} · ${getScheduleTime(item)}`
-                      : `${item.date.replaceAll("-", ".")} · ${getScheduleTime(item)}`
-                  }
+                    {dateLabel}
                   </span>
                   <strong>{item.title}</strong>
                   <ScheduleVisibility visibility={item.visibility} />
                   {item.repeatType !== "none" && (
                     <small>{getRepeatLabel(item)} · 종료일 없음</small>
                   )}
-                  <small>
-                    {item.scope === "개인 일정용" ? "개인 일정용" : `${item.category || (item.project ? "프로젝트" : "업무")} · ${item.project || item.person}`}
-                  </small>
+                  <small>{detailLabel}</small>
                   <ScheduleAttendees item={item} />
                 </button>
                 <ScheduleFavorite item={item} onToggleFavorite={onToggleFavorite} />
