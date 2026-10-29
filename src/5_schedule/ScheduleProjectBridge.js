@@ -3,6 +3,7 @@
  * createProjectMilestones: 시작일·마감일을 읽기 전용 달력 항목으로 변환
  * getProjectScheduleSummaries: 프로젝트에 해당하는 일정 요약 생성
  * 이 파일은 변환만 하며 Context 업데이트는 Manager에서 실행합니다.
+ * 주의: 요약 결과는 프로젝트의 schedules 배열에 반영됩니다. 필드를 바꾸면 3번이 받는 데이터도 바뀝니다.
  */
 
 import { isValidScheduleDate, normalizeAttendees, typeColors } from "./scheduleData";

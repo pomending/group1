@@ -20,18 +20,7 @@ import {
 } from "./scheduleData";
 import { ScheduleEvent } from "./ScheduleItemParts";
 
-/* 표를 읽는 기준: 사람 한 명이 한 행, 월요일~일요일의 날짜가 각 열입니다.
- * items 안에 { person: '민수', attendees: ['지수'], date: '2026-10-22', ... }가 한 건 있다면
- * 민수 행과 지수 행의 같은 날짜 칸에 모두 표시합니다. 저장된 일정을 두 건으로 만드는 것은 아닙니다.
- *
- * 각 사람의 행을 만들 때 filter로 그 사람이 담당하거나 참석하는 일정만 찾습니다.
- * 그 결과를 날짜별로 묶고 각 날짜 칸에 표시합니다.
- * people 목록에만 있고 이번 주 일정이 없는 사람도 빈 배열을 사용해 행 자체는 유지합니다.
- *
- * table/thead/tbody/tr/th/td는 리액트 전용이 아니라 HTML의 표 요소입니다.
- * 리액트의 map이 필요한 수만큼 tr과 td를 만들고, CSS가 너비·배경·스크롤을 정합니다.
- * th의 scope='row'/'col'은 이 머리글이 행/열 중 어느 쪽을 설명하는지 알려 줍니다.
- */
+/* 사람은 행, 날짜는 열입니다. 담당자와 참석자에게 같은 일정을 표시하되 저장 원본은 복제하지 않습니다. 관련 일정이 없는 팀원도 빈 행을 표시합니다. */
 export default function ScheduleStaffWeek({
   people,
   personSearch,
@@ -48,6 +37,8 @@ export default function ScheduleStaffWeek({
     if (personSearch && people.length > 0) return people[0];
     return null;
   });
+  // 담당자 행 옆의 ＋/− 버튼이 이 함수를 호출합니다.
+  // 다른 사람을 누르면 기존 행을 접고 새 행만 펼쳐 표가 지나치게 길어지는 것을 줄입니다.
   function togglePerson(person) {
     if (expandedPerson === person) setExpandedPerson(null);
     else setExpandedPerson(person);
@@ -56,7 +47,9 @@ export default function ScheduleStaffWeek({
   if (!people.length) {
     return (
       <p className="sm-empty">
-        등록된 팀원이 없습니다. 팀원 목록에서 먼저 등록해 주세요.
+        {personSearch
+          ? "검색한 이름과 일치하는 팀원이 없습니다. 검색어를 변경해 주세요."
+          : "등록된 팀원이 없습니다. 팀원 목록에서 먼저 등록해 주세요."}
       </p>
     );
   }
@@ -71,7 +64,7 @@ export default function ScheduleStaffWeek({
       <table className="sm-staff-table">
         <caption>
           {personSearch && <strong>‘{personSearch}’ 이름 검색 결과 · </strong>}
-          담당자·참석자별 주간 일정 · 회사 공유와 개인 일정은 배지로 구분합니다.
+          담당자·참석자별 주간 일정 · 공유 구분은 회사 공유·개인 표시 배지로 안내합니다.
           <br />이름 옆 ＋로 펼쳐 보세요. 한 번에 한 사람만 펼칩니다.
         </caption>
         <thead>

@@ -5,17 +5,21 @@ import { formatPrice, formatQuotationId } from "../utils/formatUtils";
 
 function ProjectForm(props) {
 
+    const { projects, addProject, customers, employees } = useERP()
     const [projectName, setProjectName] = useState('');
-    const [manager, setManager] = useState(props.employees[0]?.id ?? '');
+    const [managerId, setManagerId] = useState('');
     const [due, setDue] = useState('');
     const [selQuotation, setSelQuotation] = useState('')
-    const { projects, addProject, customers } = useERP()
-
     const quotations = props.quotations;
 
     const selectedQuotation = quotations.find(
         q => q.id === Number(selQuotation)
     )
+
+    const projectManagers = employees.filter(emp =>
+        emp.department === "생산관리팀" &&
+        emp.status === "재직"
+    );
 
     const handleSubmit = (e) => {
         e.preventDefault();
@@ -36,6 +40,11 @@ function ProjectForm(props) {
             return;
         }
 
+        if (!projectManagers.some(emp => emp.id === managerId)) {
+            alert('프로젝트 담당자를 선택하세요.');
+            return;
+        }
+
         // 간단한 날짜 관련 유효성 체크들
         const today = new Date().toLocaleDateString('sv-SE');
 
@@ -51,7 +60,7 @@ function ProjectForm(props) {
 
         addProject({
             name: projectName.trim(),
-            managerId: manager,
+            managerId: managerId,
             startDate: new Date().toLocaleDateString('sv-SE'),
             completedDate: null,
             description: "",
@@ -205,11 +214,13 @@ function ProjectForm(props) {
                             <label htmlFor="pf-manager">담당자</label>
                             <select
                                 id="pf-manager"
-                                name="manager"
-                                value={manager}
-                                onChange={(e) => setManager(Number(e.target.value))}
+                                name="managerId"
+                                value={managerId}
+                                onChange={(e) => setManagerId(e.target.value === '' ? '' : Number(e.target.value))}
                             >
-                                {props.employees.map(emp => (
+                                <option value="" disabled>담당자를 선택하세요</option>
+
+                                {projectManagers.map(emp => (
                                     <option key={emp.id} value={emp.id}>
                                         {emp.name}
                                     </option>

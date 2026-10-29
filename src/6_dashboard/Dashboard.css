@@ -45,7 +45,7 @@
     flex: 1;
     min-width: 0;
     color: #ffffff;
-    font-size: 15px;
+    font-size: 17px;
     font-weight: 600;
     line-height: 1.5;
     text-decoration: none;
@@ -107,7 +107,7 @@
 
 .dashboard-card h3 {
     color: #263a49;
-    font-size: 18px;
+    font-size: 19px;
     margin: 0 0 10px;
     padding-bottom: 10px;
     border-bottom: 1px solid #ddd;
@@ -115,7 +115,7 @@
 
 .dashboard-card p {
     color: #555;
-    font-size: 14px;
+    font-size: 15px;
     margin: 0;
     padding: 6px 0;
     border-bottom: 1px solid #eee;
@@ -290,7 +290,7 @@
 .dashboard-post-title {
     flex: 1;
     min-width: 0;
-    font-size: 14px;
+    font-size: 16px;
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
@@ -299,14 +299,14 @@
 .dashboard-post-writer {
     margin-left: auto;
     flex-shrink: 0;
-    font-size: 12px;
+    font-size: 13px;
     color: #888;
     white-space: nowrap;
 }
 
 .dashboard-post-date {
     flex-shrink: 0;
-    font-size: 12px;
+    font-size: 13px;
     color: #888;
     white-space: nowrap;
 }

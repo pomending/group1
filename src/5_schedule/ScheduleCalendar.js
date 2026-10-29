@@ -4,16 +4,8 @@
  * 출력: 날짜 선택·기간 이동·보기 전환·즐겨찾기를 부모 콜백에 전달합니다.
  */
 
-/* [달력에서 누른 버튼이 데이터를 바꾸는 과정]
- * 이 파일은 부모가 준 일정을 표시합니다. 여기서 localStorage를 직접 수정하지 않습니다.
- * 예를 들어 별표를 누르면 자식 부품 → onToggleFavorite(item) → Manager의 원본 변경으로 이어집니다.
- * Manager가 새 원본을 계산해 다시 전달하면 달력의 별 색깔도 그 값에 맞춰 다시 표시됩니다.
- * view가 monthly면 월간, weekly면 주간, daily면 하루, staff면 사람별 주간 화면을 만듭니다.
- * 조건 && JSX는 조건이 참일 때만 해당 화면 조각을 생성한다는 뜻입니다.
- * 날짜 칸과 내부 버튼 모두 클릭 처리가 있으므로 stopPropagation으로 한 클릭이 두 동작을 실행하지 않게 합니다.
- */
+/* 표시 데이터는 Manager에서 받고, 사용자 동작은 콜백으로 전달합니다. 이 파일에서 저장소를 수정하지 않습니다. */
 import { ScheduleEvent, ScheduleIcon } from "./ScheduleItemParts";
-/* 부모가 계산한 일정을 표시하고 클릭 결과를 콜백으로 전달합니다. */
 import React from "react";
 import {
   groupSchedulesByDate,
@@ -23,7 +15,7 @@ import ScheduleStaffWeek from "./ScheduleStaffWeek";
 
 
 /* 선택 날짜 이동과 일정 열기는 별도 동작입니다. 날짜 이동은 Manager에 전달하고,
- * 일정 선택은 수정 창을 엽니다. 월·주·일·담당자별 보기를 이 컴포넌트에서 표시합니다.
+ * 일정 선택은 선택 날짜의 상세 패널을 갱신합니다. 수정 창은 상세 패널의 수정 버튼으로 엽니다. 월·주·일·담당자별 보기를 이 컴포넌트에서 표시합니다.
  */
 export default function ScheduleCalendar({
   containerRef,
@@ -38,6 +30,7 @@ export default function ScheduleCalendar({
   onScopeFilterChange,
   query,
   onQueryChange,
+  onClearFilters,
   holidayError,
   holidayDates,
   calendarDays,
@@ -54,9 +47,12 @@ export default function ScheduleCalendar({
   onToggleFavorite,
 }) {
   // 한 번 정렬해 날짜별로 묶습니다. 날짜 칸이 늘어도 전체 배열을 매번 filter/sort하지 않습니다.
+  // 월간 날짜 칸·주간 열·일간 목록이 같은 날짜 묶음을 사용합니다.
+  // 원본 일정이 여러 날 또는 반복이면 Manager가 이미 날짜별 항목으로 펼쳐서 전달합니다.
   const schedulesByDate = groupSchedulesByDate(visibleItems);
   const dateItems = (date) => schedulesByDate[date] || [];
   const selectedItems = dateItems(selectedDate);
+  // 월간 이외 보기의 카드를 만듭니다. 카드 선택은 onSelectSchedule, 별표는 onToggleFavorite로 분리됩니다.
   const renderItems = (items) =>
     items.map((item) => (
       <ScheduleEvent key={item.id} item={item} onSelect={onSelectSchedule}
@@ -117,14 +113,17 @@ export default function ScheduleCalendar({
             </button>
           </div>
           <select
-            aria-label="일정 구분"
+            aria-label="공유 구분 필터"
             value={scopeFilter}
             onChange={(event) => onScopeFilterChange(event.target.value)}
           >
-            <option value="all">전체 일정</option>
+            <option value="all">공유 구분 전체</option>
             <option value="shared">회사 공유</option>
-            <option value="private">개인 일정</option>
+            <option value="private">개인 표시</option>
           </select>
+          {(query || selectedProject || scopeFilter !== "all") && (
+            <button type="button" className="sm-list-all-btn" onClick={onClearFilters}>검색·필터 초기화</button>
+          )}
         </div>
       </div>
 
@@ -135,9 +134,7 @@ export default function ScheduleCalendar({
         </div>
       )}
 
-      {/* [내부 값, 표시 이름] 배열을 구조 분해해 탭을 만듭니다. 선택 여부는 view와 비교합니다.
-          onClick={() => ...}는 함수를 넘기는 문법입니다. 렌더링 중이 아니라 클릭했을 때 실행됩니다.
-          role과 aria-selected는 보조 기기에 탭과 선택 상태를 설명합니다. */}
+      {/* 보기 탭의 선택값은 view가 관리하며, role·aria-selected로 선택 상태를 알립니다. */}
       <div className="sm-view-tabs" role="tablist" aria-label="일정 보기 방식">
         {[
           ["daily", "일별"],
@@ -285,11 +282,7 @@ export default function ScheduleCalendar({
         </div>
       )}
 
-      {/* view=staff일 때만 사람별 표 컴포넌트를 만듭니다.
-          people은 행 이름, weekDates는 7개 열, items는 이미 반복 계산·검색 필터를 거친 발생 항목입니다.
-          날짜 선택/내용 수정 콜백은 기존 달력과 공유하므로 어느 보기에서 눌러도 같은 부모 상태가 바뀝니다.
-          보기만 바꾸며 일정을 새로 저장하거나 복제하지 않습니다.
-          key에 이름 검색값을 넣어 검색이 바뀌면 펼침 상태를 새 검색 결과 기준으로 초기화합니다. */}
+      {/* 담당자별 주간 보기에는 계산된 발생 일정과 팀원 목록을 전달합니다. 표 내부 펼침 상태는 보기 전환 시 초기화됩니다. */}
       {view === "staff" && (
         <ScheduleStaffWeek
           key={staffPersonSearch || "all"}
@@ -309,7 +302,11 @@ export default function ScheduleCalendar({
       {view === "daily" && (
         <div className="sm-day-view">
           {renderItems(selectedItems)}
-          {selectedItems.length === 0 && <p className="sm-empty">선택한 날짜에 등록된 일정이 없습니다.</p>}
+          {selectedItems.length === 0 && <p className="sm-empty">
+            {query.trim() || selectedProject || scopeFilter !== "all"
+              ? "선택한 날짜에 조건과 일치하는 일정이 없습니다. 검색어나 필터를 변경해 주세요."
+              : "선택한 날짜에 일정이 없습니다. 일정 등록 버튼으로 추가해 보세요."}
+          </p>}
         </div>
       )}
     </section>

@@ -14,20 +14,11 @@
  */
 import { ScheduleAgendaItem, ScheduleAttendees, ScheduleFavorite, ScheduleVisibility, ScheduleIcon } from "./ScheduleItemParts";
 import React from "react";
-import { weekDays, getScheduleTime, getRepeatLabel } from "./scheduleData";
+import { weekDays, getScheduleTime, getRepeatLabel, getScheduleInterval } from "./scheduleData";
 import ScheduleDirectory from "./ScheduleDirectory";
 
-/* 같은 원본 일정에서 여러 화면용 목록이 나오는 이유
- * directoryItems: 전체 원본입니다. 프로젝트·팀원 목록은 현재 월에 일정이 없어도 사람/이름을 보여줍니다.
- * favoriteItems: 전체 저장 자료 중 사용자가 별표를 누른 일정입니다. 검색·표시 월과 무관합니다.
- * selectedItems: 현재 선택한 하루의 일정입니다. 프로젝트 선택 조건도 부모에서 적용되어 내려옵니다.
- * upcomingSchedules: 오늘 포함 7일 이내의 시작 전·진행 중인 미완료 일정 중 가까운 5건입니다.
- *
- * Sidebar는 이 배열들을 별도 state로 다시 복사하지 않습니다. 부모가 준 값을 그대로 표시합니다.
- * 만약 같은 값을 자식 state에도 저장하면 부모는 바뀌었는데 자식은 옛 목록인 문제가 생길 수 있습니다.
- * 부모가 원본을 관리하고 자식은 props로 표시하는 구조를 따라가면 값이 어디서 바뀌는지 찾기 쉽습니다.
- */
-// [공부 순서 5] 선택 날짜의 결과를 보여 주는 영역입니다.
+/* directoryItems는 전체 원본, favoriteItems는 고정된 원본입니다. selectedItems는 선택 날짜·필터 결과, upcomingSchedules는 오늘 포함 7일 이내 미완료 일정 중 가까운 5건입니다. 자식 state로 복사하지 않습니다. */
+// 목록별 기준은 위의 props 설명을 따릅니다. 선택 날짜·즐겨찾기·다가오는 일정은 같은 목록이 아닙니다.
 // 검색·공개 필터와 반복 계산은 이미 부모에서 처리되므로 여기서는 받은 배열만 표시합니다.
 // 부모가 넘겨준 선택 날짜의 일정과 가까운 미완료 일정 목록을 보여줍니다.
 // 수정·삭제·완료 여부 변경은 실제 데이터를 관리하는 부모 함수에 맡깁니다.
@@ -47,6 +38,7 @@ export default function ScheduleSidebar({
   selectedDateObject,
   selectedHoliday,
   selectedItems,
+  hasActiveFilter = false,
   upcomingSchedules,
   currentTime,
   onSelectUpcoming,
@@ -70,9 +62,7 @@ export default function ScheduleSidebar({
             <span className="sm-muted" role="status">{favoriteItems.length}건</span>
           </div>
           <div className="sm-favorite-list">
-            {/* 즐겨찾기는 좁은 카드에서 읽으므로 시간과 내용을 고정된 가로 열로 나누지 않습니다.
-                map은 favoriteItems의 일정마다 아래 article을 하나씩 만듭니다. 항목의 정보와
-                버튼을 위에서 아래로 직접 배치하면 시간을 위한 고정 열에 제목이 눌리지 않습니다. */}
+            {/* 즐겨찾기 카드는 세로로 배치해 제목과 시간이 좁은 고정 열에 눌리지 않게 합니다. */}
             {favoriteItems.map((item) => (
               <article className="sm-favorite-item" key={item.id} style={{ "--sm-event-color": item.color }}>
                 <div className="sm-favorite-heading">
@@ -123,9 +113,7 @@ export default function ScheduleSidebar({
         {/* replaceAll은 저장 형식을 바꾸지 않고 표시용 점 구분 날짜를 만듭니다.
             getDay의 일요일=0을 월요일 시작 배열에 맞추려 (요일+6)%7로 변환합니다. */}
         <div className="sm-agenda-date">
-          {/* getDate()는 날짜에서 '일', getMonth()는 '월'을 가져옵니다. JavaScript의 월은
-              1월을 0으로 세므로 화면에 표시할 때만 1을 더합니다. 이 큰 숫자는 빠르게 날짜를
-              확인하는 장식이며, 정확한 날짜는 아래 글자에 이미 있으므로 중복 낭독을 막습니다. */}
+          {/* 큰 날짜 숫자는 장식이며 정확한 날짜는 별도 텍스트로 제공합니다. 장식은 aria-hidden으로 중복 낭독을 막습니다. */}
           <div className="sm-agenda-day" aria-hidden="true">
             <strong>{selectedDateObject.getDate()}</strong>
             <span>{selectedDateObject.getMonth() + 1}월</span>
@@ -149,7 +137,9 @@ export default function ScheduleSidebar({
               onEdit={onEdit} onDelete={onDelete} onStatusChange={onStatusChange} onToggleFavorite={onToggleFavorite} />
           ))
         ) : (
-          <div className="sm-empty">등록된 일정이 없습니다.</div>
+          <div className="sm-empty">{hasActiveFilter
+            ? "선택한 날짜에 조건과 일치하는 일정이 없습니다. 검색어나 필터를 변경해 주세요."
+            : "선택한 날짜에 일정이 없습니다. 일정 등록 버튼으로 추가해 보세요."}</div>
         )}
       </section>
 
@@ -168,7 +158,7 @@ export default function ScheduleSidebar({
             별개의 일정이므로 key에는 id와 date를 함께 씁니다. 클릭하면 해당 날짜의 일별 화면을 엽니다. */}
         {upcomingSchedules.map((item) => {
           // 업무 상태와 별개로 현재 시각이 시작 전인지 알려 줍니다. 시계가 갱신되면 표시도 바뀝니다.
-          const startTime = new Date(`${item.date}T${item.time}`).getTime();
+          const { start: startTime } = getScheduleInterval(item);
           let phase = "예정";
           if (startTime <= currentTime) phase = "진행 중";
           return (
@@ -189,7 +179,7 @@ export default function ScheduleSidebar({
           );
         })}
         {!upcomingSchedules.length && (
-          <div className="sm-empty">다가오는 일정이 없습니다.</div>
+          <div className="sm-empty">오늘부터 7일 이내에 진행 중이거나 시작할 미완료 일정이 없습니다.</div>
         )}
       </section>
     </aside>

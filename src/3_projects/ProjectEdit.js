@@ -6,7 +6,7 @@ import { getProjectStatus } from "../utils/projectStatus";
 
 function ProjectEdit(props) {
 
-    const { projects, updateProject, customers } = useERP()
+    const { projects, updateProject, customers, employees } = useERP()
 
     const selectedProject = projects.find(
         project => project.id === props.selectedProjectId
@@ -21,6 +21,11 @@ function ProjectEdit(props) {
 
     const customer = customers.find(
         c => c.id === selectedProject?.customerId
+    );
+
+    const projectManagers = employees.filter(emp =>
+        emp.department === "생산관리팀" &&
+        emp.status === "재직"
     );
 
     const editProject = (e) => {
@@ -44,13 +49,18 @@ function ProjectEdit(props) {
             return;
         }
 
+        if (!projectManagers.some(emp => emp.id === managerId)) {
+            alert('프로젝트 담당자를 선택하세요.');
+            return;
+        }
+
         updateProject({
             id: selectedProject.id,
             name: projectName.trim(),
-            managerId: managerId === "" ? null : managerId,
-            startDate: startDate,
-            dueDate: dueDate,
-            description: description
+            managerId,
+            startDate,
+            dueDate,
+            description
         })
 
         props.setPage("list");
@@ -128,12 +138,12 @@ function ProjectEdit(props) {
                             <label htmlFor="pe-manager">담당자</label>
                             <select
                                 id="pe-manager"
-                                name="manager"
+                                name="managerId"
                                 value={managerId}
                                 onChange={(e) => setManagerId(Number(e.target.value))}
                             >
                                 <option value="" disabled>담당자를 선택하세요</option>
-                                {props.employees.map(emp => (
+                                {projectManagers.map(emp => (
                                     <option key={emp.id} value={emp.id}>{emp.name}</option>
                                 ))}
                             </select>

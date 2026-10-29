@@ -1,12 +1,12 @@
 
-import React, { useEffect, useRef, useState } from "react";
-import { Link, useLocation, useSearchParams } from "react-router-dom";
+import React, { useState } from "react";
+import { Link, useSearchParams } from "react-router-dom";
 import "./Dashboard.css";
 import DashboardToday from "./DashboardToday";
 
-// 기존 3번 프로젝트 관리를 읽기만 합니다.
-// 3번 폴더의 코드는 수정하지 않습니다.
-import OriginalProjectPage from "../3_projects/ProjectPage";
+// 프로젝트 관리와 동일한 Context에서 실시간 목록을 읽습니다.
+import { useERP } from "../context/ERPContext";
+import { getProjectStatus } from "../utils/projectStatus";
 
 import CommunityPage from "./CommunityPage";
 import CommunityWritePage from "./CommunityWritePage";
@@ -15,448 +15,125 @@ import NoticePage from "./NoticePage";
 import NoticeWritePage from "./NoticeWritePage";
 import NoticeDetailPage from "./NoticeDetailPage";
 
-const PROJECT_CACHE = "modu-dashboard-real-projects";
-const PROJECT_CHANGED = "modu-dashboard-projects-changed";
-const DETAIL_REQUEST = "modu-dashboard-detail-request";
-
-let projectObserver = null;
-let previousProjectFiber = null;
-let projectPageWasVisible = false;
-let restoringProject = false;
-let openingDetail = false;
-
-
-// 저장해 둔 실제 프로젝트 목록 읽기
-function getProjects() {
-    try {
-        const value = localStorage.getItem(PROJECT_CACHE);
-        const list = value === null ? [] : JSON.parse(value);
-
-        return Array.isArray(list) ? list : [];
-    } catch {
-        return [];
-    }
-}
-
-
-// 원본에서 확인한 프로젝트 목록 저장
-function saveProjects(list) {
-    if (!Array.isArray(list)) return;
-
-    try {
-        const next = JSON.stringify(list);
-
-        if (localStorage.getItem(PROJECT_CACHE) === next) {
-            return;
-        }
-
-        localStorage.setItem(PROJECT_CACHE, next);
-        window.dispatchEvent(new Event(PROJECT_CHANGED));
-    } catch {
-        // 저장에 실패해도 다른 화면은 유지합니다.
-    }
-}
-
-
-// React 컴포넌트가 화면에 연결한 상태 참조 찾기
-function reactFiber(element) {
-    for (
-        let node = element;
-        node;
-        node = node.parentElement
-    ) {
-        const key = Object.keys(node).find(name =>
-            name.startsWith("__reactFiber$")
-        );
-
-        if (key) {
-            return node[key];
-        }
+// 프로젝트의 실제 마감일과 오늘 날짜의 차이를 그대로 표시합니다.
+// 최대 일수 제한 없이 D-4, D-20, D-100 등 모든 기간을 계산합니다.
+// 남은 기간이 3일 이하일 때만 글자색을 강조합니다.
+function getRemainingDays(project) {
+    if (getProjectStatus(project) === "완료" || project.completedDate) {
+        return { label: "", urgent: false };
     }
 
-    return null;
-}
+    // 원래 프로젝트 관리에 저장된 dueDate를 사용합니다.
+    const dueDateText = String(project.dueDate || "").trim();
+    const match = /^(\d{4})-(\d{2})-(\d{2})(?:T.*)?$/.exec(dueDateText);
+    if (!match) return { label: "마감 미정", urgent: false };
 
+    const year = Number(match[1]);
+    const month = Number(match[2]) - 1;
+    const day = Number(match[3]);
+    const dueDay = Date.UTC(year, month, day);
 
-// 기존 프로젝트 관리 컴포넌트 확인
-function isProjectComponent(fiber) {
-    const name =
-        fiber?.type?.displayName ||
-        fiber?.type?.name;
-
-    return [
-        "ProjectList",
-        "ProjectForm",
-        "ProjectDetail",
-        "ProjectEdit"
-    ].includes(name);
-}
-
-
-function isProjectPage(fiber) {
-    return (
-        fiber?.type?.displayName ||
-        fiber?.type?.name
-    ) === "ProjectPage";
-}
-
-
-// 동일한 프로젝트 관리 화면인지 확인
-function sameMountedPage(a, b) {
-    return !!a && !!b && (
-        a === b ||
-        a === b.alternate ||
-        a.alternate === b
-    );
-}
-
-
-// 실제 화면의 프로젝트 수와 이름을 비교
-function viewScore(list, root) {
-    if (!Array.isArray(list)) return -10000;
-
-    let score = 0;
-
-    const total = root.querySelector(".pm-stat-value");
-
-    if (total) {
-        const count = Number(total.textContent.trim());
-
-        if (Number.isFinite(count)) {
-            score += list.length === count ? 1000 : -1000;
-        }
-    }
-
-    for (
-        const nameNode of root.querySelectorAll(
-            ".pm-project-name"
-        )
-    ) {
-        const name = nameNode.textContent.trim();
-
-        score += list.some(p => p.name === name)
-            ? 20
-            : -20;
-    }
-
-    const detailTitle = root
-        .querySelector(".pd-heading h1")
-        ?.textContent.trim();
-
-    if (detailTitle) {
-        score += list.some(p => p.name === detailTitle)
-            ? 50
-            : -50;
-    }
-
-    return score;
-}
-
-
-// 원본 프로젝트 관리가 사용하는 실제 목록 확인
-function inspectProjectRoot(root) {
-    let fiber = reactFiber(root);
-
-    let projectPage = null;
-    let projectChild = null;
-
-    while (fiber) {
-        if (isProjectComponent(fiber)) {
-            projectChild = fiber;
-        }
-
-        if (isProjectPage(fiber)) {
-            projectPage = fiber;
-            break;
-        }
-
-        fiber = fiber.return;
-    }
-
-    if (!projectPage) return null;
-
-    // 기존 컴포넌트가 전달받은 실제 프로젝트 배열
-    const candidateLists = [
-        projectChild,
-        projectChild?.alternate
-    ]
-        .filter(Boolean)
-        .map(f => f.memoizedProps?.projects)
-        .filter(Array.isArray);
-
-    const projectPageHooks = [
-        projectPage,
-        projectPage.alternate
-    ]
-        .filter(Boolean)
-        .map(f => f.memoizedState)
-        .filter(h => Array.isArray(h?.memoizedState));
-
-    let list = candidateLists.sort(
-        (a, b) =>
-            viewScore(b, root) -
-            viewScore(a, root)
-    )[0];
-
-    if (!list) {
-        const hooks = projectPageHooks.sort(
-            (a, b) =>
-                viewScore(b.memoizedState, root) -
-                viewScore(a.memoizedState, root)
-        );
-
-        list = hooks[0]?.memoizedState;
-    }
-
-    if (!Array.isArray(list)) return null;
-
-    return {
-        list,
-        projectPage,
-        projectPageHooks
-    };
-}
-
-
-// 실제 프로젝트 관리 화면 찾기
-function getActualProjectRoot() {
-    return Array.from(
-        document.querySelectorAll(
-            ".project-app, .pf-page, .pd-page, .pe-page"
-        )
-    ).find(
-        node => !node.closest(
-            "[data-dashboard-project-seed]"
-        )
-    ) || null;
-}
-
-
-// 대시보드에서 선택한 프로젝트의 보기 버튼 클릭
-function openRequestedDetail(root) {
+    // 실제로 존재하지 않는 날짜는 계산하지 않습니다.
+    const validDate = new Date(dueDay);
     if (
-        openingDetail ||
-        !root.matches(".project-app")
+        validDate.getUTCFullYear() !== year ||
+        validDate.getUTCMonth() !== month ||
+        validDate.getUTCDate() !== day
     ) {
-        return;
+        return { label: "마감 미정", urgent: false };
     }
 
-    let pending;
+    // 오늘 날짜는 사용자의 브라우저 현지 날짜를 기준으로 합니다.
+    const now = new Date();
+    const today = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
 
-    try {
-        pending = JSON.parse(
-            sessionStorage.getItem(DETAIL_REQUEST) || "null"
-        );
-    } catch {
-        pending = null;
+    // 저장된 마감일 - 오늘 : 중간 날짜를 생략하거나 10일로 제한하지 않습니다.
+    const daysLeft = (dueDay - today) / (24 * 60 * 60 * 1000);
+
+    if (daysLeft > 0) {
+        return { label: `D-${daysLeft}`, urgent: daysLeft <= 3 };
     }
-
-    if (!pending) return;
-
-    const list = getProjects();
-
-    const project = list.find(
-        p => String(p.id) === String(pending.id)
-    );
-
-    if (!project) {
-        sessionStorage.removeItem(DETAIL_REQUEST);
-        return;
+    if (daysLeft === 0) {
+        return { label: "D-Day", urgent: true };
     }
-
-    const row = Array.from(
-        root.querySelectorAll(
-            ".project-list tbody tr"
-        )
-    ).find(
-        tr =>
-            tr.querySelector(".pm-project-name")
-                ?.textContent.trim() === project.name
-    );
-
-    const button = row?.querySelector(".pm-view-btn");
-
-    // 프로젝트 목록이 복원된 후 다시 찾습니다.
-    if (!button) return;
-
-    sessionStorage.removeItem(DETAIL_REQUEST);
-
-    openingDetail = true;
-    button.click();
-    openingDetail = false;
+    return { label: `D+${Math.abs(daysLeft)}`, urgent: true };
 }
 
-
-// 프로젝트 관리의 등록·수정·삭제 감지
-function scanProjectManagement() {
-    const root = getActualProjectRoot();
-
-    if (!root) {
-        projectPageWasVisible = false;
-        previousProjectFiber = null;
-        restoringProject = false;
-        return;
-    }
-
-    const actual = inspectProjectRoot(root);
-
-    if (!actual) return;
-
-    const {
-        list,
-        projectPage,
-        projectPageHooks
-    } = actual;
-
-    const newlyMounted =
-        !projectPageWasVisible ||
-        !sameMountedPage(
-            projectPage,
-            previousProjectFiber
-        );
-
-    projectPageWasVisible = true;
-    previousProjectFiber = projectPage;
-
-    // 3번 프로젝트 관리가 다시 생성되면
-    // 이전에 등록했던 실제 프로젝트 목록을 복원합니다.
-    if (newlyMounted) {
-        const saved = getProjects();
-
-        const exists =
-            localStorage.getItem(PROJECT_CACHE) !== null;
-
-        if (
-            exists &&
-            JSON.stringify(saved) !== JSON.stringify(list)
-        ) {
-            const hook = projectPageHooks.find(
-                h => typeof h.queue?.dispatch === "function"
-            );
-
-            if (hook && !restoringProject) {
-                restoringProject = true;
-                hook.queue.dispatch(saved);
-                return;
-            }
-        }
-    }
-
-    restoringProject = false;
-
-    // 새로운 프로젝트 등록 및 수정·삭제 결과 반영
-    saveProjects(list);
-
-    // 대시보드에서 특정 프로젝트를 선택한 경우
-    openRequestedDetail(root);
-}
-
-
-// 다른 메뉴로 이동해도 실제 프로젝트 변경 감지 유지
-function installProjectObserver() {
-    if (
-        typeof window === "undefined" ||
-        typeof document === "undefined"
-    ) {
-        return;
-    }
-
-    if (!document.body || projectObserver) return;
-
-    // 개발 중 이전 관찰자가 남았다면 정리
-    if (window.__moduDashboardProjectObserver) {
-        window.__moduDashboardProjectObserver.disconnect();
-    }
-
-    projectObserver = new MutationObserver(
-        () => scanProjectManagement()
-    );
-
-    window.__moduDashboardProjectObserver =
-        projectObserver;
-
-    projectObserver.observe(document.body, {
-        subtree: true,
-        childList: true,
-        characterData: true
-    });
-
-    scanProjectManagement();
-}
-
-
-// 사이드바의 기존 프로젝트 관리 화면으로 이동
+// 기존 사이드바 메뉴를 통해 실제 프로젝트 관리로 이동합니다.
+// 상세 클릭 시에는 원본 프로젝트 목록에 있는 '보기' 버튼을 실행합니다.
+// 데이터 연동과 무관한 화면 이동 보조 기능이며 3번 파일을 수정하지 않습니다.
 function enterActualProjectPage(project = null) {
-    if (project) {
-        sessionStorage.setItem(
-            DETAIL_REQUEST,
-            JSON.stringify({ id: project.id })
+    let detailObserver = null;
+    let detailTimeout = null;
+
+    const stopObserving = () => {
+        if (detailObserver) detailObserver.disconnect();
+        if (detailTimeout !== null) clearTimeout(detailTimeout);
+    };
+
+    const openDetail = () => {
+        if (!project) return false;
+        const rows = document.querySelectorAll(".project-list tbody tr");
+        const row = Array.from(rows).find((item) =>
+            item.querySelector(".pm-project-name")?.textContent.trim() === project.name
         );
-    } else {
-        sessionStorage.removeItem(DETAIL_REQUEST);
+        const viewButton = row?.querySelector(".pm-view-btn");
+        if (!viewButton) return false;
+        stopObserving();
+        viewButton.click();
+        return true;
+    };
+
+    // 화면이 바뀐 다음에 원본 프로젝트 행이 생성되므로 그때 상세 열기
+    if (project) {
+        detailObserver = new MutationObserver(openDetail);
+        detailObserver.observe(document.body, { childList: true, subtree: true });
+        detailTimeout = setTimeout(stopObserving, 6000);
     }
 
     const containers = document.querySelectorAll(
         "aside, nav, .sidebar, [class*='sidebar']"
     );
-
     for (const container of containers) {
         const controls = container.querySelectorAll(
             "a, button, [role='button'], [role='link']"
         );
-
         for (const control of controls) {
             if (control.closest(".dashboard")) continue;
-
-            const text = control.textContent
-                .replace(/\s+/g, " ")
-                .trim();
-
-            if (text === "프로젝트 관리") {
+            if (control.textContent.replace(/\s+/g, " ").trim() === "프로젝트 관리") {
                 control.click();
                 return;
             }
         }
-
-        // div 또는 li를 눌러 이동하는 사이드바 대응
-        const labels = container.querySelectorAll(
-            "span, div, li"
-        );
-
+        const labels = container.querySelectorAll("span, div, li");
         for (const label of labels) {
-            if (
-                label.children.length > 1 ||
-                label.closest(".dashboard")
-            ) {
-                continue;
-            }
-
+            if (label.children.length > 1 || label.closest(".dashboard")) continue;
             if (label.textContent.trim() === "프로젝트 관리") {
                 label.click();
                 return;
             }
         }
     }
+    // 사이드바가 실제로 렌더링된 환경에서만 기존 메뉴를 사용합니다.
+    // 확인되지 않은 라우터 경로를 임의로 만들어 이동하지 않습니다.
+    stopObserving();
 }
 
-
-// 공지사항과 커뮤니티 게시글 읽기
+// 기존 공지사항과 커뮤니티 저장 방식은 변경하지 않습니다.
 function readPosts(key) {
     try {
-        const list = JSON.parse(
-            localStorage.getItem(key) || "[]"
-        );
-
+        const list = JSON.parse(localStorage.getItem(key) || "[]");
         return Array.isArray(list) ? list : [];
     } catch {
         return [];
     }
 }
 
-
 function DashboardPage() {
-    const location = useLocation();
     const [searchParams] = useSearchParams();
+
+    // 3번 프로젝트 관리의 최신 데이터: 등록·수정·삭제 즉시 반영
+    const { projects } = useERP();
 
     const page = searchParams.get("page");
 
@@ -469,96 +146,17 @@ function DashboardPage() {
         () => readPosts("noticePosts")
     );
 
-    // 실제 프로젝트 관리에서 읽은 목록
-    const [projects, setProjects] = useState(getProjects);
-
-    const seedRef = useRef(null);
-
-    // 아직 프로젝트 데이터를 읽은 적이 없다면
-    // 3번 프로젝트 관리의 초기 목록을 직접 가져옵니다.
-    const needInitialSeed =
-        localStorage.getItem(PROJECT_CACHE) === null;
-
-
-    // 프로젝트 변경 관찰 시작
-    useEffect(() => {
-        installProjectObserver();
-
-        const refresh = () => {
-            setProjects(getProjects());
-        };
-
-        const storage = event => {
-            if (
-                event.key === PROJECT_CACHE ||
-                event.key === null
-            ) {
-                refresh();
-            }
-        };
-
-        window.addEventListener(PROJECT_CHANGED, refresh);
-        window.addEventListener("storage", storage);
-        window.addEventListener("focus", refresh);
-
-        return () => {
-            window.removeEventListener(
-                PROJECT_CHANGED,
-                refresh
-            );
-
-            window.removeEventListener(
-                "storage",
-                storage
-            );
-
-            window.removeEventListener(
-                "focus",
-                refresh
-            );
-        };
-    }, []);
-
-
-    // 처음 실행할 때 기존 프로젝트 2개도 실제 원본에서 읽음
-    useEffect(() => {
-        if (
-            !needInitialSeed ||
-            !seedRef.current
-        ) {
-            return;
-        }
-
-        const originalList = seedRef.current.querySelector(
-            ".project-app"
-        );
-
-        const actual = originalList &&
-            inspectProjectRoot(originalList);
-
-        if (actual) {
-            saveProjects(actual.list);
-        }
-    }, [needInitialSeed]);
-
-
-    // 대시보드 재진입 시 프로젝트 새로 불러오기
-    useEffect(() => {
-        setProjects(getProjects());
-    }, [location.key]);
-
-
-    // 실제 등록 번호가 높은 순으로 최신 3개만 표시
+    // 최신으로 등록된 프로젝트 최대 3개만 표시합니다.
     const recentProjects = [...projects]
         .sort((a, b) => Number(b.id) - Number(a.id))
         .slice(0, 3);
 
 
-    // 일반 공지사항 최신 3개
+    // 일반 공지사항 최신 5개
     const recentNotices = [...noticePosts]
         .filter(post => post.type === "normal")
         .sort((a, b) => Number(b.id) - Number(a.id))
-        .slice(0, 3);
+        .slice(0, 5);
 
 
     // 중요공지 최신 1개
@@ -567,10 +165,10 @@ function DashboardPage() {
         .sort((a, b) => Number(b.id) - Number(a.id))[0];
 
 
-    // 커뮤니티 최신 3개
+    // 커뮤니티 최신 5개
     const recentPosts = [...posts]
         .sort((a, b) => Number(b.id) - Number(a.id))
-        .slice(0, 3);
+        .slice(0, 5);
 
 
     // 기존 커뮤니티 화면
@@ -626,18 +224,6 @@ function DashboardPage() {
 
     return (
         <div className="dashboard">
-
-            {/* 최초 한 번만 실제 원본의 초기 목록을 읽음 */}
-            {needInitialSeed && (
-                <div
-                    ref={seedRef}
-                    data-dashboard-project-seed="true"
-                    aria-hidden="true"
-                    style={{ display: "none" }}
-                >
-                    <OriginalProjectPage />
-                </div>
-            )}
 
             <h1>대시보드</h1>
 
@@ -712,11 +298,17 @@ function DashboardPage() {
                                 </span>
 
                                 <span className="dashboard-post-writer">
-                                    {project.status}
+                                    {getProjectStatus(project)}
                                 </span>
 
-                                <span className="dashboard-post-date">
-                                    {project.dueDate || "미정"}
+                                <span
+                                    className="dashboard-post-date"
+                                    style={getRemainingDays(project).urgent ? {
+                                        color: "#c0392b",
+                                        fontWeight: 700
+                                    } : undefined}
+                                >
+                                    {getRemainingDays(project).label}
                                 </span>
                             </button>
                         </div>

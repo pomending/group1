@@ -1,56 +1,43 @@
 
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { useERP } from "../context/ERPContext";
 import {
+    compareSchedules,
     dateKey,
     expandSchedules,
-    isValidScheduleDate,
-    isValidScheduleTime
+    getScheduleTime
 } from "../5_schedule/scheduleData";
+import { loadSchedules } from "../5_schedule/scheduleStorage";
+import { createProjectMilestones } from "../5_schedule/ScheduleProjectBridge";
+import { useScheduleHolidays } from "../5_schedule/scheduleHooks";
 import "./Today.css";
 
 
-// 기존 일정관리에서 저장한 일정을 읽어옴
+// 5번 일정 관리가 실제로 사용하는 저장/검증 함수를 그대로 활용합니다.
+// 대시보드에서는 일정을 추가하거나 원본 데이터를 수정하지 않습니다.
 function getSchedules() {
-    try {
-        const saved = localStorage.getItem("made-mate-schedules");
-        const data = JSON.parse(saved || "[]");
-
-        if (!Array.isArray(data)) return [];
-
-        return data.filter((item) =>
-            item &&
-            typeof item.title === "string" &&
-            isValidScheduleDate(item.date) &&
-            isValidScheduleTime(item.time)
-        ).map((item) => ({
-            ...item,
-            excludedDates: Array.isArray(item.excludedDates)
-                ? item.excludedDates : []
-        }));
-    } catch {
-        return [];
-    }
+    const result = loadSchedules();
+    return result.readError ? [] : result.items;
 }
 
 
 function DashboardToday() {
+    // 3번 프로젝트 관리와 같은 ERP 데이터를 읽기만 합니다.
+    // 프로젝트의 시작일/마감일도 5번 일정 관리와 동일하게 표시하기 위함입니다.
+    const erp = useERP();
+    const projects = Array.isArray(erp?.projects) ? erp.projects : [];
 
-    // 현재 날짜를 기억
     const [now, setNow] = useState(() => new Date());
 
     useEffect(() => {
-
-        // 다시 화면으로 돌아오면 날짜와 일정을 갱신
+        // 다른 화면에서 돌아오거나 날짜가 바뀌면 표시를 새로 계산합니다.
         const refresh = () => setNow(new Date());
-
-        // 다른 탭에서 일정이 수정되었는지 확인
-        const onStorage = (e) => {
-            if (e.key === "made-mate-schedules" || e.key === null) {
+        const onStorage = (event) => {
+            if (event.key === "made-mate-schedules" || event.key === null) {
                 refresh();
             }
         };
-
         const onVisible = () => {
             if (!document.hidden) refresh();
         };
@@ -58,8 +45,6 @@ function DashboardToday() {
         window.addEventListener("focus", refresh);
         window.addEventListener("storage", onStorage);
         document.addEventListener("visibilitychange", onVisible);
-
-        // 1분마다 날짜와 일정 확인
         const timer = setInterval(refresh, 60000);
 
         return () => {
@@ -68,88 +53,73 @@ function DashboardToday() {
             document.removeEventListener("visibilitychange", onVisible);
             clearInterval(timer);
         };
-
     }, []);
 
-
-    // 일정 불러오기
-    const schedules = getSchedules();
-
-    // 현재 연도, 월, 오늘 날짜
     const year = now.getFullYear();
     const month = now.getMonth();
     const today = dateKey(now);
-
-    // 이번 달 첫날과 마지막 날
     const first = new Date(year, month, 1);
     const last = new Date(year, month + 1, 0);
+    const firstKey = dateKey(first);
+    const lastKey = dateKey(last);
 
-    // 이번 달의 반복 일정까지 가져오기
+    // 5번 일정 관리와 같은 공휴일 규칙으로 반복 일정을 계산합니다.
+    const holidayInfo = useScheduleHolidays(year);
+    const holidays = holidayInfo.year === year ? holidayInfo.dates : {};
+
+    // 종일/여러 날/반복 일정을 원본 일정 관리의 계산 함수를 통해 가져옵니다.
+    const schedules = getSchedules();
     const monthSchedules = expandSchedules(
         schedules,
-        dateKey(first),
-        dateKey(last)
+        firstKey,
+        lastKey,
+        holidays
     );
 
-    // 오늘 날짜에 해당하는 일정
-    const todaySchedules = monthSchedules.filter(
+    // 5번 달력에 자동 표시되는 프로젝트 시작일·마감일을 동일하게 가져옵니다.
+    // 이 항목들은 저장 일정이 아니며, 원본 프로젝트는 변경하지 않습니다.
+    const projectDates = createProjectMilestones(projects).filter(
+        (item) => item.date >= firstKey && item.date <= lastKey
+    );
+
+    const visibleSchedules = [...monthSchedules, ...projectDates]
+        .sort(compareSchedules);
+    const todaySchedules = visibleSchedules.filter(
         (item) => item.date === today
     );
 
-
-    // 날짜별로 일정을 따로 모으기
     const scheduleByDate = {};
-
-    for (const item of monthSchedules) {
-
-        // 해당 날짜에 배열이 없다면 새로 생성
+    for (const item of visibleSchedules) {
         if (!scheduleByDate[item.date]) {
             scheduleByDate[item.date] = [];
         }
-
         scheduleByDate[item.date].push(item);
     }
 
-
-    // 달력 날짜 배열
     const days = [];
-
-    // 1일 이전의 빈칸 만들기
     for (let i = 0; i < first.getDay(); i++) {
         days.push(null);
     }
-
-    // 이번 달 날짜 추가
     for (let number = 1; number <= last.getDate(); number++) {
         days.push(number);
     }
 
-
     return (
         <div className="today-box">
 
-            {/* 연도와 월 */}
+            {/* 연도와 월: 기존 레이아웃 유지 */}
             <div className="today-month">
                 {year}년 {month + 1}월
             </div>
 
-
-            {/* 요일 */}
             <div className="today-weekdays">
                 {["일", "월", "화", "수", "목", "금", "토"].map((name) => (
-                    <span key={name}>
-                        {name}
-                    </span>
+                    <span key={name}>{name}</span>
                 ))}
             </div>
 
-
-            {/* 달력 날짜 */}
             <div className="today-days">
-
                 {days.map((number, index) => {
-
-                    // 날짜가 없는 빈칸
                     if (number === null) {
                         return (
                             <div
@@ -159,24 +129,19 @@ function DashboardToday() {
                         );
                     }
 
-                    // 현재 날짜
                     const currentDate = dateKey(
                         new Date(year, month, number)
                     );
-
-                    // 현재 날짜에 등록된 일정
                     const daySchedules = scheduleByDate[currentDate] || [];
 
-                    // 해당 날짜의 첫 번째 일정
-                    const firstSchedule = daySchedules[0];
+                    // 실제 등록된 일정이 있다면 프로젝트 자동 표시보다 우선합니다.
+                    const firstSchedule = daySchedules.find(
+                        (item) => !item.isProjectMilestone
+                    ) || daySchedules[0];
 
-                    // 프로젝트명이 있으면 프로젝트명 사용
-                    // 프로젝트명이 없으면 일정 제목 사용
-                    let projectName = "";
-
-                    if (firstSchedule) {
-                        projectName = firstSchedule.project || firstSchedule.title;
-                    }
+                    const label = firstSchedule
+                        ? (firstSchedule.project || firstSchedule.title)
+                        : "";
 
                     return (
                         <div
@@ -187,95 +152,63 @@ function DashboardToday() {
                                     : "today-day"
                             }
                         >
+                            <span className="today-date">{number}</span>
 
-                            {/* 날짜 숫자 */}
-                            <span className="today-date">
-                                {number}
-                            </span>
-
-
-                            {/* 일정이 있는 날짜에는 프로젝트명 출력 */}
                             {firstSchedule && (
-                                <span
-                                    className="today-project"
-                                    title={projectName}
-                                >
-                                    {projectName}
+                                <span className="today-project" title={label}>
+                                    {label}
                                 </span>
                             )}
 
-
-                            {/* 일정이 여러 개 있을 때 */}
                             {daySchedules.length > 1 && (
                                 <span className="today-more">
                                     +{daySchedules.length - 1}건
                                 </span>
                             )}
-
                         </div>
                     );
                 })}
-
             </div>
 
-
-            {/* 오늘의 일정 목록 */}
             <div className="today-title">
                 오늘 등록된 일정 ({todaySchedules.length})
             </div>
 
-
             {todaySchedules.length === 0 ? (
-
                 <p className="today-empty">
                     오늘 등록된 일정이 없습니다.
                 </p>
-
             ) : (
-
                 <div className="today-list">
-
                     {todaySchedules.map((item, index) => (
                         <Link
                             to="/schedule"
                             className="today-item"
                             key={String(item.id) + "-" + item.date + "-" + index}
                         >
-
-                            {/* 일정 시간 */}
+                            {/* 5번 일정 관리의 시간 표시: 종일 일정은 '종일' */}
                             <span className="today-time">
-                                {item.time}
-                                {item.endTime ? " ~ " + item.endTime : ""}
+                                {getScheduleTime(item)}
                             </span>
 
-
-                            {/* 프로젝트명 */}
-                            {item.project && (
+                            {/* 프로젝트 날짜 항목은 제목 안에 프로젝트명이 포함되어 있음 */}
+                            {item.project && !item.isProjectMilestone && (
                                 <span className="today-name">
                                     {item.project}
                                 </span>
                             )}
 
-
-                            {/* 일정 제목 */}
                             <span className="today-detail">
                                 {item.title}
                             </span>
 
-
-                            {/* 완료한 일정 */}
                             {item.status === "completed" && (
-                                <span className="today-done">
-                                    완료
-                                </span>
+                                <span className="today-done">완료</span>
                             )}
-
                         </Link>
                     ))}
-
                 </div>
             )}
-
         </div>
     );
 }
