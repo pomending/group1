@@ -14,29 +14,33 @@
 import React, { useState } from "react";
 import { ScheduleIcon } from "./ScheduleItemParts";
 
-/* items에서 프로젝트를 모으고, 등록된 팀원 목록은 별도로 표시합니다. */
-/* 목록의 데이터 흐름
- * 프로젝트는 원본 items에서 추리고, 팀원은 별도 teamMembers에서 가져옵니다.
- * 이 파일은 어떤 팀원을 펼칠지만 관리하며, 날짜 이동과 프로젝트 선택은 Manager가 처리합니다.
- */
-// 팀원은 별도 등록 목록만 표시합니다. 다른 파트의 프로젝트/직원 데이터를 수정하지 않습니다.
-// 이미 결과 배열에 있는 이름은 넣지 않습니다. 마지막 sort는 한글 이름순으로 정렬합니다.
+// 빈 값·중복 이름을 제거하고 한글 이름순으로 정렬합니다. 앞뒤 공백 정리는 이 함수에서 하지 않습니다.
 function uniqueNames(names) {
   return [...new Set(names.filter(Boolean))].sort((a, b) => a.localeCompare(b, "ko"));
 }
 
-export default function ScheduleDirectory({ mode, items, teamMembers, onAddTeamMember, onRemoveTeamMember, selectedProject, onSelectProject, onClose }) {
+export default function ScheduleDirectory({
+  mode,
+  items,
+  teamMembers,
+  onAddTeamMember,
+  onRemoveTeamMember,
+  selectedProject,
+  onSelectProject,
+  onClose,
+}) {
   // null이면 모두 접힌 상태입니다. 이름 하나만 저장하므로 여러 팀원이 동시에 펼쳐지지 않습니다.
   const [selectedPerson, setSelectedPerson] = useState(null);
   // 프로젝트명은 일정에서 모으고, 사람 이름은 별도 등록 목록을 사용합니다.
   const isPeople = mode === "people";
-  let names = teamMembers;
-  if (!isPeople) names = uniqueNames(items.map((item) => item.project));
+  const names = isPeople ? teamMembers : uniqueNames(items.map(item => item.project));
   // filter는 담당 일정만 남기고 map은 그 일정의 프로젝트 이름을 꺼냅니다.
   // 참석한 일정은 담당 프로젝트에 포함하지 않습니다.
   const assignedProjects = uniqueNames(items
     .filter((item) => item.person.trim() === selectedPerson)
     .map((item) => item.project));
+  // 팀원 이름을 누르면 해당 팀원의 담당 프로젝트만 펼칩니다. 다시 누르면 접습니다.
+  // 이 상태는 목록의 펼침 표시용이며 실제 팀원·일정 데이터에는 저장되지 않습니다.
   function togglePerson(name) {
     setSelectedPerson(current => current === name ? null : name);
   }
@@ -82,7 +86,7 @@ export default function ScheduleDirectory({ mode, items, teamMembers, onAddTeamM
         <h3 id="sm-directory-title">{isPeople ? "팀원 목록" : "프로젝트 목록"}</h3>
         <button type="button" className="sm-close" aria-label="목록 닫기" onClick={onClose}>×</button>
       </div>
-      <p className="sm-search-summary">{isPeople ? `등록된 팀원 ${names.length}명 · 이름을 누르면 담당 프로젝트가 표시됩니다.` : `일정에 등록된 프로젝트 ${names.length}개`}</p>
+      <p className="sm-search-summary">{isPeople ? `등록된 팀원 ${names.length}명 · 이름을 누르면 담당 프로젝트가 표시됩니다.` : `직접 등록한 일정의 프로젝트 ${names.length}개 · 프로젝트 관리의 전체 목록과는 다릅니다.`}</p>
       {isPeople && <ScheduleTeamEditor onAdd={onAddTeamMember} />}
       <ul className="sm-directory-list">
         {/* uniqueNames로 이름 중복을 제거했으므로 name을 각 li의 고유 key로 사용할 수 있습니다.
@@ -98,9 +102,7 @@ export default function ScheduleDirectory({ mode, items, teamMembers, onAddTeamM
                   // 같은 사람을 다시 누르면 접고, 다른 사람을 누르면 그 사람을 펼칩니다.
                   onClick={() => togglePerson(name)}
                 >
-                  {/* slice(0, 1)은 이름의 첫 글자만 꺼냅니다. 별도 사진을 저장하지 않고도 각 팀원을
-                      찾기 쉽게 만드는 장식입니다. 전체 이름은 다음 span에 그대로 보여 주므로
-                      첫 글자는 aria-hidden으로 숨겨 화면 읽기 도구가 이름을 두 번 읽지 않게 합니다. */}
+                  {/* 첫 글자 아바타는 장식이므로 숨기고, 옆의 전체 이름만 화면 읽기 도구에 전달합니다. */}
                   <span className="sm-person-avatar" aria-hidden="true">{name.slice(0, 1)}</span>
                   <span className="sm-person-name">{name}</span>
                   <span aria-hidden="true">{selectedPerson === name ? "−" : "+"}</span>
@@ -112,7 +114,7 @@ export default function ScheduleDirectory({ mode, items, teamMembers, onAddTeamM
                     {assignedProjects.length > 0 && (
                       <ul>{assignedProjects.map((project) => <li key={project}>{renderProject(project)}</li>)}</ul>
                     )}
-                    {assignedProjects.length === 0 && <p>담당자로 배정된 프로젝트가 없습니다.</p>}
+                    {assignedProjects.length === 0 && <p>담당자로 등록된 프로젝트 일정이 없습니다.</p>}
                     <button type="button" className="sm-delete-btn" aria-label={`${name} 팀원 목록에서 제외`}
                       onClick={() => onRemoveTeamMember(name)}>팀원 목록에서 제외</button>
                   </div>
@@ -124,7 +126,9 @@ export default function ScheduleDirectory({ mode, items, teamMembers, onAddTeamM
         ))}
       </ul>
       {/* 배열 길이가 0일 때만 안내합니다. 빈 목록도 오류 없이 하나의 정상 화면으로 취급합니다. */}
-      {!names.length && <div className="sm-empty">{isPeople ? "등록된 팀원이 없습니다." : "일정에 등록된 프로젝트가 없습니다."}</div>}
+      {!names.length && <div className="sm-empty">{isPeople
+        ? "등록된 팀원이 없습니다. 위의 새 팀원 이름 입력란에서 등록해 주세요."
+        : "일정에 등록된 프로젝트가 없습니다. 업무 일정의 프로젝트 분류에서 추가해 주세요."}</div>}
     </section>
   );
 }
@@ -136,6 +140,8 @@ function ScheduleTeamEditor({ onAdd }) {
   const [name, setName] = useState("");
   const [error, setError] = useState("");
 
+  // 팀원 등록 버튼 또는 Enter → 부모의 onAdd 검증 → 오류 표시 또는 입력창 비우기 순서입니다.
+  // 이름을 타이핑하는 것만으로는 등록하지 않습니다.
   function addMember() {
     const message = onAdd(name);
     setError(message);

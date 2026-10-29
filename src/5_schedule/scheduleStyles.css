@@ -1,63 +1,46 @@
-/* [파일 안내] 일정관리 화면 스타일
- * 찾는 순서: JSX의 className → 같은 CSS 선택자 → 아래쪽의 추가 선언과 반응형 규칙
- * 주요 영역: sm-event 달력 카드 / sm-agenda 선택 날짜 / sm-form 입력 / sm-modal 팝업
- * 여러 선언이 겹치면 선택자 우선순위와 선언 순서에 따라 적용됩니다.
+/* 일정관리 CSS 목차 — [번호]로 검색하면 해당 구역으로 이동합니다.
+ * 기존 선언 순서·선택자·미디어 조건은 유지합니다. 뒤쪽 테마와 보완 규칙도 함께 확인하세요.
+ * 01. 전역 스타일 간섭 방지
+ * 02. 공통 크기·기본 색상
+ * 03. 페이지 헤더
+ * 04. 프로젝트·팀원 목록
+ * 05. 달력·사이드바 배치
+ * 06. 달력 도구·검색·필터
+ * 07. 월간 날짜 칸
+ * 08. 일정 카드·긴 제목·배지
+ * 09. 주간·일간 보기
+ * 10. 사이드바·즐겨찾기·선택 날짜
+ * 11. 등록·수정 모달과 입력
+ * 12. 전체 일정 목록 모달
+ * 13. 호버·키보드 초점
+ * 14. 기본 반응형: 1000·680·420px
+ * 15. 상세 메모 표시 보완
+ * 16. 담당자별 주간 표
+ * 17. 상태·카드 조작 보완
+ * 18. 선택 날짜 패널 상세 디자인
+ * 19. 날짜 강조·주말 색상
+ * 20. 업무 분류·회의 참석자
+ * 21. 사이드바에 맞춘 색상 테마
+ * 22. 색상 테마의 표면 보정
+ * 23. 알림·날짜 입력·종일·프로젝트 표시 보완
+ * 24. 목록·반복 요약·시간 빠른 설정·삭제 안내
+ * 25. 상단 버튼·카드 정보·입력 순서에 맞춘 화면 정리
+ * 월간 카드: sm-event / 선택 날짜: sm-agenda / 입력창: sm-form / 팝업: sm-modal
+ * 반응형은 기본 구역과 각 보완 구역에 함께 있습니다. @media로 검색해 해당 너비를 확인하세요.
  */
-
-/* [스타일 수정 시 확인할 순서]
- * JSX의 className과 같은 이름의 선택자를 찾은 뒤 해당 규칙이 어느 화면에 적용되는지 확인합니다.
- * .sm-favorite-item .sm-item-actions는 카드 안쪽 버튼 영역만 바꾸고 다른 파트의 버튼에는 적용되지 않습니다.
- * flex는 주로 가로·세로 한 방향 배치, grid는 열과 행의 배치에 사용합니다.
- * min-width:0은 긴 글이 열을 밀어내는 것을 막고, white-space:nowrap은 시간 범위가 두 줄로 갈라지지 않게 합니다.
- * 색상·간격을 바꿨다면 월별뿐 아니라 일별·주별·담당자별과 등록·수정 창도 함께 확인합니다.
- * @media 안쪽 규칙은 해당 화면 너비에서만 적용됩니다. 큰 화면 규칙만 바꿔서는 모바일이 그대로일 수 있습니다.
- * --sm-accent 같은 CSS 변수는 같은 색을 여러 곳에 재사용하도록 이름을 붙인 값입니다.
- * style로 전달한 --sm-event-color는 일정마다 다르고, CSS의 var()가 그 값을 읽어 테두리·배경에 적용합니다.
- */
-/*
- 전체 여백 기준: 상단은 짧게, 주요 패널 간격은 14px, 카드 안쪽은 18px로 맞춥니다. 글자 크기보다 빈 여백을 먼저 줄여 내용의 가독성을 유지합니다.
- */
-/*
- * [공부 순서 6] JSX의 className과 연결되는 화면 배치
- * .sm-... 클래스는 각 컴포넌트의 className과 이름이 같을 때 적용됩니다.
- * 일반적인 읽는 순서: 공통 크기/색상 → 페이지 배치 → 달력 → 목록/폼 → 반응형 조정.
- * 뒤쪽에 같은 속성을 다시 쓰면 같은 우선순위에서는 나중 선언이 적용됩니다.
- * 더 구체적인 선택자(.sm-staff-table .sm-event 등)는 일반 .sm-event 규칙보다 우선합니다.
- * 일정 화면 밖의 전역 div/table 규칙이 들어와도 이 화면의 배치가 유지되도록 범위를 제한합니다.
- */
-/* JSX와 CSS를 함께 읽는 법
- * JSX의 <div className="sm-card">는 이 파일의 .sm-card 규칙을 찾아 적용합니다.
- * .은 클래스 선택자, #은 id 선택자이며 중괄호 안에는 '속성: 값;'을 적습니다.
- * 같은 요소에 여러 규칙이 맞으면 선택자의 구체성 등을 비교하고 같은 우선순위에서는 뒤 선언을 씁니다.
- * 예를 들어 .sm-agenda-item .sm-status-select는 일정 행 안의 상태 선택창만 고릅니다.
- *
- * 리액트는 어떤 자료를 표시할지 결정하고, CSS는 표시된 요소의 배치·색·크기를 정합니다.
- * aria-pressed='true'에 색을 주는 CSS가 있어도 선택값 자체는 Manager의 state에서 바뀝니다.
- * CSS의 :hover는 마우스를 올린 동안, :focus-visible은 키보드 등으로 초점이 보일 때의 모습입니다.
- *
- * 공간 관련 속성:
- * padding은 테두리 안쪽 여백, margin은 바깥 여백, gap은 flex/grid 자식 사이 간격입니다.
- * flex는 주로 한 방향의 배치에 쓰고 grid는 행·열 구조를 정하는 데 사용합니다.
- * overflow:auto는 내용이 영역보다 클 때 스크롤을 만들고, min-width:0은 긴 글 때문에
- * flex/grid 자식이 필요한 폭보다 작아지지 못하는 기본 동작을 풀어 줍니다.
- * @media는 화면 너비 조건에 맞을 때만 안쪽 규칙을 적용하므로 휴대폰 배치를 따로 정할 수 있습니다.
- */
-
-/* 다른 파트의 전역 div { width:90%; margin:30px auto; }가 앱의 공통 부모에도 적용됩니다.
- * :has 조건은 일정 화면이 열려 있을 때만 맞으므로 다른 파트의 부모 배치는 바꾸지 않습니다.
- * 내부 reset의 :where는 선택자 우선순위를 낮춰 아래 sm-* 클래스의 개별 크기·여백이 우선하게 합니다.
+/* [01] 전역 스타일 간섭 방지
  */
 #root:has(.schedule-app),
 #root > div:has(.schedule-app) {
   width: 100%;
   margin: 0;
 }
-
 .schedule-app :where(div) {
   width: auto;
   margin: 0;
 }
-
+/* [02] 공통 크기·기본 색상
+ */
 /* 기본 레이아웃과 공통 색상
  * border-box는 width/height 안에 padding과 border를 포함시켜 입력창·격자가 넘치지 않게 합니다.
  * --sm-accent 같은 변수는 이 영역과 자식에서 var(--sm-accent)로 재사용합니다.
@@ -68,32 +51,22 @@
 .schedule-app * {
   box-sizing: border-box;
 }
-
 .schedule-app {
   width: 100%;
   min-height: 100vh;
   padding: 18px clamp(12px, 2vw, 28px) 28px;
   /* 사이드바의 슬레이트 네이비와 보라색을 일정 화면 안에서 재사용합니다.
    * 작업 영역은 밝게 유지하고 선택·동작 색상으로 같은 브랜드 톤을 연결합니다. */
-  --sm-accent: #46506a;
-  --sm-ink: #293044;
-  --sm-border: #dfe2ea;
-  --sm-muted: #657085;
-  --sm-soft: #eef0f6;
-  --sm-lime: #a99bf7;
-  background: #f6f7fb;
-  color: var(--sm-ink);
-  font:
-    14px "Malgun Gothic",
+  font: 14px "Malgun Gothic",
     Arial,
     sans-serif;
 }
-
 .sm-shell {
   max-width: 1440px;
   margin: auto;
 }
-
+/* [03] 페이지 헤더
+ */
 /* 페이지 상단 헤더와 제목
  * 쉼표로 나열한 선택자는 같은 선언을 여러 클래스에 적용합니다.
  * flex는 자식을 한 방향으로 배치합니다. align-items는 교차 방향 정렬,
@@ -110,7 +83,6 @@
   align-items: center;
   justify-content: space-between;
 }
-
 .sm-top {
   flex-wrap: wrap;
   gap: 12px;
@@ -118,24 +90,20 @@
   padding-bottom: 12px;
   border-bottom: 1px solid #dce2d8;
 }
-
 .sm-brand-copy {
   display: flex;
   flex-direction: column;
   gap: 2px;
   min-width: 0;
 }
-
 .sm-brand-copy strong {
   font-size: 15px;
   line-height: 1.15;
 }
-
 .sm-brand-copy .sm-muted {
   font-size: 10px;
   line-height: 1.2;
 }
-
 .sm-brand {
   display: flex;
   align-items: center;
@@ -143,19 +111,16 @@
   font-size: 16px;
   font-weight: 700;
 }
-
 .sm-mark,
 .sm-avatar {
   display: grid;
   place-items: center;
 }
-
 .sm-storage-warning {
   margin: -6px 0 14px;
   color: #d4505e;
   font-size: 12px;
 }
-
 .sm-mark {
   width: 36px;
   height: 36px;
@@ -163,7 +128,6 @@
   background: var(--sm-accent);
   color: var(--sm-lime);
 }
-
 .sm-avatar {
   width: 34px;
   height: 34px;
@@ -173,7 +137,6 @@
   color: var(--sm-accent);
   font-weight: 700;
 }
-
 .sm-top-right {
   display: flex;
   align-items: center;
@@ -181,18 +144,15 @@
   color: var(--sm-muted);
   font-size: 12px;
 }
-
 .sm-heading {
   gap: 12px;
   margin-bottom: 16px;
 }
-
 .sm-heading-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
 }
-
 .sm-eyebrow {
   margin-bottom: 6px;
   color: #5c7761;
@@ -200,7 +160,6 @@
   font-weight: 700;
   letter-spacing: 2.5px;
 }
-
 .sm-heading h1 {
   margin: 0;
   font-size: clamp(30px, 3vw, 40px);
@@ -208,13 +167,11 @@
   letter-spacing: -1.8px;
   line-height: 1.25;
 }
-
 .sm-heading p {
   margin: 12px 0 0;
   color: var(--sm-muted);
   font-size: 13px;
 }
-
 .sm-btn {
   padding: 12px 18px;
   border: 0;
@@ -223,7 +180,6 @@
   color: white;
   cursor: pointer;
 }
-
 .sm-secondary-btn {
   padding: 11px 16px;
   border: 1px solid #d6ded3;
@@ -232,7 +188,8 @@
   color: var(--sm-accent);
   cursor: pointer;
 }
-
+/* [04] 프로젝트·팀원 목록
+ */
 /* 프로젝트·팀원 목록 바로가기
  * 요약 숫자와 아이콘을 작은 버튼에 함께 표시합니다. 아래의 sm-stats·sm-stat 규칙이 실제 가로 배치를 정합니다.
  */
@@ -242,7 +199,6 @@
   gap: 10px;
   margin-bottom: 14px;
 }
-
 .sm-stat,
 .sm-card {
   border: 1px solid var(--sm-border);
@@ -250,7 +206,6 @@
   background: white;
   box-shadow: 0 4px 18px #233c3603;
 }
-
 .sm-stat {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
@@ -261,10 +216,8 @@
   align-items: flex-start;
   overflow: hidden;
 }
-
 /* 마우스를 올리거나 해당 목록을 열었을 때 같은 강조색을 씁니다.
  * aria-expanded는 Manager가 넣는 값이며 CSS가 목록의 열림 상태를 직접 바꾸지는 않습니다. */
-
 /* svg의 실제 선 모양은 ScheduleItemParts.js, 크기는 이 공통 클래스가 담당합니다.
  * flex-shrink:0은 긴 버튼 글자가 있어도 아이콘을 납작하게 줄이지 않게 합니다. */
 .sm-icon {
@@ -273,7 +226,6 @@
   flex-shrink: 0;
   vertical-align: middle;
 }
-
 .sm-heading-actions button {
   display: inline-flex;
   align-items: center;
@@ -281,17 +233,14 @@
   gap: 8px;
   font-weight: 700;
 }
-
 .sm-today-label {
   padding-left: 14px;
   border-left: 1px solid #d4ddd2;
   font-variant-numeric: tabular-nums;
 }
-
 .sm-stat > div {
   min-width: 0;
 }
-
 /* 목록은 오른쪽 카드 안에서만 스크롤합니다. 긴 이름도 줄바꿈해 카드 폭을 유지합니다. */
 .sm-directory-list {
   max-height: 420px;
@@ -300,12 +249,10 @@
   padding: 0;
   margin: 0;
 }
-
 /* >는 바로 아래 자식만 선택합니다. 긴 이름은 단어 중간에서도 줄을 바꿔 폭을 지킵니다. */
 .sm-directory-list > li {
   overflow-wrap: anywhere;
 }
-
 /* 팀원 이름과 펼침 기호를 양끝에 배치하고 버튼 전체를 클릭 영역으로 만듭니다. */
 .sm-directory-person {
   display: flex;
@@ -321,13 +268,11 @@
   background: transparent;
   cursor: pointer;
 }
-
 .sm-directory-person:hover,
 .sm-directory-person[aria-expanded="true"] {
   color: #355b4b;
   font-weight: 700;
 }
-
 /* 팀원별 프로젝트 영역은 연녹색 배경으로 목록 안의 하위 정보임을 구분합니다. */
 .sm-directory-projects {
   padding: 12px;
@@ -337,14 +282,12 @@
   font-size: 12px;
   line-height: 1.7;
 }
-
 /* 실제 프로젝트는 카드 버튼으로 표시하므로 기본 목록 점과 들여쓰기를 제거합니다. */
 .sm-directory-projects ul {
   padding: 0;
   margin: 6px 0 0;
   list-style: none;
 }
-
 /* 프로젝트는 제목·등록 일정 수·담당자를 하나의 버튼에 묶습니다.
  * min-width:0과 줄바꿈은 긴 프로젝트명 때문에 카드가 옆으로 늘어나는 것을 막습니다. */
 .sm-directory-project-button {
@@ -362,14 +305,12 @@
   text-align: left;
   cursor: pointer;
 }
-
 /* aria-pressed가 true인 버튼은 마우스를 떼도 강조를 유지해 선택 프로젝트를 알 수 있습니다. */
 .sm-directory-project-button:hover,
 .sm-directory-project-button[aria-pressed="true"] {
   border-color: #a6bdb0;
   background: #edf3ef;
 }
-
 /* flex-shrink:0은 긴 제목이 있어도 아이콘 영역이 찌그러지지 않게 합니다. */
 .sm-directory-project-symbol {
   display: grid;
@@ -381,7 +322,6 @@
   background: #e8eee1;
   color: var(--sm-accent);
 }
-
 /* 사람의 첫 글자는 장식용 아바타입니다. 이름은 옆의 본문에 그대로 남겨 읽을 수 있게 합니다.
  * 이름 영역만 flex:1로 늘려 오른쪽 펼침 기호의 위치를 일정하게 유지합니다. */
 .sm-person-avatar {
@@ -396,41 +336,36 @@
   font-size: 12px;
   font-weight: 700;
 }
-
 .sm-person-name {
   flex: 1;
   min-width: 0;
 }
-
 .sm-directory-project-arrow {
   color: #6c8173;
 }
-
 .sm-directory-project-arrow .sm-icon {
   width: 16px;
   height: 16px;
 }
-
 /* 제목 영역만 남는 폭을 사용합니다. min-width:0으로 내용 길이보다 작아질 수 있게 허용합니다. */
 .sm-directory-project-info {
   flex: 1;
   min-width: 0;
   overflow-wrap: anywhere;
 }
-
 /* inline 요소인 strong/small을 block으로 바꿔 제목과 요약을 서로 다른 줄에 표시합니다. */
 .sm-directory-project-info strong,
 .sm-directory-project-info small {
   display: block;
 }
-
 .sm-directory-project-info small {
   margin-top: 5px;
   color: #737d90;
   font-size: 11px;
   line-height: 1.6;
 }
-
+/* [05] 달력·사이드바 배치
+ */
 /* 달력과 오른쪽 일정 패널의 배치
  * minmax(0, 1fr)은 달력이 남은 폭을 차지하되 긴 내용 때문에 최소 폭이 커지지 않게 합니다.
  * 오른쪽은 340px로 두고, align-items:start는 짧은 패널이 달력 높이만큼 늘어나는 것을 막습니다.
@@ -442,12 +377,12 @@
   align-items: start;
   gap: 14px;
 }
-
 .sm-card {
   min-width: 0;
   padding: 18px;
 }
-
+/* [06] 달력 도구·검색·필터
+ */
 /* 달력의 월 이동, 검색, 요일과 공휴일
  * 탭 active 클래스는 React가 view와 비교해 붙이며, CSS가 배경/색으로 선택 상태를 표현합니다.
  * repeat(7, minmax(0, 1fr))은 요일과 날짜가 동일한 7열 정렬을 유지하게 합니다.
@@ -460,14 +395,12 @@
   flex-direction: column;
   align-items: stretch;
 }
-
 /* 프로젝트 선택 결과는 메인 달력 바로 위에 표시합니다.
  * flex-wrap으로 긴 프로젝트명과 해제 버튼이 작은 화면에서는 다음 줄로 내려가게 합니다.
  * section의 scroll-margin은 자동 이동할 때 위쪽에 작은 여백을 남깁니다. */
 .sm-calendar-card {
   scroll-margin-top: 20px;
 }
-
 .sm-calendar-project {
   display: flex;
   align-items: center;
@@ -483,20 +416,16 @@
   font-size: 12px;
   overflow-wrap: anywhere;
 }
-
 .sm-calendar-project > span {
   min-width: 0;
 }
-
 .sm-calendar-project .sm-icon {
   margin-right: 5px;
 }
-
 .sm-calendar-project .sm-list-all-btn {
   margin: 0;
   flex-shrink: 0;
 }
-
 .sm-calendar-filters {
   display: flex;
   flex-wrap: wrap;
@@ -507,7 +436,6 @@
   background: #f5f7f2;
   border-radius: 12px;
 }
-
 .sm-calendar-filters select {
   height: 40px;
   padding: 0 10px;
@@ -518,7 +446,6 @@
   font-size: 13px;
   min-height: 40px;
 }
-
 .sm-view-tabs {
   display: flex;
   gap: 6px;
@@ -529,7 +456,6 @@
   border-bottom: 1px solid var(--sm-border);
   flex-wrap: wrap;
 }
-
 .sm-view-tabs button {
   padding: 9px 14px;
   border: 0;
@@ -539,19 +465,16 @@
   cursor: pointer;
   white-space: nowrap;
 }
-
 .sm-view-tabs button.active {
   background: var(--sm-accent);
   color: white;
   font-weight: 700;
 }
-
 .sm-month {
   width: 100%;
   min-width: 0;
   gap: 10px;
 }
-
 .sm-month h2 {
   margin: 0;
   font-size: 24px;
@@ -559,13 +482,11 @@
   line-height: 1.35;
   white-space: nowrap;
 }
-
 .sm-arrows {
   display: flex;
   flex-shrink: 0;
   gap: 7px;
 }
-
 .sm-icon-btn {
   display: grid;
   place-items: center;
@@ -577,7 +498,6 @@
   width: 36px;
   cursor: pointer;
 }
-
 /* 아이콘과 입력창의 테두리를 부모 div에 모아 하나의 검색창처럼 표시합니다.
  * 입력창은 남은 폭만 차지하고 :focus-within은 내부 입력창에 초점이 있을 때 부모를 강조합니다. */
 .sm-search-field {
@@ -593,12 +513,10 @@
   background: white;
   color: #7c8d7c;
 }
-
 .sm-search-field:focus-within {
   border-color: #6c927b;
   box-shadow: 0 0 0 3px #204b4310;
 }
-
 /* 검색어가 없으면 초기화 버튼을 흐리게 표시하고, 입력창이 늘어나도 오른쪽 크기를 유지합니다. */
 .sm-search-reset {
   display: grid;
@@ -613,21 +531,17 @@
   color: var(--sm-accent);
   cursor: pointer;
 }
-
 .sm-search-reset:hover:not(:disabled) {
   background: var(--sm-soft);
 }
-
 .sm-search-reset:disabled {
   opacity: 0.35;
   cursor: default;
 }
-
 .sm-search-field .sm-icon {
   width: 17px;
   height: 17px;
 }
-
 .sm-search {
   flex: 1;
   width: 100%;
@@ -639,19 +553,16 @@
   color: var(--sm-ink);
   font-size: 13px;
 }
-
 .sm-section-kicker {
   margin-bottom: 6px;
   color: var(--sm-muted);
   font-size: 11px;
   font-weight: 500;
 }
-
 .sm-grid {
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
 }
-
 /* 요일과 날짜를 같은 스크롤 영역에 넣어 좁은 화면에서도 두 격자의 열이 어긋나지 않습니다. */
 .sm-month-view {
   max-width: 100%;
@@ -659,13 +570,11 @@
   border: 1px solid var(--sm-border);
   border-radius: 12px;
 }
-
 .sm-month-view > .sm-grid {
   /* 일곱 칸이 각각 약 120px를 확보해 시간과 별표를 같은 줄에 표시할 폭을 남깁니다.
    * 좁은 화면은 바깥 month-view에서 가로로 스크롤하므로 페이지 전체가 늘어나지 않습니다. */
   min-width: 840px;
 }
-
 .sm-weekday {
   padding: 11px 0;
   background: #f5f7f1;
@@ -674,14 +583,12 @@
   font-size: 12px;
   font-weight: 700;
 }
-
 .sm-weekday.saturday,
 .sm-day-num.saturday,
 .sm-week-column > .saturday,
 .sm-staff-table .saturday {
   color: #3976ce;
 }
-
 .sm-weekday.sunday,
 .sm-day-num.sunday,
 .sm-day-num.holiday,
@@ -689,7 +596,6 @@
 .sm-staff-table .sunday {
   color: #df4555;
 }
-
 .sm-holiday-name {
   overflow: hidden;
   margin: 0 0 4px;
@@ -698,13 +604,13 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-
 .sm-holiday-error {
   margin-bottom: 8px;
   color: #df4555;
   font-size: 11px;
 }
-
+/* [07] 월간 날짜 칸
+ */
 /* 달력 날짜와 일정 표시
  * min-height는 최소 높이만 지정하므로 일정이 늘어나면 날짜 칸도 늘어날 수 있습니다.
  * :hover는 마우스가 올라간 상태, .selected는 React가 선택 날짜에 붙인 상태입니다.
@@ -719,27 +625,22 @@
   border-right: 1px solid #edf0e9;
   cursor: pointer;
 }
-
 .sm-day:hover {
   background: #f5f8ef;
 }
-
 .sm-day.selected {
   background: #f0f5e5;
   box-shadow: inset 0 0 0 1.5px #aabd8d;
 }
-
 /* 앞뒤 빈 날짜 칸은 React가 aria-hidden을 붙입니다. 클릭할 날짜와 구분하도록
  * 연한 배경과 기본 커서를 사용합니다. 실제 날짜 데이터나 선택 상태는 바꾸지 않습니다. */
 .sm-day[aria-hidden="true"] {
   background: #fafbf8;
   cursor: default;
 }
-
 .sm-day:nth-child(7n) {
   border-right: 0;
 }
-
 .sm-day-num {
   display: grid;
   width: 28px;
@@ -751,17 +652,16 @@
   font-size: 13px;
   font-weight: 600;
 }
-
 .sm-day.today .sm-day-num:not(.saturday):not(.sunday):not(.holiday) {
   background: var(--sm-accent);
   color: var(--sm-lime);
 }
-
 /* 주말/공휴일은 원래 날짜 색상을 유지하면서도 테두리로 오늘을 알 수 있게 합니다. */
 .sm-day.today .sm-day-num {
   box-shadow: 0 0 0 1.5px var(--sm-accent);
 }
-
+/* [08] 일정 카드·긴 제목·배지
+ */
 /* React가 넘기는 --sm-event-color를 왼쪽 선과 배경에 함께 사용합니다.
  * color-mix는 작업 색상 18%와 흰색을 섞어 작업 구분을 알아보기 쉬운 배경을 만듭니다.
  * 지원하지 않는 브라우저에서는 앞의 단색 배경이 남고 색상선은 계속 표시됩니다. */
@@ -785,7 +685,6 @@
   text-align: left;
   cursor: pointer;
 }
-
 /* 월간 일정은 제목 / 시간·상태의 두 영역으로 나눕니다.
  * 제목에 상태 배지가 끼어들지 않아 날짜 칸의 가로 폭을 전부 사용할 수 있습니다.
  * 두 줄을 넘는 제목은 말줄임표로 생략하고 전체 이름 펼치기를 제공합니다.
@@ -793,7 +692,6 @@
 .sm-event-compact {
   white-space: normal;
 }
-
 /* 제목과 별표는 별도 버튼입니다. 시간 옆에 작은 별을 두어 직접 즐겨찾기에 추가합니다. */
 .sm-event-open {
   display: block;
@@ -806,11 +704,9 @@
   text-align: left;
   cursor: pointer;
 }
-
 .sm-event-open:hover .sm-event-title {
   text-decoration: underline;
 }
-
 .sm-event-time-row {
   display: flex;
   align-items: center;
@@ -819,29 +715,26 @@
   gap: 2px;
   margin-top: 4px;
 }
-
 .sm-event-time-row time {
   font-size: 11px;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
-
 .sm-event-time-row .sm-favorite-btn {
   flex-shrink: 0;
   width: 24px;
   height: 24px;
   padding: 2px;
 }
-
 .sm-event-time-row .sm-icon {
   width: 19px;
   height: 19px;
 }
-
 .sm-event-title {
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   overflow: hidden;
   color: #20382f;
   font-size: 13px;
@@ -849,24 +742,20 @@
   line-height: 1.5;
   overflow-wrap: anywhere;
 }
-
 .sm-event-full-title {
   min-width: 0;
   margin-top: 4px;
   font-size: 11px;
 }
-
 .sm-event-full-title summary {
   cursor: pointer;
   width: fit-content;
 }
-
 .sm-event-full-title p {
   margin: 4px 0;
   white-space: normal;
   overflow-wrap: anywhere;
 }
-
 .sm-event-meta {
   display: flex;
   align-items: center;
@@ -875,7 +764,6 @@
   gap: 4px;
   margin-top: 6px;
 }
-
 /* 공개 범위는 작업 색상과 상태 배지에 섞이지 않도록 별도 테두리 배지로 표시합니다.
  * 개인 일정은 점선과 다른 색을 함께 사용해 색만으로 구별하지 않아도 됩니다.
  * 공개 범위와 업무 상태는 서로 다른 값이지만 배지의 크기·글꼴은 같은 규칙을 사용합니다.
@@ -892,25 +780,21 @@
   white-space: nowrap;
   vertical-align: middle;
 }
-
 .sm-visibility {
   width: fit-content;
   border: 1px solid #b5cdc4;
   background: #f1f8f4;
   color: #315f50;
 }
-
 .sm-visibility.private {
   border-style: dashed;
   border-color: #c4b7dd;
   background: #f6f0fc;
   color: #70508c;
 }
-
 .sm-agenda-item .sm-visibility {
   margin-top: 6px;
 }
-
 .sm-more-events {
   padding: 5px 7px;
   border: 0;
@@ -921,12 +805,12 @@
   border-radius: 5px;
   cursor: pointer;
 }
-
 .sm-more-events:hover,
 .sm-list-all-btn:hover {
   text-decoration: underline;
 }
-
+/* [09] 주간·일간 보기
+ */
 /* 주간은 7열, 각 열은 align-content:start로 일정을 위에서부터 쌓습니다.
  * 이벤트 제목의 overflow-wrap:anywhere는 긴 단어도 열 안에서 줄바꿈하게 합니다.
  * 일별 목록은 일정 내용과 별표 영역을 나누어 표시합니다.
@@ -938,7 +822,6 @@
   min-height: 240px;
   border-top: 1px solid #f0f0f4;
 }
-
 .sm-week-column {
   display: grid;
   align-content: start;
@@ -951,15 +834,12 @@
   text-align: left;
   cursor: pointer;
 }
-
 .sm-week-column:last-child {
   border-right: 0;
 }
-
 .sm-week-column.selected {
   background: #edf3ef;
 }
-
 /* 주간 달력과 담당자별 주간 표는 같은 세로형 일정 버튼을 사용합니다.
  * 공통 sm-event의 한 줄 제한을 풀고 시간·제목·담당자·배지를 위에서 아래로 쌓습니다. */
 .sm-week-column .sm-event,
@@ -969,17 +849,14 @@
   white-space: normal;
   overflow-wrap: anywhere;
 }
-
 .sm-week-column .sm-event small {
   opacity: 0.85;
 }
-
 .sm-day-view {
   max-height: 620px;
   overflow-y: auto;
   padding-top: 4px;
 }
-
 .sm-day-view > .sm-event-shell > .sm-event {
   display: flex;
   align-items: center;
@@ -987,11 +864,9 @@
   padding: 8px 10px;
   font-size: 12px;
 }
-
 .sm-day-view > .sm-event-shell > .sm-event small {
   margin-left: auto;
 }
-
 /* 긴 제목은 남는 폭 안에서만 표시해 담당자와 상태 배지가 버튼 밖으로 밀리지 않게 합니다. */
 .sm-day-view > .sm-event-shell > .sm-event > span:not(.sm-status-badge):not(.sm-visibility) {
   min-width: 0;
@@ -999,7 +874,8 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
-
+/* [10] 사이드바·즐겨찾기·선택 날짜
+ */
 /* 선택 날짜의 일정과 다가오는 일정
  * 선택 날짜 항목은 즐겨찾기의 카드 배치를 재사용합니다.
  * 버튼은 flex-shrink:0으로 글자가 과도하게 눌려 작아지지 않게 합니다.
@@ -1010,7 +886,6 @@
   align-content: start;
   gap: 10px;
 }
-
 /* 즐겨찾기 안내는 짧게 읽고, 목록만 스크롤해 아래의 선택 날짜 패널에도 접근하게 합니다. */
 .sm-search-summary {
   margin: 0 0 10px;
@@ -1019,7 +894,6 @@
   line-height: 1.6;
   overflow-wrap: anywhere;
 }
-
 .sm-favorite-list {
   display: grid;
   gap: 8px;
@@ -1029,7 +903,6 @@
   /* 키보드로 버튼에 초점을 둘 때 표시되는 외곽선이 스크롤 경계에 잘리지 않게 합니다. */
   padding: 3px;
 }
-
 /* 즐겨찾기 한 건은 독립된 카드입니다. 왼쪽 색상선은 기존 작업 종류 색을 그대로 사용합니다.
  * 이 클래스는 sm-agenda-item과 별개이므로 선택 날짜 목록의 배치에는 영향을 주지 않습니다. */
 .sm-favorite-item {
@@ -1040,13 +913,11 @@
   border-radius: 12px;
   background: #fbfcf9;
 }
-
 .sm-favorite-heading {
   display: flex;
   align-items: flex-start;
   gap: 8px;
 }
-
 .sm-favorite-title {
   flex: 1;
   min-width: 0;
@@ -1060,16 +931,13 @@
   overflow-wrap: anywhere;
   cursor: pointer;
 }
-
 .sm-favorite-title:hover {
   color: var(--sm-accent);
   text-decoration: underline;
 }
-
 .sm-favorite-heading .sm-favorite-btn {
   flex-shrink: 0;
 }
-
 .sm-favorite-time-row {
   display: flex;
   align-items: center;
@@ -1077,7 +945,6 @@
   gap: 7px 10px;
   margin-top: 5px;
 }
-
 .sm-favorite-time {
   display: inline-flex;
   align-items: center;
@@ -1088,12 +955,10 @@
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
-
 .sm-favorite-time .sm-icon {
   width: 14px;
   height: 14px;
 }
-
 /* 48px 설명 열과 남은 공간을 쓰는 값 열로 나눕니다. 긴 프로젝트명은 값 열 안에서만
  * 줄바꿈합니다. minmax(0, 1fr)의 0은 글자가 길어도 카드 너비를 밀어내지 않게 합니다. */
 .sm-favorite-info {
@@ -1104,25 +969,21 @@
   font-size: 13px;
   line-height: 1.6;
 }
-
 .sm-favorite-info dt {
   white-space: nowrap;
   color: #52665e;
 }
-
 .sm-favorite-info dd {
   margin: 0;
   color: var(--sm-ink);
   overflow-wrap: anywhere;
   font-weight: 500;
 }
-
 .sm-favorite-item .sm-attendees {
   margin: 0 0 12px;
   color: var(--sm-muted);
   font-size: 12px;
 }
-
 /* 고정한 일정의 날짜를 누르면 해당 일정이 있는 일별 달력으로 이동합니다. */
 .sm-favorite-date {
   display: flex;
@@ -1144,19 +1005,15 @@
   overflow-wrap: anywhere;
   cursor: pointer;
 }
-
 .sm-favorite-date:hover {
   background: #e1ebdf;
 }
-
 .sm-favorite-repeat {
   font-weight: 400;
 }
-
 .sm-favorite-calendar-link {
   white-space: nowrap;
 }
-
 /* 선택 날짜 카드의 관리 영역은 상태 선택과 삭제의 두 열입니다.
  * 아래쪽 .sm-agenda-item .sm-item-actions가 실제 두 열 배치를 지정하며, 별표는 카드 제목 옆에 있습니다. */
 .sm-favorite-item .sm-item-actions {
@@ -1168,18 +1025,15 @@
   padding-top: 8px;
   border-top: 1px solid var(--sm-border);
 }
-
 .sm-favorite-item .sm-status-select {
   width: 100%;
   min-width: 0;
   max-width: none;
   min-height: 32px;
 }
-
 .sm-favorite-item .sm-delete-btn {
   min-height: 32px;
 }
-
 .sm-favorite-btn {
   display: grid;
   place-items: center;
@@ -1192,18 +1046,15 @@
   color: #7b806e;
   cursor: pointer;
 }
-
 .sm-favorite-btn:hover {
   background: #f7f1dc;
 }
-
 /* 버튼 배경이 아니라 SVG 별의 안쪽만 노란색으로 채웁니다.
  * aria-pressed는 기존 즐겨찾기 값이므로 저장·해제 동작은 그대로 사용합니다. */
 .sm-favorite-btn[aria-pressed="true"] .sm-icon {
   fill: #ffd34e;
   stroke: #997218;
 }
-
 .sm-calendar-search-summary {
   display: flex;
   align-items: center;
@@ -1213,24 +1064,20 @@
   color: var(--sm-muted);
   font-size: 12px;
 }
-
 .sm-panel-title {
   margin-bottom: 10px;
   gap: 10px;
 }
-
 .sm-panel-title h3 {
   margin: 0;
   font-size: 16px;
   letter-spacing: -0.3px;
   font-weight: 700;
 }
-
 .sm-muted {
   color: var(--sm-muted);
   font-size: 12px;
 }
-
 .sm-agenda-date {
   display: flex;
   align-items: center;
@@ -1239,16 +1086,15 @@
   color: var(--sm-muted);
   font-size: 12px;
 }
-
-.sm-agenda-item { margin-top: 10px; }
-
+.sm-agenda-item {
+  margin-top: 10px;
+}
 .sm-item-actions {
   display: flex;
   flex-shrink: 0;
   flex-wrap: wrap;
   gap: 5px;
 }
-
 .sm-delete-btn {
   align-self: center;
   padding: 5px 8px;
@@ -1257,26 +1103,20 @@
   font-size: 11px;
   cursor: pointer;
 }
-
 .sm-delete-btn {
   border: 1px solid #f0dadd;
   color: #ad3346;
   border-color: #e2bcc4;
 }
-
 .sm-delete-btn:hover {
   background: #fff4f5;
 }
-
-
-
 .sm-form-error {
   margin: 0;
   color: #bb3a46;
   font-size: 12px;
   line-height: 1.6;
 }
-
 /* 팀원 등록은 일정 저장과 별도 버튼입니다. 좁은 카드에서도 입력창이 폭을 넘지 않게 합니다. */
 .sm-team-editor {
   display: grid;
@@ -1285,7 +1125,6 @@
   gap: 8px;
   margin: 12px 0;
 }
-
 .sm-team-editor label {
   display: grid;
   gap: 6px;
@@ -1293,7 +1132,6 @@
   color: var(--sm-muted);
   font-size: 12px;
 }
-
 .sm-team-editor input {
   width: 100%;
   min-width: 0;
@@ -1304,11 +1142,9 @@
   background: white;
   color: var(--sm-ink);
 }
-
 .sm-team-editor .sm-form-error {
   grid-column: 1 / -1;
 }
-
 .sm-team-options {
   min-width: 0;
   margin: 0;
@@ -1316,28 +1152,22 @@
   border: 1px solid var(--sm-border);
   border-radius: 8px;
 }
-
 .sm-team-options legend {
   font-size: 12px;
   color: var(--sm-muted);
 }
-
 .sm-form .sm-team-options label {
   display: flex;
   align-items: center;
   gap: 8px;
   margin: 6px 0;
 }
-
 .sm-form .sm-team-options input[type="checkbox"] {
   width: 16px;
   height: 16px;
   padding: 0;
   margin: 0;
 }
-
-
-
 .sm-deadline strong {
   display: block;
   margin-bottom: 4px;
@@ -1345,13 +1175,11 @@
   overflow-wrap: anywhere;
   line-height: 1.5;
 }
-
 .sm-deadline small {
   color: var(--sm-muted);
   font-size: 11px;
   line-height: 1.7;
 }
-
 .sm-empty {
   padding: 18px 10px;
   border: 1px dashed #d7e0d0;
@@ -1362,7 +1190,6 @@
   font-size: 12px;
   line-height: 1.8;
 }
-
 .sm-deadline {
   width: 100%;
   justify-content: flex-start;
@@ -1376,17 +1203,13 @@
   font: inherit;
   cursor: pointer;
 }
-
 .sm-deadline:hover {
   background: #f1f5f3;
 }
-
 .sm-date-subtitle {
   color: var(--sm-muted);
-  font-size: 12px;
   line-height: 1.7;
 }
-
 /* 선택 날짜의 큰 숫자는 안내를 돕는 장식이며, 전체 날짜는 옆에 그대로 표시됩니다.
  * grid의 가운데 정렬과 두 줄 배치로 달력을 축소한 표지처럼 보이게 합니다. */
 .sm-agenda-day {
@@ -1395,37 +1218,29 @@
   flex-shrink: 0;
   width: 48px;
   padding: 6px;
-  border-radius: 13px;
   background: var(--sm-lime);
   color: var(--sm-accent);
 }
-
 .sm-agenda-day strong {
   font-size: 23px;
   line-height: 1.2;
   font-variant-numeric: tabular-nums;
 }
-
 .sm-agenda-day span {
-  font-size: 10px;
   margin-top: 3px;
 }
-
 .sm-agenda-card {
   border-top: 3px solid #a7bd84;
 }
-
 .sm-panel-title > .sm-muted {
   padding: 4px 8px;
   border-radius: 6px;
   background: var(--sm-soft);
   white-space: nowrap;
 }
-
 .sm-upcoming-card {
   background: #fcfbf7;
 }
-
 .sm-panel-description {
   display: flex;
   align-items: center;
@@ -1435,17 +1250,14 @@
   font-size: 11px;
   line-height: 1.7;
 }
-
 .sm-panel-description .sm-icon {
   width: 14px;
   height: 14px;
 }
-
 .sm-date-subtitle strong {
   color: #df4555;
   font-weight: 500;
 }
-
 .sm-deadline-dot {
   width: 8px;
   height: 8px;
@@ -1453,7 +1265,6 @@
   border-radius: 50%;
   background: #e36c79;
 }
-
 /* 시간 기준의 예정/진행 중 안내입니다. 사용자가 선택하는 업무 상태와는 별도로 표시합니다. */
 .sm-upcoming-phase {
   display: inline-block;
@@ -1464,11 +1275,11 @@
   color: #42623e;
   font-size: 10px;
 }
-
 .sm-deadline small {
   display: block;
 }
-
+/* [11] 등록·수정 모달과 입력
+ */
 /* 일정 등록 모달과 입력 폼
  * position:fixed + inset:0은 배경을 화면 전체에 고정합니다. z-index는 다른 내용 위에 표시합니다.
  * backdrop의 grid/place-items:center는 모달을 중앙에 두고 반투명 색은 뒤 화면을 어둡게 합니다.
@@ -1485,7 +1296,6 @@
   background: #16352e88;
   backdrop-filter: blur(4px);
 }
-
 .sm-modal {
   width: min(100%, 520px);
   max-height: calc(100dvh - 32px);
@@ -1496,7 +1306,6 @@
   background: #fdfefa;
   box-shadow: 0 24px 80px #102a3540;
 }
-
 .sm-modal-head {
   display: flex;
   align-items: flex-start;
@@ -1506,23 +1315,19 @@
   padding-bottom: 18px;
   border-bottom: 1px solid var(--sm-border);
 }
-
 .sm-modal-head > div {
   min-width: 0;
   flex: 1;
 }
-
 .sm-modal-head h2 {
   margin: 0;
   font-size: 20px;
 }
-
 .sm-modal-head p {
   margin: 6px 0 0;
   color: #70798c;
   font-size: 12px;
 }
-
 .sm-close {
   flex-shrink: 0;
   border: 0;
@@ -1531,13 +1336,11 @@
   font-size: 24px;
   cursor: pointer;
 }
-
 .sm-form {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px 14px;
 }
-
 .sm-form label {
   min-width: 0;
   display: grid;
@@ -1545,7 +1348,6 @@
   color: #354e44;
   font-size: 13px;
 }
-
 .sm-form input,
 .sm-form select,
 .sm-form textarea {
@@ -1557,30 +1359,25 @@
   border-radius: 8px;
   background: white;
   color: #263a49;
-  font:
-    13px Arial,
+  font: 13px Arial,
     sans-serif;
 }
-
 .sm-form input:focus,
 .sm-form select:focus,
 .sm-form textarea:focus {
   border-color: #263a49;
   outline: 2px solid #263a4920;
 }
-
 .sm-form-wide,
 .sm-form-actions {
   grid-column: 1 / -1;
 }
-
 .sm-form-note {
   margin: 0;
   color: #52665e;
   font-size: 11px;
   line-height: 1.6;
 }
-
 .sm-form-actions {
   display: flex;
   flex-wrap: wrap;
@@ -1588,7 +1385,6 @@
   gap: 8px;
   margin-top: 6px;
 }
-
 .sm-cancel {
   padding: 10px 14px;
   border: 1px solid #e5e5ed;
@@ -1597,7 +1393,8 @@
   color: #5d5f70;
   cursor: pointer;
 }
-
+/* [12] 전체 일정 목록 모달
+ */
 /* 전체 일정 목록
  * 모달을 flex-column으로 만들고 목록에 overflow-y:auto를 주어 긴 목록을 스크롤할 수 있게 합니다.
  * 목록 정보는 grid로 날짜/제목/설명을 세로로 쌓고, 바깥 item은 flex로 동작 버튼과 나눕니다.
@@ -1608,12 +1405,10 @@
   max-height: min(80vh, 720px);
   flex-direction: column;
 }
-
 .sm-list-content {
   min-height: 0;
   overflow-y: auto;
 }
-
 .sm-list-item {
   display: flex;
   align-items: center;
@@ -1622,7 +1417,6 @@
   padding: 12px 0;
   border-top: 1px solid #f0f0f4;
 }
-
 .sm-list-item-info {
   display: grid;
   justify-items: start;
@@ -1637,20 +1431,17 @@
   cursor: pointer;
   line-height: 1.7;
 }
-
 .sm-list-date,
 .sm-list-item-info small {
   color: #70798c;
   font-size: 11px;
 }
-
 .sm-list-item-info strong {
   overflow: hidden;
   max-width: 100%;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-
 .sm-list-all-btn {
   margin-top: 6px;
   padding: 0;
@@ -1660,7 +1451,8 @@
   font-size: 11px;
   cursor: pointer;
 }
-
+/* [13] 호버·키보드 초점
+ */
 /* 버튼과 입력창의 조작 상태
  * font-family:inherit는 브라우저 기본 버튼 글꼴 대신 페이지의 글꼴을 따르게 합니다.
  * transition은 속성 변화의 중간 프레임을 만들어 hover 효과가 바로 끊기지 않게 합니다.
@@ -1673,14 +1465,11 @@
 .schedule-app textarea {
   font-family: inherit;
 }
-
 .schedule-app button {
-  transition:
-    background-color 120ms,
+  transition: background-color 120ms,
     border-color 120ms,
     box-shadow 120ms;
 }
-
 .schedule-app button:focus-visible,
 .schedule-app input:focus-visible,
 .schedule-app select:focus-visible,
@@ -1688,39 +1477,33 @@
   outline: 3px solid #8ca576;
   outline-offset: 2px;
 }
-
 /* 검색창은 입력 요소 대신 바깥 div에 이미 초점 테두리가 있으므로 이중 테두리를 없앱니다. */
 .schedule-app .sm-search:focus-visible {
   outline: none;
 }
-
 .sm-btn:hover {
   background: #153c33;
   box-shadow: 0 3px 8px #204b4326;
 }
-
 .sm-secondary-btn:hover,
 .sm-icon-btn:hover,
 .sm-cancel:hover {
   border-color: #b6c7bf;
   background: #edf3ef;
 }
-
-
-
 .sm-week-column > .sm-week-date {
   padding: 7px 0 12px;
   text-align: center;
   font-size: 13px;
 }
-
 .sm-form select:disabled,
 .sm-form input:disabled {
   background: #f2f4f5;
   color: #8b91a0;
   cursor: not-allowed;
 }
-
+/* [14] 기본 반응형: 1000·680·420px
+ */
 /* 반응형 배치: media 조건이 맞을 때만 안쪽 선언이 적용됩니다.
  * 1000px 이하: 달력/사이드바를 한 열로 바꾸고 사이드바 내부 두 패널을 가로로 배치합니다.
  * 680px 이하: 제목과 필터를 세로로 정리하고 목록 바로가기 버튼은 필요한 만큼 줄바꿈합니다.
@@ -1731,129 +1514,104 @@
   .sm-layout {
     grid-template-columns: 1fr;
   }
-
   .sm-sidebar {
     grid-template-columns: 1fr 1fr;
   }
-
   .sm-stat {
     padding: 16px;
-  }
+  }
 }
-
 @media (max-width: 680px) {
   .schedule-app {
     padding: 18px 12px;
   }
-
   .sm-stats {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-
   .sm-heading {
     align-items: flex-start;
     flex-direction: column;
   }
-
   .sm-heading-actions {
     width: 100%;
   }
-
   .sm-heading-actions button {
     flex: 1;
   }
-
   .sm-top-right span {
     display: none;
   }
-
   .sm-top {
     margin-bottom: 24px;
   }
-
   .sm-today-label {
     display: none;
   }
-
   .sm-stat {
     gap: 8px;
     min-height: 136px;
-  }
-
+  }
   .sm-calendar-head {
     align-items: flex-start;
   }
-
   .sm-search-field {
     flex-basis: 100%;
   }
-
   .sm-view-tabs button {
     padding: 9px 10px;
     font-size: 12px;
   }
-
   .sm-card {
     padding: 14px;
   }
-
   .sm-calendar-filters {
     flex: none;
     width: 100%;
   }
-
   .sm-calendar-filters select {
     flex: 1;
     min-width: 0;
   }
-
   .sm-week-view {
     grid-template-columns: repeat(7, minmax(125px, 1fr));
   }
-
   .sm-day {
     padding: 6px 3px;
   }
-
   .sm-event {
     font-size: 11px;
   }
-
   .sm-sidebar {
     grid-template-columns: 1fr;
   }
-
   .sm-modal {
     padding: 19px;
   }
 }
-
 @media (max-width: 420px) {
   .sm-form {
     grid-template-columns: minmax(0, 1fr);
   }
-
   .sm-stat {
     padding: 14px 12px;
-  }
-
+  }
   .sm-month h2 {
     font-size: 20px;
   }
-
   .sm-list-item {
     align-items: flex-start;
     flex-direction: column;
   }
-
   .sm-list-item > .sm-item-actions {
     align-self: flex-end;
   }
 }
-
+/* [15] 상세 메모 표시 보완
+ */
 /* 일정 상세 내용 입력과 표시
  * textarea의 resize:vertical은 세로 크기만 사용자가 바꿀 수 있게 합니다.
- * .sm-event를 button으로 만들어 키보드로도 일정을 선택할 수 있으며 CSS가 일반 일정 막대처럼 꾸밉니다.
+ * 월간 .sm-event는 div와 내부 버튼으로, 다른 보기는 .sm-event 버튼으로 구성됩니다.
+ * 키보드 동작은 HTML 버튼이 제공하며 CSS는 카드 모양을 담당합니다.
  * white-space:pre-wrap은 입력 줄바꿈과 공백을 보존하면서 긴 줄은 화면 폭에 맞춰 줄바꿈합니다.
  */
 .sm-form textarea {
@@ -1863,11 +1621,9 @@
   resize: vertical;
   line-height: 1.6;
 }
-
 .sm-event:hover {
   filter: brightness(0.94);
 }
-
 .sm-week-date {
   padding: 0;
   border: 0;
@@ -1876,7 +1632,6 @@
   text-align: left;
   cursor: pointer;
 }
-
 .sm-description {
   margin: 8px 0 0;
   color: #657085;
@@ -1885,14 +1640,14 @@
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
-
+/* [16] 담당자별 주간 표
+ */
 /* 담당자별 주간 표의 스타일이 적용되는 순서
  * 바깥 sm-staff-scroll이 스크롤 범위를 만들고, 안쪽 table이 최소 너비를 유지합니다.
  * 이름 행은 position:sticky로 고정하며, 날짜별 일정 버튼은 기존 sm-event 스타일에 세로 배치를 덧붙입니다.
  * 같은 클래스의 앞쪽 선언도 계속 적용되고 아래 속성만 덮어써지므로 공통 버튼/글꼴 규칙을 재사용합니다.
  * 추가 탭으로 폭이 부족하면 flex-wrap:wrap이 다음 줄로 넘기고 nowrap은 버튼 내부 글자를 유지합니다.
  */
-
 /* max-width:100%는 바깥 카드 폭을 넘지 않게 제한합니다.
  * 표가 그보다 넓어지면 overflow-x:auto로 이 영역만 가로 스크롤하며 페이지 전체를 넓히지 않습니다. */
 .sm-staff-scroll {
@@ -1901,7 +1656,6 @@
   border: 1px solid #e2e5e8;
   border-radius: 10px;
 }
-
 /* width:100%는 넓은 화면에서는 카드 폭을 채우고 min-width:960px는 좁은 화면에서도 읽을 폭을 확보합니다.
  * table-layout:fixed는 긴 제목에 따라 날짜 열 너비가 들쭉날쭉 바뀌지 않도록 합니다.
  * border-collapse:separate와 border-spacing:0을 함께 사용해 셀 테두리는 분리하고 셀 사이 빈틈은 없앱니다. */
@@ -1912,7 +1666,6 @@
   border-spacing: 0;
   table-layout: fixed;
 }
-
 /* caption은 표 전체의 설명입니다. 표 데이터와 달리 별도 날짜 셀이나 사람 행이 아닙니다. */
 .sm-staff-table caption {
   padding: 12px;
@@ -1922,7 +1675,6 @@
   font-size: 12px;
   line-height: 1.6;
 }
-
 /* th는 머리글, td는 일정 셀입니다. 공통 padding과 선으로 날짜/사람의 경계를 맞춥니다.
  * vertical-align:top은 같은 행에 일정 수가 달라도 위에서부터 나란히 보이게 합니다.
  * overflow-wrap:anywhere는 띄어쓰기 없는 긴 이름이나 제목도 셀 안에서 줄바꿈하게 합니다. */
@@ -1935,12 +1687,10 @@
   text-align: left;
   overflow-wrap: anywhere;
 }
-
 .sm-staff-table thead th {
   background: #f7f8fc;
   font-size: 12px;
 }
-
 /* 각 tr의 바로 아래 첫 셀만 고릅니다. 헤더에서는 사람 제목, 본문에서는 사람 이름입니다.
  * sticky+left:0은 가로 스크롤해도 이름을 왼쪽에 붙여 놓습니다.
  * z-index:1과 불투명 배경은 뒤로 지나가는 일정이 이름 위로 겹쳐 보이는 것을 막습니다. */
@@ -1951,24 +1701,20 @@
   width: 112px;
   background: #f7f8fc;
 }
-
 /* 행의 마지막 셀 오른쪽 선은 바깥 스크롤 영역 테두리와 겹치므로 생략합니다. */
 .sm-staff-table tr > :last-child {
   border-right: 0;
 }
-
 /* 전역 tr:hover 배경이 표 전체를 회색으로 덮지 않게 일정 표 안에서만 차단합니다. */
 .sm-staff-table tr,
 .sm-staff-table tr:hover {
   border-bottom: 0;
   background-color: transparent;
 }
-
 .sm-staff-table tbody th {
   color: #4e586e;
   font-size: 13px;
 }
-
 /* 이름 아래 건수는 small을 block으로 만들어 줄을 나눕니다.
  * 건수 값의 계산은 JSX가 하고 CSS는 위치·크기·색만 담당합니다. */
 .sm-staff-table tbody th small {
@@ -1978,16 +1724,13 @@
   font-size: 11px;
   font-weight: 400;
 }
-
 .sm-staff-table td {
   height: 100px;
 }
-
 /* 접힌 행은 건수만 보여 낮게 유지합니다. 펼친 행도 일정 영역의 높이까지만 커집니다. */
 .sm-staff-table .sm-staff-collapsed td {
   height: 56px;
 }
-
 .sm-staff-toggle {
   display: flex;
   align-items: center;
@@ -2003,12 +1746,10 @@
   text-align: left;
   cursor: pointer;
 }
-
 .sm-staff-toggle > span:last-child {
   flex-shrink: 0;
   font-size: 18px;
 }
-
 .sm-staff-count {
   padding: 5px 8px;
   border: 1px solid #d9e4d1;
@@ -2018,34 +1759,28 @@
   font-size: 11px;
   cursor: pointer;
 }
-
 .sm-staff-count:hover {
   background: var(--sm-lime);
 }
-
 .sm-staff-events {
   max-height: 280px;
   overflow-y: auto;
 }
-
 /* selected 클래스는 React가 selectedDate와 열 날짜를 비교해 붙입니다.
  * CSS가 날짜를 직접 판단하지 않으며, 같은 날짜의 모든 사람 셀에 같은 배경이 적용됩니다. */
 .sm-staff-table td.selected {
   background: #edf3ef;
 }
-
 /* React가 넘긴 aria-pressed 값이 true인 날짜 버튼만 선택해 밑줄을 표시합니다.
  * 속성 선택자를 사용하므로 선택 상태를 별도 CSS 클래스로 중복 관리할 필요가 없습니다. */
 .sm-staff-table .sm-week-date[aria-pressed="true"] {
   text-decoration: underline;
   text-underline-offset: 4px;
 }
-
 .sm-staff-empty {
   color: #a3aabd;
   font-size: 12px;
 }
-
 /* 선택 날짜 패널에 표시되는 참석자 문단입니다.
  * 이 선택자는 폼의 입력창이 아니라 저장된 참석자 이름을 보여 주는 p 요소에 연결됩니다. */
 .sm-attendees {
@@ -2055,26 +1790,24 @@
   line-height: 1.6;
   overflow-wrap: anywhere;
 }
-
+/* [17] 상태·카드 조작 보완
+ */
 /* 업무 상태는 작업 종류 색상과 분리합니다. 같은 상태 배지/선택창이 같은 색과 문구를 사용합니다. */
 .sm-status-badge,
 .sm-status-select {
   color: var(--sm-status-color);
   background: var(--sm-status-background);
 }
-
 .sm-status-badge.pending,
 .sm-status-select.pending {
   --sm-status-color: #566176;
   --sm-status-background: #eef1f6;
 }
-
 .sm-status-badge.completed,
 .sm-status-select.completed {
   --sm-status-color: #1c684d;
   --sm-status-background: #e4f5ec;
 }
-
 .sm-status-select {
   max-width: 140px;
   min-height: 30px;
@@ -2084,9 +1817,6 @@
   font-size: 12px;
   cursor: pointer;
 }
-
-
-
 /* 일정 내용과 별을 실제 두 칸으로 나눕니다. absolute로 겹쳐 놓지 않아 배지와 충돌하지 않습니다. */
 .sm-event-shell {
   display: grid;
@@ -2132,7 +1862,6 @@
   font-weight: 700;
   line-height: 1.5;
 }
-
 /* 상세 메모는 배경과 여백으로 기본 정보와 구분합니다. 긴 글도 카드 안에서 줄바꿈합니다. */
 .sm-agenda-item .sm-description {
   margin: 8px 0;
@@ -2143,71 +1872,154 @@
   font-size: 12px;
   line-height: 1.7;
 }
-
 /* 상단 요약은 숫자와 이름을 한 줄로 묶어 달력보다 높이를 많이 차지하지 않게 합니다. */
-.sm-stat { min-height: 72px; gap: 6px; }
-.sm-stat > div { display: flex; align-items: center; gap: 12px; }
-
-/* 담당자 이름 입력은 기존 폼과 같은 한 칸으로 표시합니다. */
-.sm-assignee-field { display: grid; gap: 6px; min-width: 0; }
-/* 배지는 색에만 의존하지 않고 문구와 테두리를 함께 보여 줍니다. */
-.sm-visibility, .sm-status-badge { font-size: 11px; padding: 3px 6px; }
-/* 일별 일정은 좁은 화면에서 정보를 다음 줄로 넘기고 시간 범위는 한 줄을 유지합니다. */
-.sm-day-view > .sm-event-shell > .sm-event { flex-wrap: wrap; row-gap: 5px; }
-.sm-day-view > .sm-event-shell > .sm-event time { white-space: nowrap; font-variant-numeric: tabular-nums; }
-.sm-day-view > .sm-event-shell > .sm-event > span:not(.sm-status-badge):not(.sm-visibility) { flex-basis: 180px; font-weight: 700; }
-.sm-favorite-heading { align-items: center; }
-.sm-favorite-item { background: #f8faf7; }
-.sm-favorite-item:focus-within { border-color: #7e9e8d; }
-/* 제목·버튼을 둘러싼 선을 통일해 내용과 조작 영역을 쉽게 구분합니다. */
-.sm-view-tabs button { min-height: 38px; }
-.sm-form input, .sm-form select, .sm-form textarea { font-family: inherit; font-size: 13px; }
-@media (max-width: 680px) {
-  .sm-week-view { grid-template-columns: repeat(7, minmax(136px, 1fr)); }
-  .sm-heading-actions { width: 100%; }
-  .sm-heading-actions .sm-secondary-btn { flex: 1; }
+.sm-stat {
+  min-height: 72px;
+  gap: 6px;
 }
-
+.sm-stat > div {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+/* 담당자 이름 입력은 기존 폼과 같은 한 칸으로 표시합니다. */
+.sm-assignee-field {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+/* 배지는 색에만 의존하지 않고 문구와 테두리를 함께 보여 줍니다. */
+.sm-visibility, .sm-status-badge {
+  font-size: 11px;
+  padding: 3px 6px;
+}
+/* 일별 일정은 좁은 화면에서 정보를 다음 줄로 넘기고 시간 범위는 한 줄을 유지합니다. */
+.sm-day-view > .sm-event-shell > .sm-event {
+  flex-wrap: wrap;
+  row-gap: 5px;
+}
+.sm-day-view > .sm-event-shell > .sm-event time {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.sm-day-view > .sm-event-shell > .sm-event > span:not(.sm-status-badge):not(.sm-visibility) {
+  flex-basis: 180px;
+  font-weight: 700;
+}
+.sm-favorite-heading {
+  align-items: center;
+}
+.sm-favorite-item {
+  background: #f8faf7;
+}
+.sm-favorite-item:focus-within {
+  border-color: #7e9e8d;
+}
+/* 제목·버튼을 둘러싼 선을 통일해 내용과 조작 영역을 쉽게 구분합니다. */
+.sm-view-tabs button {
+  min-height: 38px;
+}
+.sm-form input, .sm-form select, .sm-form textarea {
+  font-family: inherit;
+  font-size: 13px;
+}
+@media (max-width: 680px) {
+  .sm-week-view {
+    grid-template-columns: repeat(7, minmax(136px, 1fr));
+  }
+  .sm-heading-actions {
+    width: 100%;
+  }
+  .sm-heading-actions .sm-secondary-btn {
+    flex: 1;
+  }
+}
 /* 목록 바로가기는 작은 버튼으로, 드문 설정은 접이식으로 묶습니다. */
-.sm-stats { display: flex; flex-wrap: wrap; gap: 8px; }
-.sm-stat { display: inline-flex; align-items: center; gap: 10px; min-height: 42px; padding: 9px 14px; font: inherit; color: var(--sm-ink); cursor: pointer; border-radius: 10px; }
-.sm-stat[aria-expanded="true"] { background: var(--sm-soft); border-color: #819f8d; }
-.sm-stat strong { color: var(--sm-accent); }
-.sm-extra-settings summary { cursor: pointer; padding: 8px 0; font-weight: 600; }
-.sm-extra-settings { border-top: 1px solid var(--sm-border); }
-.sm-extra-fields { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; padding: 10px 0; }
-.sm-agenda-item .sm-item-actions { grid-template-columns: minmax(0,1fr) auto; }
-@media(max-width:420px) { .sm-extra-fields { grid-template-columns: 1fr; } .sm-stat { min-height: 42px; padding: 9px 12px; } }
-
-/* 수정 시작: 선택한 일정 패널의 수정 버튼 */
-.sm-agenda-item .sm-item-actions { grid-template-columns: auto minmax(0, 1fr) auto; }
-.sm-edit-btn { padding: 7px 12px; border: 1px solid var(--sm-border); border-radius: 8px; background: #fff; color: var(--sm-ink); font: inherit; cursor: pointer; }
-.sm-edit-btn:hover { border-color: var(--sm-accent); color: var(--sm-accent); }
-/* 수정 끝 */
-
-
-.sm-agenda-item .sm-favorite-title { cursor: default; }
-
-
+.sm-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.sm-stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 42px;
+  padding: 9px 14px;
+  font: inherit;
+  color: var(--sm-ink);
+  cursor: pointer;
+  border-radius: 10px;
+}
+.sm-stat[aria-expanded="true"] {
+  background: var(--sm-soft);
+  border-color: #819f8d;
+}
+.sm-stat strong {
+  color: var(--sm-accent);
+}
+.sm-extra-settings summary {
+  cursor: pointer;
+  padding: 8px 0;
+  font-weight: 600;
+}
+.sm-extra-settings {
+  border-top: 1px solid var(--sm-border);
+}
+.sm-extra-fields {
+  display: grid;
+  grid-template-columns: repeat(2,minmax(0,1fr));
+  gap: 12px;
+  padding: 10px 0;
+}
+.sm-agenda-item .sm-item-actions {
+  grid-template-columns: minmax(0,1fr) auto;
+}
+@media(max-width:420px) {
+  .sm-extra-fields {
+    grid-template-columns: 1fr;
+  }
+  .sm-stat {
+    min-height: 42px;
+    padding: 9px 12px;
+  }
+}
+.sm-agenda-item .sm-item-actions {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+}
+.sm-edit-btn {
+  padding: 7px 12px;
+  border: 1px solid var(--sm-border);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--sm-ink);
+  font: inherit;
+  cursor: pointer;
+}
+.sm-edit-btn:hover {
+  border-color: var(--sm-accent);
+  color: var(--sm-accent);
+}
+.sm-agenda-item .sm-favorite-title {
+  cursor: default;
+}
+/* [18] 선택 날짜 패널 상세 디자인
+ */
 /* 일정 패널: 날짜 헤더와 상세 카드의 위계를 분명히 합니다. */
 .sm-agenda-card {
   border-top: 0;
 }
-
 .sm-agenda-card > .sm-panel-title {
   padding-bottom: 12px;
   border-bottom: 1px solid #e8eee7;
 }
-
 .sm-agenda-date {
   min-height: 82px;
   margin: 14px 0 16px;
-  padding: 12px 14px;
   border: 1px solid #e6ede3;
   border-radius: 16px;
   background: linear-gradient(135deg, #f0f5ec 0%, #f8faf6 100%);
 }
-
 .sm-agenda-day {
   width: 54px;
   min-height: 54px;
@@ -2216,13 +2028,11 @@
   background: #fff;
   box-shadow: 0 2px 7px rgba(39, 69, 51, 0.06);
 }
-
 .sm-date-subtitle {
   color: #52665e;
   font-size: 12px;
   font-weight: 600;
 }
-
 .sm-agenda-item.sm-favorite-item {
   margin-top: 12px;
   padding: 16px;
@@ -2233,7 +2043,6 @@
   box-shadow: 0 4px 14px rgba(34, 57, 43, 0.055);
   transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
 }
-
 .sm-agenda-item.sm-favorite-item:hover,
 .sm-agenda-item.sm-favorite-item:focus-within {
   border-color: #cbd9ca;
@@ -2241,12 +2050,10 @@
   box-shadow: 0 8px 20px rgba(34, 57, 43, 0.09);
   transform: translateY(-1px);
 }
-
 .sm-agenda-item .sm-favorite-heading {
   align-items: center;
   gap: 10px;
 }
-
 .sm-agenda-item .sm-favorite-title {
   padding: 0;
   color: #203a32;
@@ -2254,18 +2061,15 @@
   font-weight: 750;
   line-height: 1.45;
 }
-
 .sm-agenda-item .sm-favorite-time-row {
   margin-top: 10px;
 }
-
 .sm-agenda-item .sm-favorite-time {
   gap: 7px;
   color: #315f50;
   font-size: 13px;
   font-weight: 700;
 }
-
 .sm-agenda-item .sm-visibility {
   margin-top: 0;
   padding: 3px 8px;
@@ -2274,7 +2078,6 @@
   background: #eef5ef;
   color: #456758;
 }
-
 .sm-agenda-item .sm-favorite-info {
   grid-template-columns: 58px minmax(0, 1fr);
   gap: 7px 10px;
@@ -2286,17 +2089,14 @@
   font-size: 12px;
   line-height: 1.5;
 }
-
 .sm-agenda-item .sm-favorite-info dt {
   color: #78877e;
   font-size: 11px;
 }
-
 .sm-agenda-item .sm-favorite-info dd {
   color: #30453b;
   font-weight: 600;
 }
-
 .sm-agenda-item .sm-item-actions {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 112px 48px;
@@ -2306,7 +2106,6 @@
   padding-top: 12px;
   border-top: 1px solid #edf1eb;
 }
-
 .sm-agenda-item .sm-edit-btn,
 .sm-agenda-item .sm-status-select,
 .sm-agenda-item .sm-delete-btn {
@@ -2316,28 +2115,24 @@
   font-size: 12px;
   font-weight: 700;
 }
-
 .sm-agenda-item .sm-edit-btn {
   border: 1px solid #204b43;
   background: #204b43;
   color: #fff;
   transition: background 150ms ease, transform 150ms ease;
 }
-
 .sm-agenda-item .sm-edit-btn:hover {
   border-color: #173c35;
   background: #173c35;
   color: #fff;
   transform: translateY(-1px);
 }
-
 .sm-agenda-item .sm-status-select {
   padding: 5px 8px;
   border-color: #e1e9e1;
   border-radius: 10px;
   font-size: 11px;
 }
-
 .sm-agenda-item .sm-delete-btn {
   display: grid;
   place-items: center;
@@ -2346,18 +2141,17 @@
   border-radius: 10px;
   font-size: 11px;
 }
-
 @media (max-width: 420px) {
   .sm-agenda-item.sm-favorite-item {
     padding: 13px;
   }
-
   .sm-agenda-item .sm-item-actions {
     grid-template-columns: minmax(0, 1fr) 98px 42px;
     gap: 6px;
   }
 }
-
+/* [19] 날짜 강조·주말 색상
+ */
 /* 날짜 표시만 선명하게 구분합니다. */
 .sm-month-view .sm-day-num {
   width: 32px;
@@ -2368,33 +2162,20 @@
   font-weight: 650;
   transition: background-color 140ms ease, color 140ms ease, box-shadow 140ms ease;
 }
-
 .sm-month-view .sm-day.selected {
   background: #f4f7f1;
   box-shadow: inset 0 0 0 1px #d4e1d2;
 }
-
 .sm-month-view .sm-day.selected .sm-day-num {
   background: #204b43;
   color: #fff;
   box-shadow: 0 2px 6px rgba(32, 75, 67, 0.22);
 }
-
 .sm-month-view .sm-day.today:not(.selected) .sm-day-num {
   background: #eaf2e8;
   color: #204b43;
   box-shadow: inset 0 0 0 1px #b8cdb6;
 }
-
-.sm-month-view .sm-day.today:not(.selected) .sm-day-num.saturday {
-  color: #3976ce;
-}
-
-.sm-month-view .sm-day.today:not(.selected) .sm-day-num.sunday,
-.sm-month-view .sm-day.today:not(.selected) .sm-day-num.holiday {
-  color: #df4555;
-}
-
 .sm-agenda-date {
   min-height: 76px;
   padding: 12px 14px;
@@ -2402,7 +2183,6 @@
   border-radius: 14px;
   background: #f7f9f6;
 }
-
 .sm-agenda-day {
   width: 58px;
   min-height: 58px;
@@ -2414,27 +2194,23 @@
   box-shadow: none;
   color: #fff;
 }
-
 .sm-agenda-day strong {
   color: #fff;
   font-size: 26px;
   font-weight: 750;
 }
-
 .sm-agenda-day span {
   margin-top: 0;
   color: #dcebad;
   font-size: 10px;
   font-weight: 700;
 }
-
 .sm-date-subtitle {
   color: #334b40;
   font-size: 13px;
   font-weight: 650;
   line-height: 1.6;
 }
-
 .sm-date-subtitle strong {
   display: inline-block;
   margin-left: 4px;
@@ -2445,108 +2221,89 @@
   font-size: 10px;
   font-weight: 700;
 }
-
 /* 날짜 강조색을 눈에 편한 저채도 세이지 톤으로 조정합니다. */
 .sm-month-view .sm-day-num.saturday {
   color: #71879a;
 }
-
 .sm-month-view .sm-day-num.sunday,
 .sm-month-view .sm-day-num.holiday {
   color: #b77d80;
 }
-
 .sm-month-view .sm-day.selected {
   background: #f7f9f6;
   box-shadow: inset 0 0 0 1px #dce5da;
 }
-
 .sm-month-view .sm-day.selected .sm-day-num {
   background: #e1ebe0;
   color: #3f5b4d;
   box-shadow: inset 0 0 0 1px #c6d5c5;
 }
-
 .sm-month-view .sm-day.today:not(.selected) .sm-day-num {
   background: #f1f4ee;
   color: #6a7d6c;
   box-shadow: inset 0 0 0 1px #dce4d8;
 }
-
 .sm-month-view .sm-day.today:not(.selected) .sm-day-num.saturday {
   color: #71879a;
 }
-
 .sm-month-view .sm-day.today:not(.selected) .sm-day-num.sunday,
 .sm-month-view .sm-day.today:not(.selected) .sm-day-num.holiday {
   color: #b77d80;
 }
-
 .sm-agenda-date {
   border-color: #e9eee7;
   background: #fafbf9;
 }
-
 .sm-agenda-day {
   border: 1px solid #dfe8dd;
   background: #e8efe6;
   color: #425d4e;
 }
-
 .sm-agenda-day strong {
   color: #3f5b4d;
 }
-
 .sm-agenda-day span {
   color: #758773;
 }
-
 .sm-date-subtitle {
   color: #617367;
 }
-
 .sm-date-subtitle strong {
   background: #f7eeee;
   color: #a46f72;
 }
-
 /* 주말과 공휴일은 기존 색상으로 복원합니다. */
 .sm-month-view .sm-day-num.saturday {
   color: #3976ce;
 }
-
 .sm-month-view .sm-day-num.sunday,
 .sm-month-view .sm-day-num.holiday {
   color: #df4555;
 }
-
 .sm-month-view .sm-day.today:not(.selected) .sm-day-num.saturday {
   color: #3976ce;
 }
-
 .sm-month-view .sm-day.today:not(.selected) .sm-day-num.sunday,
 .sm-month-view .sm-day.today:not(.selected) .sm-day-num.holiday {
   color: #df4555;
 }
-
+/* [20] 업무 분류·회의 참석자
+ */
 /* 일정 분류와 회의 참석자 입력 */
 .sm-category-picker {
   display: grid;
   gap: 8px;
 }
-
 .sm-category-label {
   color: var(--sm-ink);
   font-size: 13px;
   font-weight: 700;
 }
-
 .sm-category-tabs {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
 }
-
 .sm-category-tab {
   min-height: 40px;
   padding: 8px 10px;
@@ -2560,12 +2317,10 @@
   cursor: pointer;
   transition: border-color 140ms ease, background-color 140ms ease, color 140ms ease;
 }
-
 .sm-category-tab:hover {
   border-color: #b8cbbb;
   background: #f7faf6;
 }
-
 .sm-category-tab.active,
 .sm-category-tab[aria-selected="true"] {
   border-color: #a8bda9;
@@ -2573,13 +2328,11 @@
   color: #3e5c4c;
   box-shadow: inset 0 0 0 1px #d9e5d8;
 }
-
 .sm-project-fields {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px 14px;
 }
-
 .sm-meeting-attendees {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
@@ -2589,24 +2342,22 @@
   border-radius: 12px;
   background: #f8faf7;
 }
-
 .sm-meeting-attendees legend {
   padding: 0 5px;
   color: #3e5c4c;
   font-size: 12px;
   font-weight: 700;
 }
-
 .sm-meeting-attendees .sm-form-note {
   grid-column: 1 / -1;
 }
-
 @media (max-width: 520px) {
   .sm-project-fields {
     grid-template-columns: minmax(0, 1fr);
   }
 }
-
+/* [21] 사이드바에 맞춘 색상 테마
+ */
 /* 사이드바 팔레트와 일정 화면의 인터랙션 색상을 연결합니다.
    일정 유형·완료 상태·주말 색상은 의미 전달을 위해 기존 색을 유지합니다. */
 .schedule-app {
@@ -2619,16 +2370,26 @@
   background: #f6f7fb;
   color: var(--sm-ink);
 }
-
-.schedule-app .sm-top { border-color: #dfe2ea; }
-.schedule-app .sm-mark { background: #7565d8; color: #fff; }
-.schedule-app .sm-avatar { background: #eef0f6; color: #46506a; }
-.schedule-app .sm-eyebrow { color: #7565d8; }
+.schedule-app .sm-top {
+  border-color: #dfe2ea;
+}
+.schedule-app .sm-mark {
+  background: #7565d8;
+  color: #fff;
+}
+.schedule-app .sm-avatar {
+  background: #eef0f6;
+  color: #46506a;
+}
+.schedule-app .sm-eyebrow {
+  color: #7565d8;
+}
 .schedule-app .sm-top-right,
 .schedule-app .sm-heading p,
 .schedule-app .sm-panel-title .sm-muted,
-.schedule-app .sm-muted { color: #657085; }
-
+.schedule-app .sm-muted {
+  color: #657085;
+}
 .schedule-app .sm-btn,
 .schedule-app .sm-agenda-item .sm-edit-btn {
   border-color: #7565d8;
@@ -2671,8 +2432,9 @@
   background: #f3f1ff;
   color: #46506a;
 }
-.schedule-app .sm-stat strong { color: #7565d8; }
-
+.schedule-app .sm-stat strong {
+  color: #7565d8;
+}
 .schedule-app .sm-card,
 .schedule-app .sm-stat,
 .schedule-app .sm-agenda-item.sm-favorite-item {
@@ -2685,7 +2447,9 @@
   box-shadow: 0 8px 20px rgba(70, 80, 106, 0.11);
 }
 .schedule-app .sm-agenda-card > .sm-panel-title,
-.schedule-app .sm-agenda-item .sm-item-actions { border-color: #e5e7ef; }
+.schedule-app .sm-agenda-item .sm-item-actions {
+  border-color: #e5e7ef;
+}
 .schedule-app .sm-agenda-date {
   border-color: #e1e4ed;
   background: #f7f8fc;
@@ -2695,10 +2459,15 @@
   background: #46506a;
   color: #fff;
 }
-.schedule-app .sm-agenda-day strong { color: #fff; }
-.schedule-app .sm-agenda-day span { color: #c6ccda; }
-.schedule-app .sm-date-subtitle { color: #46506a; }
-
+.schedule-app .sm-agenda-day strong {
+  color: #fff;
+}
+.schedule-app .sm-agenda-day span {
+  color: #c6ccda;
+}
+.schedule-app .sm-date-subtitle {
+  color: #46506a;
+}
 .schedule-app .sm-month-view .sm-day.selected {
   background: #f3f1ff;
   box-shadow: inset 0 0 0 1px #d8d2fb;
@@ -2713,9 +2482,12 @@
   color: #7565d8;
   box-shadow: inset 0 0 0 1px #d8d2fb;
 }
-.schedule-app .sm-week-column.selected { background: #f3f1ff; }
-.schedule-app .sm-week-column.selected .sm-week-date { color: #46506a; }
-
+.schedule-app .sm-week-column.selected {
+  background: #f3f1ff;
+}
+.schedule-app .sm-week-column.selected .sm-week-date {
+  color: #46506a;
+}
 .schedule-app .sm-search-field:focus-within,
 .schedule-app .sm-form input:focus,
 .schedule-app .sm-form select:focus,
@@ -2723,7 +2495,10 @@
   border-color: #a99bf7;
   box-shadow: 0 0 0 3px rgba(169, 155, 247, 0.2);
 }
-.schedule-app .sm-category-tab { border-color: #dfe2ea; color: #657085; }
+.schedule-app .sm-category-tab {
+  border-color: #dfe2ea;
+  color: #657085;
+}
 .schedule-app .sm-category-tab:hover {
   border-color: #c9c2f5;
   background: #f7f6ff;
@@ -2736,8 +2511,12 @@
   color: #46506a;
   box-shadow: inset 0 0 0 1px #d8d2fb;
 }
-.schedule-app .sm-extra-settings { border-color: #dfe2ea; }
-.schedule-app .sm-extra-settings summary:hover { color: #7565d8; }
+.schedule-app .sm-extra-settings {
+  border-color: #dfe2ea;
+}
+.schedule-app .sm-extra-settings summary:hover {
+  color: #7565d8;
+}
 .schedule-app .sm-visibility {
   border-color: #dfe2ea;
   background: #eef0f6;
@@ -2748,12 +2527,15 @@
 .schedule-app .sm-upcoming-card {
   border-color: #e1e4ed;
 }
-.schedule-app .sm-empty { background: #f7f8fc; }
-.schedule-app .sm-deadline:hover { border-color: #a99bf7; }
+.schedule-app .sm-deadline:hover {
+  border-color: #a99bf7;
+}
 .schedule-app .sm-form-error,
-.schedule-app .sm-storage-warning { color: #c9424e; }
-
-
+.schedule-app .sm-storage-warning {
+  color: #c9424e;
+}
+/* [22] 색상 테마의 표면 보정
+ */
 /* 사이드바 팔레트 추가 표면 조정 */
 .schedule-app .sm-calendar-project {
   border-color: #d8d2fb;
@@ -2774,12 +2556,22 @@
   background: #eef0f6;
   color: #7565d8;
 }
-.schedule-app .sm-directory-project-arrow { color: #657085; }
-.schedule-app .sm-calendar-filters { background: #f0f1f7; }
-.schedule-app .sm-calendar-filters select { color: #46506a; }
-.schedule-app .sm-search-field { color: #657085; }
+.schedule-app .sm-directory-project-arrow {
+  color: #657085;
+}
+.schedule-app .sm-calendar-filters {
+  background: #f0f1f7;
+}
+.schedule-app .sm-calendar-filters select {
+  color: #46506a;
+}
+.schedule-app .sm-search-field {
+  color: #657085;
+}
 .schedule-app .sm-month-view,
-.schedule-app .sm-staff-scroll { border-color: #dfe2ea; }
+.schedule-app .sm-staff-scroll {
+  border-color: #dfe2ea;
+}
 .schedule-app .sm-weekday {
   background: #f6f7fb;
   color: #657085;
@@ -2788,24 +2580,42 @@
   border-top-color: #e5e7ef;
   border-right-color: #e5e7ef;
 }
-.schedule-app .sm-day:hover { background: #f7f6ff; }
-.schedule-app .sm-day[aria-hidden="true"] { background: #fafbfe; }
-.schedule-app .sm-day-num { color: #46506a; }
-.schedule-app .sm-agenda-card { border-top-color: #a99bf7; }
-.schedule-app .sm-upcoming-card { background: #fafbfe; }
+.schedule-app .sm-day:hover {
+  background: #f7f6ff;
+}
+.schedule-app .sm-day[aria-hidden="true"] {
+  background: #fafbfe;
+}
+.schedule-app .sm-day-num {
+  color: #46506a;
+}
+.schedule-app .sm-agenda-card {
+  border-top-color: #a99bf7;
+}
+.schedule-app .sm-upcoming-card {
+  background: #fafbfe;
+}
 .schedule-app .sm-empty {
   border-color: #dfe2ea;
   background: #f7f8fc;
   color: #657085;
 }
-.schedule-app .sm-deadline:hover { background: #f3f1ff; }
-.schedule-app .sm-modal-backdrop { background: rgba(41, 48, 68, 0.52); }
+.schedule-app .sm-deadline:hover {
+  background: #f3f1ff;
+}
+.schedule-app .sm-modal-backdrop {
+  background: rgba(41, 48, 68, 0.52);
+}
 .schedule-app .sm-modal {
   border-color: #dfe2ea;
   background: #fff;
 }
-.schedule-app .sm-close { color: #657085; }
-.schedule-app .sm-form label { color: #46506a; }
+.schedule-app .sm-close {
+  color: #657085;
+}
+.schedule-app .sm-form label {
+  color: #46506a;
+}
 .schedule-app .sm-form input,
 .schedule-app .sm-form select,
 .schedule-app .sm-form textarea {
@@ -2821,45 +2631,244 @@
 .schedule-app button:focus-visible,
 .schedule-app input:focus-visible,
 .schedule-app select:focus-visible,
-.schedule-app textarea:focus-visible { outline-color: #a99bf7; }
-.schedule-app .sm-list-item { border-color: #e5e7ef; }
-.schedule-app .sm-staff-table caption { background: #fafbfe; }
+.schedule-app textarea:focus-visible {
+  outline-color: #a99bf7;
+}
+.schedule-app .sm-list-item {
+  border-color: #e5e7ef;
+}
+.schedule-app .sm-staff-table caption {
+  background: #fafbfe;
+}
 .schedule-app .sm-staff-table th,
-.schedule-app .sm-staff-table td { border-color: #e5e7ef; }
+.schedule-app .sm-staff-table td {
+  border-color: #e5e7ef;
+}
 .schedule-app .sm-staff-table thead th,
-.schedule-app .sm-staff-table tr > :first-child { background: #f7f8fc; }
-.schedule-app .sm-staff-table td.selected { background: #f3f1ff; }
+.schedule-app .sm-staff-table tr > :first-child {
+  background: #f7f8fc;
+}
+.schedule-app .sm-staff-table td.selected {
+  background: #f3f1ff;
+}
 .schedule-app .sm-staff-count {
   border-color: #d8d2fb;
   background: #f3f1ff;
   color: #46506a;
 }
-.schedule-app .sm-staff-count:hover { background: #e8e4ff; }
-
-
+.schedule-app .sm-staff-count:hover {
+  background: #e8e4ff;
+}
+/* [23] 알림·날짜 입력·종일·프로젝트 표시 보완
+ */
 /* 알림은 한 건씩 표시하고, 작은 화면에서는 글과 버튼을 다음 줄로 감쌉니다. */
-.schedule-app .sm-reminder-notice { display:flex; align-items:center; gap:10px; margin:0 0 12px; padding:10px 12px; border:1px solid #d8d2fb; border-radius:10px; background:#f3f1ff; color:#293044; font-size:13px; }
-.schedule-app .sm-reminder-notice span { flex:1; }
-.schedule-app .sm-reminder-notice button { border:0; border-radius:7px; padding:6px 9px; background:#fff; color:#5145a5; cursor:pointer; }
-@media (max-width: 600px) { .schedule-app .sm-reminder-notice { align-items:flex-start; flex-wrap:wrap; } .schedule-app .sm-reminder-notice span { flex-basis:100%; } }
-
+.schedule-app .sm-reminder-notice {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border: 1px solid #d8d2fb;
+  border-radius: 10px;
+  background: #f3f1ff;
+  color: #293044;
+  font-size: 13px;
+}
+.schedule-app .sm-reminder-notice span {
+  flex: 1;
+}
+.schedule-app .sm-reminder-notice button {
+  border: 0;
+  border-radius: 7px;
+  padding: 6px 9px;
+  background: #fff;
+  color: #5145a5;
+  cursor: pointer;
+}
+@media (max-width: 600px) {
+  .schedule-app .sm-reminder-notice {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+  .schedule-app .sm-reminder-notice span {
+    flex-basis: 100%;
+  }
+}
 /* 종일 체크박스는 입력 칸처럼 늘어나지 않도록 작은 크기로 고정합니다. */
-.schedule-app .sm-form .sm-form-check { display:grid; gap:6px; }
-.schedule-app .sm-form-check-control { display:flex; align-items:center; height:42px; box-sizing:border-box; padding:0 10px; border:1px solid #dfe2ea; border-radius:8px; background:#fff; }
-.schedule-app .sm-form .sm-form-check input[type="checkbox"] { width:18px; height:18px; margin:0; accent-color:#7565d8; }
-
+.schedule-app .sm-form .sm-form-check {
+  display: grid;
+  gap: 6px;
+}
+.schedule-app .sm-form-check-control {
+  display: flex;
+  align-items: center;
+  height: 42px;
+  box-sizing: border-box;
+  padding: 0 10px;
+  border: 1px solid #dfe2ea;
+  border-radius: 8px;
+  background: #fff;
+}
+.schedule-app .sm-form .sm-form-check input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  accent-color: #7565d8;
+}
 /* 날짜를 단독 행으로 두고 시작·종료 시간을 나란히 배치해 입력 열을 맞춥니다. */
-.schedule-app .sm-date-time-fields { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px 14px; }
-.schedule-app .sm-date-time-fields > label:first-child { grid-column:1 / -1; }
+.schedule-app .sm-date-time-fields {
+  display: grid;
+  grid-template-columns: repeat(2,minmax(0,1fr));
+  gap: 10px 14px;
+}
+.schedule-app .sm-date-time-fields > label:first-child {
+  grid-column: 1 / -1;
+}
 /* 반복 없음일 때 반복 설정만 한 칸에 남지 않도록 두 열을 사용합니다. */
-.schedule-app .sm-extra-fields .sm-extra-field-wide { grid-column:1 / -1; }
+.schedule-app .sm-extra-fields .sm-extra-field-wide {
+  grid-column: 1 / -1;
+}
 @media (max-width:420px) {
-  .schedule-app .sm-date-time-fields { grid-template-columns:minmax(0,1fr); }
-  .schedule-app .sm-date-time-fields > label:first-child { grid-column:auto; }
+  .schedule-app .sm-date-time-fields {
+    grid-template-columns: minmax(0,1fr);
+  }
+  .schedule-app .sm-date-time-fields > label:first-child {
+    grid-column: auto;
+  }
 }
 /* 프로젝트 시작일과 마감일은 저장 일정과 구분해 읽기 전용으로 표시합니다. */
-.schedule-app .sm-event-project { border-style:dashed; }
-.schedule-app .sm-project-milestone-tag { display:inline-flex; align-items:center; width:max-content; padding:2px 6px; border-radius:999px; background:#f1efff; color:#5b4db1; font-size:10px; font-weight:700; }
-.schedule-app .sm-project-milestone-item { border-style:dashed; }
+.schedule-app .sm-event-project {
+  border-style: dashed;
+}
+.schedule-app .sm-project-milestone-tag {
+  display: inline-flex;
+  align-items: center;
+  width: max-content;
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: #f1efff;
+  color: #5b4db1;
+  font-size: 10px;
+  font-weight: 700;
+}
+.schedule-app .sm-project-milestone-item {
+  border-style: dashed;
+}
 /* 긴 담당자·프로젝트명도 상세 패널 안에서 줄바꿈합니다. */
-.schedule-app .sm-favorite-info dd { min-width: 0; overflow-wrap: anywhere; }
+.schedule-app .sm-favorite-info dd {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+/* [24] 목록·반복 요약·시간 빠른 설정·삭제 안내 */
+.sm-list-sort {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.sm-list-sort select {
+  max-width: 100%;
+  min-height: 36px;
+  padding: 6px 10px;
+  border: 1px solid var(--sm-border);
+  border-radius: 8px;
+  background: #fff;
+  font: inherit;
+}
+
+/* 목록 페이지와 반복 요약은 좁은 화면에서 줄을 바꾸며 입력·작업 버튼을 밀어내지 않습니다. */
+.sm-list-pagination {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding-top: 16px;
+}
+.sm-list-pagination button:disabled { opacity: .45; cursor: default; }
+.sm-form select.sm-status-select {
+  max-width: none;
+  color: var(--sm-status-color);
+  background: var(--sm-status-background);
+}
+.sm-repeat-summary {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: #f1efff;
+  color: #514485;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+/* 빠른 설정은 날짜·시간 그리드의 한 줄을 사용하고 좁은 화면에서는 버튼을 다음 줄로 넘깁니다. */
+.sm-duration-options {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+}
+.sm-duration-options button { min-height: 36px; padding: 6px 10px; }
+.sm-duration-options button:disabled,
+.sm-deletion-notice button:disabled { opacity: .45; cursor: default; }
+/* 화면을 가리지 않는 일반 흐름 안내입니다. 저장 상태와 복원 요청 여부는 별도로 표시합니다. */
+.sm-deletion-notice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border: 1px solid var(--sm-border);
+  border-radius: 12px;
+  background: #f3f5f1;
+  overflow-wrap: anywhere;
+}
+.sm-deletion-notice span { flex: 1 1 220px; min-width: 0; }
+.sm-deletion-notice button { min-height: 36px; margin: 0; }
+
+/* 입력 오류는 기존 하단 안내와 함께 입력칸 가까이에 표시합니다. */
+.sm-field-error { grid-column: 1 / -1; margin: 0; color: #b33d4b; font-size: 12px; overflow-wrap: anywhere; }
+.schedule-app .sm-form [aria-invalid="true"] { border-color: #b33d4b; }
+.sm-draft-notice { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 12px 16px; margin-bottom: 16px; border: 1px solid #dfe2ea; border-radius: 12px; background: #f1efff; }
+.sm-draft-notice span { flex: 1 1 220px; min-width: 0; }
+.sm-draft-notice button { min-height: 36px; margin: 0; }
+
+
+/* [25] 상단 버튼·카드 정보·입력 순서에 맞춘 화면 정리
+ * 조회 버튼과 등록 버튼의 높이를 통일하고, 좁은 화면에서는 등록을 다음 줄 전체에 표시합니다.
+ * 카드의 제목·시간·진행 상태는 유지하고 공유 구분과 전체 이름 안내는 낮은 강조로 구분합니다.
+ */
+.schedule-app .sm-heading { align-items: flex-start; flex-wrap: wrap; gap: 20px; }
+.schedule-app .sm-heading > div:first-child { min-width: 0; }
+.schedule-app .sm-heading-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) auto;
+  align-items: stretch;
+  gap: 8px;
+  min-width: 0;
+}
+.schedule-app .sm-heading-actions > button { min-height: 42px; margin: 0; padding: 10px 14px; }
+.schedule-app .sm-event-meta { justify-content: flex-start; gap: 6px; }
+.schedule-app .sm-event .sm-visibility { padding: 0; border-color: transparent; background: transparent; color: #657085; font-size: 10px; }
+.schedule-app .sm-event-full-title { margin-top: 2px; }
+.schedule-app .sm-event-full-title summary { color: #657085; font-size: 10px; font-weight: 400; }
+.schedule-app .sm-form { gap: 14px; }
+.schedule-app .sm-form label { gap: 6px; }
+.schedule-app .sm-extra-settings { padding: 10px 0; border-bottom: 1px solid var(--sm-border); }
+.schedule-app .sm-extra-settings summary { padding: 4px 0; color: #657085; font-size: 12px; }
+.schedule-app .sm-extra-settings[open] summary { margin-bottom: 12px; }
+.schedule-app .sm-form-actions { gap: 8px; margin-top: 8px; }
+.schedule-app .sm-form-actions > button { min-height: 40px; }
+@media (max-width: 900px) {
+  .schedule-app .sm-heading-actions { width: 100%; }
+}
+@media (max-width: 480px) {
+  .schedule-app .sm-heading-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .schedule-app .sm-heading-actions > .sm-btn { grid-column: 1 / -1; }
+  .schedule-app .sm-form-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .schedule-app .sm-form-actions > button { width: 100%; min-width: 0; margin: 0; }
+}
