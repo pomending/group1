@@ -1,133 +1,115 @@
-//등록된 고객정보를 보여주는 컴포넌트
+//고객 목록 및 관리(조회 등록 수정 삭제 페이지이동 엑셀다운로드)
+import React, { useState } from "react";
+//고객정보를 엑셀 파일로 생성하기 위한 라이브러리
 import ExcelJS from "exceljs";
+//생성된 엑셀 파일을 다운로드하기 위한 기능
 import { saveAs } from "file-saver";
-import React, { use, useState } from "react";
+import { initialCustomerList } from "./04_initialCustomerList";
+import "./02_CustomerManagement.css";
 
-
-import { customerList } from "./CustomerDummy";
-
-import './CrmPage.css';
-
-function CustomerList() {
-
-    // 검색창에 입력한 검색어를 저장하고 변경하기 위한 state
-    //검색버튼을 눌렀을때 어떤업체명을 검색해야 되는지 기억하기위해 만듬 
-    const [search, setSearch] = useState('');
-
-    const [customers, setCustomers] = useState(customerList);
-const [searchResult, setSearchResult] = useState(customerList);
-
-    //수정할 고객의 정보를 저장하는 state
-    const [editData, setEditData] = useState(null);
-
-
-    // 현재 페이지 번호를 저장하고 변경하는 state
-    // 처음에는 1페이지부터 시작
+function CustomerManagement() {
+    //현재등록된 전체 고객목록
+    const [customerList, setCustomerList] = useState(
+        JSON.parse(localStorage.getItem("crmCustomers")) || initialCustomerList
+    );
+    //검색창에 입력한 검색어
+    const [search, setSearch] = useState("");
+    //검색조건으로 나온 고객목록
+    const [searchList, setSearchList] = useState(initialCustomerList);
+    //체크 박스로 선택한 고객들의 ID목록
+    const [checkedIds, setCheckedIds] = useState([]);
+    //현재 보고있는 페이지 번호
     const [currentPage, setCurrentPage] = useState(1);
-    //한페이지에 나오는 고객목록 수
-    const itemsPerPage = 10;
+    //한 페이지에 보여줄 고객목록 수
+    const customerCountPerPage = 10;
+    //math.ceil() : 소수점이하를 올림하여 정수로 만드는 함수
+    //totalPageCount :전체 페이지수  currentPageCustomerList:현재목록에 표시할 고개목록
+    const totalPageCount = Math.ceil(searchList.length / customerCountPerPage);
+    const currentPageCustomer = searchList.slice(
+        (currentPage - 1) * customerCountPerPage,
+        currentPage * customerCountPerPage
+    );
 
-    // 현재 페이지에 보여줄 고객 10명만 가져오기 ,const 변수명=배열.slice(0,1)0부터1까지가져와
-    const currentCustomers = searchResult.slice(
-        // 시작 위치 계산 (1페이지=0, 2페이지=10)
-        (currentPage - 1) * itemsPerPage,
-        // 끝 위치 계산 (1페이지=10, 2페이지=20)
-        (currentPage - 1) * itemsPerPage + itemsPerPage);
-
-    //검색된 고객 수를 기준으로 전체페이지수 계산( 소수점 올림 Math.ceil() )
-    const totalPages = Math.ceil(searchResult.length / itemsPerPage);
-
-    //체크박스에 체크한 고객들의 ID를 배열로 저장
-    const [selectedIds, setSelectedIds] = useState([]);
-
-
-    // 검색 버튼을 클릭하면 실행되는 함수
+    //고객사명으로 고객 검색
     function searchCustomer(e) {
+        e.preventDefault();
 
-        // 전체 고객 목록(customerList)에서
-        // 업체명(companyName)에 검색어(search)가 포함된 고객만 찾기
-        // 검색 결과를 searchResult state에 저장
-        // 전체 고객 목록에서 업체명에 검색어가 포함된 고객만 찾아 검색 결과 배열에 저장한다.
-        setSearchResult(
-            customers.filter((item) =>
-                item.companyName.includes(search)
+        setSearchList(
+            customerList.filter((customer) =>
+                customer.companyName.includes(search)
             )
         );
-        //검색했을때 페이지가 1이아닌 다른페이지일경우 검색결과가 1페이지에 있어 다른페이지에서 보이지않음
-        //검색할때 자동으로 1페이지로 돌아가게 설정
+
         setCurrentPage(1);
-        e.preventDefault()
-
     }
 
-    //검색후 다시 초기 전체목록으로 초기화시키는 버튼만드는 함수
-    function resetSearch() {
-        //창비우기
-        setSearch("")
-        //현재 전체 고객 목록 다시 표시
-        setSearchResult(customers)
-        //첫페이지로 이동
-        setCurrentPage(1)
+    //검색어와 검색결과 초기화
+    function resetCustomerSearch() {
+        setSearch("");
+        setSearchList(customerList);
+        setCurrentPage(1);
     }
 
-    //체크한 고객들을 목록에서 삭제하는 함수
-    function deleteSelectedCustomers() {
-        //전체  고객목록에서 체크한 고객을 제외하고 나머지만 가져오기
-        const remainingCustomers = customers.filter((customer) =>
-            !selectedIds.includes(customer.id))
+    //신규고객등록 및 목록추가
+    function addCustomer(newCustomer) {
+        const newId = Math.max(
+            0,
+            ...customerList.map((customer) => customer.id)
+        ) + 1;
 
-        setCustomers(remainingCustomers)
-        setSearchResult(remainingCustomers)
-        setSearch("")
-        setSelectedIds([])
-        setCurrentPage(1)
+        const updatedCustomers = [
+            { ...newCustomer, id: newId },
+            ...customerList
+        ];
+
+        setCustomerList(updatedCustomers);
+        setSearchList(updatedCustomers);
+        setSearch("");
     }
 
-    function editCustomer() {
-        const selectedCustomer = customers.find((customer) =>
-            customer.id === selectedIds[0])
+    //선택한 고객의 수정팝업 열기
+    function openEditCustomer() {
+        const selectedCustomer = customerList.find((customer) =>
+            customer.id === checkedIds[0]
+        );
 
-        setEditData(selectedCustomer);
         window.open(
             "/crm/edit?id=" + selectedCustomer.id + "&popup=1",
             "customerEdit",
             "width=600,height=700"
         );
     }
-
+    //수정한 고객정보 저장
     function saveEditedCustomer(updateCustomer) {
-        const updateCustomers = customers.map((customer) =>
+        const updateCustomers = customerList.map((customer) =>
             customer.id === updateCustomer.id
                 ? updateCustomer
                 : customer
-        )
-        setCustomers(updateCustomers)
-        setSearchResult(updateCustomers)
-        setSearch("")
+        );
 
+        setCustomerList(updateCustomers);
+        setSearchList(updateCustomers);
+        setSearch("");
+    }
+    //체크박스로 선택한 고객 삭제
+    function deleteSelectedCustomers() {
+        const remainingCustomers = customerList.filter((customer) =>
+            !checkedIds.includes(customer.id)
+        );
 
+        setCustomerList(remainingCustomers);
+        setSearchList(remainingCustomers);
+        setSearch("");
+        setCheckedIds([]);
+        setCurrentPage(1);
     }
 
-    function addCustomer(newCustomer) {
-
-        const newId = Math.max(0, ...customers.map((customer) => customer.id || 0)) + 1;
-        const updatedCustomers = [
-            { ...newCustomer, id: newId },
-            ...customers
-        ];
-
-        setCustomers(updatedCustomers)
-        setSearchResult(updatedCustomers)
-        setSearch("")
-
-    }
-
-
-    window.saveEditedCustomer = saveEditedCustomer
-    window.getCurrentCustomers = () => customers;
+    window.saveEditedCustomer = saveEditedCustomer;
+    window.getCurrentCustomers = () => customerList;
     window.addCustomer = addCustomer;
 
-    async function downloadExcel(data = searchResult) {
+    //고객 목록을 엑셀파일로 생성 및 다운로드
+    async function downloadExcel(data = searchList) {
         const workbook = new ExcelJS.Workbook();
         const worksheet = workbook.addWorksheet("고객 목록");
 
@@ -155,85 +137,95 @@ const [searchResult, setSearchResult] = useState(customerList);
         });
 
         saveAs(blob, "고객목록.xlsx");
-
-
-
     }
-
+    //선택한 고객만 엑셀로 생성 및 다운로드
     async function downloadSelectedExcel() {
-        const selectedCustomers = customers.filter(customer =>
-            selectedIds.includes(customer.id)
+        const selectedCustomers = customerList.filter((customer) =>
+            checkedIds.includes(customer.id)
         );
+
         await downloadExcel(selectedCustomers);
     }
+
     return (
         <div className="crm-page">
             <div className="crm-header">
                 <div>
                     <p className="crm-path">CRM / 고객 관리</p>
                     <h2>고객 관리</h2>
-                    <p className="crm-description">고객사 정보 조회 및 관리</p>
+                    <p className="crm-description">
+                        고객사 정보 조회 및 관리
+                    </p>
                 </div>
             </div>
 
             <div className="crm-summary">
                 <div className="crm-summary-card">
                     <span>전체 고객사</span>
-                    <strong>{customers.length}개</strong>
+                    <strong>{customerList.length}개</strong>
                 </div>
-
             </div>
 
             <div className="crm-content">
                 <div className="crm-content-header">
                     <h3>고객사 목록</h3>
-                    <span>총 {searchResult.length}건</span>
+                    <span>총 {searchList.length}건</span>
                 </div>
 
-                <form className="crm-search" onSubmit={searchCustomer}>
+                <form
+                    className="crm-search"
+                    onSubmit={searchCustomer}
+                >
                     <input
                         placeholder="고객사명을 입력하세요"
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                     />
-                    <button type="submit" className="crm-btn-primary">
+
+                    <button
+                        type="submit"
+                        className="crm-btn-primary"
+                    >
                         검색
                     </button>
+
                     <button
                         type="button"
                         className="crm-btn-secondary"
-                        onClick={resetSearch}
+                        onClick={resetCustomerSearch}
                     >
                         전체목록으로
                     </button>
                 </form>
 
                 <div className="crm-toolbar">
-                    <span>선택한 고객: {selectedIds.length}건</span>
+                    <span>선택한 고객: {checkedIds.length}건</span>
 
                     <div className="crm-actions">
                         <button
                             className="crm-btn-primary"
-                            onClick={() => window.open(
-                                "/crm/register?popup=1",
-                                "customerRegister",
-                                "width=600,height=700"
-                            )}
+                            onClick={() =>
+                                window.open(
+                                    "/crm/register?popup=1",
+                                    "customerRegister",
+                                    "width=600,height=700"
+                                )
+                            }
                         >
                             + 고객 등록
                         </button>
 
                         <button
                             className="crm-btn-secondary"
-                            disabled={selectedIds.length !== 1}
-                            onClick={editCustomer}
+                            disabled={checkedIds.length !== 1}
+                            onClick={openEditCustomer}
                         >
                             수정
                         </button>
 
                         <button
                             className="crm-btn-delete"
-                            disabled={selectedIds.length === 0}
+                            disabled={checkedIds.length === 0}
                             onClick={deleteSelectedCustomers}
                         >
                             삭제
@@ -248,7 +240,7 @@ const [searchResult, setSearchResult] = useState(customerList);
 
                         <button
                             className="crm-btn-secondary"
-                            disabled={selectedIds.length === 0}
+                            disabled={checkedIds.length === 0}
                             onClick={downloadSelectedExcel}
                         >
                             선택 고객 다운로드
@@ -275,28 +267,28 @@ const [searchResult, setSearchResult] = useState(customerList);
                         </thead>
 
                         <tbody>
-                            {currentCustomers.length === 0 ? (
+                            {currentPageCustomer.length === 0 ? (
                                 <tr>
                                     <td colSpan={11} className="crm-empty">
                                         검색된 결과가 없습니다.
                                     </td>
                                 </tr>
                             ) : (
-                                currentCustomers.map((customer) => (
+                                currentPageCustomer.map((customer) => (
                                     <tr key={customer.id}>
                                         <td>
                                             <input
                                                 type="checkbox"
-                                                checked={selectedIds.includes(customer.id)}
+                                                checked={checkedIds.includes(customer.id)}
                                                 onChange={(e) => {
                                                     if (e.target.checked) {
-                                                        setSelectedIds([
-                                                            ...selectedIds,
+                                                        setCheckedIds([
+                                                            ...checkedIds,
                                                             customer.id
                                                         ]);
                                                     } else {
-                                                        setSelectedIds(
-                                                            selectedIds.filter(
+                                                        setCheckedIds(
+                                                            checkedIds.filter(
                                                                 (id) => id !== customer.id
                                                             )
                                                         );
@@ -305,7 +297,9 @@ const [searchResult, setSearchResult] = useState(customerList);
                                             />
                                         </td>
                                         <td>{customer.id}</td>
-                                        <td className="crm-company">{customer.companyName}</td>
+                                        <td className="crm-company">
+                                            {customer.companyName}
+                                        </td>
                                         <td>{customer.businessNumber}</td>
                                         <td>{customer.customerManager}</td>
                                         <td>{customer.phone}</td>
@@ -323,12 +317,12 @@ const [searchResult, setSearchResult] = useState(customerList);
 
                 <div className="crm-pagination">
                     <span className="crm-page-info">
-                        {searchResult.length === 0
+                        {searchList.length === 0
                             ? "0건"
-                            : `${(currentPage - 1) * itemsPerPage + 1}-${Math.min(
-                                currentPage * itemsPerPage,
-                                searchResult.length
-                            )} / ${searchResult.length}건`}
+                            : `${(currentPage - 1) * customerCountPerPage + 1}-${Math.min(
+                                currentPage * customerCountPerPage,
+                                searchList.length
+                            )} / ${searchList.length}건`}
                     </span>
 
                     <div className="crm-page-buttons">
@@ -340,7 +334,7 @@ const [searchResult, setSearchResult] = useState(customerList);
                         </button>
 
                         {Array.from(
-                            { length: totalPages },
+                            { length: totalPageCount },
                             (_, index) => index + 1
                         ).map((page) => (
                             <button
@@ -353,7 +347,7 @@ const [searchResult, setSearchResult] = useState(customerList);
                         ))}
 
                         <button
-                            disabled={currentPage >= totalPages}
+                            disabled={currentPage >= totalPageCount}
                             onClick={() => setCurrentPage(currentPage + 1)}
                         >
                             ▶
@@ -365,10 +359,7 @@ const [searchResult, setSearchResult] = useState(customerList);
     );
 }
 
-
-
-
-export default CustomerList;
+export default CustomerManagement;
 
 
 

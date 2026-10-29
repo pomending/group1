@@ -4,15 +4,12 @@ import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import Sidebar from "./components/Sidebar";
 import "./ERPLayout.css";
 
-import CrmPage from "./1_crm/CrmPage";
+import CrmPage from "./1_crm/01_CrmPage";
 import QuotationPage from "./2_quotation/QuotationPage";
 import ProjectPage from "./3_projects/ProjectPage";
 import TaskPage from "./4_tasks/TaskPage";
 import SchedulePage from "./5_schedule/SchedulePage";
 import DashboardPage from "./6_dashboard/DashboardPage";
-
-import QuotationList from "./2_quotation/QuotationList";
-import ProductPage from "./2_quotation/ProductPage";
 import NotFoundPage from "./components/NotFoundPage";
 import Topbar from "./components/Topbar";
 import { ERPProvider } from "./context/ERPContext";
@@ -50,8 +47,6 @@ function ERPContent() {
                         <Route path="/" element={<DashboardPage />} />
                         <Route path="/crm/*" element={<CrmPage />} />
                         <Route path="/quotation/*" element={<QuotationPage />} />
-                        <Route path="/quotation/list" element={<QuotationList />} />
-                        <Route path="/product/*" element={<ProductPage />} />
                         <Route path="/projects/*" element={<ProjectPage />} />
                         <Route path="/tasks/*" element={<TaskPage />} />
                         <Route path="/schedule/*" element={<SchedulePage />} />

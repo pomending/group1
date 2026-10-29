@@ -1,19 +1,16 @@
 import React, { useState } from "react";
 import "./ProjectDetail.css";
 import { useERP } from "../context/ERPContext";
+import { formatPrice, formatProjectId, formatQuotationId } from "../utils/formatUtils";
+import { getProjectStatus } from "../utils/projectStatus";
 
 function ProjectDetail(props) {
 
-    const { updateProject, deleteProject } = useERP()
+    const { projects, updateProject, deleteProject, customers } = useERP()
 
-    const projects = props.projects;
     const selectedProject = projects.find(project => project.id === props.selectedProjectId);
 
     const [status, setStatus] = useState(selectedProject?.status ?? '대기');
-
-    const formatQuotationId = (id) => {
-        return `QT-${String(id).padStart(3, '0')}`;
-    };
 
     if (!selectedProject) {
         return (
@@ -32,7 +29,7 @@ function ProjectDetail(props) {
     const selectedQuotation = props.quotations.find(
         q => q.id === selectedProject.quotationId
     );
-    const customer = props.customers.find(
+    const customer = customers.find(
         c => c.id === selectedProject.customerId
     );
     const manager = props.employees.find(
@@ -83,9 +80,9 @@ function ProjectDetail(props) {
                     <div className="pd-heading-actions">
                         <span className={
                             "pd-status pd-status-" +
-                            selectedProject.status.replaceAll(' ', '')
+                            getProjectStatus(selectedProject).replaceAll(' ', '')
                         }>
-                            {selectedProject.status}
+                            {getProjectStatus(selectedProject)}
                         </span>
 
                         <button
@@ -106,13 +103,13 @@ function ProjectDetail(props) {
                             <span className="pd-section-num">PROJECT INFO</span>
                             <h2>프로젝트 기본 정보</h2>
                         </div>
-                        <span className="pd-number">PRJ-{String(selectedProject.id).padStart(3, '0')}</span>
+                        <span className="pd-number">{formatProjectId(selectedProject.id)}</span>
                     </div>
 
                     <div className="pd-info-grid">
                         <div className="pd-info-item">
                             <span>고객사</span>
-                            <strong>{customer?.name ?? `고객 ID ${selectedProject.customerId}`}</strong>
+                            <strong>{customer?.companyName ?? `고객 ID ${selectedProject.customerId}`}</strong>
                         </div>
                         <div className="pd-info-item">
                             <span>담당자</span>
@@ -126,7 +123,7 @@ function ProjectDetail(props) {
                         </div>
                         <div className="pd-info-item">
                             <span>진행 상태</span>
-                            <strong>{selectedProject.status}</strong>
+                            <strong>{getProjectStatus(selectedProject)}</strong>
                         </div>
                         <div className="pd-info-item">
                             <span>시작 예정일</span>
@@ -146,6 +143,61 @@ function ProjectDetail(props) {
                         <span>프로젝트 설명</span>
                         <p>{selectedProject.description || "등록된 설명이 없습니다."}</p>
                     </div>
+                </section>
+
+                {/* 고객사 상세 정보 */}
+                <section className="pd-card">
+                    <div className="pd-card-header">
+                        <div>
+                            <span className="pd-section-num">CUSTOMER INFO</span>
+                            <h2>고객사 상세 정보</h2>
+                        </div>
+                    </div>
+
+                    {customer ? (
+                        <>
+                            <div className="pd-info-grid">
+                                <div className="pd-info-item">
+                                    <span>고객사명</span>
+                                    <strong>{customer.companyName}</strong>
+                                </div>
+
+                                <div className="pd-info-item">
+                                    <span>사업자등록번호</span>
+                                    <strong>{customer.businessNumber || '미등록'}</strong>
+                                </div>
+
+                                <div className="pd-info-item">
+                                    <span>고객사 담당자</span>
+                                    <strong>{customer.customerManager || '미등록'}</strong>
+                                </div>
+
+                                <div className="pd-info-item">
+                                    <span>담당자 연락처</span>
+                                    <strong>{customer.phone || '미등록'}</strong>
+                                </div>
+
+                                <div className="pd-info-item">
+                                    <span>이메일</span>
+                                    <strong>{customer.email || '미등록'}</strong>
+                                </div>
+
+                                <div className="pd-info-item">
+                                    <span>주소</span>
+                                    <strong>{customer.address || '미등록'}</strong>
+                                </div>
+                            </div>
+
+                            <div className="pd-description">
+                                <span>고객 메모</span>
+                                <p>{customer.memo || '등록된 메모가 없습니다.'}</p>
+                            </div>
+                        </>
+                    ) : (
+                        <p className="pd-empty">
+                            연결된 고객사 정보를 찾을 수 없습니다.
+                        </p>
+                    )}
                 </section>
 
                 {/* 프로젝트 진행 현황 - 현재는 기존 목록과 동일하게 임시 80% */}
@@ -168,7 +220,7 @@ function ProjectDetail(props) {
                             <div className="pd-status-field">
                                 <label>현재 상태</label>
                                 <div className="pd-current-status">
-                                    {selectedProject.status}
+                                    {getProjectStatus(selectedProject)}
                                 </div>
                             </div>
 
@@ -182,7 +234,6 @@ function ProjectDetail(props) {
                                     <option value="대기">대기</option>
                                     <option value="진행 중">진행 중</option>
                                     <option value="완료">완료</option>
-                                    <option value="지연">지연</option>
                                 </select>
                             </div>
                         </div>
@@ -216,7 +267,7 @@ function ProjectDetail(props) {
                                 </div>
                                 <div>
                                     <span>고객사</span>
-                                    <strong>{customer?.name ?? `고객 ID ${selectedQuotation.customerId}`}</strong>
+                                    <strong>{customer?.companyName ?? `고객 ID ${selectedQuotation.customerId}`}</strong>
                                 </div>
                                 <span className="pd-approved">{selectedQuotation.status}</span>
                             </div>
@@ -235,8 +286,8 @@ function ProjectDetail(props) {
                                             <tr key={`${item.productId}-${index}`}>
                                                 <td>{item.productName}</td>
                                                 <td>{item.quantity.toLocaleString()}개</td>
-                                                <td>{item.unitPrice.toLocaleString()}원</td>
-                                                <td>{(item.quantity * item.unitPrice).toLocaleString()}원</td>
+                                                <td>{formatPrice(item.unitPrice)}</td>
+                                                <td>{formatPrice(item.quantity * item.unitPrice)}</td>
                                             </tr>
                                         ))}
                                     </tbody>
@@ -244,7 +295,7 @@ function ProjectDetail(props) {
                             </div>
                             <div className="pd-quotation-total">
                                 <span>총 견적 금액</span>
-                                <strong>{quotationTotal.toLocaleString()}원</strong>
+                                <strong>{formatPrice(quotationTotal)}</strong>
                             </div>
                         </div>
                     ) : (

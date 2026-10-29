@@ -10,7 +10,6 @@
     container-type: inline-size;
 }
 
-/* 대시보드 제목 */
 .dashboard h1 {
     color: #263a49;
     font-size: 26px;
@@ -19,7 +18,7 @@
 
 
 /* ==========================
-   상단 중요 공지
+   상단 중요공지
 ========================== */
 .dashboard-banner {
     display: flex;
@@ -37,10 +36,9 @@
     color: #372918;
     padding: 7px 12px;
     border-radius: 4px;
+    flex-shrink: 0;
 }
 
-/* 중요공지 제목 링크 */
-/* 보라색과 밑줄을 없애고 흰색으로 표시 */
 .dashboard .dashboard-banner .notice-banner-link,
 .dashboard .dashboard-banner .notice-banner-link:visited {
     display: block;
@@ -56,39 +54,48 @@
     text-overflow: ellipsis;
 }
 
-/* 중요공지 제목에 마우스를 올렸을 때 */
 .dashboard .dashboard-banner .notice-banner-link:hover {
     color: #f5d7a2;
     text-decoration: none;
 }
 
-/* NOTICE 표시가 줄어들지 않도록 */
-.dashboard .dashboard-banner strong {
-    flex-shrink: 0;
-}
-
 
 /* ==========================
-   대시보드 좌우 배치
+   대시보드 배치
 ========================== */
 .dashboard-grid {
     display: grid;
-    grid-template-columns: minmax(0, 1.15fr) minmax(350px, 0.85fr);
+
+    /* 오늘의 일정은 360px 유지 */
+    grid-template-columns: minmax(0, 1fr) 360px;
+
     gap: 20px;
     align-items: start;
 }
 
-.dashboard-left,
+/* 공지사항과 커뮤니티를 별도 칸으로 표시 */
+.dashboard-left {
+    display: grid;
+    grid-template-columns: repeat(
+        auto-fit,
+        minmax(min(100%, 320px), 1fr)
+    );
+    gap: 20px;
+    align-items: start;
+    min-width: 0;
+}
+
 .dashboard-right {
     display: flex;
     flex-direction: column;
     gap: 20px;
     min-width: 0;
+    align-self: start;
 }
 
 
 /* ==========================
-   공통 카드 디자인
+   공통 카드
 ========================== */
 .dashboard-card {
     background: white;
@@ -98,7 +105,6 @@
     min-width: 0;
 }
 
-/* 카드 제목 */
 .dashboard-card h3 {
     color: #263a49;
     font-size: 18px;
@@ -107,7 +113,6 @@
     border-bottom: 1px solid #ddd;
 }
 
-/* 카드 일반 내용 */
 .dashboard-card p {
     color: #555;
     font-size: 14px;
@@ -116,20 +121,47 @@
     border-bottom: 1px solid #eee;
 }
 
-/* 오늘의 일정 */
-.schedule-card {
-    background-color: #ebf1ee;
-    min-height: 200px;
+
+/* ==========================
+   프로젝트 관리 카드
+========================== */
+.dashboard-project-card {
+    position: relative;
+    margin-bottom: 20px;
+}
+
+/* 빈 공간 클릭 시 프로젝트 목록으로 이동 */
+.dashboard-project-cover {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    border-radius: 8px;
+}
+
+.dashboard-project-cover:focus-visible {
+    outline: 2px solid #327aab;
+    outline-offset: 2px;
+}
+
+/* 각 프로젝트는 자신의 상세 링크를 사용 */
+.dashboard .dashboard-project-card .dashboard-project-link {
+    position: relative;
+    z-index: 2;
+    padding: 4px 0;
+}
+
+.dashboard .dashboard-project-card .dashboard-project-link:hover {
+    background-color: #f3f7fa;
+    text-decoration: none;
 }
 
 
 /* ==========================
-   오늘의 일정 카드 크기 조정
+   오늘의 일정
 ========================== */
-
-/* 왼쪽 게시글의 높이에 맞춰 오른쪽 카드가 늘어나지 않도록 */
-.dashboard .dashboard-right {
-    align-self: start;
+.schedule-card {
+    background-color: #ebf1ee;
+    min-height: 200px;
 }
 
 .dashboard .dashboard-right .schedule-card {
@@ -141,7 +173,6 @@
     display: block;
 }
 
-/* 달력을 카드의 왼쪽부터 채움 */
 .dashboard .dashboard-right .today-box {
     width: 100%;
     max-width: none;
@@ -155,7 +186,7 @@
     margin: 4px 0 8px;
 }
 
-/* 요일과 날짜는 같은 폭의 7칸을 사용 */
+/* 달력의 요일과 날짜를 7칸으로 표시 */
 .dashboard .dashboard-right .schedule-card .today-weekdays,
 .dashboard .dashboard-right .schedule-card .today-days {
     display: grid;
@@ -166,7 +197,7 @@
     align-content: start;
 }
 
-/* 날짜 한 줄 높이를 46px로 고정 */
+/* 기존 날짜 높이 46px 유지 */
 .dashboard .dashboard-right .schedule-card .today-days {
     grid-template-rows: none;
     grid-auto-rows: 46px;
@@ -192,7 +223,6 @@
     text-align: left;
 }
 
-/* 작은 날짜 칸에서도 프로젝트명을 한 줄로 표시 */
 .dashboard .dashboard-right .schedule-card .today-project {
     max-width: 100%;
     min-width: 0;
@@ -212,10 +242,8 @@
 
 
 /* ==========================
-   사내 커뮤니티 제목 클릭
+   공지사항과 커뮤니티 제목
 ========================== */
-
-/* 제목 칸 전체를 클릭할 수 있게 */
 .dashboard-community-heading {
     display: block;
     padding: 8px;
@@ -225,23 +253,19 @@
     cursor: pointer;
 }
 
-/* 제목 아래 구분선 유지 */
 .dashboard-community-heading h3 {
     margin: 0;
     padding-bottom: 10px;
 }
 
-/* 마우스를 올리면 배경색 변경 */
 .dashboard-community-heading:hover {
     background-color: #e9f0f4;
 }
 
 
 /* ==========================
-   사내 커뮤니티 최근 게시글
+   최근 게시글
 ========================== */
-
-/* 게시글 한 줄 */
 .dashboard-post {
     margin: 0;
     padding: 7px 0;
@@ -249,7 +273,6 @@
     border-bottom: 1px solid #eee;
 }
 
-/* 제목은 왼쪽, 작성자와 날짜는 오른쪽 */
 .dashboard .dashboard-post > .dashboard-post-link {
     display: flex;
     align-items: center;
@@ -264,7 +287,6 @@
     text-decoration: none;
 }
 
-/* 게시글 제목 */
 .dashboard-post-title {
     flex: 1;
     min-width: 0;
@@ -274,7 +296,6 @@
     text-overflow: ellipsis;
 }
 
-/* 게시글 작성자 */
 .dashboard-post-writer {
     margin-left: auto;
     flex-shrink: 0;
@@ -283,7 +304,6 @@
     white-space: nowrap;
 }
 
-/* 게시글 작성일 */
 .dashboard-post-date {
     flex-shrink: 0;
     font-size: 12px;
@@ -291,7 +311,6 @@
     white-space: nowrap;
 }
 
-/* 게시글에 마우스를 올렸을 때 */
 .dashboard-post-link:hover .dashboard-post-title {
     text-decoration: underline;
 }
@@ -306,9 +325,13 @@
     }
 }
 
-/* 창 폭이 실제로 좁아질 때만 한 줄로 배치 */
-@container (max-width: 700px) {
+@container (max-width: 660px) {
     .dashboard .dashboard-grid {
         grid-template-columns: minmax(0, 1fr);
+    }
+
+    .dashboard .dashboard-right {
+        width: 360px;
+        max-width: 100%;
     }
 }

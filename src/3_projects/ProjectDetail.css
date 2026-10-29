@@ -1,144 +1,134 @@
+/* ProjectDetail.css — 프로젝트 상세 화면
+   ProjectDetail.js의 기존 클래스명을 그대로 사용합니다.
+   스타일은 .pd-page 내부에서만 적용됩니다. */
 
-/* ProjectDetail.css - compact ERP detail */
-
+/* 전체 레이아웃 */
 .pd-page {
     --pd-accent: #7565d8;
-    --pd-muted: #85899a;
+    --pd-accent-hover: #6354c4;
     --pd-line: #e9e9f1;
+    --pd-muted: #85899a;
+  
+    width: 100%;
     min-height: 100vh;
     padding: 22px 24px 36px;
     background: #f6f7fb;
     color: #303348;
     font: 14px/1.4 Arial, sans-serif;
     text-align: left;
-}
-
-.pd-page,
-.pd-page * {
+  }
+  
+  .pd-page,
+  .pd-page * {
     box-sizing: border-box;
-}
-
-/* 목록 화면과 전체 너비 통일 */
-
-.pd-page .pd-container {
+  }
+  
+  .pd-page .pd-container {
     width: 100%;
     max-width: 980px;
     margin: 0 auto;
-    padding: 0;
-}
-
-/* 뒤로가기 */
-
-.pd-page .pd-back {
+  }
+  
+  /* 목록으로 돌아가기 */
+  .pd-page .pd-back {
     display: inline-flex;
     align-items: center;
     margin: 0 0 20px;
     padding: 0;
     border: 0;
-    background: none;
+    background: transparent;
     color: var(--pd-accent);
     font-size: 13px;
     font-weight: 600;
     cursor: pointer;
-}
-
-.pd-page .pd-back:hover {
+  }
+  
+  .pd-page .pd-back:hover {
     color: #5949be;
-}
-
-/* 페이지 상단 제목 */
-
-.pd-page .pd-heading {
+  }
+  
+  /* 제목 / 상단 액션 */
+  .pd-page .pd-heading {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
     align-items: center;
     gap: 20px;
-    width: 100%;
-    margin: 0 0 24px;
-    padding: 0;
-}
-
-.pd-page .pd-heading > div:first-child {
+    margin-bottom: 24px;
+  }
+  
+  .pd-page .pd-heading > div:first-child {
     min-width: 0;
-    margin: 0;
-    padding: 0;
-}
-
-.pd-page .pd-heading-actions {
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    gap: 10px;
-    margin: 0;
-    padding: 0;
-    white-space: nowrap;
-}
-
-.pd-page .pd-eyebrow,
-.pd-page .pd-section-num {
+  }
+  
+  .pd-page .pd-eyebrow,
+  .pd-page .pd-section-num {
     display: block;
     margin: 0 0 5px;
-    padding: 0;
     color: var(--pd-accent);
     font-size: 10px;
     font-weight: 700;
     letter-spacing: 0.8px;
-}
-
-.pd-page .pd-heading h1 {
+  }
+  
+  .pd-page .pd-heading h1 {
     margin: 0;
-    padding: 0;
     font-size: 24px;
+    line-height: 1.35;
     overflow-wrap: anywhere;
-}
-
-.pd-page .pd-heading p:not(.pd-eyebrow) {
+  }
+  
+  .pd-page .pd-heading p:not(.pd-eyebrow) {
     margin: 5px 0 0;
-    padding: 0;
     color: var(--pd-muted);
     font-size: 12px;
-}
-
-/* 수정 및 삭제 버튼 */
-
-.pd-page .pd-edit-btn,
-.pd-page .pd-delete-btn {
+  }
+  
+  .pd-page .pd-heading-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  
+  .pd-page .pd-edit-btn,
+  .pd-page .pd-delete-btn {
     flex-shrink: 0;
     padding: 8px 16px;
     border-radius: 8px;
-    font: inherit;
-    font-size: 13px;
-    font-weight: 600;
+    font: 600 13px/1.4 Arial, sans-serif;
     cursor: pointer;
-    transition: background 0.15s;
-}
-
-.pd-page .pd-edit-btn {
+    transition: background-color 0.15s, border-color 0.15s;
+  }
+  
+  .pd-page .pd-edit-btn {
     border: 1px solid var(--pd-accent);
     background: var(--pd-accent);
-    color: white;
-}
-
-.pd-page .pd-edit-btn:hover {
-    background: #5e4fc0;
-}
-
-.pd-page .pd-delete-btn {
-    border: 1px solid #dc7e87;
-    background: white;
+    color: #fff;
+  }
+  
+  .pd-page .pd-edit-btn:hover {
+    border-color: var(--pd-accent-hover);
+    background: var(--pd-accent-hover);
+  }
+  
+  .pd-page .pd-delete-btn {
+    border: 1px solid #e7b4bc;
+    background: #fff;
     color: #c95361;
-}
-
-.pd-page .pd-delete-btn:hover {
+  }
+  
+  .pd-page .pd-delete-btn:hover {
     background: #fff0f2;
-}
-
-/* 상단 상태 배지 */
-
-.pd-page .pd-status,
-.pd-page .pd-approved {
+    border-color: #d88e9a;
+  }
+  
+  /* 상태 배지 — ProjectList의 상태별 색상과 통일 */
+  .pd-page .pd-status,
+  .pd-page .pd-approved {
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     flex-shrink: 0;
     padding: 5px 10px;
     border-radius: 20px;
@@ -146,132 +136,103 @@
     color: #77798c;
     font-size: 11px;
     font-weight: 600;
+    line-height: 1.3;
     white-space: nowrap;
-}
-
-.pd-page .pd-status-진행중,
-.pd-page .pd-approved {
-    background: #e5f5ed;
-    color: #34895f;
-}
-
-.pd-page .pd-status-대기,
-.pd-page .pd-status-납품대기 {
-    background: #fff4df;
-    color: #ad8033;
-}
-
-.pd-page .pd-status-완료 {
-    background: #e9e6fc;
-    color: #6b5dc4;
-}
-
-.pd-page .pd-status-지연,
-.pd-page .pd-status-취소 {
-    background: #fdebec;
-    color: #c25d6d;
-}
-
-/* 공통 카드 */
-
-.pd-page .pd-card {
-    display: block;
+  }
+  
+  .pd-page .pd-status-대기 {
+    background: #f2f3f6;
+    color: #77798c;
+  }
+  
+  .pd-page .pd-status-진행중 {
+    background: #f2efff;
+    color: #7565d8;
+  }
+  
+  .pd-page .pd-status-완료,
+  .pd-page .pd-approved {
+    background: #e8f6ef;
+    color: #299665;
+  }
+  
+  .pd-page .pd-status-지연 {
+    background: #fff0f2;
+    color: #d4505e;
+  }
+  
+  /* 카드 / 공통 제목 */
+  .pd-page .pd-card {
     width: 100%;
-    min-height: 0 !important;
-    height: auto !important;
     margin: 0 0 16px;
-    padding: 22px 28px !important;
+    padding: 22px 28px;
     border: 1px solid var(--pd-line);
     border-radius: 12px;
-    background: white;
-}
-
-/* 카드 제목 정렬 및 과도한 여백 제거 */
-
-.pd-page .pd-card-header {
+    background: #fff;
+  }
+  
+  .pd-page .pd-card-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 12px;
-    width: 100%;
-    height: auto !important;
-    min-height: 0 !important;
-    margin: 0 0 16px !important;
-    padding: 0 0 12px !important;
+    margin: 0 0 16px;
+    padding: 0 0 12px;
     border-bottom: 1px solid var(--pd-line);
-}
-
-.pd-page .pd-card-header > div {
-    display: block;
-    width: auto !important;
-    height: auto !important;
-    min-height: 0 !important;
+  }
+  
+  .pd-page .pd-card-header > div {
     min-width: 0;
-    margin: 0 !important;
-    padding: 0 !important;
-    border: 0 !important;
-    background: transparent;
-}
-
-.pd-page .pd-card-header h2 {
-    margin: 0 !important;
-    padding: 0 !important;
+  }
+  
+  .pd-page .pd-card-header h2 {
+    margin: 0;
     color: #303348;
     font-size: 17px;
     font-weight: 700;
     line-height: 1.4;
-}
-
-.pd-page .pd-number {
+  }
+  
+  .pd-page .pd-number {
     color: var(--pd-muted);
     font-size: 12px;
     white-space: nowrap;
-}
-
-/* 프로젝트 기본 정보 */
-
-.pd-page .pd-info-grid {
+  }
+  
+  /* 프로젝트 기본 정보 */
+  .pd-page .pd-info-grid {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 20px 18px;
-    width: 100%;
-    height: auto;
-    margin: 0;
-    padding: 0;
-}
-
-.pd-page .pd-info-item {
+  }
+  
+  .pd-page .pd-info-item {
     display: flex;
     flex-direction: column;
     gap: 6px;
     min-width: 0;
-    height: auto;
-    margin: 0;
-    padding: 0;
-}
-
-.pd-page .pd-info-item span,
-.pd-page .pd-description > span {
+  }
+  
+  .pd-page .pd-info-item span,
+  .pd-page .pd-description > span {
     color: #9395a5;
     font-size: 11px;
-}
-
-.pd-page .pd-info-item strong {
+  }
+  
+  .pd-page .pd-info-item strong {
     color: #383b52;
     font-size: 13px;
     font-weight: 600;
     overflow-wrap: anywhere;
-}
-
-/* 프로젝트 설명 */
-
-.pd-page .pd-description {
-    margin: 20px 0 0;
-    padding: 14px 0 0;
+  }
+  
+  .pd-page .pd-description {
+    margin-top: 20px;
+    padding-top: 14px;
     border-top: 1px solid var(--pd-line);
-}
-
-.pd-page .pd-description p {
+  }
+  
+  .pd-page .pd-description p {
     margin: 7px 0 0;
     padding: 11px 13px;
     border-radius: 7px;
@@ -280,277 +241,227 @@
     font-size: 12px;
     line-height: 1.5;
     white-space: pre-wrap;
-}
-
-/* 진행률 */
-
-.pd-page .pd-progress-percent {
+    overflow-wrap: anywhere;
+  }
+  
+  /* 진행률 */
+  .pd-page .pd-progress-percent {
     color: var(--pd-accent);
     font-size: 20px;
-}
-
-.pd-page .pd-progress-track {
-    display: block;
+  }
+  
+  .pd-page .pd-progress-track {
     width: 100%;
-    height: 9px !important;
-    min-height: 9px;
-    margin: 0;
-    padding: 0;
+    height: 9px;
     overflow: hidden;
     border-radius: 20px;
     background: #eeedf5;
-}
-
-.pd-page .pd-progress-fill {
-    display: block;
-    height: 100% !important;
-    margin: 0;
-    padding: 0;
+  }
+  
+  .pd-page .pd-progress-fill {
+    height: 100%;
     border-radius: inherit;
-    background: var(--pd-accent) !important;
+    background: var(--pd-accent);
     transition: width 0.3s;
-}
-
-/* 프로젝트 상태 변경 */
-
-.pd-page .pd-status-section {
-    display: block;
-    width: 100%;
-    height: auto !important;
-    min-height: 0 !important;
-    margin: 18px 0 0;
-    padding: 16px 0 0;
+  }
+  
+  /* 프로젝트 상태 변경 */
+  .pd-page .pd-status-section {
+    margin-top: 18px;
+    padding-top: 16px;
     border-top: 1px solid var(--pd-line);
-}
-
-.pd-page .pd-status-section h3 {
+  }
+  
+  .pd-page .pd-status-section h3 {
     margin: 0 0 15px;
-    padding: 0;
     color: #45475e;
     font-size: 13px;
     font-weight: 700;
-}
-
-/* 현재 상태 / 변경할 상태 */
-
-.pd-page .pd-status-grid {
+  }
+  
+  .pd-page .pd-status-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    align-items: start;
     gap: 18px;
-    width: 100%;
-    height: auto !important;
-    min-height: 0 !important;
-    margin: 0;
-    padding: 0;
-}
-
-.pd-page .pd-status-field {
+  }
+  
+  .pd-page .pd-status-field {
     display: flex;
     flex-direction: column;
-    justify-content: flex-start;
-    align-items: stretch;
     gap: 7px;
     min-width: 0;
-    height: auto !important;
-    min-height: 0 !important;
-    margin: 0;
-    padding: 0;
-}
-
-.pd-page .pd-status-field label {
-    display: block;
-    margin: 0;
-    padding: 0;
+  }
+  
+  .pd-page .pd-status-field label {
     color: #9395a5;
     font-size: 11px;
     font-weight: 600;
     line-height: 17px;
-}
-
-.pd-page .pd-current-status,
-.pd-page .pd-status-field select {
+  }
+  
+  .pd-page .pd-current-status,
+  .pd-page .pd-status-field select {
     width: 100%;
-    height: 42px !important;
     min-height: 42px;
-    margin: 0 !important;
+    margin: 0;
     padding: 0 12px;
     border: 1px solid var(--pd-line);
     border-radius: 8px;
-    font: inherit;
-    font-size: 13px;
-}
-
-.pd-page .pd-current-status {
+    font: 13px/1.4 Arial, sans-serif;
+  }
+  
+  .pd-page .pd-current-status {
     display: flex;
     align-items: center;
-    background: #f2efff;
-    color: var(--pd-accent);
+    background: #f7f6fc;
+    color: #6257a0;
     font-weight: 600;
-}
-
-.pd-page .pd-status-field select {
-    display: block;
-    background: white;
+  }
+  
+  .pd-page .pd-status-field select {
+    background: #fff;
     color: #383b52;
     cursor: pointer;
-}
-
-.pd-page .pd-status-field select:focus {
+  }
+  
+  .pd-page .pd-status-field select:focus {
     outline: none;
     border-color: var(--pd-accent);
-    box-shadow: 0 0 0 2px #7565d820;
-}
-
-/* 상태 변경 버튼 */
-
-.pd-page .pd-status-save {
+    box-shadow: 0 0 0 3px rgba(117, 101, 216, 0.12);
+  }
+  
+  .pd-page .pd-status-save {
     display: block;
-    width: auto;
     min-height: 36px;
     margin: 14px 0 0 auto;
     padding: 8px 18px;
-    border: none;
+    border: 0;
     border-radius: 8px;
     background: var(--pd-accent);
-    color: white;
-    font: inherit;
-    font-size: 12px;
-    font-weight: 600;
+    color: #fff;
+    font: 600 12px/1.4 Arial, sans-serif;
     cursor: pointer;
-}
-
-.pd-page .pd-status-save:hover {
-    background: #5e4fc0;
-}
-
-/* 진행률 안내 문구 */
-
-.pd-page .pd-muted {
-    margin: 10px 0 0;
+  }
+  
+  .pd-page .pd-status-save:hover {
+    background: var(--pd-accent-hover);
+  }
+  
+  .pd-page .pd-muted {
+    margin: 12px 0 0;
     color: #9497a7;
     font-size: 11px;
-}
-
-.pd-page .pd-status-section + .pd-muted {
-    padding: 11px 0 0;
-    border-top: 1px solid var(--pd-line);
-}
-
-/* 연결된 견적 및 세부 작업 */
-
-.pd-page .pd-subheading {
+    line-height: 1.5;
+  }
+  
+  /* 연결된 견적 및 세부 작업 */
+  .pd-page .pd-subheading {
     margin: 0 0 11px;
     color: #45475e;
     font-size: 13px;
     font-weight: 700;
-}
-
-.pd-page .pd-quotation {
-    margin: 0;
+  }
+  
+  .pd-page .pd-quotation {
     padding: 15px;
     border: 1px solid #e6e1fa;
     border-radius: 9px;
     background: #faf9ff;
-}
-
-.pd-page .pd-quotation-top {
+  }
+  
+  .pd-page .pd-quotation-top {
     display: flex;
     align-items: center;
     gap: 24px;
-    margin: 0 0 12px;
-}
-
-.pd-page .pd-quotation-top > div {
+    margin-bottom: 12px;
+  }
+  
+  .pd-page .pd-quotation-top > div {
     display: flex;
     flex-direction: column;
     gap: 4px;
     min-width: 0;
-    margin: 0;
-    padding: 0;
-}
-
-.pd-page .pd-quotation-top > div span {
+  }
+  
+  .pd-page .pd-quotation-top > div span {
     color: #9391a5;
     font-size: 11px;
-}
-
-.pd-page .pd-quotation-top strong {
+  }
+  
+  .pd-page .pd-quotation-top strong {
     color: #3b3a53;
     font-size: 12px;
-}
-
-.pd-page .pd-approved {
+    overflow-wrap: anywhere;
+  }
+  
+  .pd-page .pd-approved {
     margin-left: auto;
-}
-
-/* 견적 상품 테이블 */
-
-.pd-page .pd-table-wrap {
+  }
+  
+  /* 견적 상품 테이블 */
+  .pd-page .pd-table-wrap {
     overflow-x: auto;
     border: 1px solid #eeedf5;
     border-radius: 7px;
-    background: white;
-}
-
-.pd-page .pd-quotation-table {
+    background: #fff;
+  }
+  
+  .pd-page .pd-quotation-table {
     width: 100%;
     min-width: 490px;
     border-collapse: collapse;
     font-size: 12px;
-}
-
-.pd-page .pd-quotation-table th {
+  }
+  
+  .pd-page .pd-quotation-table th {
     padding: 10px 12px;
     background: #f5f4fb;
     color: #797b90;
     font-weight: 600;
     text-align: left;
-}
-
-.pd-page .pd-quotation-table td {
+  }
+  
+  .pd-page .pd-quotation-table td {
     padding: 10px 12px;
     border-top: 1px solid #eeedf5;
     color: #43465b;
-}
-
-.pd-page .pd-quotation-table tbody tr:hover {
+  }
+  
+  .pd-page .pd-quotation-table tbody tr:hover {
     background: #faf9ff;
-}
-
-.pd-page .pd-quotation-table :is(th, td):not(:first-child) {
+  }
+  
+  .pd-page .pd-quotation-table th:not(:first-child),
+  .pd-page .pd-quotation-table td:not(:first-child) {
     text-align: right;
-}
-
-/* 견적 총액 */
-
-.pd-page .pd-quotation-total {
+  }
+  
+  .pd-page .pd-quotation-total {
     display: flex;
     align-items: center;
     justify-content: flex-end;
-    gap: 16px;
-    margin: 0;
-    padding: 13px 0 0;
-}
-
-.pd-page .pd-quotation-total span {
-    color: #85899a;
+    flex-wrap: wrap;
+    gap: 8px 16px;
+    padding-top: 13px;
+  }
+  
+  .pd-page .pd-quotation-total span {
+    color: var(--pd-muted);
     font-size: 12px;
-}
-
-.pd-page .pd-quotation-total strong {
+  }
+  
+  .pd-page .pd-quotation-total strong {
     color: #6152bf;
     font-size: 16px;
     font-weight: 700;
-}
-
-/* 세부 작업 */
-
-.pd-page .pd-tasks-heading {
+  }
+  
+  /* 세부 작업 안내 */
+  .pd-page .pd-tasks-heading {
     margin: 19px 0 10px;
-}
-
-.pd-page .pd-empty {
+  }
+  
+  .pd-page .pd-empty {
     margin: 0;
     padding: 16px;
     border: 1px dashed #dcdbea;
@@ -559,55 +470,70 @@
     color: #9395a5;
     font-size: 12px;
     text-align: center;
-}
-
-/* 반응형 */
-
-@media (max-width: 900px) {
+    line-height: 1.5;
+  }
+  
+  /* 키보드 접근성 */
+  .pd-page .pd-back:focus-visible,
+  .pd-page .pd-edit-btn:focus-visible,
+  .pd-page .pd-delete-btn:focus-visible,
+  .pd-page .pd-status-save:focus-visible {
+    outline: 2px solid var(--pd-accent);
+    outline-offset: 3px;
+  }
+  
+  /* 태블릿 */
+  @media (max-width: 900px) {
     .pd-page .pd-info-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-template-columns: repeat(2, minmax(0, 1fr));
     }
-}
-
-@media (max-width: 600px) {
+  }
+  
+  /* 모바일 */
+  @media (max-width: 600px) {
     .pd-page {
-        padding: 16px 12px 28px;
+      padding: 16px 12px 28px;
     }
-
+  
     .pd-page .pd-heading {
-        grid-template-columns: 1fr;
-        gap: 12px;
+      grid-template-columns: 1fr;
+      gap: 12px;
     }
-
+  
     .pd-page .pd-heading h1 {
-        font-size: 21px;
+      font-size: 21px;
     }
-
+  
     .pd-page .pd-heading-actions {
-        justify-content: flex-start;
-        flex-wrap: wrap;
+      justify-content: flex-start;
     }
-
+  
     .pd-page .pd-card {
-        padding: 18px !important;
+      padding: 18px;
     }
-
+  
     .pd-page .pd-info-grid {
-        gap: 16px;
+      gap: 16px;
     }
-
+  
     .pd-page .pd-quotation-top {
-        flex-wrap: wrap;
-        gap: 12px;
+      flex-wrap: wrap;
+      gap: 12px;
     }
-
+  
     .pd-page .pd-approved {
-        margin-left: 0;
+      margin-left: 0;
     }
-}
-
-@media (max-width: 450px) {
+  }
+  
+  @media (max-width: 450px) {
+    .pd-page .pd-info-grid,
     .pd-page .pd-status-grid {
-        grid-template-columns: 1fr;
+      grid-template-columns: 1fr;
     }
-}
+  
+    .pd-page .pd-card-header {
+      flex-wrap: wrap;
+    }
+  }
+  
