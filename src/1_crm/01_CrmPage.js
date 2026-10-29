@@ -4,9 +4,11 @@ import CustomerManagement from "./02_CustomerManagement";
 import CustomerEdit from "./03_CustomerEdit";
 
 import { Route, Routes } from "react-router-dom";
+import { useERP } from "../context/ERPContext";
 
 function CrmPage() {
 
+    // const {customers, setCustomers} = useERP()
     return (
         <Routes>
             <Route index element={<CustomerManagement />} />

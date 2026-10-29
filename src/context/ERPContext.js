@@ -69,7 +69,7 @@ export function ERPProvider({ children }) {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(projects))
         // [projects] : projects가 변경될 경우마다
     }, [projects])
-
+    //
     const addProject = (newProject) => {
 
         const savedNextId = Number(localStorage.getItem(NEXT_ID_KEY))
@@ -153,7 +153,8 @@ export function ERPProvider({ children }) {
         setProjects(initialProjects)
 
     }
-
+   
+    
     return (
         <ERPContext.Provider value={{
             projects,
@@ -166,12 +167,16 @@ export function ERPProvider({ children }) {
 
             customers,
             setCustomers
+            
         }}>
             {children}
         </ERPContext.Provider>
     )
-
+    
+    
 }
+
+
 
 export const useERP = () => useContext(ERPContext)
 
