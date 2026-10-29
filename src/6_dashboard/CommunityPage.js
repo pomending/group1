@@ -7,6 +7,11 @@ function CommunityPage({ posts }) {
 
     const navi = useNavigate()
 
+    // 가장 최근에 등록한 글이 목록 위에 오도록 정렬
+    const recentPosts = [...posts].sort(
+        (a, b) => Number(b.id) - Number(a.id)
+    );
+
     return (
         <div className="community">
 
@@ -36,12 +41,12 @@ function CommunityPage({ posts }) {
                     </thead>
 
                     <tbody>
-                        {posts.map((post, index) => (
+                        {recentPosts.map((post, index) => (
                             <tr key={post.id}
                                 onClick={() => navi("/?page=detail&id=" + post.id)}
                                 style={{ cursor: "pointer" }}>
 
-                                <td>{index + 1}</td>
+                                <td>{recentPosts.length - index}</td>
                                 <td>{post.title} </td>
                                 <td>{post.writer}</td>
                                 <td>{post.date}</td>

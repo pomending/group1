@@ -10,6 +10,11 @@ function NoticePage({ posts }) {
     // 다른 페이지로 이동할 때 사용하는 함수
     const navigate = useNavigate();
 
+    // 가장 최근에 등록된 공지사항부터 목록에 표시
+    const recentNotices = [...posts].sort(
+        (a, b) => Number(b.id) - Number(a.id)
+    );
+
     return (
         <div className="community">
 
@@ -40,13 +45,13 @@ function NoticePage({ posts }) {
 
                     <tbody>
                         {/* notice는 목록에서 현재 가져온 공지사항 하나 */}
-                        {posts.map((notice, index) =>
+                        {recentNotices.map((notice, index) =>
                             <tr
                                 key={notice.id}
                                 onClick={() => navigate("/?page=notice-detail&id=" + notice.id)}
                                 style={{ cursor: "pointer" }}
                             >
-                                <td>{index + 1}</td>
+                                <td>{recentNotices.length - index}</td>
                                 <td>
                                     {notice.type === "important" ? "중요공지" : "일반 공지"}
                                 </td>
