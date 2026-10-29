@@ -100,6 +100,33 @@ export function isValidScheduleTime(value) {
   return typeof value === "string" && /^([01]\d|2[0-3]):[0-5]\d$/.test(value);
 }
 
+// 빠른 시간 버튼은 시작일·시간을 기준으로 종료값만 계산합니다. 폼 변경은 Manager가 한 번에 적용합니다.
+// 일반 일정은 자정을 넘으면 다음 날로 설정하고, 당일 종료만 지원하는 반복 일정은 해당 버튼을 막습니다.
+export function getScheduleDurationFields(form, minutes) {
+  if (!isValidScheduleDate(form.date) || !isValidScheduleTime(form.time) || ![30, 60, 120].includes(minutes)) return null;
+  const [hour, minute] = form.time.split(":").map(Number);
+  const end = hour * 60 + minute + minutes;
+  if (end >= 1440 && form.repeatType !== "none") return null;
+  const endDate = new Date(`${form.date}T00:00:00`);
+  endDate.setDate(endDate.getDate() + Math.floor(end / 1440));
+  return {
+    endTime: `${String(Math.floor(end / 60) % 24).padStart(2, "0")}:${String(end % 60).padStart(2, "0")}`,
+    endDate: end >= 1440 ? dateKey(endDate) : "",
+  };
+}
+
+// 최근 삭제 한 건만 복원합니다. 다른 일정은 유지하고, 같은 ID가 다시 생기거나 원본 반복이 바뀌면 복원을 막습니다.
+// 한 회차는 삭제 직후의 원본과 일치할 때만 이전 제외일 목록을 되돌립니다. 전체 삭제는 원본 하나를 다시 추가합니다.
+export function restoreDeletedSchedule(items, record) {
+  const current = items.find(item => String(item.id) === String(record.before.id));
+  if (record.after) {
+    if (JSON.stringify(current) !== JSON.stringify(record.after)) return { items, error: "원본 반복 일정이 변경되거나 삭제되어 되돌릴 수 없습니다." };
+    return { items: items.map(item => item === current ? record.before : item), error: "" };
+  }
+  if (current) return { items, error: "같은 ID의 일정이 이미 있어 덮어쓰지 않았습니다." };
+  return { items: [...items, record.before].sort(compareSchedules), error: "" };
+}
+
 // 고정 자릿수 날짜·시간은 문자열 순서가 시간 순서와 같습니다. 모든 목록에서 같은 비교 함수를 씁니다.
 export const compareSchedules = (a, b) =>
   `${a.date} ${a.time}`.localeCompare(`${b.date} ${b.time}`);
@@ -107,6 +134,12 @@ export const compareSchedules = (a, b) =>
 // 시작 시간은 기존 time에 유지합니다. 예전 자료는 종료 시간이 없으므로 오후 5시로 표시합니다.
 export function getScheduleTime(item) {
   if (item.isAllDay) return "종일";
+  const startDate = item.originalStartDate || item.date;
+  if (item.endDate > startDate) {
+    const start = item.date === startDate ? item.time : "00:00";
+    const end = item.date === item.endDate ? (item.endTime || "17:00") : "24:00";
+    return start + "~" + end;
+  }
   return item.time + "~" + (item.endTime || "17:00");
 }
 
@@ -149,6 +182,16 @@ export function excludeOccurrence(item, date) {
 // 일정 등록 폼을 새로 열거나 저장한 뒤 초기화할 때 사용합니다.
 // 객체 상수 하나를 공유하지 않고 호출할 때마다 새로운 객체와 최신 오늘 날짜를 만듭니다.
 // () => ({ ... })의 괄호는 중괄호를 함수 본문이 아닌 반환할 객체로 해석하게 합니다.
+/* 일정 저장 구조(현재 브라우저 저장 기준)
+ * 식별: id는 기존 문자열·숫자를 유지하며 DB 정수 ID로 임의 변환하지 않습니다.
+ * 프로젝트: project는 표시 이름, projectId는 선택값(null 허용)입니다.
+ * 기본 정보: title·description·scope·category·status·visibility
+ * 기간: date·endDate(YYYY-MM-DD), time·endTime(HH:mm), isAllDay
+ * 참여자: person은 담당자 이름, attendees는 이름 배열입니다. 직원 FK가 아닙니다.
+ * 반복: repeatType·repeatInterval·monthlyRule·monthlyOrdinal·monthlyWeekday·holidayRule
+ * 예외: excludedDates와 replacesScheduleId·replacesOccurrenceDate로 한 회차 변경을 구분합니다.
+ * 표시용 occurrenceDate·multiDayOccurrence는 발생일 계산에서만 사용하며 폼에 복사하지 않습니다.
+ */
 export const createEmptyForm = () => ({
   date: getTodayKey(),
   // endDate는 여러 날 일정, isAllDay는 시간 없는 일정, reminderMinutes는 시작 전 알림입니다.
@@ -170,12 +213,78 @@ export const createEmptyForm = () => ({
   status: "pending",
   repeatType: "none",
   repeatInterval: 1,
+  repeatEndType: "none",
+  repeatEndDate: "",
+  repeatCount: 1,
   monthlyRule: "date",
   monthlyOrdinal: 2,
   monthlyWeekday: 3,
   holidayRule: "keep",
   visibility: "shared",
 });
+
+// 프로젝트 없는 일정과 개인 일정은 연결 ID를 가지지 않습니다.
+// 기존 자료의 숫자/문자열 ID는 그대로 보존하고, 빈 문자열·객체·배열 등은 연결 없음으로 처리합니다.
+// 다른 파트를 조회하거나 새 프로젝트를 만드는 함수가 아닙니다.
+// 새 저장과 기존 일정 불러오기에서 같은 규칙을 사용합니다.
+// 사이트의 프로젝트 입력이 비어 있으면 ID도 null이므로 일반 업무·개인일정을 독립적으로 저장합니다.
+export function getScheduleProjectId(item) {
+  if (getScheduleScope(item) === "개인 일정용" || typeof item.project !== "string" || !item.project.trim()) return null;
+  const id = item.projectId;
+  if (typeof id === "number") return Number.isFinite(id) ? id : null;
+  return typeof id === "string" && id.trim() ? id : null;
+}
+
+// 입력 필드만 복사하므로 ID·즐겨찾기·제외일·수정 회차 연결은 새 일정으로 넘어가지 않습니다.
+export function createScheduleCopyForm(item) {
+  const form = createScheduleForm(item);
+  form.title = `${form.title.slice(0, 75)} (복사)`;
+  form.status = "pending";
+  return form;
+}
+
+// 월간 반복 옵션을 폼과 저장 자료에서 같은 기준으로 보완합니다.
+export function getMonthlyOptions(item) {
+  const ordinal = Number(item.monthlyOrdinal);
+  const weekday = Number(item.monthlyWeekday);
+  return {
+    monthlyRule: item.monthlyRule === "weekday" ? "weekday" : "date",
+    monthlyOrdinal: [-1, 1, 2, 3, 4].includes(ordinal) ? ordinal : 2,
+    monthlyWeekday: Number.isInteger(weekday) && weekday >= 0 && weekday <= 6 ? weekday : 3,
+  };
+}
+
+// 반복 종료는 이동 전 규칙 날짜 기준입니다. count는 휴일 건너뛰기·회차 삭제도 포함한 규칙 횟수입니다.
+export function getRepeatEndOptions(item) {
+  const repeatEndType = ["weekly", "monthly"].includes(item.repeatType) && ["until", "count"].includes(item.repeatEndType) ? item.repeatEndType : "none";
+  return {
+    repeatEndType,
+    repeatEndDate: repeatEndType === "until" && isValidScheduleDate(item.repeatEndDate) ? item.repeatEndDate : "",
+    repeatCount: repeatEndType === "count" && Number.isInteger(Number(item.repeatCount)) && Number(item.repeatCount) >= 1 && Number(item.repeatCount) <= 1000 ? Number(item.repeatCount) : 1,
+  };
+}
+
+export function getRepeatEndLabel(item) {
+  const options = getRepeatEndOptions(item);
+  if (options.repeatEndType === "until") return options.repeatEndDate + "까지";
+  if (options.repeatEndType === "count") return "규칙 " + options.repeatCount + "회";
+  return "종료일 없음";
+}
+
+function getMonthlyOccurrence(item, start, month) {
+  if (item.monthlyRule !== "weekday") {
+    const last = new Date(month.getFullYear(), month.getMonth() + 1, 0).getDate();
+    return new Date(month.getFullYear(), month.getMonth(), Math.min(start.getDate(), last));
+  }
+  const { monthlyOrdinal: ordinal, monthlyWeekday: weekday } = getMonthlyOptions(item);
+  if (ordinal === -1) {
+    const last = new Date(month.getFullYear(), month.getMonth() + 1, 0);
+    last.setDate(last.getDate() - (last.getDay() - weekday + 7) % 7);
+    return last;
+  }
+  const first = new Date(month.getFullYear(), month.getMonth(), 1);
+  return new Date(month.getFullYear(), month.getMonth(), 1 + (weekday - first.getDay() + 7) % 7 + (ordinal - 1) * 7);
+}
 
 // 기본 폼의 키만 골라 저장용 ID나 occurrenceDate가 입력 객체에 섞이지 않게 합니다.
 // 참석자 배열은 입력용 문자열로 바꾸고, 반복 한 번 수정은 일반 일정으로 분리할 준비를 합니다.
@@ -191,21 +300,15 @@ export const createScheduleForm = (item) => {
   form.attendees = normalizeAttendees(item.attendees).join(", ");
   form.repeatType = item.repeatType || "none";
   form.repeatInterval = getRepeatInterval(item);
-  form.monthlyRule = item.monthlyRule === "weekday" ? "weekday" : "date";
-  form.monthlyOrdinal = [-1, 1, 2, 3, 4].includes(Number(item.monthlyOrdinal))
-    ? Number(item.monthlyOrdinal)
-    : 2;
-  form.monthlyWeekday = Number.isInteger(Number(item.monthlyWeekday))
-    && Number(item.monthlyWeekday) >= 0
-    && Number(item.monthlyWeekday) <= 6
-    ? Number(item.monthlyWeekday)
-    : 3;
+  Object.assign(form, getRepeatEndOptions(item));
+  Object.assign(form, getMonthlyOptions(item));
   // 저장값이 없거나 허용 목록 밖이면 기본 규칙인 기준일 진행을 사용합니다.
   form.holidayRule = ["keep", "skip", "nextWorkday"].includes(item.holidayRule) ? item.holidayRule : "keep";
   if (item.multiDayOccurrence) form.date = item.originalStartDate || item.date;
   if (item.occurrenceDate) {
     form.repeatType = "none";
     form.repeatInterval = 1;
+    Object.assign(form, getRepeatEndOptions(form));
   }
   return form;
 };
@@ -256,6 +359,8 @@ export const getSchedulePeople = (item) =>
  *   Manager는 이 값을 보고 원본 전체를 바꿀지, 한 날짜만 수정·삭제할지 판단합니다.
  * - time은 날짜 계산에 사용하지 않고 원본에서 복사하므로 매번 같은 시각이 유지됩니다.
  */
+// 사이트 연결: 월간·주간 달력, 선택 날짜, 다가오는 일정, 저장 전 충돌 검사에서 사용합니다.
+// 원본 반복 규칙을 바꾸지 않고 조회 기간의 표시 항목만 반환하므로 달을 이동해도 저장 건수는 늘지 않습니다.
 export const expandSchedules = (items, fromKey, toKey, holidays = {}) => {
   // 시간 없는 YYYY-MM-DD만 파싱하면 UTC로 해석될 수 있어 현지 자정 시간을 명시합니다.
   const from = new Date(fromKey + "T00:00:00");
@@ -286,6 +391,7 @@ export const expandSchedules = (items, fromKey, toKey, holidays = {}) => {
       continue;
     }
     const start = new Date(item.date + "T00:00:00");
+    const endOptions = getRepeatEndOptions(item);
     // 잘못된 시작일이나 조회 종료일보다 늦게 시작하는 규칙은 펼칠 필요가 없습니다.
     if (Number.isNaN(start.getTime()) || start > to) continue;
     // 주간·월간 계산에서 공통으로 사용하는 추가 함수입니다.
@@ -293,6 +399,17 @@ export const expandSchedules = (items, fromKey, toKey, holidays = {}) => {
     const addOccurrence = (date) => {
       // key는 규칙상 원래 발생일이고 displayDate는 휴일 규칙을 적용한 실제 표시일입니다.
       const key = dateKey(date);
+      if (date < start) return;
+      if (endOptions.repeatEndType === "until" && endOptions.repeatEndDate && key > endOptions.repeatEndDate) return;
+      if (endOptions.repeatEndType === "count") {
+        const interval = getRepeatInterval(item);
+        const dayNumber = value => Date.UTC(value.getFullYear(), value.getMonth(), value.getDate()) / 86400000;
+        const firstMonthSkipped = getMonthlyOccurrence(item, start, start) < start ? 1 : 0;
+        const index = item.repeatType === "weekly"
+          ? (dayNumber(date) - dayNumber(start)) / (interval * 7) + 1
+          : ((date.getFullYear() - start.getFullYear()) * 12 + date.getMonth() - start.getMonth()) / interval + 1 - firstMonthSkipped;
+        if (index > endOptions.repeatCount) return;
+      }
       let displayDate = new Date(date);
       // 주말은 요일로, 공휴일은 Manager가 전달한 날짜표로 확인합니다.
       const holidayRule = item.holidayRule || "keep";
@@ -357,50 +474,7 @@ export const expandSchedules = (items, fromKey, toKey, holidays = {}) => {
       const monthsUntilNext = (interval - (elapsed % interval)) % interval;
       date.setMonth(date.getMonth() + monthsUntilNext);
       while (date <= to) {
-        // 월간 요일 기준은 해당 달의 첫날 또는 마지막 날에서 원하는 요일을 계산합니다.
-        if (item.monthlyRule === "weekday") {
-          const ordinal = [-1, 1, 2, 3, 4].includes(Number(item.monthlyOrdinal))
-            ? Number(item.monthlyOrdinal)
-            : 2;
-          const weekday = Number.isInteger(Number(item.monthlyWeekday))
-            && Number(item.monthlyWeekday) >= 0
-            && Number(item.monthlyWeekday) <= 6
-            ? Number(item.monthlyWeekday)
-            : 3;
-          let occurrenceDate;
-          if (ordinal === -1) {
-            occurrenceDate = new Date(date.getFullYear(), date.getMonth() + 1, 0);
-            occurrenceDate.setDate(
-              occurrenceDate.getDate() - ((occurrenceDate.getDay() - weekday + 7) % 7),
-            );
-          } else {
-            const firstDay = new Date(date.getFullYear(), date.getMonth(), 1);
-            const offset = (weekday - firstDay.getDay() + 7) % 7;
-            occurrenceDate = new Date(
-              date.getFullYear(),
-              date.getMonth(),
-              1 + offset + (ordinal - 1) * 7,
-            );
-          }
-          addOccurrence(occurrenceDate);
-          date.setMonth(date.getMonth() + interval);
-          continue;
-        }
-        // new Date(연도, 다음 달, 0)은 다음 달 1일의 하루 전, 즉 현재 월의 말일입니다.
-        const lastDay = new Date(
-          date.getFullYear(),
-          date.getMonth() + 1,
-          0,
-        ).getDate();
-        // 시작일이 31일이고 이번 달이 30일까지면 min(31, 30)=30일에 표시합니다.
-        // 다음 달에도 start의 원래 일자를 사용하므로 이후 31일이 있는 달은 다시 31일로 돌아옵니다.
-        addOccurrence(
-          new Date(
-            date.getFullYear(),
-            date.getMonth(),
-            Math.min(start.getDate(), lastDay),
-          ),
-        );
+        addOccurrence(getMonthlyOccurrence(item, start, date));
         date.setMonth(date.getMonth() + interval);
       }
     }
@@ -443,14 +517,15 @@ export const getNextScheduleDate = (items, fromKey, holidays = {}) => {
     // 각 규칙의 첫 발생일 중 가장 빠른 날짜를 남깁니다. 같은 날짜의 시간 순서는 필요하지 않습니다.
     if (dates.length > 0 && (!nextDate || dates[0].date < nextDate)) nextDate = dates[0].date;
   }
-  // 미래 일정이 없으면 가장 최근 저장 날짜를 사용합니다. 빈 목록이면 두 값 모두 undefined입니다.
+  // 조회 범위에 발생일이 없으면 원본 date 중 가장 늦은 날짜를 사용합니다. 저장·수정 시각 기준이 아닙니다.
+  // 빈 목록이면 두 값 모두 undefined입니다.
   return nextDate || latestDate;
 };
 
 /* '다가오는 일정'은 시작 전 작업과 아직 끝나지 않은 작업을 함께 보여줍니다.
  * now는 밀리초 숫자입니다. YYYY-MM-DDTHH:mm을 Date로 바꾸면 브라우저의 현지 시각이 됩니다.
  * 09:00~17:00 작업은 09시 이후에도 남겨 두고 17시가 되면 제외합니다. 완료된 일정도 제외합니다.
- * 반복은 각 규칙에서 가까운 limit개를 후보로 만들고, days가 있으면 기간 밖 후보를 제외한 뒤 가까운 limit개를 남깁니다.
+ * 반복 조회 범위 안에서 규칙마다 최대 limit개를 모으고, 전체를 날짜·시간순으로 정렬해 limit개를 반환합니다.
  * 오늘 이미 지난 반복 한 건을 건너뛸 수 있도록 조회 횟수에는 1을 더합니다.
  * days를 생략한 프로젝트 이동용 조회는 먼 미래도 찾습니다. 오른쪽 목록은 days=7로 기간을 제한합니다. */
 export const getUpcomingSchedules = (items, now, limit = 5, days, holidays = {}) => {
@@ -466,9 +541,7 @@ export const getUpcomingSchedules = (items, now, limit = 5, days, holidays = {})
     const dates = expandSchedules([item], fromKey, endKey, holidays);
     let count = 0;
     for (const occurrence of dates) {
-      // 종일 일정은 날짜 시작부터 끝까지 진행 중으로 취급합니다.
-      const startTime = new Date(`${occurrence.date}T${occurrence.isAllDay ? "00:00" : occurrence.time}`).getTime();
-      const endTime = new Date(`${occurrence.date}T${occurrence.isAllDay ? "23:59" : (occurrence.endTime || "17:00")}`).getTime();
+      const { start: startTime, end: endTime } = getScheduleInterval(occurrence);
       if (Number.isNaN(startTime) || Number.isNaN(endTime)) continue;
       if (days && startTime >= windowEnd.getTime()) break;
       // 시작 전이라면 계속 표시합니다. 이미 시작했다면 종료 시간까지 남겨 둡니다.
@@ -477,7 +550,8 @@ export const getUpcomingSchedules = (items, now, limit = 5, days, holidays = {})
       upcoming.push(occurrence);
       count += 1;
       // break는 이번 반복을 끝냅니다. 규칙 하나에서 필요한 수만큼 찾았으면 다음 규칙으로 갑니다.
-      if (count === limit) break;
+      // 여러 날 일정은 연속된 한 기간이므로 목록에 한 번만 표시합니다.
+      if (count === limit || item.endDate > item.date) break;
     }
   }
   upcoming.sort(compareSchedules);
@@ -485,11 +559,18 @@ export const getUpcomingSchedules = (items, now, limit = 5, days, holidays = {})
 };
 
 // 프로젝트와 즐겨찾기 이동은 아직 끝나지 않은 일정부터 찾습니다.
-// 그런 일정이 없을 때만 과거 기록을 확인할 수 있도록 기존 날짜 선택 방식을 사용합니다.
+// 없으면 getNextScheduleDate로 조회합니다. 완료 일정도 후보이며, 발생일이 없으면 원본 날짜로 돌아갑니다.
 export function getScheduleFocusDate(items, now, holidays = {}) {
   const upcoming = getUpcomingSchedules(items, now, 1, undefined, holidays);
   if (upcoming.length > 0) return upcoming[0].date;
   return getNextScheduleDate(items, dateKey(new Date(now)), holidays);
+}
+
+// 추가 설정을 접어도 반복 주기·휴일 처리·종료 조건을 폼에서 확인할 수 있습니다.
+export function getRepeatSummary(item) {
+  if (item.repeatType === "none") return "반복 없음";
+  const holidayLabel = { keep: "휴일도 유지", skip: "주말·공휴일 건너뛰기", nextWorkday: "주말·공휴일은 다음 근무일" };
+  return `${getRepeatLabel(item)} · ${holidayLabel[item.holidayRule] || holidayLabel.keep} · ${getRepeatEndLabel(item)}`;
 }
 
 // 반복 규칙을 설명 문장으로 바꾸는 공통 함수입니다. 폼 안내와 전체 목록이 같은 규칙을 사용합니다.
@@ -530,14 +611,23 @@ export const getRepeatLabel = (item) => {
 
 // 일정 중복과 담당자 시간 충돌 검사
 // 날짜와 시각을 밀리초로 바꿔 두 구간의 겹침을 비교합니다.
-// 종일은 현재 구현 기준 00:00~23:59이며, 여러 날 일정은 종료 날짜까지 포함해 계산합니다.
+// 종일은 종료일 다음 날 00:00을 제외 경계로 사용해 마지막 1분까지 포함합니다.
 // 종료 시간이 없는 이전 저장 자료에는 기존 기본값 17:00을 적용합니다.
-function getScheduleInterval(item) {
-  const startTime = item.isAllDay ? "00:00" : item.time;
-  const endDate = item.endDate && item.endDate > item.date ? item.endDate : item.date;
-  const endTime = item.isAllDay ? "23:59" : (item.endTime || "17:00");
-  const start = new Date(`${item.date}T${startTime}`).getTime();
-  const end = new Date(`${endDate}T${endTime}`).getTime();
+export function getScheduleInterval(item, clipToDate = false) {
+  const startDate = item.originalStartDate || item.date;
+  const endDate = item.endDate && item.endDate > startDate ? item.endDate : startDate;
+  let start = new Date(startDate + "T" + (item.isAllDay ? "00:00" : item.time)).getTime();
+  const endPoint = new Date(endDate + "T" + (item.isAllDay ? "00:00" : (item.endTime || "17:00")));
+  if (item.isAllDay) endPoint.setDate(endPoint.getDate() + 1);
+  let end = endPoint.getTime();
+  // 충돌 검사는 표시 날짜의 구간만, 진행 여부는 일정 전체 구간을 사용합니다.
+  if (clipToDate) {
+    const dayStart = new Date(item.date + "T00:00:00");
+    const dayEnd = new Date(dayStart);
+    dayEnd.setDate(dayEnd.getDate() + 1);
+    start = Math.max(start, dayStart.getTime());
+    end = Math.min(end, dayEnd.getTime());
+  }
   return { start, end };
 }
 
@@ -561,7 +651,7 @@ export function findScheduleConflicts(
   const candidatePeople = new Set(getSchedulePeople(candidate));
 
   for (const proposed of proposedDates) {
-    const proposedInterval = getScheduleInterval(proposed);
+    const proposedInterval = getScheduleInterval(proposed, true);
     for (const existing of existingDates) {
       // 같은 원본의 수정 대상 회차는 자기 자신이므로 건너뜁니다.
       // 현재 구현은 실제 표시 날짜가 같은 항목끼리만 충돌을 비교합니다.
@@ -579,7 +669,7 @@ export function findScheduleConflicts(
       const sharedPerson = candidate.scope === "업무용"
         && existing.scope === "업무용"
         && getSchedulePeople(existing).some(name => candidatePeople.has(name));
-      const existingInterval = getScheduleInterval(existing);
+      const existingInterval = getScheduleInterval(existing, true);
       // 끝 시각과 시작 시각이 맞닿는 경우(10~11시, 11~12시)는 겹침에 포함하지 않습니다.
       const timeOverlap = proposedInterval.start < existingInterval.end
         && existingInterval.start < proposedInterval.end;
@@ -592,4 +682,56 @@ export function findScheduleConflicts(
     }
   }
   return conflicts;
+}
+
+// 입력 검증만 수행합니다. 상태 변경·확인창·저장은 Manager가 담당합니다.
+export function getScheduleFormError(form) {
+  const title = form.title.trim();
+  const project = form.project.trim();
+  if (!scheduleScopes.includes(form.scope)) {
+    return { field: "scope", message: "업무용 또는 개인 일정용을 먼저 선택해 주세요." };
+  }
+  if (form.scope === "업무용" && !getScheduleCategories(form.scope).includes(form.category)) {
+    return { field: "category", message: "일정 분류를 선택해 주세요." };
+  }
+  if (form.scope === "업무용" && form.category === "프로젝트" && !project) {
+    return { field: "project", message: "프로젝트 분류에는 프로젝트명을 입력해 주세요." };
+  }
+  if (!title) {
+    return { field: "title", message: "일정 이름을 입력해 주세요. 공백만 사용할 수 없습니다." };
+  }
+
+  if (!isValidScheduleDate(form.date) || !isValidScheduleTime(form.time) || !isValidScheduleTime(form.endTime)) {
+    return { field: !isValidScheduleDate(form.date) ? "date" : !isValidScheduleTime(form.time) ? "time" : "endTime", message: "올바른 날짜와 시작·종료 시간을 입력해 주세요." };
+  }
+  if (form.endDate && (!isValidScheduleDate(form.endDate) || form.endDate < form.date || form.repeatType !== "none")) {
+    return { field: "endDate", message: "여러 날 일정의 종료 날짜는 시작일 이후여야 하며 반복 일정에는 지정할 수 없습니다." };
+  }
+  if (form.repeatType !== "none") {
+    const interval = Number(form.repeatInterval);
+    if (!Number.isInteger(interval) || interval < 1 || interval > MAX_REPEAT_INTERVAL) {
+      return { field: "repeatInterval", message: `반복 간격은 1~${MAX_REPEAT_INTERVAL} 사이의 정수로 입력해 주세요.` };
+    }
+  }
+  if (form.repeatType !== "none" && form.repeatEndType === "until" && (!isValidScheduleDate(form.repeatEndDate) || form.repeatEndDate < form.date)) {
+    return { field: "repeatEndDate", message: "반복 종료 날짜는 시작일 이상으로 입력해 주세요." };
+  }
+  if (form.repeatType !== "none" && form.repeatEndType === "count" && (!Number.isInteger(Number(form.repeatCount)) || Number(form.repeatCount) < 1 || Number(form.repeatCount) > 1000)) {
+    return { field: "repeatCount", message: "반복 횟수는 1~1000 사이의 정수로 입력해 주세요." };
+  }
+  // HH:mm은 자릿수가 같아 문자열 비교로도 시간 순서를 확인할 수 있습니다.
+  // 같은 날짜 안의 일정이므로 종료 시간은 시작 시간보다 늦어야 합니다.
+  if (!form.isAllDay && (!form.endDate || form.endDate === form.date) && form.endTime <= form.time) {
+    return { field: "endTime", message: "종료 시간은 시작 시간보다 늦게 입력해 주세요." };
+  }
+  const person = form.scope === "업무용" ? form.person.trim() : "";
+  if (form.scope === "업무용" && (!person || person.length > 30)) {
+    return { field: "person", message: "담당자 이름을 1~30자로 입력해 주세요." };
+  }
+  return null;
+}
+
+// 저장 검증은 문구만 받고, 입력 화면은 위 함수의 field로 오류 위치도 표시합니다.
+export function validateScheduleForm(form) {
+  return getScheduleFormError(form)?.message || "";
 }

@@ -8,8 +8,11 @@
 /* 일정 로드·정리·저장 충돌 병합을 담당합니다. */
 import {
   getScheduleCategory,
+  getMonthlyOptions,
   getScheduleScope,
+  getScheduleProjectId,
   getRepeatInterval,
+  getRepeatEndOptions,
   isValidScheduleDate,
   isValidScheduleTime,
   normalizeAttendees,
@@ -73,11 +76,13 @@ export function loadSchedules() {
       if (isValidScheduleTime(item.endTime)) endTime = item.endTime;
       else if (item.endTime) needsBackup = true;
       // 새 필드는 값 목록을 확인해 잘못된 자료는 백업 대상으로 표시하고 기본값으로 읽습니다.
+      const scope = getScheduleScope(item);
+      const repeatType = ["weekly", "monthly"].includes(item.repeatType) ? item.repeatType : "none";
       const validReminder = [0, 10, 30, 1440].includes(Number(item.reminderMinutes));
       const validHolidayRule = ["keep", "skip", "nextWorkday"].includes(item.holidayRule);
       const validEndDate = isValidScheduleDate(item.endDate)
         && item.endDate >= item.date
-        && !["weekly", "monthly"].includes(item.repeatType);
+        && repeatType === "none";
       if (item.reminderMinutes !== undefined && !validReminder) needsBackup = true;
       if (item.holidayRule !== undefined && !validHolidayRule) needsBackup = true;
       if (item.endDate && !validEndDate) needsBackup = true;
@@ -91,21 +96,15 @@ export function loadSchedules() {
         // 기존 일정에 종료 시간이 없으면 17:00을 채웁니다. 저장 effect가 보완된 자료를 기록합니다.
         endTime,
         // 반복 항목에는 종료 날짜를 두지 않고, 올바른 단일·여러 날 일정만 날짜를 유지합니다.
-        endDate: item.repeatType !== "weekly" && item.repeatType !== "monthly"
-          && isValidScheduleDate(item.endDate) && item.endDate >= item.date
-          ? item.endDate
-          : "",
+        endDate: validEndDate ? item.endDate : "",
         // 예전 저장 자료에 새 필드가 없으면 종일 해제·알림 없음·기준일 진행으로 보완합니다.
         isAllDay: item.isAllDay === true,
-        reminderMinutes: [0, 10, 30, 1440].includes(Number(item.reminderMinutes))
-          ? Number(item.reminderMinutes)
-          : 0,
-        holidayRule: ["keep", "skip", "nextWorkday"].includes(item.holidayRule)
-          ? item.holidayRule
-          : "keep",
+        reminderMinutes: validReminder ? Number(item.reminderMinutes) : 0,
+        holidayRule: validHolidayRule ? item.holidayRule : "keep",
         excludedDates,
         project: typeof item.project === "string" ? item.project : "",
-        scope: getScheduleScope(item),
+        projectId: getScheduleProjectId(item),
+        scope,
         category: getScheduleCategory(item),
         person: typeof item.person === "string" ? item.person : "",
         // 이전 일정에는 attendees가 없을 수 있습니다. []로 보완하면 새 표에서도 안전하게 읽습니다.
@@ -115,21 +114,12 @@ export function loadSchedules() {
           typeof item.description === "string" ? item.description : "",
         type: scheduleTypes.includes(item.type) ? item.type : "기획",
         // 과거 저장 데이터의 상태가 없거나 업무 중이면 예정으로 보완하고, 완료는 유지합니다.
-        status: getScheduleScope(item) === "개인 일정용" ? "pending" : normalizeStatus(item.status),
+        status: scope === "개인 일정용" ? "pending" : normalizeStatus(item.status),
         visibility: item.visibility === "private" ? "private" : "shared",
         repeatInterval: getRepeatInterval(item),
-        repeatType: ["weekly", "monthly"].includes(item.repeatType)
-          ? item.repeatType
-          : "none",
-        monthlyRule: item.monthlyRule === "weekday" ? "weekday" : "date",
-        monthlyOrdinal: [-1, 1, 2, 3, 4].includes(Number(item.monthlyOrdinal))
-          ? Number(item.monthlyOrdinal)
-          : 2,
-        monthlyWeekday: Number.isInteger(Number(item.monthlyWeekday))
-          && Number(item.monthlyWeekday) >= 0
-          && Number(item.monthlyWeekday) <= 6
-          ? Number(item.monthlyWeekday)
-          : 3,
+        repeatType,
+        ...getRepeatEndOptions(item),
+        ...getMonthlyOptions(item),
         color: typeColors[item.type] || typeColors["기획"],
       });
     }

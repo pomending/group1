@@ -8,7 +8,7 @@
 
 /* 일정 화면의 상태와 사용자 동작을 연결합니다. */
 import React, { useEffect, useRef, useState } from "react";
-import { useScheduleClock, useScheduleHolidays, useScheduleStorage, useScheduleTeam } from "./scheduleHooks";
+import { useScheduleClock, useScheduleHolidays, useScheduleStorage, useScheduleTeam, useScheduleDraft } from "./scheduleHooks";
 import { loadSchedules } from "./scheduleStorage";
 import { createProjectMilestones, getProjectScheduleSummaries } from "./ScheduleProjectBridge";
 import ScheduleCalendar from "./ScheduleCalendar";
@@ -18,6 +18,12 @@ import { ScheduleIcon } from "./ScheduleItemParts";
 import { useERP } from "../context/ERPContext";
 import {
   createScheduleForm,
+  createScheduleCopyForm,
+  validateScheduleForm,
+  getScheduleDurationFields,
+  restoreDeletedSchedule,
+  getRepeatEndOptions,
+  getScheduleProjectId,
   findScheduleConflicts,
   compareSchedules,
   excludeOccurrence,
@@ -29,16 +35,17 @@ import {
   getTodayKey,
   normalizeAttendees,
   getSchedulePeople,
-  scheduleScopes,
-  getScheduleCategories,
   normalizeStatus,
   typeColors,
-  isValidScheduleDate,
-  isValidScheduleTime,
-  MAX_REPEAT_INTERVAL,
 } from "./scheduleData";
 import "./scheduleStyles.css";
 const EMPTY_PROJECTS = [];
+const saveStatusLabels = {
+  saving: "저장 중…",
+  saved: "브라우저에 저장 완료",
+  error: "저장 실패 · 아래 안내를 확인하세요",
+  blocked: "저장 중지 · 아래 안내를 확인하세요",
+};
 const createScheduleId = () =>
   `schedule-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
@@ -58,7 +65,7 @@ export default function ScheduleManager() {
   const { todayKey, currentTime } = useScheduleClock(selectedDate, setSelectedDate, setMonth);
   const calendarRef = useRef(null);
 
-  // 검색·보기·프로젝트 선택은 달력과 사이드바가 공유합니다.
+  // 검색·공개·프로젝트 조건으로 달력과 선택 날짜 목록을 계산합니다. 즐겨찾기·다가오는 목록은 별도 기준입니다.
   const [query, setQuery] = useState("");
   const [view, setView] = useState("monthly");
   const [scopeFilter, setScopeFilter] = useState("all");
@@ -73,6 +80,7 @@ export default function ScheduleManager() {
     storageConflict,
     setStorageConflict,
     storageError,
+    saveStatus,
     reloadConflictingSchedules,
   } = useScheduleStorage();
   const {
@@ -87,14 +95,27 @@ export default function ScheduleManager() {
   const [listOpen, setListOpen] = useState(false);
   const [listDateFilter, setListDateFilter] = useState(null);
   const [form, setForm] = useState(null);
+  const restoringDraftRef = useRef(false);
   const [formError, setFormError] = useState("");
   const [reminderNotice, setReminderNotice] = useState(null);
   const firedReminders = useRef(new Set());
   const [editing, setEditing] = useState(null);
+  const { draft, draftError, clearDraft } = useScheduleDraft(form, editing !== null);
+  // 삭제 기록은 메모리에만 15초 보관합니다. 연속 삭제 시 가장 최근 한 건으로 교체합니다.
+  const [deletionNotice, setDeletionNotice] = useState(null);
+  useEffect(() => {
+    if (!deletionNotice) return;
+    const timer = window.setTimeout(() => setDeletionNotice(null), Math.max(0, deletionNotice.expiresAt - Date.now()));
+    return () => window.clearTimeout(timer);
+  }, [deletionNotice]);
 
   const calendarYear = month.getFullYear();
   const holidayInfo = useScheduleHolidays(calendarYear);
 
+  // [다른 파트 데이터 변경: 기존 동작] 5번의 일정 요약을 ERPContext.updateProject로 전달합니다.
+  // 변경 대상은 프로젝트의 schedules 배열이며, Context가 erp_projects 저장 및 프로젝트 변경 이력을 처리합니다.
+  // 일정 수정·삭제뿐 아니라 5번 화면을 열었을 때 요약이 달라도 실행됩니다. 3번 담당자와 공유할 변경 지점입니다.
+  // 프로젝트의 이름·담당자·시작일·마감일은 여기서 수정하지 않습니다. 아래 갱신 범위를 바꿀 때는 사전 확인이 필요합니다.
   // 저장 일정 중 해당 프로젝트에 연결된 항목을 projects[].schedules 요약으로 함께 보관합니다.
   // 새 일정은 프로젝트 ID로 연결하고, ID가 없는 기존 일정은 프로젝트명으로 찾습니다.
   // 비교 후 달라진 경우에만 갱신해 Context 변경으로 인한 반복 업데이트를 막습니다.
@@ -139,7 +160,8 @@ export default function ScheduleManager() {
       : "";
   const holidayDates = holidayInfo.dates;
 
-  // 알림은 앱 화면이 열려 있을 때만 확인하며, 발생 일정별로 한 번만 표시합니다.
+  // 알림은 컴포넌트가 열린 동안 확인하며, 현재 마운트에서 같은 발생일은 한 번만 표시합니다.
+  // 표시 이력은 메모리에만 있어 새로고침하면 초기화됩니다. OS 푸시 알림은 아닙니다.
   useEffect(() => {
     if (reminderNotice) return;
     const now = new Date(currentTime);
@@ -147,7 +169,7 @@ export default function ScheduleManager() {
     const occurrences = expandSchedules(items, dateKey(now), dateKey(end), holidayDates);
     for (const item of occurrences) {
       if (!item.reminderMinutes || item.status === "completed" || item.multiDayOccurrence) continue;
-      // 종일 일정은 시작일 자정을 기준으로 알림 시각을 계산합니다.
+      // 종일 일정은 표시 발생일 자정을 기준으로 알림 시각을 계산합니다.
       const start = new Date(`${item.date}T${item.isAllDay ? "00:00" : item.time}`).getTime();
       const reminderAt = start - Number(item.reminderMinutes) * 60000;
       // 반복 일정은 원래 회차 날짜를 키로 써 화면 갱신 때 같은 알림을 다시 띄우지 않습니다.
@@ -240,6 +262,8 @@ export default function ScheduleManager() {
     selectDate(dateKey(nextDate));
   };
   // 날짜 선택과 표시 월을 같이 바꾸면 다른 달의 날짜로 이동할 때 달력도 따라갑니다.
+  // 달력에서 날짜를 누르거나 일정 카드를 선택했을 때 호출됩니다.
+  // 선택 날짜를 변경하면 해당 날짜의 일정이 오른쪽 패널에 다시 계산되어 나타납니다.
   const selectDate = (date) => {
     setSelectedDate(date);
     setMonth(new Date(`${date}T00:00:00`));
@@ -247,7 +271,7 @@ export default function ScheduleManager() {
   // 입력창의 name과 form의 속성 이름을 맞춰 하나의 함수로 모든 입력을 처리합니다.
   // 예: name="title"이면 [event.target.name]이 title이 되어 그 속성만 덮어씁니다.
   // 숫자 입력은 빈칸일 때만 ""로 유지해 편집을 허용하고, 나머지는 숫자로 저장합니다.
-  // 주간/월간 단위를 바꾸면 간격을 1로 초기화해 24개월이 24주로 잘못 이어지지 않게 합니다.
+  // 반복 선택값은 종류:간격 형식입니다. 예: weekly:2를 선택하면 격주로 설정합니다.
   // [3. 입력 처리] FormModal 입력 이벤트 → form 갱신. 여기서는 아직 일정 목록을 저장하지 않습니다.
   const updateForm = (event) => {
     setFormError("");
@@ -256,6 +280,7 @@ export default function ScheduleManager() {
     if (event.target.type === "number" && value !== "") value = Number(value);
     if (event.target.type === "checkbox") value = event.target.checked;
     setForm((current) => {
+      if (name === "durationMinutes") return { ...current, ...getScheduleDurationFields(current, Number(value)) };
       // state 객체를 직접 바꾸지 않고 복사한 뒤, 입력한 항목 하나만 바꿉니다.
       const nextForm = { ...current };
       if (name === "repeatPreset") {
@@ -271,24 +296,41 @@ export default function ScheduleManager() {
     });
   };
   // item이 없으면 빈 폼, 있으면 수정용 폼입니다. 목록에서 수정해도 같은 함수를 사용합니다.
+  // 상단 일정 등록은 인자 없이, 상세 패널의 수정은 item을 전달해 이 함수를 호출합니다.
+  // 새 등록과 수정이 같은 폼을 사용하되 수정 대상과 최초 저장 버전을 별도로 기억합니다.
   const openScheduleForm = (item) => {
+    restoringDraftRef.current = !item && Boolean(draft);
     setFormError("");
     setEditing(item || null);
     editingVersion.current = item ? items.find(schedule => schedule.id === item.id) : null;
-    const nextForm = createScheduleForm(item);
+    const nextForm = !item && draft ? { ...draft } : createScheduleForm(item);
     // 수정은 저장된 날짜를 사용합니다. 새 등록일 때만 현재 선택한 날짜를 넣습니다.
-    if (!item) nextForm.date = selectedDate;
+    if (!item && !draft) nextForm.date = selectedDate;
     setForm(nextForm);
     setListOpen(false);
   };
   const closeScheduleForm = () => {
+    // 닫기 확인을 승인하거나 새 일정을 저장한 경우에만 새 일정의 임시 보관을 비웁니다.
+    if (!editing) clearDraft();
     setFormError("");
     setForm(null);
     setEditing(null);
   };
+  const copySchedule = () => {
+    if (!editing || editing.isProjectMilestone) return;
+    restoringDraftRef.current = false;
+    const copy = createScheduleCopyForm(editing);
+    setEditing(null);
+    editingVersion.current = null;
+    setFormError("");
+    setForm(copy);
+  };
 
-  // 즐겨찾기는 일정 안에 저장하므로 새로고침에도 유지되고 일정 삭제 시 함께 없어집니다.
+  // 즐겨찾기는 일정의 isFavorite에 기록합니다. 저장소 쓰기가 성공하면 새로고침 후에도 유지됩니다.
+  // 원본 일정 전체를 삭제하면 별표도 없어지고, 반복 한 회차만 삭제하면 원본 별표는 유지됩니다.
   // 반복 발생일도 원본 ID를 공유합니다. 별표는 반복 전체를 고정하는 의미입니다.
+  // 달력·상세·전체 목록의 별표가 모두 이 함수로 연결됩니다.
+  // 원본 항목의 isFavorite만 변경하므로 일정 날짜나 입력 내용은 바뀌지 않습니다.
   function toggleFavorite(item) {
     setItems((current) => current.map((schedule) => {
       if (schedule.id === item.id) return { ...schedule, isFavorite: !schedule.isFavorite };
@@ -316,49 +358,12 @@ export default function ScheduleManager() {
     const project = form.project.trim();
     // 새 일정에는 프로젝트 ID도 저장해, 나중에 프로젝트 이름이 바뀌어도 연결을 유지합니다.
     const linkedProject = projects.find((entry) => entry.name === project);
-    if (!scheduleScopes.includes(form.scope)) {
-      setFormError("업무용 또는 개인 일정용을 먼저 선택해 주세요.");
-      return;
-    }
-    if (form.scope === "업무용" && !getScheduleCategories(form.scope).includes(form.category)) {
-      setFormError("일정 분류를 선택해 주세요.");
-      return;
-    }
-    if (form.scope === "업무용" && form.category === "프로젝트" && !project) {
-      setFormError("프로젝트 분류에는 프로젝트명을 입력해 주세요.");
-      return;
-    }
-    if (!title) {
-      setFormError("일정 이름을 입력해 주세요. 공백만 사용할 수 없습니다.");
-      return;
-    }
-
-    if (!isValidScheduleDate(form.date) || !isValidScheduleTime(form.time) || !isValidScheduleTime(form.endTime)) {
-      setFormError("올바른 날짜와 시작·종료 시간을 입력해 주세요.");
-      return;
-    }
-    if (form.endDate && (!isValidScheduleDate(form.endDate) || form.endDate < form.date || form.repeatType !== "none")) {
-      setFormError("여러 날 일정의 종료 날짜는 시작일 이후여야 하며 반복 일정에는 지정할 수 없습니다.");
-      return;
-    }
-    if (form.repeatType !== "none") {
-      const interval = Number(form.repeatInterval);
-      if (!Number.isInteger(interval) || interval < 1 || interval > MAX_REPEAT_INTERVAL) {
-        setFormError(`반복 간격은 1~${MAX_REPEAT_INTERVAL} 사이의 정수로 입력해 주세요.`);
-        return;
-      }
-    }
-    // HH:mm은 자릿수가 같아 문자열 비교로도 시간 순서를 확인할 수 있습니다.
-    // 같은 날짜 안의 일정이므로 종료 시간은 시작 시간보다 늦어야 합니다.
-    if (!form.isAllDay && (!form.endDate || form.endDate === form.date) && form.endTime <= form.time) {
-      setFormError("종료 시간은 시작 시간보다 늦게 입력해 주세요.");
+    const validationError = validateScheduleForm(form);
+    if (validationError) {
+      setFormError(validationError);
       return;
     }
     const person = form.scope === "업무용" ? form.person.trim() : "";
-    if (form.scope === "업무용" && (!person || person.length > 30)) {
-      setFormError("담당자 이름을 1~30자로 입력해 주세요.");
-      return;
-    }
     const attendees = form.scope === "업무용" && form.category === "회의"
       ? normalizeAttendees(form.attendees)
       : [];
@@ -386,10 +391,11 @@ export default function ScheduleManager() {
       endDate: form.endDate || "",
       isAllDay: Boolean(form.isAllDay),
       title,
+      description: form.description.trim(),
       person,
       attendees,
       project,
-      projectId: linkedProject?.id ?? null,
+      projectId: getScheduleProjectId({ ...form, project, projectId: linkedProject?.id }),
     };
     // 반복 규칙은 다음 1년을 확인하고, 휴일 이동 설정은 범위 끝에서 밀릴 날짜도 포함합니다.
     let conflictEndKey = form.endDate || form.date;
@@ -435,6 +441,7 @@ export default function ScheduleManager() {
     // 먼저 새 일정 한 건을 만듭니다. 일반 수정인 경우에만 기존 ID와 제외 날짜를 이어받습니다.
     const item = {
       ...candidate,
+      ...getRepeatEndOptions(form),
       // 저장 전용 필드만 추가합니다. 반복 일정에는 여러 날 종료일을 남기지 않습니다.
       endDate: form.repeatType === "none" ? (form.endDate || "") : "",
       reminderMinutes: Number(form.reminderMinutes) || 0,
@@ -490,6 +497,7 @@ export default function ScheduleManager() {
       singleSchedule.status = status;
       singleSchedule.repeatType = "none";
       singleSchedule.repeatInterval = 1;
+      Object.assign(singleSchedule, getRepeatEndOptions(singleSchedule));
       singleSchedule.excludedDates = [];
       singleSchedule.replacesScheduleId = item.id;
       singleSchedule.replacesOccurrenceDate = item.occurrenceDate;
@@ -502,6 +510,8 @@ export default function ScheduleManager() {
 
   // 특정 반복 날짜 삭제는 excludedDates에 날짜를 추가해 이후 계산에서 제외합니다.
   // 원본/일반 항목 삭제는 filter로 ID를 제거합니다. 확인 문구도 삭제 범위를 구분합니다.
+  // 삭제 버튼 → 삭제 범위 문구 확인 → 승인한 경우에만 목록 변경 순서입니다.
+  // 취소하면 false를 돌려주므로 호출한 수정 창도 그대로 유지할 수 있습니다.
   const deleteSchedule = (item) => {
     const repeated =
       item.repeatType === "weekly" || item.repeatType === "monthly";
@@ -510,6 +520,10 @@ export default function ScheduleManager() {
     else if (repeated) label = "전체 반복 일정";
     if (!window.confirm("'" + item.title + "' " + label + "을 삭제할까요?"))
       return false;
+    const before = items.find(schedule => schedule.id === item.id);
+    if (!before) return false;
+    const after = item.occurrenceDate ? excludeOccurrence(before, item.occurrenceDate) : null;
+    setDeletionNotice({ record: { before, after }, message: `${item.title} · ${label} 삭제 · 최근 삭제 1건을 15초 동안 되돌릴 수 있습니다.`, expiresAt: Date.now() + 15000 });
     setItems((current) => {
       if (item.occurrenceDate) {
         return current.map(schedule => schedule.id === item.id ? excludeOccurrence(schedule, item.occurrenceDate) : schedule);
@@ -518,6 +532,21 @@ export default function ScheduleManager() {
     });
     return true;
   };
+  function undoDeletion() {
+    if (!deletionNotice?.record || saveStatus !== "saved") return;
+    if (Date.now() >= deletionNotice.expiresAt) { setDeletionNotice(null); return; }
+    const record = deletionNotice.record;
+    // 다른 탭의 같은 ID 변경도 확인합니다. 최종 쓰기는 기존 저장 훅의 충돌 검사를 그대로 거칩니다.
+    const remote = loadSchedules();
+    const error = remote.readError ? "저장된 일정을 읽지 못해 되돌릴 수 없습니다."
+      : restoreDeletedSchedule(remote.items, record).error || restoreDeletedSchedule(items, record).error;
+    if (error) {
+      setDeletionNotice(current => ({ ...current, message: error }));
+      return;
+    }
+    setItems(current => restoreDeletedSchedule(current, record).items);
+    setDeletionNotice({ record: null, message: "삭제 되돌리기를 요청했습니다. 상단 저장 상태를 확인해 주세요.", expiresAt: Date.now() + 15000 });
+  }
   // 날짜를 주면 그날의 더보기, 생략하면 전체 목록입니다. 같은 모달의 열기 처리를 한 곳에 둡니다.
   // [6. 화면 이동] 목록·보기·프로젝트 선택을 바꿉니다. 일정 내용의 저장과는 별개입니다.
   const showScheduleList = (date = null) => {
@@ -618,20 +647,23 @@ export default function ScheduleManager() {
     }
   }
 
-  // 순서로 의미를 외우는 배열 대신 이름이 붙은 속성을 사용합니다. card.count는 숫자입니다.
-  const statCards = [
-    { label: "일정 등록 프로젝트", count: projectNames.length, unit: "", icon: "projects", action: "projects",
-      buttonLabel: "일정 등록 프로젝트 목록 보기" },
-  ];
-
-  function handleStatClick(action) {
-    setDirectoryMode(directoryMode === action ? null : action);
-  }
-
   // [8. 화면 구성] 위에서 만든 데이터와 콜백을 각 화면 부품의 props에 연결합니다.
   return (
     <main className="schedule-app">
       <div className="sm-shell">
+        {!form && draft && <aside className="sm-draft-notice" aria-label="임시 작성 일정">
+          <span>작성 중이던 새 일정이 있습니다. 이어서 작성할 수 있습니다.</span>
+          <button type="button" className="sm-list-all-btn" onClick={() => openScheduleForm()}>이어서 작성</button>
+          <button type="button" className="sm-list-all-btn" onClick={clearDraft}>임시 보관 삭제</button>
+        </aside>}
+        {draftError && <div className="sm-storage-warning" role="alert">{draftError}
+          <button type="button" className="sm-list-all-btn" onClick={clearDraft}>임시 보관 초기화</button>
+        </div>}
+        {deletionNotice && <aside className="sm-deletion-notice" role="status" aria-label="일정 삭제 안내">
+          <span>{deletionNotice.message}</span>
+          {deletionNotice.record && <button type="button" className="sm-list-all-btn" disabled={saveStatus !== "saved"} onClick={undoDeletion}>삭제 되돌리기</button>}
+          <button type="button" className="sm-list-all-btn" aria-label="삭제 안내 닫기" onClick={() => setDeletionNotice(null)}>닫기</button>
+        </aside>}
         {/* 알림이 여러 건이면 한 건씩 보여 기존 화면을 가리지 않게 합니다. */}
         {reminderNotice && <aside className="sm-reminder-notice" role="status">
           <span><strong>일정 알림</strong> · {reminderNotice.title} · {reminderNotice.date} {reminderNotice.isAllDay ? "종일" : reminderNotice.time}</span>
@@ -674,6 +706,9 @@ export default function ScheduleManager() {
           </div>
         </section>
 
+        <p className="sm-muted" role="status" aria-label="일정 저장 상태" aria-live="polite">
+          {saveStatusLabels[saveStatus]}
+        </p>
         {storageConflict && <div className="sm-storage-warning" role="alert">
           다른 탭에서 같은 일정을 변경했거나 저장 자료를 읽지 못해 자동 저장을 중지했습니다. 현재 화면의 변경은 아직 저장되지 않았습니다.
           <button type="button" className="sm-secondary-btn" onClick={reloadConflictingSchedules}>현재 변경을 버리고 저장된 일정 불러오기</button>
@@ -691,14 +726,13 @@ export default function ScheduleManager() {
 
         {/* 현재 일정 데이터에서 요약 숫자를 만들어 표시합니다. */}
         <section className="sm-stats">
-          {/* map은 준비한 카드 정보 하나마다 화면의 카드 하나를 만듭니다. */}
-          {statCards.map((card) => (
-            <button type="button" className="sm-stat" key={card.action} aria-label={card.buttonLabel}
-              aria-expanded={directoryMode === card.action} onClick={() => handleStatClick(card.action)}>
-              <ScheduleIcon name={card.icon} />
-              <span>{card.label}</span><strong>{card.count}{card.unit}</strong>
-            </button>
-          ))}
+          {/* 직접 등록한 일정의 프로젝트명 개수입니다. 3번 프로젝트 전체 개수와는 다릅니다. */}
+          <button type="button" className="sm-stat" aria-label="일정 등록 프로젝트 목록 보기"
+            aria-expanded={directoryMode === "projects"}
+            onClick={() => setDirectoryMode(current => current === "projects" ? null : "projects")}>
+            <ScheduleIcon name="projects" />
+            <span>일정 등록 프로젝트</span><strong>{projectNames.length}</strong>
+          </button>
         </section>
 
         {/* 달력과 오른쪽 일정 패널을 각각 별도 컴포넌트로 표시합니다. */}
@@ -717,6 +751,7 @@ export default function ScheduleManager() {
             weekDates={weekDates}
             scopeFilter={scopeFilter}
             onScopeFilterChange={setScopeFilter}
+            onClearFilters={clearScheduleFilters}
             query={query}
             onQueryChange={setQuery}
             holidayError={
@@ -755,6 +790,7 @@ export default function ScheduleManager() {
             selectedDateObject={selectedDateObject}
             selectedHoliday={selectedHoliday}
             selectedItems={selectedItems}
+            hasActiveFilter={Boolean(query.trim() || selectedProject || scopeFilter !== "all")}
             upcomingSchedules={upcomingSchedules}
             currentTime={currentTime}
             onSelectUpcoming={(date) => {
@@ -772,10 +808,13 @@ export default function ScheduleManager() {
       {/* form 객체가 있을 때만 폼을 표시합니다. 닫을 때 null로 초기화합니다. */}
       {form && (
         <ScheduleFormModal
+          key={editing ? `${editing.id}:${editing.occurrenceDate || "series"}` : "new"}
           form={form}
+          isRestoredDraft={restoringDraftRef.current}
           projectSuggestions={projectSuggestions}
           teamMembers={teamMembers}
           onDelete={() => { if (deleteSchedule(editing)) closeScheduleForm(); }}
+          onCopy={copySchedule}
           onToggleAttendee={toggleAttendee}
           error={formError}
           onChange={updateForm}
