@@ -1,21 +1,28 @@
 //고객 목록 및 관리(조회 등록 수정 삭제 페이지이동 엑셀다운로드)
-import React, { useState } from "react";
+
+import React, { useState,useEffect } from "react";
 //고객정보를 엑셀 파일로 생성하기 위한 라이브러리
 import ExcelJS from "exceljs";
 //생성된 엑셀 파일을 다운로드하기 위한 기능
 import { saveAs } from "file-saver";
-import { initialCustomerList } from "./04_initialCustomerList";
 import "./02_CustomerManagement.css";
+import { useERP } from "../context/ERPContext";
+
 
 function CustomerManagement() {
     //현재등록된 전체 고객목록
-    const [customerList, setCustomerList] = useState(
-        JSON.parse(localStorage.getItem("crmCustomers")) || initialCustomerList
-    );
+    const { customers, setCustomers} = useERP();
+
+
+
+
     //검색창에 입력한 검색어
     const [search, setSearch] = useState("");
     //검색조건으로 나온 고객목록
-    const [searchList, setSearchList] = useState(initialCustomerList);
+    const [searchList, setSearchList] = useState(customers);
+    useEffect(()=>{
+        setSearchList(customers)
+    },[customers])
     //체크 박스로 선택한 고객들의 ID목록
     const [checkedIds, setCheckedIds] = useState([]);
     //현재 보고있는 페이지 번호
@@ -23,7 +30,7 @@ function CustomerManagement() {
     //한 페이지에 보여줄 고객목록 수
     const customerCountPerPage = 10;
     //math.ceil() : 소수점이하를 올림하여 정수로 만드는 함수
-    //totalPageCount :전체 페이지수  currentPageCustomerList:현재목록에 표시할 고개목록
+    //totalPageCount :전체 페이지수  currentPagecustomers:현재목록에 표시할 고개목록
     const totalPageCount = Math.ceil(searchList.length / customerCountPerPage);
     const currentPageCustomer = searchList.slice(
         (currentPage - 1) * customerCountPerPage,
@@ -35,7 +42,7 @@ function CustomerManagement() {
         e.preventDefault();
 
         setSearchList(
-            customerList.filter((customer) =>
+            customers.filter((customer) =>
                 customer.companyName.includes(search)
             )
         );
@@ -46,38 +53,42 @@ function CustomerManagement() {
     //검색어와 검색결과 초기화
     function resetCustomerSearch() {
         setSearch("");
-        setSearchList(customerList);
+        setSearchList(customers);
         setCurrentPage(1);
     }
 
     //신규고객등록 및 목록추가
     function addCustomer(newCustomer) {
-        const newId = Math.max(
-            0,
-            ...customerList.map((customer) => customer.id)
-        ) + 1;
+    // 저장된 다음 고객 ID 불러오기
+     const savedNextId = Number(localStorage.getItem("crm_next_id"));
+    // 현재 고객 목록에서 가장 큰 ID 찾기
+     const maxId = Math.max(
+        0,
+       ...customers.map((customer) => Number(customer.id) || 0)
+     );
+    // 다음 발급 ID와 현재 최대 ID + 1 중 큰 값 선택
+     const newId = Math.max(maxId + 1, savedNextId || 1);
+    // 다음에 발급할 ID 저장
+      localStorage.setItem("crm_next_id", String(newId + 1));
 
-        const updatedCustomers = [
-            { ...newCustomer, id: newId },
-            ...customerList
-        ];
-
-        setCustomerList(updatedCustomers);
-        setSearchList(updatedCustomers);
-        setSearch("");
+     const updatedCustomers = [
+        { ...newCustomer, id: newId },
+        ...customers
+     ];
+    // 전체고객목록에 추가
+     setCustomers(updatedCustomers);
+    //화면에 표시할 목록 추가
+   
+    
     }
 
-    const aa = () =>{
-        addCustomer({aa})
-        setSearch("") 
-    }
 
     //선택한 고객의 수정팝업 열기
     function openEditCustomer() {
-        const selectedCustomer = customerList.find((customer) =>
+        const selectedCustomer = customers.find((customer) =>
             customer.id === checkedIds[0]
         );
-
+        //주소,창이름,크기
         window.open(
             "/crm/edit?id=" + selectedCustomer.id + "&popup=1",
             "customerEdit",
@@ -86,38 +97,54 @@ function CustomerManagement() {
     }
     //수정한 고객정보 저장
     function saveEditedCustomer(updateCustomer) {
-        const updateCustomers = customerList.map((customer) =>
+        const updateCustomers = customers.map((customer) =>
             customer.id === updateCustomer.id
                 ? updateCustomer
                 : customer
         );
-
-        setCustomerList(updateCustomers);
+    
+        setCustomers(updateCustomers);
         setSearchList(updateCustomers);
         setSearch("");
     }
-    //체크박스로 선택한 고객 삭제
+    //체크박스로 선택한 고객 삭제(체크가 되어있지 않은 목록을 불러와 저장)
     function deleteSelectedCustomers() {
-        const remainingCustomers = customerList.filter((customer) =>
+
+        const deleteCount = checkedIds.length;
+
+        const isConfirmed = window.confirm(
+            `선택한 고객 ${deleteCount}건을 삭제하시겠습니까?`
+        );
+        if (!isConfirmed) {
+            return;
+        }
+        const remainingCustomers = customers.filter((customer) =>
             !checkedIds.includes(customer.id)
         );
 
-        setCustomerList(remainingCustomers);
+        setCustomers(remainingCustomers);
         setSearchList(remainingCustomers);
         setSearch("");
         setCheckedIds([]);
         setCurrentPage(1);
+
+        alert(`고객정보 ${deleteCount}건이 삭제되었습니다.`);
     }
 
+    //고객 등록·수정 팝업에서 부모 창의 함수와 데이터를 사용하도록 연결
     window.saveEditedCustomer = saveEditedCustomer;
-    window.getCurrentCustomers = () => customerList;
+    window.getCurrentCustomers = () => customers;
     window.addCustomer = addCustomer;
 
-    //고객 목록을 엑셀파일로 생성 및 다운로드
+    //고객 목록을 엑셀파일로 생성 및 다운로드파일 만들기 async =비동기 처리
+    //엑셀 문서 생성 → 시트 생성 → 고객 데이터 입력 → XLSX 데이터 생성 → Blob으로 묶기 → 다운로드
     async function downloadExcel(data = searchList) {
+        //엑셀문서 생성
         const workbook = new ExcelJS.Workbook();
+        //엑셀시트 생성
         const worksheet = workbook.addWorksheet("고객 목록");
-
+        //엑셀 시트 내용
+        //열 제목,속성값,너비
         worksheet.columns = [
             { header: "번호", key: "id", width: 10 },
             { header: "고객사명", key: "companyName", width: 25 },
@@ -130,22 +157,24 @@ function CustomerManagement() {
             { header: "메모", key: "memo", width: 35 },
             { header: "내부 담당자", key: "employeeName", width: 20 }
         ];
-
+        //고객정보를 반복하여 엑셀시트에 한 행씩 추가
         data.forEach((customer) => {
             worksheet.addRow(customer);
         });
-
+        // 엑셀 문서를 실제 파일 데이터로 변환
         const buffer = await workbook.xlsx.writeBuffer();
-
+        // XLSX 데이터를 브라우저에서 파일처럼 다룰 수 있도록 묶기
         const blob = new Blob([buffer], {
             type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         });
-
+        // 생성된 엑셀 파일을 고객목록.xlsx라는 이름으로 다운로드실행
         saveAs(blob, "고객목록.xlsx");
     }
+
+
     //선택한 고객만 엑셀로 생성 및 다운로드
     async function downloadSelectedExcel() {
-        const selectedCustomers = customerList.filter((customer) =>
+        const selectedCustomers = customers.filter((customer) =>
             checkedIds.includes(customer.id)
         );
 
@@ -167,7 +196,7 @@ function CustomerManagement() {
             <div className="crm-summary">
                 <div className="crm-summary-card">
                     <span>전체 고객사</span>
-                    <strong>{customerList.length}개</strong>
+                    <strong>{customers.length}개</strong>
                 </div>
             </div>
 

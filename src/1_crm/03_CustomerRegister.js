@@ -72,7 +72,7 @@ function CustomerRegister() {
             ...formData,
             createdAt: createdAt
         });
-
+        alert("고객이 등록되었습니다.")
         window.close();
 
 

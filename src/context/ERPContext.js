@@ -178,7 +178,8 @@ export function ERPProvider({ children }) {
         localStorage.removeItem(NEXT_PH_ID_KEY)
 
     }
-
+   
+    
     return (
         <ERPContext.Provider value={{
             projects,
@@ -190,16 +191,17 @@ export function ERPProvider({ children }) {
             projectHistory,
 
             customers,
-            setCustomers,
-
-            employees,
-            setEmployees
+            setCustomers
+            
         }}>
             {children}
         </ERPContext.Provider>
     )
-
+    
+    
 }
+
+
 
 export const useERP = () => useContext(ERPContext)
 

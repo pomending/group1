@@ -1,19 +1,21 @@
+// 기존 고객정보 조회 및 수정, 입력값 검증, 수정 내용 저장
 import"./03_CustomerForm.css";
 import React, { useState } from "react";
 import { useLocation } from "react-router-dom";
 
 function CustomerEdit() {
-
+    //현재 페이지의 URL 주소정보
     const location = useLocation();
-
+    //URL에서 필요한 값을 가져오기 위한 객체
     const params = new URLSearchParams(location.search);
-    const customerId = Number(params.get("id"));
-
-    const selectedCustomer = window.opener.getCurrentCustomers().find(
-        customer => customer.id === customerId
+    //URL에서 가져온 수정할 대상의 고객ID
+    const EditCustomerId = Number(params.get("id"));
+    //고객 ID와 일치하는 기존 고객정보
+    const CustomerData = window.opener.getCurrentCustomers().find(
+        customer => customer.id === EditCustomerId
     );
 
-    const [formData, setFormData] = useState(selectedCustomer || {});
+    const [EditingCustomerData, setEditingCustomerData] = useState(CustomerData || {});
 
     const fields = [
         { name: "companyName", label: "고객사명" },
@@ -30,22 +32,22 @@ function CustomerEdit() {
         e.preventDefault();
 
         if (
-            !formData.companyName?.trim() ||
-            !formData.customerManager?.trim() ||
-            !formData.phone?.trim()
+            !EditingCustomerData.companyName?.trim() ||
+            !EditingCustomerData.customerManager?.trim() ||
+            !EditingCustomerData.phone?.trim()
         ) {
             alert("필수등록정보(고객사명, 고객사 담당자명, 연락처)를 입력해주세요.");
             return;
         }
 
-        const businessNumbers = (formData.businessNumber || "").replace(/-/g, "");
+        const businessNumbers = (EditingCustomerData.businessNumber || "").replace(/-/g, "");
 
         if (businessNumbers !== "" && businessNumbers.length !== 10) {
             alert("사업자등록번호를 확인해 주세요.");
             return;
         }
 
-        const phoneNumbers = formData.phone.replace(/-/g, "");
+        const phoneNumbers = EditingCustomerData.phone.replace(/-/g, "");
 
         if (
             (phoneNumbers.startsWith("02") &&
@@ -59,8 +61,9 @@ function CustomerEdit() {
             return;
         }
 
-        console.log(formData);
-        window.opener.saveEditedCustomer(formData);
+        
+        window.opener.saveEditedCustomer(EditingCustomerData);
+        alert("고객의 정보가 수정되었습니다.")
         window.close();
     }
 
@@ -83,7 +86,7 @@ function CustomerEdit() {
                         </label>
     
                         <input
-                            value={formData[field.name] || ""}
+                            value={EditingCustomerData[field.name] || ""}
                             onChange={(e) => {
                                 const value = e.target.value;
     
@@ -143,8 +146,8 @@ function CustomerEdit() {
                                     }
                                 }
     
-                                setFormData({
-                                    ...formData,
+                                setEditingCustomerData({
+                                    ...EditingCustomerData,
                                     [field.name]: field.name === "businessNumber"
                                         ? formatted
                                         : field.name === "phone"
