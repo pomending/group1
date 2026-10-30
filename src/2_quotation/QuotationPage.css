@@ -1,327 +1,279 @@
 
 /* =========================
-   전체 페이지
+   전체 대시보드
 ========================= */
-.quotation-menu,
-.quotation-menu * {
-    box-sizing: border-box;
-}
 
 .quotation-menu {
-    width: 100%;
-    max-width: 1200px;
-    min-width: 0;
-    margin: 0 auto;
-    padding: clamp(16px, 3vw, 36px);
-    background: #f3f6fc;
-    color: #172b55;
+    min-height: 100vh;
+    padding: 30px;
+    background-color: #f5f7fb;
+    color: #1e293b;
+    box-sizing: border-box;
+    font-family: Arial, sans-serif;
 }
 
 /* =========================
-   페이지 제목
+   상단 제목
 ========================= */
+
 .quotation-header {
-    width: 100%;
-    padding-bottom: 28px;
-    margin-bottom: 32px;
-    border-bottom: 1px solid #dce5f3;
+    margin-bottom: 28px;
 }
 
 .quotation-header h1 {
     margin: 0 0 10px;
-    font-size: clamp(23px, 2.5vw, 32px);
-    line-height: 1.4;
+    font-size: 27px;
+    font-weight: 700;
 }
 
 .quotation-header p {
     margin: 0;
-    color: #71809c;
+    color: #64748b;
     font-size: 14px;
-    line-height: 1.7;
 }
 
 /* =========================
    현황 카드 4개
 ========================= */
-.quotation-menu > section {
+
+.quotation-summary {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 16px;
-    width: 100%;
-    min-width: 0;
-    margin: 0 0 32px;
+    padding: 20px;
+    margin-bottom: 28px;
+    background-color: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    box-shadow: 0 2px 6px rgba(15, 23, 42, 0.03);
 }
 
-.quotation-menu > section > div {
-    min-width: 0;
-    padding: 20px 16px;
-    background: #fff;
-    border: 1px solid #dce5f3;
-    border-radius: 14px;
-    box-shadow: 0 4px 12px rgba(30, 55, 100, 0.05);
+.summary-card {
+    padding: 22px 20px;
+    background-color: #ffffff;
+    border: 1px solid #dfe7f1;
+    border-radius: 10px;
+    box-shadow: 0 2px 5px rgba(15, 23, 42, 0.04);
+    transition: 0.2s;
 }
 
-.quotation-menu > section h3 {
-    margin: 0 0 14px;
+.summary-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 5px 12px rgba(15, 23, 42, 0.07);
+}
+
+.summary-card h3 {
+    margin: 0 0 16px;
+    color: #475569;
     font-size: 14px;
-    line-height: 1.6;
-    overflow-wrap: anywhere;
-}
-
-.quotation-menu > section p {
-    margin: 0 0 14px;
-    font-size: clamp(21px, 2vw, 28px);
-    font-weight: 700;
-    line-height: 1.4;
-    overflow-wrap: anywhere;
-}
-
-/* =========================
-   링크
-========================= */
-.quotation-menu a {
-    color: #3563f7;
-    font-size: 13px;
-    line-height: 1.7;
-    text-decoration: none;
-    overflow-wrap: anywhere;
-}
-
-.quotation-menu a:hover {
-    color: #2448c7;
-    text-decoration: underline;
-}
-
-/* =========================
-   버튼 공통
-========================= */
-.quotation-menu button,
-.quotation-menu input[type="button"] {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    max-width: 100%;
-    min-height: 40px;
-    padding: 10px 14px;
-    border: none;
-    border-radius: 9px;
-    background: #3563f7;
-    color: #fff;
-    font-family: inherit;
-    font-size: 12px;
     font-weight: 600;
-    line-height: 1.5;
-    white-space: normal;
-    overflow-wrap: anywhere;
-    cursor: pointer;
-    transition: background 0.2s ease, transform 0.2s ease;
 }
 
-.quotation-menu button:hover,
-.quotation-menu input[type="button"]:hover {
-    background: #2448c7;
-    transform: translateY(-1px);
+.summary-number {
+    margin: 0 0 18px;
+    color: #1e293b;
+    font-size: 29px;
+    font-weight: 700;
 }
 
-.quotation-menu button:focus-visible,
-.quotation-menu input[type="button"]:focus-visible {
-    outline: 3px solid #b7c8ff;
-    outline-offset: 3px;
+.summary-link {
+    color: #2563eb;
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.summary-link:hover {
+    color: #1d4ed8;
+    text-decoration: underline;
 }
 
 /* =========================
    빠른 작업
 ========================= */
+
 .fast-work {
-    width: 100%;
-    max-width: 760px;
-    min-width: 0;
-    margin: 0 auto 24px;
-    padding: clamp(16px, 3vw, 24px);
-    background: #fff;
-    border-radius: 16px;
-    box-shadow: 0 4px 16px rgba(30, 55, 100, 0.05);
+    margin-bottom: 28px;
 }
 
-.fast-work > h2 {
-    margin: 0 0 24px;
-    padding-left: 12px;
-    border-left: 4px solid #3563f7;
-    font-size: 20px;
-    line-height: 1.5;
+.section-heading {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
 }
 
-.fast-work > div {
-    display: inline-flex;
-    flex-direction: column;
-    align-items: flex-start;
-    vertical-align: top;
-    width: calc(50% - 8px);
-    min-width: 0;
-    margin: 0 8px 8px 0;
-    padding: clamp(14px, 2vw, 20px);
+.section-heading > h2,
+.section-heading > p {
+    grid-column: 1 / -1;
+}
+
+.section-heading > h2 {
+    margin: 0;
+    font-size: 21px;
+    font-weight: 700;
+}
+
+.section-heading > p {
+    margin: -8px 0 5px;
+    color: #64748b;
+    font-size: 14px;
+}
+
+/* 상품 등록 카드 */
+.product {
+    padding: 24px;
+    background-color: white;
+    border: 1px solid #e2e8f0;
     border-radius: 12px;
+    box-shadow: 0 2px 6px rgba(15, 23, 42, 0.03);
 }
 
-.fast-work .product {
-    background: #edf4ff;
+/* 새 견적 작성 카드 */
+.quotation {
+    padding: 24px;
+    background-color: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    box-shadow: 0 2px 6px rgba(15, 23, 42, 0.03);
 }
 
-.fast-work .quotation {
-    background: #f3efff;
+.product h3,
+.quotation h3 {
+    margin: 0 0 12px;
+    font-size: 17px;
+    font-weight: 700;
 }
 
-.fast-work > div h2 {
-    margin: 0 0 16px;
-    font-size: 16px;
-    line-height: 1.5;
+.product p,
+.quotation p {
+    margin: 0 0 20px;
+    color: #64748b;
+    font-size: 13px;
 }
 
-.fast-work .quotation input[type="button"] {
-    background: #7047f5;
+/* 빠른 작업 버튼 */
+.product input[type="button"],
+.quotation input[type="button"] {
+    height: 41px;
+    padding: 0 19px;
+    background-color: #2563eb;
+    color: white;
+    border: none;
+    border-radius: 7px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: 0.2s;
 }
 
-.fast-work .quotation input[type="button"]:hover {
-    background: #5934d4;
+.product input[type="button"]:hover,
+.quotation input[type="button"]:hover {
+    background-color: #1d4ed8;
 }
 
 /* =========================
    최근 견적 내역
 ========================= */
-.quotation-menu .recent-quotation {
-    width: 100%;
-    max-width: 100%;
-    min-width: 0;
-    margin: 24px 0 0;
-    padding: clamp(14px, 2.5vw, 24px);
-    overflow: hidden;
-    background: #fff;
-    border-radius: 16px;
-    box-shadow: 0 4px 16px rgba(30, 55, 100, 0.05);
+
+.recent-quotation {
+    padding: 24px;
+    background-color: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    box-shadow: 0 2px 6px rgba(15, 23, 42, 0.03);
 }
 
-.recent-quotation .recent-quotation-header {
+/* 제목과 전체 견적 보기 */
+.recent-quotation-header {
     display: flex;
-    align-items: center;
     justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 12px;
-    margin-bottom: 18px;
+    align-items: center;
+    margin-bottom: 20px;
 }
 
-.recent-quotation .recent-quotation-header h2 {
+.recent-quotation-header h2 {
     margin: 0;
     font-size: 19px;
-    line-height: 1.5;
+    font-weight: 700;
 }
 
-.recent-quotation .recent-quotation-header a {
-    flex-shrink: 0;
+.recent-quotation-header a {
+    color: #2563eb;
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: none;
 }
 
-/* 표 전용 가로 스크롤 */
-.recent-quotation .table-scroll {
+.recent-quotation-header a:hover {
+    text-decoration: underline;
+}
+
+/* =========================
+   최근 견적 테이블
+========================= */
+
+.table-scroll {
     width: 100%;
-    max-width: 100%;
     overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
 }
 
 .recent-quotation table {
     width: 100%;
-    min-width: 720px;
+    min-width: 700px;
     border-collapse: collapse;
-    font-size: 13px;
-}
-
-.recent-quotation th,
-.recent-quotation td {
-    padding: 14px 12px;
     text-align: center;
-    white-space: nowrap;
-    border-bottom: 1px solid #e2e9f4;
 }
 
+/* 테이블 제목 */
 .recent-quotation th {
-    background: #f0f4fb;
-    color: #263c63;
+    padding: 15px 12px;
+    background-color: #f1f5f9;
+    color: #475569;
+    font-size: 13px;
     font-weight: 600;
+    border-top: 1px solid #e2e8f0;
+    border-bottom: 1px solid #e2e8f0;
+    white-space: nowrap;
 }
 
+/* 테이블 내용 */
 .recent-quotation td {
-    color: #42516d;
+    padding: 16px 12px;
+    color: #334155;
+    font-size: 13px;
+    border-bottom: 1px solid #edf0f5;
+    white-space: nowrap;
+}
+
+/* 마우스 효과 */
+.recent-quotation tbody tr:hover {
+    background-color: #f8fafc;
 }
 
 /* =========================
-   태블릿
+   반응형
 ========================= */
-@media (max-width: 900px) {
-    .quotation-menu > section {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 14px;
-    }
 
-    .quotation-menu > section > div {
-        padding: 18px;
-    }
-
-    .fast-work {
-        max-width: 100%;
+@media (max-width: 1000px) {
+    .quotation-summary {
+        grid-template-columns: repeat(2, 1fr);
     }
 }
 
-/* =========================
-   모바일
-========================= */
-@media (max-width: 560px) {
+@media (max-width: 700px) {
     .quotation-menu {
-        padding: 14px;
-    }
-
-    .quotation-header {
-        margin-bottom: 22px;
-        padding-bottom: 20px;
-    }
-
-    .quotation-menu > section {
-        grid-template-columns: minmax(0, 1fr);
-        gap: 12px;
-        margin-bottom: 24px;
-    }
-
-    .quotation-menu > section > div {
         padding: 18px;
     }
 
-    .quotation-menu > section h3 {
-        margin-bottom: 8px;
+    .section-heading {
+        grid-template-columns: 1fr;
     }
 
-    .quotation-menu > section p {
-        margin-bottom: 10px;
+    .quotation-summary {
+        grid-template-columns: 1fr;
     }
 
-    .fast-work {
+    .recent-quotation {
         padding: 16px;
-        margin-bottom: 20px;
-    }
-
-    .fast-work > div {
-        display: flex;
-        width: 100%;
-        margin: 0 0 12px;
-        padding: 18px;
-    }
-
-    .fast-work > div:last-child {
-        margin-bottom: 0;
-    }
-
-    .recent-quotation .recent-quotation-header {
-        align-items: flex-start;
-    }
-
-    .recent-quotation table {
-        min-width: 720px;
     }
 }
