@@ -190,6 +190,9 @@ export function ERPProvider({ children }) {
             resetProjects,
             projectHistory,
 
+            employees,
+            setEmployees,
+
             customers,
             setCustomers
             

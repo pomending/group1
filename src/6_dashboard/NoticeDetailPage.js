@@ -242,10 +242,6 @@ function NoticeDetailPage({ posts, setPosts, postId }) {
     return (
         <div className="community">
 
-            <Link to="/?page=notice" className="community-back">
-                ← 공지사항 목록으로
-            </Link>
-
             <div className="community-board">
 
                 {post ? (
@@ -355,7 +351,10 @@ function NoticeDetailPage({ posts, setPosts, postId }) {
 
                                 </div>
 
-                                <div className="community-content">
+                                <div
+                                    className="community-content"
+                                    style={{ minHeight: "180px" }}
+                                >
                                     {post.content}
                                 </div>
                             </>
