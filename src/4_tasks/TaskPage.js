@@ -58,6 +58,8 @@ function TaskPage() {
   const [statusFilter, setStatusFilter] = useState("전체");
   const [selectedTask, setSelectedTask] = useState(null);
 
+ 
+
   // 상태별 작업 개수
   const statusCounts = useMemo(() => {
     return WORK_STATUSES.reduce(
@@ -103,6 +105,91 @@ function TaskPage() {
         : prev
     );
   };
+
+   //디자인 관련 데이터
+   const [designRecords, setDesignRecords] = useState ({});
+
+   //수정 요청 입력값
+   const [designRequest, setDesignRequest] = useState("");
+   // 디자인 이미지 업로드
+const uploadDesign = (taskId, file) => {
+  if (!file) return;
+
+  if (!file.type.startsWith("image/")) {
+    alert("이미지 파일만 등록할 수 있습니다.");
+    return;
+  }
+
+  const reader = new FileReader();
+
+  reader.onload = () => {
+    setDesignRecords((prev) => ({
+      ...prev,
+      [taskId]: {
+        ...prev[taskId],
+        image: reader.result,
+        status: "검토 대기",
+        history: [
+          ...(prev[taskId]?.history || []),
+          {
+            action: "디자인 이미지 등록",
+            date: new Date().toLocaleString("ko-KR"),
+          },
+        ],
+      },
+    }));
+  };
+
+  reader.readAsDataURL(file);
+};
+
+// 디자인 승인
+const approveDesign = (taskId) => {
+  setDesignRecords((prev) => ({
+    ...prev,
+    [taskId]: {
+      ...prev[taskId],
+      status: "승인 완료",
+      history: [
+        ...(prev[taskId]?.history || []),
+        {
+          action: "디자인 승인 완료",
+          date: new Date().toLocaleString("ko-KR"),
+        },
+      ],
+    },
+  }));
+
+  alert("디자인이 승인되었습니다.");
+};
+
+// 디자인 수정 요청
+const requestDesignRevision = (taskId) => {
+  if (!designRequest.trim()) {
+    alert("수정 요청 내용을 입력해주세요.");
+    return;
+  }
+
+  setDesignRecords((prev) => ({
+    ...prev,
+    [taskId]: {
+      ...prev[taskId],
+      status: "수정 요청",
+      history: [
+        ...(prev[taskId]?.history || []),
+        {
+          action: `수정 요청: ${designRequest}`,
+          date: new Date().toLocaleString("ko-KR"),
+        },
+      ],
+    },
+  }));
+
+  setDesignRequest("");
+  alert("디자인 수정 요청이 등록되었습니다.");
+};
+
+
 
   return (
     <div className="task-page">
@@ -339,6 +426,102 @@ function TaskPage() {
             </div>
 
             <div className="modal-status">
+
+           {/* 제품 디자인 관리 */}
+<div className="design-management">
+  <div className="design-section-title">
+    <h3>제품 디자인 관리</h3>
+
+    <span className={`design-badge ${
+      designRecords[selectedTask.id]?.status === "승인 완료"
+        ? "design-approved"
+        : designRecords[selectedTask.id]?.status === "수정 요청"
+        ? "design-revision"
+        : "design-pending"
+    }`}>
+      {designRecords[selectedTask.id]?.status || "미등록"}
+    </span>
+  </div>
+
+  {/* 디자인 이미지 미리보기 */}
+  <div className="design-preview-area">
+    {designRecords[selectedTask.id]?.image ? (
+      <img
+        src={designRecords[selectedTask.id].image}
+        alt="제품 디자인 미리보기"
+        className="design-preview-image"
+      />
+    ) : (
+      <div className="design-empty">
+        <span>🖼️</span>
+        <p>등록된 디자인 이미지가 없습니다.</p>
+      </div>
+    )}
+  </div>
+
+  {/* 이미지 업로드 */}
+  <label className="design-upload-button">
+    + 디자인 이미지 등록
+    <input
+      type="file"
+      accept="image/*"
+      hidden
+      onChange={(e) => {
+        uploadDesign(
+          selectedTask.id,
+          e.target.files[0]
+        );
+        e.target.value = "";
+      }}
+    />
+  </label>
+
+  {/* 승인 및 수정 요청 */}
+  <div className="design-action-area">
+    <button
+      type="button"
+      className="design-approve-button"
+      disabled={!designRecords[selectedTask.id]?.image}
+      onClick={() => approveDesign(selectedTask.id)}
+    >
+      ✓ 디자인 승인
+    </button>
+
+    <textarea
+      value={designRequest}
+      onChange={(e) => setDesignRequest(e.target.value)}
+      placeholder="디자인 수정 요청 내용을 입력해주세요."
+    />
+
+    <button
+      type="button"
+      className="design-request-button"
+      disabled={!designRecords[selectedTask.id]?.image}
+      onClick={() => requestDesignRevision(selectedTask.id)}
+    >
+      수정 요청 등록
+    </button>
+  </div>
+
+  {/* 디자인 처리 이력 */}
+  <div className="design-history">
+    <h4>디자인 처리 이력</h4>
+
+    {(designRecords[selectedTask.id]?.history || []).length === 0 ? (
+      <p>아직 처리된 이력이 없습니다.</p>
+    ) : (
+      designRecords[selectedTask.id].history.map((item, index) => (
+        <div className="design-history-item" key={index}>
+          <strong>{item.action}</strong>
+          <small>{item.date}</small>
+        </div>
+      ))
+    )}
+  </div>
+</div>
+
+
+
               <label htmlFor="detail-status">
                 작업 진행 상태
               </label>
