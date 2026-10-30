@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 
+// 뒤로가기 버튼 만들기
 function ProductPage() {
 
     const [signup, setSignup] = useState(false);
@@ -32,8 +33,8 @@ function ProductPage() {
         }
 
         //상품 코드 중복 검사
-        for(let i = 0; i < products.length; i++){
-            if(products[i].code.toLowerCase() === code.trim().toLowerCase()){
+        for (let i = 0; i < products.length; i++) {
+            if (products[i].code.toLowerCase() === code.trim().toLowerCase()) {
                 alert("이미 등록된 상품 코드입니다")
                 return false;
             }
@@ -144,6 +145,7 @@ function ProductPage() {
                     onChange={(e) => setSearch(e.target.value)} />
             </div>
 
+            {/* 유형별로 선택했을 때 각자 유형들만 나오게 만들기 */}
             <select value={type} >
                 <option value="">전체 유형</option>
                 <option value="액세서리">액세서리</option>
