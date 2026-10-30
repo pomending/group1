@@ -1,3 +1,4 @@
+
 /* 전체 페이지 기본 설정 */
 html,
 body {
@@ -206,5 +207,38 @@ body {
 
     .erp-layout .erp-main {
         min-height: 0;
+    }
+}
+
+/* 데스크톱 페이지별 본문 너비 통일 */
+@media (min-width: 769px) {
+
+    /* 대시보드와 일정 관리 좌우 여백 */
+    .erp-layout .erp-main .dashboard,
+    .erp-layout .erp-main .schedule-app {
+        padding-left: 24px;
+        padding-right: 24px;
+    }
+
+    /* 프로젝트 관리와 일정 관리 최대 너비 해제 */
+    .erp-layout .erp-main .pm-shell,
+    .erp-layout .erp-main .pd-page .pd-container,
+    .erp-layout .erp-main .pf-page .pf-container,
+    .erp-layout .erp-main .pe-page .pe-container,
+    .erp-layout .erp-main .sm-shell {
+        width: 100%;
+        max-width: none;
+        margin-left: 0;
+        margin-right: 0;
+    }
+
+    /* 견적 및 상품 관리 너비 */
+    .erp-layout .erp-main .quotation-menu {
+        width: 100%;
+        max-width: none;
+        margin-left: 0;
+        margin-right: 0;
+        padding-left: 24px;
+        padding-right: 24px;
     }
 }
