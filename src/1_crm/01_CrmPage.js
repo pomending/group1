@@ -8,7 +8,7 @@ import { useERP } from "../context/ERPContext";
 
 function CrmPage() {
 
-    // const {customers, setCustomers} = useERP()
+    
     return (
         <Routes>
             <Route index element={<CustomerManagement />} />

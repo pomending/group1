@@ -15,6 +15,7 @@ import Topbar from "./components/Topbar";
 import { ERPProvider } from "./context/ERPContext";
 import LoginPage from "./7_login/LoginPage";
 import HrPage from "./8_hr/HrPage";
+import ConsultationPage from "./9_consultation/01_ConsultationPage";
 
 function ERPContent() {
 
@@ -61,7 +62,7 @@ function ERPContent() {
                         <Route path="/tasks/*" element={<TaskPage />} />
                         <Route path="/schedule/*" element={<SchedulePage />} />
                         <Route path='/hr/*' element={<HrPage />} />
-
+                        <Route path="/consultation/*" element={<ConsultationPage />} />
                         <Route path="*" element={<NotFoundPage />} />
                     </Routes>
 
