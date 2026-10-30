@@ -10,11 +10,9 @@ import { useERP } from "../context/ERPContext";
 
 
 function CustomerManagement() {
-    //context에 있는 함수 가져오기
+    //ERPcontext에 있는 함수 가져오기
     const { customers, setCustomers, addCustomer,
         saveEditedCustomer,deleteCustomers} = useERP();
-
-
 
 
     //검색창에 입력한 검색어
@@ -58,7 +56,7 @@ function CustomerManagement() {
         setCurrentPage(1);
     }
 
-    //신규고객등록 및 목록추가
+    
     
 
     //선택한 고객의 수정팝업 열기
@@ -83,11 +81,9 @@ function CustomerManagement() {
         if (!isConfirmed) {
             return;
         }
-        
+        //삭제함수 context에서 가져오기
         deleteCustomers(checkedIds);
 
-       
-        
         setSearch("");
         setCheckedIds([]);
         setCurrentPage(1);
@@ -95,7 +91,7 @@ function CustomerManagement() {
         alert(`고객정보 ${deleteCount}건이 삭제되었습니다.`);
     }
 
-   
+    
 
     //고객 등록·수정 팝업에서 부모 창의 함수와 데이터를 사용하도록 연결
     window.saveEditedCustomer = saveEditedCustomer;
