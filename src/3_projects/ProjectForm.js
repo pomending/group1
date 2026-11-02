@@ -5,16 +5,19 @@ import { formatPrice, formatQuotationId } from "../utils/formatUtils";
 
 function ProjectForm(props) {
 
-    const { projects, addProject, customers, employees } = useERP()
+    const { projects, addProject, customers, employees, quotations, products } = useERP()
     const [projectName, setProjectName] = useState('');
     const [managerId, setManagerId] = useState('');
     const [due, setDue] = useState('');
     const [selQuotation, setSelQuotation] = useState('')
-    const quotations = props.quotations;
 
     const selectedQuotation = quotations.find(
         q => q.id === Number(selQuotation)
     )
+
+    const selectedProduct = products.find(
+        product => product.id === selectedQuotation?.productId
+    );
 
     const projectManagers = employees.filter(emp =>
         emp.department === "생산관리팀" &&
@@ -178,18 +181,16 @@ function ProjectForm(props) {
                                             </thead>
 
                                             <tbody>
-                                                {selectedQuotation.items.map((product, index) => (
-                                                    <tr key={index}>
-                                                        <td>{product.productName}</td>
-                                                        <td>{product.quantity}개</td>
-                                                        <td>
-                                                            {formatPrice(product.unitPrice)}
-                                                        </td>
-                                                        <td>
-                                                            {formatPrice(product.quantity * product.unitPrice)}
-                                                        </td>
-                                                    </tr>
-                                                ))}
+                                                <tr>
+                                                    <td>{selectedProduct?.productName ?? "상품 정보 없음"}</td>
+                                                    <td>{selectedQuotation.quantity}개</td>
+                                                    <td>{formatPrice(selectedQuotation.unitPrice)}</td>
+                                                    <td>
+                                                        {formatPrice(
+                                                            selectedQuotation.quantity * selectedQuotation.unitPrice
+                                                        )}
+                                                    </td>
+                                                </tr>
                                             </tbody>
                                         </table>
                                     </div>
@@ -197,11 +198,9 @@ function ProjectForm(props) {
                                     <div className="pf-quotation-summary">
                                         <span>총 견적 금액</span>
                                         <strong>
-                                            {formatPrice(selectedQuotation.items.reduce(
-                                                (sum, product) =>
-                                                    sum + product.quantity * product.unitPrice,
-                                                0
-                                            ))}
+                                            {formatPrice(
+                                                selectedQuotation.quantity * selectedQuotation.unitPrice
+                                            )}
                                         </strong>
                                     </div>
 
