@@ -1,5 +1,4 @@
 import { useState } from "react";
-import "./ProjectForm.css";
 import { useERP } from "../context/ERPContext";
 import { formatPrice, formatQuotationId } from "../utils/formatUtils";
 
@@ -77,12 +76,12 @@ function ProjectForm(props) {
     };
 
     return (
-        <div className="pf-page">
-            <div className="pf-container">
+        <div className="pf-page pj-page">
+            <div className="pf-container pj-container">
 
                 <button
                     type="button"
-                    className="pf-back"
+                    className="pf-back pj-back"
                     onClick={() => props.setPage('list')}
                 >
                     <span>←</span> 프로젝트 목록으로
@@ -90,20 +89,20 @@ function ProjectForm(props) {
 
                 <div className="pf-heading">
                     <div>
-                        <p className="pf-eyebrow">PROJECT MANAGEMENT</p>
+                        <p className="pf-eyebrow pj-eyebrow">PROJECT MANAGEMENT</p>
                         <h2>새 프로젝트 등록</h2>
-                        <p className="pf-subtitle">
+                        <p className="pf-subtitle pj-subtitle">
                             새로운 굿즈 제작 프로젝트의 정보를 입력하세요.
                         </p>
                     </div>
                     <span className="pf-heading-tag">+ 신규 등록</span>
                 </div>
 
-                <form className="pf-card" onSubmit={handleSubmit}>
+                <form className="pf-card pj-card" onSubmit={handleSubmit}>
 
-                    <div className="pf-card-header">
+                    <div className="pf-card-header pj-card-heading">
                         <div>
-                            <span className="pf-section-num">
+                            <span className="pf-section-num pj-eyebrow">
                                 PROJECT INFO
                             </span>
                             <h3>프로젝트 기본 정보</h3>
@@ -113,9 +112,9 @@ function ProjectForm(props) {
 
                     <div className="pf-fields">
 
-                        <div className="pf-field pf-full">
+                        <div className="pf-field pf-full pj-field pj-full">
                             <label htmlFor="pf-name">
-                                프로젝트명 <span className="pf-required">*</span>
+                                프로젝트명 <span className="pf-required pj-required">*</span>
                             </label>
 
                             <input id="pf-name" value={projectName} onChange={(e) => { setProjectName(e.target.value) }} />
@@ -149,7 +148,7 @@ function ProjectForm(props) {
 
                                     <div className="pf-quotation-title">
                                         <h4>선택된 견적 정보</h4>
-                                        <span className="pf-approved">승인 완료</span>
+                                        <span className="pf-approved pj-approved pj-badge">승인 완료</span>
                                     </div>
 
                                     <div className="pf-quotation-meta">
@@ -169,8 +168,8 @@ function ProjectForm(props) {
                                         </div>
                                     </div>
 
-                                    <div className="pf-quotation-table-wrap">
-                                        <table className="pf-quotation-table">
+                                    <div className="pf-quotation-table-wrap pj-quote-wrap">
+                                        <table className="pf-quotation-table pj-quote-table">
                                             <thead>
                                                 <tr>
                                                     <th>상품명</th>
@@ -195,7 +194,7 @@ function ProjectForm(props) {
                                         </table>
                                     </div>
 
-                                    <div className="pf-quotation-summary">
+                                    <div className="pf-quotation-summary pj-quote-total">
                                         <span>총 견적 금액</span>
                                         <strong>
                                             {formatPrice(
@@ -209,7 +208,7 @@ function ProjectForm(props) {
 
                         </div>
 
-                        <div className="pf-field">
+                        <div className="pf-field pj-field">
                             <label htmlFor="pf-manager">담당자</label>
                             <select
                                 id="pf-manager"
@@ -227,7 +226,7 @@ function ProjectForm(props) {
                             </select>
                         </div>
 
-                        <div className="pf-field">
+                        <div className="pf-field pj-field">
                             <label htmlFor="pf-due">납품 예정일</label>
                             <input
                                 id="pf-due"
@@ -239,7 +238,7 @@ function ProjectForm(props) {
                             />
                         </div>
 
-                        <div className="pf-field">
+                        <div className="pf-field pj-field">
                             <label>프로젝트 상태</label>
                             <div className="pf-status-box">
                                 <span className="pf-status-dot"></span>
@@ -250,15 +249,15 @@ function ProjectForm(props) {
 
                     </div>
 
-                    <div className="pf-footer">
+                    <div className="pf-footer pj-footer">
                         <p>
-                            <span className="pf-required">*</span> 필수 입력 항목
+                            <span className="pf-required pj-required">*</span> 필수 입력 항목
                         </p>
 
-                        <div className="pf-actions">
+                        <div className="pf-actions pj-actions">
                             <button
                                 type="button"
-                                className="pf-btn pf-btn-cancel"
+                                className="pf-btn pf-btn-cancel pj-btn"
                                 onClick={() => props.setPage('list')}
                             >
                                 취소
@@ -266,7 +265,7 @@ function ProjectForm(props) {
 
                             <button
                                 type="submit"
-                                className="pf-btn pf-btn-submit"
+                                className="pf-btn pf-btn-submit pj-btn pj-primary"
                             >
                                 + 프로젝트 등록
                             </button>

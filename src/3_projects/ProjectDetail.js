@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import "./ProjectDetail.css";
 import { useERP } from "../context/ERPContext";
 import { formatPrice, formatProjectId, formatQuotationId } from "../utils/formatUtils";
 import { getProjectStatus } from "../utils/projectStatus";
@@ -22,10 +21,10 @@ function ProjectDetail(props) {
 
     if (!selectedProject) {
         return (
-            <div className="pd-page">
-                <div className="pd-container">
+            <div className="pd-page pj-page">
+                <div className="pd-container pj-container">
                     <p>프로젝트를 찾을 수 없습니다.</p>
-                    <button className="pd-back" onClick={() => props.setPage('list')}>
+                    <button className="pd-back pj-back" onClick={() => props.setPage('list')}>
                         ← 프로젝트 목록으로
                     </button>
                 </div>
@@ -110,43 +109,43 @@ function ProjectDetail(props) {
     }
 
     return (
-        <div className="pd-page">
-            <div className="pd-container">
-                <button className="pd-back" onClick={() => props.setPage('list')}>
+        <div className="pd-page pj-page">
+            <div className="pd-container pj-container">
+                <button className="pd-back pj-back" onClick={() => props.setPage('list')}>
                     ← 프로젝트 목록으로
                 </button>
 
                 <div className="pd-heading">
                     <div>
-                        <p className="pd-eyebrow">PROJECT MANAGEMENT / DETAIL</p>
+                        <p className="pd-eyebrow pj-eyebrow">PROJECT MANAGEMENT / DETAIL</p>
                         <h1>{selectedProject.name}</h1>
                         <p>프로젝트의 기본 정보와 제작 진행 상황을 확인합니다.</p>
                     </div>
 
                     <div className="pd-heading-actions">
                         <span className={
-                            "pd-status pd-status-" +
+                            "pd-status pj-badge pd-status-" +
                             getProjectStatus(selectedProject).replaceAll(' ', '')
                         }>
                             {getProjectStatus(selectedProject)}
                         </span>
 
                         <button
-                            className="pd-edit-btn"
+                            className="pd-edit-btn pj-btn pj-primary"
                             onClick={() => props.setPage('edit')}
                         >
                             수정
                         </button>
 
-                        <button className="pd-delete-btn" onClick={delProject}>삭제</button>
+                        <button className="pd-delete-btn pj-btn" onClick={delProject}>삭제</button>
                     </div>
                 </div>
 
                 {/* 프로젝트 기본 정보 */}
-                <section className="pd-card">
-                    <div className="pd-card-header">
+                <section className="pd-card pj-card">
+                    <div className="pd-card-header pj-card-heading">
                         <div>
-                            <span className="pd-section-num">PROJECT INFO</span>
+                            <span className="pd-section-num pj-eyebrow">PROJECT INFO</span>
                             <h2>프로젝트 기본 정보</h2>
                         </div>
                         <span className="pd-number">{formatProjectId(selectedProject.id)}</span>
@@ -192,10 +191,10 @@ function ProjectDetail(props) {
                 </section>
 
                 {/* 고객사 상세 정보 */}
-                <section className="pd-card">
-                    <div className="pd-card-header">
+                <section className="pd-card pj-card">
+                    <div className="pd-card-header pj-card-heading">
                         <div>
-                            <span className="pd-section-num">CUSTOMER INFO</span>
+                            <span className="pd-section-num pj-eyebrow">CUSTOMER INFO</span>
                             <h2>고객사 상세 정보</h2>
                         </div>
                     </div>
@@ -247,30 +246,30 @@ function ProjectDetail(props) {
                 </section>
 
                 {/* 프로젝트 진행 현황 - 현재는 기존 목록과 동일하게 임시 80% */}
-                <section className="pd-card">
-                    <div className="pd-card-header">
+                <section className="pd-card pj-card">
+                    <div className="pd-card-header pj-card-heading">
                         <div>
-                            <span className="pd-section-num">PROGRESS</span>
+                            <span className="pd-section-num pj-eyebrow">PROGRESS</span>
                             <h2>프로젝트 진행 현황</h2>
                         </div>
                         <strong className="pd-progress-percent">80%</strong>
                     </div>
-                    <div className="pd-progress-track">
-                        <div className="pd-progress-fill" style={{ width: '80%' }} />
+                    <div className="pd-progress-track pj-progress-track">
+                        <div className="pd-progress-fill pj-progress-fill" style={{ width: '80%' }} />
                     </div>
 
                     <div className="pd-status-section">
                         <h3>프로젝트 상태 변경</h3>
 
                         <div className="pd-status-grid">
-                            <div className="pd-status-field">
+                            <div className="pd-status-field pj-field">
                                 <label>현재 상태</label>
                                 <div className="pd-current-status">
                                     {getProjectStatus(selectedProject)}
                                 </div>
                             </div>
 
-                            <div className="pd-status-field">
+                            <div className="pd-status-field pj-field">
                                 <label htmlFor="pd-status-select">변경할 상태</label>
                                 <select
                                     id="pd-status-select"
@@ -285,7 +284,7 @@ function ProjectDetail(props) {
                         </div>
 
                         <button
-                            className="pd-status-save"
+                            className="pd-status-save pj-btn pj-primary"
                             onClick={saveStatus}
                         >
                             상태 변경
@@ -295,10 +294,10 @@ function ProjectDetail(props) {
                 </section>
 
                 {/* 프로젝트 변경 이력 */}
-                <section className="pd-card">
-                    <div className="pd-card-header">
+                <section className="pd-card pj-card">
+                    <div className="pd-card-header pj-card-heading">
                         <div>
-                            <span className="pd-section-num">PROJECT HISTORY</span>
+                            <span className="pd-section-num pj-eyebrow">PROJECT HISTORY</span>
                             <h2>프로젝트 변경 이력</h2>
                         </div>
                     </div>
@@ -333,10 +332,10 @@ function ProjectDetail(props) {
                 </section>
 
                 {/* 연결된 견적 내역 */}
-                <section className="pd-card">
-                    <div className="pd-card-header">
+                <section className="pd-card pj-card">
+                    <div className="pd-card-header pj-card-heading">
                         <div>
-                            <span className="pd-section-num">QUOTATION & TASKS</span>
+                            <span className="pd-section-num pj-eyebrow">QUOTATION & TASKS</span>
                             <h2>연결된 견적 및 세부 작업</h2>
                         </div>
                     </div>
@@ -353,10 +352,10 @@ function ProjectDetail(props) {
                                     <span>고객사</span>
                                     <strong>{customer?.companyName ?? `고객 ID ${selectedQuotation.customerId}`}</strong>
                                 </div>
-                                <span className="pd-approved">{selectedQuotation.status}</span>
+                                <span className="pd-approved pj-approved pj-badge">{selectedQuotation.status}</span>
                             </div>
-                            <div className="pd-table-wrap">
-                                <table className="pd-quotation-table">
+                            <div className="pd-table-wrap pj-quote-wrap">
+                                <table className="pd-quotation-table pj-quote-table">
                                     <thead>
                                         <tr>
                                             <th>상품명</th>
@@ -375,7 +374,7 @@ function ProjectDetail(props) {
                                     </tbody>
                                 </table>
                             </div>
-                            <div className="pd-quotation-total">
+                            <div className="pd-quotation-total pj-quote-total">
                                 <span>총 견적 금액</span>
                                 <strong>{formatPrice(quotationTotal)}</strong>
                             </div>
