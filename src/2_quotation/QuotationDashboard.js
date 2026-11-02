@@ -1,9 +1,23 @@
 import React from "react";
 import { Link, useNavigate } from "react-router-dom";
 
-function QuotationDashboard() {
+function QuotationDashboard({quotations}) {
 
     const navi = useNavigate();
+
+    const totalCount = quotations.length;
+
+    const pendingCount = quotations.filter(
+        (q) => q.status === "승인 대기"
+    ).length;
+
+    const approvedCount = quotations.filter(
+        (q) => q.status === "승인 완료"
+    ).length;
+
+    const rejectCount = quotations.filter(
+    (q) => q.status === "반려"
+    ).length;
 
     return (
         <div className="quotation-menu">
