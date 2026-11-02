@@ -1,31 +1,29 @@
-
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import "./CommunityWrite.css";
 
-
-// 공지사항 글쓰기 페이지
+// 공지사항 작성
 function NoticeWritePage({ posts, setPosts }) {
 
     const navigate = useNavigate();
 
-    // 사용자가 입력한 값들을 각각 기억함
+    // 입력 상태
     const [type, setType] = useState("normal");
     const [title, setTitle] = useState("");
     const [writer, setWriter] = useState("");
     const [content, setContent] = useState("");
 
-    // 등록하기 버튼을 눌렀을 때 실행
+    // 공지 등록
     const addPost = () => {
 
-        // 빈칸이 하나라도 있으면 등록하지 않음
+        // 필수 입력 검사
         if (!title.trim() || !writer.trim() || !content.trim()) {
             alert("제목, 작성자, 내용을 모두 입력하세요.");
             return;
         }
 
-        // 새 게시글을 만듦
-        // Date.now()는 현재 시간을 숫자로 가져옴
+        // 신규 공지사항
+        // 시간 기반 ID
         const newPost = {
             id: Date.now(),
             type: type,
@@ -35,14 +33,14 @@ function NoticeWritePage({ posts, setPosts }) {
             date: new Date().toLocaleDateString("ko-KR")
         };
 
-        // 기존 공지사항 뒤에 새 공지사항 추가
+        // 공지 목록 갱신
         const newPosts = [...posts, newPost];
 
-        // 화면과 브라우저에 저장
+        // 상태·로컬 저장
         setPosts(newPosts);
         localStorage.setItem("noticePosts", JSON.stringify(newPosts));
 
-        // 작성이 끝나면 공지사항 목록으로 이동
+        // 목록 이동
         navigate("/?page=notice");
     };
 
@@ -57,7 +55,7 @@ function NoticeWritePage({ posts, setPosts }) {
 
                 <div className="community-write">
 
-                    {/* normal은 일반 공지, important는 중요공지 */}
+                    {/* 공지 유형 선택 */}
                     <label>공지 유형</label>
                     <select
                         className="notice-type-select"

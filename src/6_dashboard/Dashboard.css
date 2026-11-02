@@ -1,7 +1,5 @@
 
-/* ==========================
-   대시보드 전체
-========================== */
+/* 대시보드 전체 */
 .dashboard {
     background-color: #f5f7fa;
     min-height: 100vh;
@@ -16,10 +14,7 @@
     margin: 0 0 25px;
 }
 
-
-/* ==========================
-   상단 중요공지
-========================== */
+/* 상단 중요공지 */
 .dashboard-banner {
     display: flex;
     align-items: center;
@@ -59,21 +54,18 @@
     text-decoration: none;
 }
 
-
-/* ==========================
-   대시보드 배치
-========================== */
+/* 대시보드 배치 */
 .dashboard-grid {
     display: grid;
 
-    /* 오늘의 일정은 360px 유지 */
+    /* 일정 영역 · 360px */
     grid-template-columns: minmax(0, 1fr) 360px;
 
     gap: 20px;
     align-items: start;
 }
 
-/* 공지사항과 커뮤니티를 별도 칸으로 표시 */
+/* 게시판 2열 */
 .dashboard-left {
     display: grid;
     grid-template-columns: repeat(
@@ -93,10 +85,7 @@
     align-self: start;
 }
 
-
-/* ==========================
-   공통 카드
-========================== */
+/* 공통 카드 */
 .dashboard-card {
     background: white;
     border: 1px solid #e2e5e8;
@@ -121,16 +110,13 @@
     border-bottom: 1px solid #eee;
 }
 
-
-/* ==========================
-   프로젝트 관리 카드
-========================== */
+/* 프로젝트 관리 카드 */
 .dashboard-project-card {
     position: relative;
     margin-bottom: 20px;
 }
 
-/* 빈 공간 클릭 시 프로젝트 목록으로 이동 */
+/* 프로젝트 목록 클릭 */
 .dashboard-project-cover {
     position: absolute;
     inset: 0;
@@ -143,7 +129,7 @@
     outline-offset: 2px;
 }
 
-/* 각 프로젝트는 자신의 상세 링크를 사용 */
+/* 프로젝트 상세 클릭 */
 .dashboard .dashboard-project-card .dashboard-project-link {
     position: relative;
     z-index: 2;
@@ -155,10 +141,7 @@
     text-decoration: none;
 }
 
-
-/* ==========================
-   오늘의 일정
-========================== */
+/* 오늘의 일정 */
 .schedule-card {
     background-color: #ebf1ee;
     min-height: 200px;
@@ -186,7 +169,7 @@
     margin: 4px 0 8px;
 }
 
-/* 달력의 요일과 날짜를 7칸으로 표시 */
+/* 달력 · 7열 */
 .dashboard .dashboard-right .schedule-card .today-weekdays,
 .dashboard .dashboard-right .schedule-card .today-days {
     display: grid;
@@ -197,7 +180,7 @@
     align-content: start;
 }
 
-/* 기존 날짜 높이 46px 유지 */
+/* 날짜 높이 · 46px */
 .dashboard .dashboard-right .schedule-card .today-days {
     grid-template-rows: none;
     grid-auto-rows: 46px;
@@ -240,10 +223,7 @@
     line-height: 10px;
 }
 
-
-/* ==========================
-   공지사항과 커뮤니티 제목
-========================== */
+/* 공지사항과 커뮤니티 제목 */
 .dashboard-community-heading {
     display: block;
     padding: 8px;
@@ -262,10 +242,7 @@
     background-color: #e9f0f4;
 }
 
-
-/* ==========================
-   최근 게시글
-========================== */
+/* 최근 게시글 */
 .dashboard-post {
     margin: 0;
     padding: 7px 0;
@@ -315,10 +292,7 @@
     text-decoration: underline;
 }
 
-
-/* ==========================
-   작은 화면
-========================== */
+/* 작은 화면 */
 @media (max-width: 800px) {
     .dashboard {
         padding: 15px;
@@ -333,5 +307,54 @@
     .dashboard .dashboard-right {
         width: 360px;
         max-width: 100%;
+    }
+}
+
+/* 넓은 화면 · 프로젝트/일정 2열 */
+@media (min-width: 1400px) {
+    .dashboard {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 360px;
+        column-gap: 20px;
+        row-gap: 20px;
+        align-content: start;
+    }
+
+    /* 제목·공지 전체 너비 */
+    .dashboard > h1,
+    .dashboard > .dashboard-banner {
+        grid-column: 1 / -1;
+    }
+
+    .dashboard > h1 {
+        margin-bottom: 5px;
+    }
+
+    .dashboard > .dashboard-banner {
+        margin-bottom: 0;
+    }
+
+    /* 프로젝트 좌측 상단 */
+    .dashboard > .dashboard-project-card {
+        grid-column: 1;
+        grid-row: 3;
+        margin-bottom: 0;
+    }
+
+    /* 그리드 하위 배치 */
+    .dashboard > .dashboard-grid {
+        display: contents;
+    }
+
+    /* 게시판 좌측 하단 */
+    .dashboard > .dashboard-grid > .dashboard-left {
+        grid-column: 1;
+        grid-row: 4;
+    }
+
+    /* 일정 우측 상단 */
+    .dashboard > .dashboard-grid > .dashboard-right {
+        grid-column: 2;
+        grid-row: 3 / span 2;
     }
 }

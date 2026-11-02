@@ -1,11 +1,10 @@
-
 const LIVE_KEY = "moduProjectsFromOriginal";
 const OLD_DASHBOARD_KEY = "moduProjects";
 const CHANGE_EVENT = "moduProjectsChanged";
 const ORIGINAL_ROUTE_KEY = "moduProjectsOriginalRoute";
 const PENDING_DETAIL_KEY = "moduProjectsPendingDetail";
 
-// 기존에 사용하던 이름도 유지
+// 기존 키 호환
 export const projectKey = OLD_DASHBOARD_KEY;
 
 let observer = null;
@@ -13,7 +12,7 @@ let lastInstance = null;
 let pendingName = null;
 let openingDetail = false;
 
-// 프로젝트 관리에서 확인한 실제 목록을 가져옴
+// 프로젝트 목록 읽기
 export function readProjects() {
     try {
         const saved = localStorage.getItem(LIVE_KEY);
@@ -23,8 +22,8 @@ export function readProjects() {
             if (Array.isArray(rows)) return rows;
         }
 
-        // 처음 원본 프로젝트 관리에 방문하기 전에는
-        // 이전 대시보드의 저장 목록을 임시로 표시
+        // 최초 방문 전
+        // 기존 데이터 대체
         const previous = localStorage.getItem(OLD_DASHBOARD_KEY);
         const rows = previous ? JSON.parse(previous) : [];
 
@@ -38,7 +37,7 @@ export function loadProjects() {
     return readProjects();
 }
 
-// 원본에서 확인한 프로젝트를 저장
+// 실제 프로젝트 저장
 function saveActualProjects(projects) {
     if (!Array.isArray(projects)) return;
 
@@ -52,11 +51,11 @@ function saveActualProjects(projects) {
         localStorage.setItem(LIVE_KEY, serialized);
         window.dispatchEvent(new Event(CHANGE_EVENT));
     } catch {
-        // 저장이 불가능한 환경에서는 다른 기능을 유지
+        // 저장 오류 처리
     }
 }
 
-// React가 화면 요소에 연결한 내부 상태 참조
+// React Fiber 참조
 function getFiber(node) {
     if (!node) return null;
 
@@ -67,7 +66,7 @@ function getFiber(node) {
     return key ? node[key] : null;
 }
 
-// 실제 프로젝트 관리 화면의 ProjectPage 상태 찾기
+// 프로젝트 컴포넌트 탐색
 function getOriginalProjectFiber() {
     const element = document.querySelector(
         ".project-app, .pf-page, .pd-page, .pe-page"
@@ -92,7 +91,7 @@ function getOriginalProjectFiber() {
     return null;
 }
 
-// 같은 프로젝트 관리 컴포넌트인지 확인
+// 컴포넌트 일치 확인
 function sameInstance(a, b) {
     return !!a && !!b && (
         a === b ||
@@ -101,7 +100,7 @@ function sameInstance(a, b) {
     );
 }
 
-// 화면에 보이는 개수 및 이름과 비교하여 최신 상태 선택
+// 프로젝트 상태 비교
 function listScore(list) {
     if (!Array.isArray(list)) return -1;
 
@@ -131,7 +130,7 @@ function listScore(list) {
         }
     }
 
-    // 상세 화면에서 변경한 상태도 확인
+    // 상세 상태 비교
     const detailNumber =
         document.querySelector(".pd-number")?.textContent || "";
 
@@ -156,7 +155,7 @@ function listScore(list) {
     return score;
 }
 
-// React의 이전 상태와 최신 상태 중 현재 화면에 맞는 값 선택
+// 최신 상태 선택
 function getActualState(fiber) {
     const candidates = [fiber, fiber?.alternate]
         .filter(Boolean)
@@ -174,7 +173,7 @@ function getActualState(fiber) {
     return candidates[0] || null;
 }
 
-// 대시보드에서 선택한 프로젝트의 기존 상세 버튼 실행
+// 프로젝트 상세 열기
 function tryOpenRequestedDetail() {
     const requested =
         pendingName ||
@@ -202,7 +201,7 @@ function tryOpenRequestedDetail() {
 
         openingDetail = true;
 
-        // 원본 프로젝트 관리에 있는 보기 버튼 사용
+        // 기존 상세 버튼
         viewButton.click();
 
         openingDetail = false;
@@ -210,13 +209,13 @@ function tryOpenRequestedDetail() {
     }
 }
 
-// 프로젝트 관리에서 변경된 목록을 감지
+// 프로젝트 변경 감지
 function scanOriginalProjectPage() {
     const fiber = getOriginalProjectFiber();
 
     if (!fiber) return;
 
-    // 실제 프로젝트 관리 주소 기억
+    // 프로젝트 경로 저장
     try {
         const route =
             window.location.pathname +
@@ -224,7 +223,7 @@ function scanOriginalProjectPage() {
 
         localStorage.setItem(ORIGINAL_ROUTE_KEY, route);
     } catch {
-        // 주소 확인에 실패해도 프로젝트 목록은 계속 읽음
+        // 경로 저장 오류
     }
 
     const state = getActualState(fiber);
@@ -237,8 +236,8 @@ function scanOriginalProjectPage() {
     lastInstance = fiber;
 
     if (isNewMount) {
-        // 원본 화면을 나갔다 다시 들어왔을 때
-        // 기존 useState가 초기값으로 돌아가지 않게 복원
+        // 컴포넌트 재진입
+        // 프로젝트 상태 복원
         try {
             const saved = localStorage.getItem(LIVE_KEY);
 
@@ -256,18 +255,18 @@ function scanOriginalProjectPage() {
                 }
             }
         } catch {
-            // 이전 저장 데이터가 없으면 원본 사용
+            // 저장 데이터 예외
         }
     }
 
-    // 새 프로젝트 등록, 수정, 삭제 내용 반영
+    // 프로젝트 상태 반영
     saveActualProjects(projects);
 
-    // 대시보드에서 선택한 상세 화면 열기
+    // 요청 상세 열기
     tryOpenRequestedDetail();
 }
 
-// 원본 프로젝트 관리의 변경 내용을 계속 관찰
+// 프로젝트 관찰자
 export function installProjectObserver() {
     if (
         typeof window === "undefined" ||
@@ -308,7 +307,7 @@ export function installProjectObserver() {
     }
 }
 
-// 사이드바의 실제 프로젝트 관리 메뉴로 이동
+// 프로젝트 메뉴 이동
 export function openRealProjectPage(project) {
     pendingName = project ? String(project.name) : null;
 
@@ -344,7 +343,7 @@ export function openRealProjectPage(project) {
         return true;
     }
 
-    // 메뉴를 찾지 못하면 이전에 확인한 실제 주소 사용
+    // 저장 경로 대체
     try {
         const route = localStorage.getItem(ORIGINAL_ROUTE_KEY);
 
@@ -359,7 +358,7 @@ export function openRealProjectPage(project) {
             return true;
         }
     } catch {
-        // 사용할 주소가 없다면 이동하지 않음
+        // 경로 없음
     }
 
     return false;

@@ -1,26 +1,26 @@
 export const projectKey = "moduProjects"
 
-//기존 프로젝트 관리에 있던 기본 프로젝트
+// 프로젝트 저장 키
 export function loadProjects(){
     try{
-        //브라우저에 저장된 프로젝트 목록 가져오기
+        // 프로젝트 불러오기
         const saved = localStorage.getItem(projectKey)
 
-        //등록된 프로젝트가 없으면 빈 배열 사용
+        // 빈 데이터 처리
         if(!saved){
             return[]
         }
 
-        //저장된 문자열을 배열로 변경
+        // JSON 변환
         const data =JSON.parse(saved)
 
-        //올바른 배열이라면 그대로 사용
+        // 배열 확인
         if(Array.isArray(data)){
             return data
         }
         return[]
     }catch{
-        //저장된 데이터를 읽을 수 없으면 빈 배열 사용
+        // 읽기 오류 처리
         return[]
     }
 }

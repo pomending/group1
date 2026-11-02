@@ -1,15 +1,15 @@
 
-/* 공통 커뮤니티 디자인 가져오기 */
+/* 공통 게시판 스타일 */
 @import "./Community.css";
 
-/* 글쓰기 전체 영역 */
+/* 글쓰기 */
 .community-write {
     display: flex;
     flex-direction: column;
     gap: 12px;
 }
 
-/* 제목, 작성자, 내용 라벨 */
+/* 입력 라벨 */
 .community-write label {
     font-size: 14px;
     font-weight: bold;
@@ -17,7 +17,7 @@
     margin-top: 10px;
 }
 
-/* 제목과 작성자 입력창 */
+/* 텍스트 입력 */
 .community-write input {
     width: 100%;
     padding: 13px;
@@ -28,7 +28,7 @@
     background-color: white;
 }
 
-/* 내용 입력창 */
+/* 본문 입력 */
 .community-write textarea {
     width: 100%;
     min-height: 300px;
@@ -41,20 +41,20 @@
     background-color: white;
 }
 
-/* 입력창을 선택했을 때 */
+/* 입력 포커스 */
 .community-write input:focus,
 .community-write textarea:focus {
     outline: none;
     border-color: #527c94;
 }
 
-/* 입력 안내 문구 */
+/* 플레이스홀더 */
 .community-write input::placeholder,
 .community-write textarea::placeholder {
     color: #aaa;
 }
 
-/* 등록·취소 버튼 영역 */
+/* 등록·취소 */
 .community-write .community-actions {
     margin-top: 20px;
 }

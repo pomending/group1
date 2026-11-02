@@ -1,5 +1,5 @@
 
-/* 커뮤니티 공통 디자인 */
+/* 공통 게시판 스타일 */
 @import "./Community.css";
 
 /* 게시글 제목 */
@@ -9,7 +9,7 @@
     margin: 0 0 15px;
 }
 
-/* 게시글 작성자와 날짜 */
+/* 작성자·작성일 */
 .community-info {
     display: flex;
     align-items: center;
@@ -20,9 +20,9 @@
     font-size: 13px;
 }
 
-/* 게시글 본문 - 불필요한 높이 제거 */
+/* 본문 최소 높이 */
 .community .community-board .community-content {
-    min-height: 0;
+    min-height: 180px;
     height: auto;
     margin: 0;
     padding: 15px 0;
@@ -33,7 +33,7 @@
     overflow-wrap: anywhere;
 }
 
-/* 댓글 전체 영역 */
+/* 댓글 영역 */
 .detail-comments {
     margin: 0;
     padding-top: 15px;
@@ -46,7 +46,7 @@
     margin: 0 0 12px;
 }
 
-/* 개별 댓글 사각형 */
+/* 댓글 카드 */
 .community .community-board .detail-comment-item {
     display: block;
     width: 100%;
@@ -62,7 +62,7 @@
     box-sizing: border-box;
 }
 
-/* 댓글 작성자, 날짜, 삭제 */
+/* 댓글 정보 */
 .community .community-board .detail-comment-info {
     display: flex;
     align-items: center;
@@ -84,7 +84,7 @@
     font-size: 12px;
 }
 
-/* 댓글 삭제 버튼 */
+/* 댓글 삭제 */
 .detail-comment-info button {
     margin-left: auto;
     padding: 0;
@@ -98,7 +98,7 @@
     color: #d9534f;
 }
 
-/* 댓글 내용 - 기본 여백 제거 */
+/* 댓글 본문 */
 .community .community-board .detail-comment-item p {
     margin: 0;
     padding: 0;
@@ -112,7 +112,7 @@
     overflow-wrap: anywhere;
 }
 
-/* 댓글이 없을 때 */
+/* 빈 댓글 */
 .detail-comment-empty {
     color: #999;
     font-size: 13px;
@@ -120,7 +120,7 @@
     padding: 10px 0;
 }
 
-/* 댓글 작성 영역 */
+/* 댓글 입력 */
 .detail-comment-write {
     display: flex;
     flex-direction: column;
@@ -152,7 +152,7 @@
     resize: vertical;
 }
 
-/* 댓글 등록 버튼 */
+/* 댓글 등록 */
 .detail-comment-write button {
     align-self: flex-end;
     padding: 10px 20px;
@@ -168,7 +168,7 @@
     background-color: #38566b;
 }
 
-/* 게시글 하단 버튼 */
+/* 게시글 버튼 */
 .community .community-actions {
     display: flex;
     justify-content: flex-end;
@@ -192,5 +192,86 @@
 
     .detail-comment-info {
         gap: 12px;
+    }
+}
+
+/* 상단 상세 버튼 */
+.community .community-board .community-info {
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.detail-post-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 18px;
+}
+
+.community .community-board .detail-top-actions {
+    margin: 0 0 0 auto;
+    padding: 0;
+    border: 0;
+    flex-wrap: wrap;
+    gap: 7px;
+}
+
+.community .community-board .detail-top-actions .community-button,
+.community .community-board .detail-top-actions .community-cancel {
+    padding: 6px 11px;
+    font-size: 12px;
+    white-space: nowrap;
+}
+
+/* 하단 글 목록 */
+.detail-post-list {
+    margin-top: 24px;
+    padding-top: 18px;
+    border-top: 1px solid #e2e5e8;
+}
+
+.detail-post-list-scroll {
+    overflow-x: auto;
+    border: 1px solid #e2e5e8;
+    border-radius: 6px;
+}
+
+.community-board .detail-post-list-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.community-board .detail-post-list-table th,
+.community-board .detail-post-list-table td {
+    padding: 11px 12px;
+    font-size: 13px;
+    text-align: center;
+}
+
+.community-board .detail-post-list-table td.detail-post-list-title {
+    text-align: left;
+    overflow-wrap: anywhere;
+}
+
+.detail-post-list-title a {
+    color: #263a49;
+    text-decoration: none;
+}
+
+.detail-post-list-title a:hover {
+    text-decoration: underline;
+}
+
+.community-board .detail-post-list-table .detail-post-list-current {
+    background: #eef4f8;
+}
+
+@media (max-width: 700px) {
+    .community .community-board .detail-top-actions {
+        margin-left: 0;
+    }
+
+    .community-board .detail-post-list-table {
+        min-width: 540px;
     }
 }
