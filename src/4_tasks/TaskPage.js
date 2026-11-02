@@ -7,8 +7,9 @@ import {
   quotations,
   customers,
   employees,
-  initialProjects,
 } from "../data/mockData";
+
+import { useERP } from "../context/ERPContext";
 
 const WORK_STATUSES = [
   "제작중",
@@ -16,16 +17,18 @@ const WORK_STATUSES = [
   "포장중",
   "등록완료",
   "배송",
-  "취소",
-  "교환",
-  "반품",
+ 
 ];
 
 
 function TaskPage() {
+
+  // ERPContext의 실제 프로젝트 목록 사용
+  const { projects = [] } = useERP();
+
   const [tasks, setTasks] = useState(() =>
-    initialProjects.map((project) => {
-      //프로젝트 데이터를 작업 데이터로 변환
+    projects.map((project) => {
+
       const quotation = quotations.find(
         (item) => item.id === project.quotationId
       );
@@ -53,6 +56,8 @@ function TaskPage() {
       };
     })
   );
+
+  // 이하 기존 코드 유지
 
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("전체");
@@ -192,6 +197,9 @@ const requestDesignRevision = (taskId) => {
 
 
   return (
+
+   
+
     <div className="task-page">
       <div className="task-header">
         <div>
@@ -427,6 +435,61 @@ const requestDesignRevision = (taskId) => {
 
             <div className="modal-status">
 
+
+
+{/* 디자인 작업 단계 */}
+<div className="design-step-box">
+  <div className="design-step-title">
+    <span>🎨</span>
+    <h3>디자인 작업 단계</h3>
+  </div>
+
+  <div className="design-steps">
+    <div className="step completed">
+      <div className="step-circle">✓</div>
+      <p>디자인 요청 접수</p>
+      <span>11/01</span>
+    </div>
+
+    <div className="step-line active"></div>
+
+    <div className="step completed">
+      <div className="step-circle">✓</div>
+      <p>디자인 기획</p>
+      <span>11/03</span>
+    </div>
+
+    <div className="step-line active"></div>
+
+    <div className="step current">
+      <div className="step-circle">3</div>
+      <p>시안 검토</p>
+      <span>11/05</span>
+    </div>
+
+    <div className="step-line"></div>
+
+    <div className="step">
+      <div className="step-circle">4</div>
+      <p>디자인 수정</p>
+      <span>11/08</span>
+    </div>
+
+    <div className="step-line"></div>
+
+    <div className="step">
+      <div className="step-circle">5</div>
+      <p>최종 파일 준비</p>
+      <span>11/12</span>
+    </div>
+  </div>
+</div>
+
+
+
+
+            
+
            {/* 제품 디자인 관리 */}
 <div className="design-management">
   <div className="design-section-title">
@@ -518,7 +581,10 @@ const requestDesignRevision = (taskId) => {
       ))
     )}
   </div>
-</div>
+</div> {/* 취소 / 교환 / 반품 독립 관리 */}
+<AfterSalesManagement projects={projects} />
+
+
 
 
 
@@ -554,5 +620,363 @@ const requestDesignRevision = (taskId) => {
     </div>
   );
 }
+
+
+
+const AFTER_SALES_CONFIG = {
+  cancel: {
+    title: "취소 관리",
+    key: "erp_cancellations",
+    reasons: ["고객 요청", "주문 오류", "제작 불가", "기타"],
+    statuses: ["취소 접수", "취소 확인중", "취소 승인", "취소 완료"],
+  },
+  exchange: {
+    title: "교환 관리",
+    key: "erp_exchanges",
+    reasons: ["제품 불량", "제품 파손", "오배송", "고객 요청", "기타"],
+    statuses: ["교환 접수", "제품 회수중", "제품 검수중", "재발송", "교환 완료"],
+  },
+  return: {
+    title: "반품 관리",
+    key: "erp_returns",
+    reasons: ["제품 불량", "제품 파손", "고객 변심", "오배송", "기타"],
+    statuses: ["반품 접수", "제품 회수중", "반품 검수중", "환불 처리", "반품 완료"],
+  },
+};
+
+function AfterSalesManagement({ projects }) {
+  const [activeType, setActiveType] = useState("cancel");
+
+  const [records, setRecords] = useState(() => {
+    const result = {};
+
+    Object.entries(AFTER_SALES_CONFIG).forEach(([type, config]) => {
+      try {
+        result[type] = JSON.parse(
+          localStorage.getItem(config.key) || "[]"
+        );
+        if (!Array.isArray(result[type])) result[type] = [];
+      } catch {
+        result[type] = [];
+      }
+    });
+
+    return result;
+  });
+
+  const [form, setForm] = useState({
+    projectId: "",
+    reason: "",
+    description: "",
+  });
+
+  const [search, setSearch] = useState("");
+
+  const config = AFTER_SALES_CONFIG[activeType];
+  const currentRecords = records[activeType] || [];
+
+  const updateRecords = (type, nextRecords) => {
+    setRecords(prev => ({
+      ...prev,
+      [type]: nextRecords,
+    }));
+
+    localStorage.setItem(
+      AFTER_SALES_CONFIG[type].key,
+      JSON.stringify(nextRecords)
+    );
+  };
+
+  // 업무 등록
+  const addRecord = (e) => {
+    e.preventDefault();
+
+    if (!form.projectId) {
+      alert("프로젝트를 선택해주세요.");
+      return;
+    }
+
+    if (!form.reason) {
+      alert("처리 사유를 선택해주세요.");
+      return;
+    }
+
+    const project = projects.find(
+      p => String(p.id) === String(form.projectId)
+    );
+
+    if (!project) {
+      alert("프로젝트를 찾을 수 없습니다.");
+      return;
+    }
+
+    const newRecord = {
+      id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      projectId: project.id,
+      projectName: project.name,
+      reason: form.reason,
+      description: form.description,
+      status: config.statuses[0],
+      createdAt: new Date().toISOString(),
+    };
+
+    updateRecords(activeType, [
+      ...currentRecords,
+      newRecord,
+    ]);
+
+    setForm({
+      projectId: "",
+      reason: "",
+      description: "",
+    });
+
+    alert(`${config.title} 등록이 완료되었습니다.`);
+  };
+
+  // 처리 상태 변경
+  const changeRecordStatus = (recordId, status) => {
+    const nextRecords = currentRecords.map(record =>
+      record.id === recordId
+        ? { ...record, status }
+        : record
+    );
+
+    updateRecords(activeType, nextRecords);
+  };
+
+  // 업무 삭제
+  const deleteRecord = (recordId) => {
+    if (!window.confirm("해당 관리 내역을 삭제하시겠습니까?")) {
+      return;
+    }
+
+    updateRecords(
+      activeType,
+      currentRecords.filter(record => record.id !== recordId)
+    );
+  };
+
+  const filteredRecords = currentRecords.filter(record =>
+    `${record.projectName} ${record.reason} ${record.description}`
+      .toLowerCase()
+      .includes(search.toLowerCase())
+  );
+
+  return (
+    <section className="after-sales">
+
+      <div className="after-sales-heading">
+        <div>
+          <p className="task-eyebrow">AFTER SALES MANAGEMENT</p>
+          <h2>사후 처리 관리</h2>
+          <p>취소, 교환, 반품 업무를 독립적으로 관리합니다.</p>
+        </div>
+      </div>
+
+      {/* 독립 관리 메뉴 */}
+      <div className="after-sales-tabs">
+
+        <button
+          type="button"
+          className={activeType === "cancel" ? "active cancel-tab" : ""}
+          onClick={() => setActiveType("cancel")}
+        >
+          취소 관리
+          <strong>{records.cancel.length}건</strong>
+        </button>
+
+        <button
+          type="button"
+          className={activeType === "exchange" ? "active exchange-tab" : ""}
+          onClick={() => setActiveType("exchange")}
+        >
+          교환 관리
+          <strong>{records.exchange.length}건</strong>
+        </button>
+
+        <button
+          type="button"
+          className={activeType === "return" ? "active return-tab" : ""}
+          onClick={() => setActiveType("return")}
+        >
+          반품 관리
+          <strong>{records.return.length}건</strong>
+        </button>
+
+      </div>
+
+      {/* 업무 등록 */}
+      <div className="after-sales-form">
+
+        <h3>{config.title} 등록</h3>
+
+        <form onSubmit={addRecord}>
+
+          <div className="after-sales-fields">
+
+            <label>
+              프로젝트 선택
+
+              <select
+                value={form.projectId}
+                onChange={e => setForm(prev => ({
+                  ...prev,
+                  projectId: e.target.value,
+                }))}
+              >
+                <option value="">프로젝트를 선택하세요</option>
+
+                {projects.map(project => (
+                  <option key={project.id} value={project.id}>
+                    {project.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label>
+              {activeType === "cancel"
+                ? "취소 사유"
+                : activeType === "exchange"
+                ? "교환 사유"
+                : "반품 사유"}
+
+              <select
+                value={form.reason}
+                onChange={e => setForm(prev => ({
+                  ...prev,
+                  reason: e.target.value,
+                }))}
+              >
+                <option value="">사유 선택</option>
+
+                {config.reasons.map(reason => (
+                  <option key={reason} value={reason}>
+                    {reason}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+          </div>
+
+          <label className="after-sales-description">
+            상세 내용
+
+            <textarea
+              value={form.description}
+              onChange={e => setForm(prev => ({
+                ...prev,
+                description: e.target.value,
+              }))}
+              placeholder="상세 처리 내용을 입력하세요."
+            />
+          </label>
+
+          <button type="submit" className="after-sales-submit">
+            + {config.title} 등록
+          </button>
+
+        </form>
+      </div>
+
+      {/* 등록 내역 */}
+      <div className="after-sales-list">
+
+        <div className="after-sales-list-heading">
+          <h3>{config.title} 목록</h3>
+
+          <span>{filteredRecords.length}건</span>
+        </div>
+
+        <input
+          type="text"
+          className="after-sales-search"
+          placeholder="프로젝트명 또는 처리 사유 검색"
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+        />
+
+        <div className="after-sales-table-wrap">
+
+          <table className="after-sales-table">
+
+            <thead>
+              <tr>
+                <th>프로젝트</th>
+                <th>처리 사유</th>
+                <th>상세 내용</th>
+                <th>등록일</th>
+                <th>처리 상태</th>
+                <th>관리</th>
+              </tr>
+            </thead>
+
+            <tbody>
+
+              {filteredRecords.map(record => (
+                <tr key={record.id}>
+
+                  <td>
+                    <strong>{record.projectName}</strong>
+                  </td>
+
+                  <td>{record.reason}</td>
+
+                  <td>{record.description || "-"}</td>
+
+                  <td>
+                    {new Date(record.createdAt).toLocaleDateString("ko-KR")}
+                  </td>
+
+                  <td>
+                    <select
+                      value={record.status}
+                      onChange={e =>
+                        changeRecordStatus(record.id, e.target.value)
+                      }
+                    >
+                      {config.statuses.map(status => (
+                        <option key={status} value={status}>
+                          {status}
+                        </option>
+                      ))}
+                    </select>
+                  </td>
+
+                  <td>
+                    <button
+                      type="button"
+                      onClick={() => deleteRecord(record.id)}
+                      className="after-sales-delete"
+                    >
+                      삭제
+                    </button>
+                  </td>
+
+                </tr>
+              ))}
+
+              {filteredRecords.length === 0 && (
+                <tr>
+                  <td colSpan="6" className="empty-state">
+                    등록된 관리 내역이 없습니다.
+                  </td>
+                </tr>
+              )}
+
+            </tbody>
+
+          </table>
+
+        </div>
+
+      </div>
+
+    </section>
+  );
+}
+
 
 export default TaskPage;

@@ -267,7 +267,7 @@
 
 .task-modal {
   width: 100%;
-  max-width: 600px;
+  max-width: 00px;
   max-height: 90vh;
   overflow-y: auto;
   padding: 28px;
@@ -604,3 +604,336 @@
 .design-history-item small {
   color: #8995a9;
 }
+
+
+
+
+/* 사후 처리 관리 */
+.after-sales {
+  margin-top: 32px;
+  padding: 24px;
+  background: #fff;
+  border: 1px solid #e3e9f3;
+  border-radius: 16px;
+}
+
+.after-sales-heading {
+  margin-bottom: 24px;
+}
+
+.after-sales-heading h2 {
+  margin: 5px 0;
+  font-size: 23px;
+}
+
+.after-sales-heading p {
+  color: #8492a8;
+}
+
+.after-sales-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.after-sales-tabs button {
+  padding: 18px;
+  border: 1px solid #e1e7f0;
+  border-radius: 12px;
+  background: #fff;
+  color: #475569;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.after-sales-tabs button.active {
+  border-color: #5279bd;
+  background: #f0f5ff;
+  color: #315b9c;
+}
+
+.after-sales-form,
+.after-sales-list {
+  padding: 22px;
+  margin-top: 20px;
+  border: 1px solid #e5eaf2;
+  border-radius: 12px;
+}
+
+.after-sales-form h3,
+.after-sales-list h3 {
+  margin-top: 0;
+}
+
+.after-sales-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.after-sales-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 14px;
+  color: #475569;
+  margin-bottom: 16px;
+}
+
+.after-sales-form select,
+.after-sales-form textarea {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #dce3ed;
+  border-radius: 8px;
+  background: #fff;
+  box-sizing: border-box;
+}
+
+.after-sales-form textarea {
+  min-height: 90px;
+  resize: vertical;
+}
+
+.after-sales-submit {
+  padding: 12px 22px;
+  background: #315b9c;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.after-sales-list-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.after-sales-search {
+  width: 100%;
+  padding: 12px;
+  margin: 12px 0;
+  border: 1px solid #dce3ed;
+  border-radius: 8px;
+  box-sizing: border-box;
+}
+
+.after-sales-table-wrap {
+  overflow-x: auto;
+}
+
+.after-sales-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 750px;
+}
+
+.after-sales-table th,
+.after-sales-table td {
+  padding: 14px 12px;
+  border-bottom: 1px solid #edf0f5;
+  text-align: left;
+}
+
+.after-sales-table th {
+  background: #f7f9fc;
+  color: #64748b;
+  font-size: 13px;
+}
+
+.after-sales-table select {
+  padding: 8px;
+  border: 1px solid #dce3ed;
+  border-radius: 7px;
+}
+
+.after-sales-delete {
+  border: none;
+  background: #fff0f0;
+  color: #d34b4b;
+  padding: 8px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+@media (max-width: 700px) {
+  .after-sales-fields {
+    grid-template-columns: 1fr;
+  }
+
+  .after-sales-tabs {
+    gap: 6px;
+  }
+
+  .after-sales-tabs button {
+    padding: 12px 7px;
+    flex-direction: column;
+    gap: 8px;
+  }
+}
+
+
+
+/* =========================
+   디자인 작업 단계
+========================= */
+
+.design-step-box {
+  margin-top: 24px;
+  padding: 24px 20px;
+  background: #ffffff;
+  border: 1px solid #e3e7f0;
+  border-radius: 12px;
+}
+
+.design-step-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 28px;
+}
+
+.design-step-title h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: #26364d;
+}
+
+.design-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 28px;
+  height: 28px;
+
+  background: #f0ecff;
+  color: #6848e8;
+
+  border-radius: 50%;
+}
+
+/* 전체 단계 */
+.design-steps {
+  display: flex;
+  align-items: flex-start;
+  width: 100%;
+}
+
+/* 각 단계 */
+.step-item {
+  flex: 1;
+  min-width: 0;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  text-align: center;
+}
+
+/* 동그라미 */
+.step-circle {
+  position: relative;
+  z-index: 2;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 28px;
+  height: 28px;
+
+  border-radius: 50%;
+
+  background: #dfe3ed;
+  color: #ffffff;
+
+  font-size: 13px;
+  font-weight: 700;
+}
+
+/* 단계 이름 */
+.step-item p {
+  margin: 10px 0 5px;
+
+  font-size: 14px;
+  font-weight: 600;
+  color: #667085;
+}
+
+/* 날짜 */
+.step-item span {
+  font-size: 13px;
+  color: #98a2b3;
+}
+
+/* 단계 사이 선 */
+.step-line {
+  flex: 1;
+
+  height: 2px;
+  margin-top: 13px;
+
+  background: #dfe3ed;
+}
+
+/* 완료된 단계 */
+.step-item.completed .step-circle {
+  background: #6848e8;
+}
+
+.step-item.completed p {
+  color: #344054;
+}
+
+/* 완료된 선 */
+.step-line.active {
+  background: #8b72ff;
+}
+
+/* 현재 진행 중인 단계 */
+.step-item.current .step-circle {
+  width: 32px;
+  height: 32px;
+
+  margin-top: -2px;
+
+  background: #ffffff;
+  border: 4px solid #6848e8;
+
+  color: #6848e8;
+}
+
+.step-item.current p,
+.step-item.current span {
+  color: #6848e8;
+  font-weight: 700;
+}
+
+/* 화면이 작을 때 */
+@media (max-width: 700px) {
+  .design-step-box {
+    padding: 20px 10px;
+  }
+
+  .step-item p {
+    font-size: 11px;
+    word-break: keep-all;
+  }
+
+  .step-item span {
+    font-size: 11px;
+  }
+
+  .step-circle {
+    width: 24px;
+    height: 24px;
+  }
+}
+
