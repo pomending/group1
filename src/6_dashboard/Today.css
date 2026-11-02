@@ -1,5 +1,5 @@
 
-/* 일정 카드가 세로로 늘어나지 않도록 설정 */
+/* 일정 카드 높이 */
 .dashboard .dashboard-right .schedule-card {
     height: auto;
     min-height: 0;
@@ -8,7 +8,7 @@
     justify-content: flex-start;
 }
 
-/* 일정 영역 크기 계산 */
+/* 일정 영역 */
 .today-box,
 .today-box * {
     box-sizing: border-box;
@@ -29,7 +29,7 @@
     font-weight: bold;
 }
 
-/* 요일과 날짜를 각각 7칸으로 배치 */
+/* 달력 · 7열 */
 .schedule-card .today-weekdays,
 .schedule-card .today-days {
     display: grid;
@@ -52,7 +52,7 @@
     color: #66717a;
 }
 
-/* 날짜 한 칸의 높이를 60px로 고정 */
+/* 날짜 높이 · 60px */
 .schedule-card .today-days {
     grid-auto-rows: 60px;
     grid-template-rows: none;
@@ -66,7 +66,7 @@
     height: 60px;
 }
 
-/* 날짜 칸 */
+/* 날짜 셀 */
 .today-day {
     padding: 4px 2px;
     border: 1px solid #e2e6ea;
@@ -89,7 +89,7 @@
     color: #273746;
 }
 
-/* 오늘 날짜 강조 */
+/* 오늘 날짜 */
 .today-current {
     background: #e5f0f8;
     border-color: #a8cde4;
@@ -99,13 +99,13 @@
     font-weight: bold;
 }
 
-/* 날짜에 표시할 프로젝트명 */
+/* 프로젝트 제목 */
 .today-project {
     display: block;
     width: 100%;
     min-width: 0;
 
-    /* 긴 글자가 옆 칸에 겹치지 않도록 설정 */
+    /* 제목 넘침 방지 */
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
@@ -120,7 +120,7 @@
     text-align: center;
 }
 
-/* 추가 일정 개수 */
+/* 추가 일정 */
 .today-more {
     display: block;
     text-align: center;
@@ -139,21 +139,21 @@
     font-weight: bold;
 }
 
-/* 오늘 일정이 없을 때 */
+/* 빈 일정 */
 .today-empty {
     font-size: 12px;
     color: #66717a;
     margin: 10px 0 0;
 }
 
-/* 오늘 일정 목록 */
+/* 일정 목록 */
 .today-list {
     margin-top: 6px;
     max-height: 180px;
     overflow-y: auto;
 }
 
-/* 오늘 일정 하나 */
+/* 일정 항목 */
 .today-item {
     display: flex;
     flex-direction: column;
@@ -189,7 +189,7 @@
     overflow-wrap: anywhere;
 }
 
-/* 완료한 일정 */
+/* 완료 일정 */
 .today-done {
     font-size: 11px;
     color: #3c7b61;

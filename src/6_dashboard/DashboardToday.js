@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useERP } from "../context/ERPContext";
@@ -13,25 +12,21 @@ import { createProjectMilestones } from "../5_schedule/ScheduleProjectBridge";
 import { useScheduleHolidays } from "../5_schedule/scheduleHooks";
 import "./Today.css";
 
-
-// 5번 일정 관리가 실제로 사용하는 저장/검증 함수를 그대로 활용합니다.
-// 대시보드에서는 일정을 추가하거나 원본 데이터를 수정하지 않습니다.
+// 일정 관리 연동 · 조회 전용
 function getSchedules() {
     const result = loadSchedules();
     return result.readError ? [] : result.items;
 }
 
-
 function DashboardToday() {
-    // 3번 프로젝트 관리와 같은 ERP 데이터를 읽기만 합니다.
-    // 프로젝트의 시작일/마감일도 5번 일정 관리와 동일하게 표시하기 위함입니다.
+    // 프로젝트 일정 데이터
     const erp = useERP();
     const projects = Array.isArray(erp?.projects) ? erp.projects : [];
 
     const [now, setNow] = useState(() => new Date());
 
     useEffect(() => {
-        // 다른 화면에서 돌아오거나 날짜가 바뀌면 표시를 새로 계산합니다.
+        // 날짜·화면 갱신
         const refresh = () => setNow(new Date());
         const onStorage = (event) => {
             if (event.key === "made-mate-schedules" || event.key === null) {
@@ -63,11 +58,11 @@ function DashboardToday() {
     const firstKey = dateKey(first);
     const lastKey = dateKey(last);
 
-    // 5번 일정 관리와 같은 공휴일 규칙으로 반복 일정을 계산합니다.
+    // 공휴일 규칙
     const holidayInfo = useScheduleHolidays(year);
     const holidays = holidayInfo.year === year ? holidayInfo.dates : {};
 
-    // 종일/여러 날/반복 일정을 원본 일정 관리의 계산 함수를 통해 가져옵니다.
+    // 월간 일정 계산
     const schedules = getSchedules();
     const monthSchedules = expandSchedules(
         schedules,
@@ -76,8 +71,7 @@ function DashboardToday() {
         holidays
     );
 
-    // 5번 달력에 자동 표시되는 프로젝트 시작일·마감일을 동일하게 가져옵니다.
-    // 이 항목들은 저장 일정이 아니며, 원본 프로젝트는 변경하지 않습니다.
+    // 프로젝트 시작·마감일 · 조회 전용
     const projectDates = createProjectMilestones(projects).filter(
         (item) => item.date >= firstKey && item.date <= lastKey
     );
@@ -107,7 +101,7 @@ function DashboardToday() {
     return (
         <div className="today-box">
 
-            {/* 연도와 월: 기존 레이아웃 유지 */}
+            {/* 연도·월 표시 */}
             <div className="today-month">
                 {year}년 {month + 1}월
             </div>
@@ -134,7 +128,7 @@ function DashboardToday() {
                     );
                     const daySchedules = scheduleByDate[currentDate] || [];
 
-                    // 실제 등록된 일정이 있다면 프로젝트 자동 표시보다 우선합니다.
+                    // 실제 일정 우선
                     const firstSchedule = daySchedules.find(
                         (item) => !item.isProjectMilestone
                     ) || daySchedules[0];
@@ -186,12 +180,12 @@ function DashboardToday() {
                             className="today-item"
                             key={String(item.id) + "-" + item.date + "-" + index}
                         >
-                            {/* 5번 일정 관리의 시간 표시: 종일 일정은 '종일' */}
+                            {/* 일정 시간 */}
                             <span className="today-time">
                                 {getScheduleTime(item)}
                             </span>
 
-                            {/* 프로젝트 날짜 항목은 제목 안에 프로젝트명이 포함되어 있음 */}
+                            {/* 프로젝트 일정 제목 */}
                             {item.project && !item.isProjectMilestone && (
                                 <span className="today-name">
                                     {item.project}

@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import "./CommunityDetail.css";
@@ -8,20 +7,28 @@ function NoticeDetailPage({ posts, setPosts, postId }) {
 
     const navigate = useNavigate();
 
-    // 현재 보고 있는 공지사항 찾기
+    // 현재 공지사항
     const post = posts.find(
         (item) => String(item.id) === String(postId)
     );
 
-    // 일반 공지일 때만 댓글을 보여줌
-    // 중요공지라면 false가 됨
+    // 일반 공지 댓글 · 중요공지 제외
     const showComments = post ? post.type === "normal" : false;
 
-    // 댓글 입력값
+    // 하단 공지 목록 · 현재 페이지
+    const sortedPosts = [...posts].sort((a, b) => Number(b.id) - Number(a.id));
+    const initialIndex = sortedPosts.findIndex(item => String(item.id) === String(postId));
+    const [listPage, setListPage] = useState(() => Math.floor(Math.max(0, initialIndex) / 15) + 1);
+    const totalListPages = Math.max(1, Math.ceil(sortedPosts.length / 15));
+    const activeListPage = Math.min(listPage, totalListPages);
+    const listStart = (activeListPage - 1) * 15;
+    const visibleListPosts = sortedPosts.slice(listStart, listStart + 15);
+
+    // 댓글 입력 상태
     const [writer, setWriter] = useState("");
     const [content, setContent] = useState("");
 
-    // 공지사항마다 댓글을 따로 저장
+    // 공지별 댓글 저장
     const commentKey = "noticeComments_" + postId;
 
     const [comments, setComments] = useState(() => {
@@ -36,20 +43,14 @@ function NoticeDetailPage({ posts, setPosts, postId }) {
             return [];
         }
     });
-
-
-    // ==========================
-    // 공지사항 수정
-    // 일반공지 / 중요공지 공통
-    // ==========================
-
+    // 공지사항 수정 · 전체 유형
     const [isEditingPost, setIsEditingPost] = useState(false);
     const [editType, setEditType] = useState("normal");
     const [editTitle, setEditTitle] = useState("");
     const [editWriter, setEditWriter] = useState("");
     const [editContent, setEditContent] = useState("");
 
-    // 현재 공지사항의 내용으로 수정창 열기
+    // 공지 수정 초기값
     const startEditPost = () => {
         if (!post) return;
 
@@ -60,7 +61,7 @@ function NoticeDetailPage({ posts, setPosts, postId }) {
         setIsEditingPost(true);
     };
 
-    // 수정한 공지사항 저장
+    // 공지 수정 저장
     const saveEditPost = (e) => {
         e.preventDefault();
 
@@ -94,17 +95,12 @@ function NoticeDetailPage({ posts, setPosts, postId }) {
         setIsEditingPost(false);
     };
 
-
-    // ==========================
-    // 댓글 수정
-    // 일반공지에서만 가능
-    // ==========================
-
+    // 댓글 수정 · 일반 공지 전용
     const [editingCommentId, setEditingCommentId] = useState(null);
     const [editCommentWriter, setEditCommentWriter] = useState("");
     const [editCommentContent, setEditCommentContent] = useState("");
 
-    // 선택한 댓글의 내용으로 수정창 열기
+    // 댓글 수정 초기값
     const startEditComment = (comment) => {
         if (!showComments) return;
 
@@ -146,11 +142,7 @@ function NoticeDetailPage({ posts, setPosts, postId }) {
         setEditingCommentId(null);
     };
 
-
-    // ==========================
-    // 기존 댓글 등록 기능
-    // ==========================
-
+    // 댓글 등록
     const addComment = (e) => {
         e.preventDefault();
 
@@ -161,7 +153,7 @@ function NoticeDetailPage({ posts, setPosts, postId }) {
             return;
         }
 
-        // 같은 댓글 번호가 생기지 않도록 확인
+        // 댓글 ID 중복 방지
         let newId = Date.now();
 
         for (let i = 0; i < comments.length; i++) {
@@ -189,11 +181,7 @@ function NoticeDetailPage({ posts, setPosts, postId }) {
         setContent("");
     };
 
-
-    // ==========================
-    // 기존 댓글 삭제 기능
-    // ==========================
-
+    // 댓글 삭제
     const delComment = (commentId) => {
 
         if (!showComments) return;
@@ -213,11 +201,7 @@ function NoticeDetailPage({ posts, setPosts, postId }) {
         );
     };
 
-
-    // ==========================
-    // 기존 공지사항 삭제 기능
-    // ==========================
-
+    // 공지사항 삭제
     const deletePost = () => {
 
         if (!window.confirm("공지사항을 삭제하시겠습니까?")) {
@@ -238,7 +222,6 @@ function NoticeDetailPage({ posts, setPosts, postId }) {
         navigate("/?page=notice");
     };
 
-
     return (
         <div className="community">
 
@@ -247,7 +230,7 @@ function NoticeDetailPage({ posts, setPosts, postId }) {
                 {post ? (
                     <div>
 
-                        {/* 수정 중에는 현재 글 대신 입력창 표시 */}
+                        {/* 공지 수정 폼 */}
                         {isEditingPost ? (
 
                             <form
@@ -256,6 +239,13 @@ function NoticeDetailPage({ posts, setPosts, postId }) {
                             >
 
                                 <h1>공지사항 수정</h1>
+
+                                {/* 수정 중 이동·삭제 */}
+                                <div className="community-actions detail-top-actions">
+                                    <Link to="/?page=notice" className="community-cancel">목록으로</Link>
+                                    <Link to="/?page=notice-write" className="community-button">글쓰기</Link>
+                                    <button type="button" className="community-cancel" onClick={deletePost}>삭제</button>
+                                </div>
 
                                 <label htmlFor="notice-edit-type">
                                     공지 유형
@@ -344,11 +334,20 @@ function NoticeDetailPage({ posts, setPosts, postId }) {
                                 <h1>{post.title}</h1>
 
                                 <div className="community-info">
-
-                                    {/* 기존 작성자와 작성일 표시 */}
-                                    <span>작성자: {post.writer}</span>
-                                    <span>작성일: {post.date}</span>
-
+                                    <div className="detail-post-meta">
+                                        <span>작성자: {post.writer}</span>
+                                        <span>작성일: {post.date}</span>
+                                    </div>
+                                    <div className="community-actions detail-top-actions">
+                                        <Link to="/?page=notice" className="community-cancel">목록으로</Link>
+                                        <Link to="/?page=notice-write" className="community-button">글쓰기</Link>
+                                        <button
+                                            type="button"
+                                            className="community-button"
+                                            onClick={startEditPost}
+                                        >수정</button>
+                                        <button type="button" className="community-cancel" onClick={deletePost}>삭제</button>
+                                    </div>
                                 </div>
 
                                 <div
@@ -361,9 +360,8 @@ function NoticeDetailPage({ posts, setPosts, postId }) {
 
                         )}
 
-
-                        {/* 일반 공지일 때만 댓글 표시 */}
-                        {/* 중요공지에서는 댓글 영역을 만들지 않음 */}
+                        {/* 일반 공지 댓글 */}
+                        {/* 중요공지 댓글 제외 */}
                         {showComments && !isEditingPost && (
 
                             <div className="detail-comments">
@@ -375,7 +373,6 @@ function NoticeDetailPage({ posts, setPosts, postId }) {
                                         등록된 댓글이 없습니다.
                                     </p>
                                 )}
-
 
                                 {/* 댓글 목록 */}
                                 {comments.map((comment) => (
@@ -390,8 +387,7 @@ function NoticeDetailPage({ posts, setPosts, postId }) {
                                             <strong>{comment.writer}</strong>
                                             <span>{comment.date}</span>
 
-
-                                            {/* 수정 버튼과 기존 삭제 버튼 */}
+                                            {/* 댓글 수정·삭제 */}
                                             <div
                                                 style={{
                                                     marginLeft: "auto",
@@ -424,8 +420,7 @@ function NoticeDetailPage({ posts, setPosts, postId }) {
 
                                         </div>
 
-
-                                        {/* 수정 중인 댓글만 입력창 표시 */}
+                                        {/* 선택 댓글 수정 */}
                                         {String(editingCommentId) ===
                                         String(comment.id) ? (
 
@@ -490,8 +485,7 @@ function NoticeDetailPage({ posts, setPosts, postId }) {
 
                                 ))}
 
-
-                                {/* 기존 댓글 작성 기능 */}
+                                {/* 댓글 입력 폼 */}
                                 <hr />
 
                                 <form
@@ -526,49 +520,89 @@ function NoticeDetailPage({ posts, setPosts, postId }) {
 
                         )}
 
+                        {/* 하단 공지 목록 · 15개 */}
+                        {!isEditingPost && (
+                            <div className="detail-post-list" aria-label="다른 공지사항 바로가기">
+                                <div className="detail-post-list-scroll">
+                                    <table className="detail-post-list-table">
+                                        <thead>
+                                            <tr><th>번호</th><th>구분</th><th>제목</th><th>작성자</th><th>작성일</th></tr>
+                                        </thead>
+                                        <tbody>
+                                            {visibleListPosts.map((item, index) => (
+                                                <tr
+                                                    key={item.id}
+                                                    className={String(item.id) === String(postId) ? "detail-post-list-current" : ""}
+                                                    role={String(item.id) === String(postId) ? undefined : "link"}
+                                                    tabIndex={String(item.id) === String(postId) ? undefined : 0}
+                                                    style={String(item.id) === String(postId) ? undefined : { cursor: "pointer" }}
+                                                    onClick={() => {
+                                                        if (String(item.id) !== String(postId)) {
+                                                            navigate("/?page=notice-detail&id=" + encodeURIComponent(item.id));
+                                                        }
+                                                    }}
+                                                    onKeyDown={(event) => {
+                                                        if (event.target !== event.currentTarget) return;
+                                                        if (event.key !== "Enter" && event.key !== " ") return;
+                                                        if (String(item.id) === String(postId)) return;
+                                                        event.preventDefault();
+                                                        navigate("/?page=notice-detail&id=" + encodeURIComponent(item.id));
+                                                    }}
+                                                >
+                                                    <td>{sortedPosts.length - listStart - index}</td>
+                                                    <td>{item.type === "important" ? "중요공지" : "일반 공지"}</td>
+                                                    <td className="detail-post-list-title">
+                                                        {String(item.id) === String(postId)
+                                                            ? <strong>{item.title} (현재 글)</strong>
+                                                            : <Link
+                                                                to={"/?page=notice-detail&id=" + encodeURIComponent(item.id)}
+                                                                onClick={(event) => event.stopPropagation()}
+                                                            >{item.title}</Link>}
+                                                    </td>
+                                                    <td>{item.writer}</td>
+                                                    <td>{item.date}</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                                {totalListPages > 1 && (
+                                    <nav className="board-pagination" aria-label="다른 공지사항 페이지 이동">
+                                        <button
+                                            type="button"
+                                            disabled={activeListPage === 1}
+                                            onClick={() => setListPage(activeListPage - 1)}
+                                        >이전</button>
+                                        {Array.from({ length: totalListPages }, (_, index) => index + 1).map(number => (
+                                            <button
+                                                type="button"
+                                                key={number}
+                                                className={number === activeListPage ? "active" : ""}
+                                                aria-current={number === activeListPage ? "page" : undefined}
+                                                onClick={() => setListPage(number)}
+                                            >{number}</button>
+                                        ))}
+                                        <button
+                                            type="button"
+                                            disabled={activeListPage === totalListPages}
+                                            onClick={() => setListPage(activeListPage + 1)}
+                                        >다음</button>
+                                    </nav>
+                                )}
+                            </div>
+                        )}
+
                     </div>
                 ) : (
                     <p>공지사항을 찾을 수 없습니다.</p>
                 )}
 
-
-                {/* 기존 하단 버튼과 새 수정 버튼 */}
-                <div className="community-actions">
-
-                    <Link
-                        to="/?page=notice"
-                        className="community-cancel"
-                    >
-                        목록으로
-                    </Link>
-
-                    <Link
-                        to="/?page=notice-write"
-                        className="community-button"
-                    >
-                        글쓰기
-                    </Link>
-
-                    {post && !isEditingPost && (
-                        <button
-                            type="button"
-                            className="community-button"
-                            onClick={startEditPost}
-                        >
-                            수정
-                        </button>
-                    )}
-
-                    {post && (
-                        <button
-                            className="community-cancel"
-                            onClick={deletePost}
-                        >
-                            삭제
-                        </button>
-                    )}
-
-                </div>
+                {!post && (
+                    <div className="community-actions">
+                        <Link to="/?page=notice" className="community-cancel">목록으로</Link>
+                        <Link to="/?page=notice-write" className="community-button">글쓰기</Link>
+                    </div>
+                )}
 
             </div>
         </div>
