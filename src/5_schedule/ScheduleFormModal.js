@@ -57,7 +57,8 @@ export default function ScheduleFormModal({
   function canDiscardChanges() {
     return (!isRestoredDraft && JSON.stringify(form) === initialFormRef.current) || window.confirm("작성 중인 변경 내용을 저장하지 않고 닫을까요?");
   }
-  // 처음 열었을 때와 달라진 입력이 있을 때만 닫기를 확인합니다. 저장·삭제는 부모가 처리합니다.
+  // 입력이 처음 값과 다르거나 임시 보관을 복구한 폼이면 폐기를 확인합니다. 복구한 내용은 변경하지 않았어도 확인합니다.
+  // 실제 저장·삭제와 폼 닫기는 부모 콜백에서 처리합니다.
   function requestClose() {
     if (!canDiscardChanges()) return;
     onClose();
@@ -70,27 +71,14 @@ export default function ScheduleFormModal({
 
   const selectedAttendees = normalizeAttendees(form.attendees);
   const attendeeOptions = [...new Set([...teamMembers, form.person.trim(), ...selectedAttendees].filter(Boolean))];
-  // 사이트의 업무용/개인 일정용 버튼입니다. 종류가 달라지면 숨겨지는 업무 입력값을 비워
-  // 개인일정에 과거 프로젝트·담당자·참석자가 함께 저장되는 것을 방지합니다.
+  // 선택값 하나만 전달합니다. Manager.updateForm이 관련 업무 입력값도 한 번의 상태 갱신으로 비웁니다.
   function selectScope(scope) {
     if (form.scope === scope) return;
     onChange({ target: { name: "scope", value: scope } });
-    onChange({ target: { name: "category", value: "" } });
-    onChange({ target: { name: "project", value: "" } });
-    onChange({ target: { name: "attendees", value: "" } });
-    onChange({ target: { name: "person", value: "" } });
-    onChange({ target: { name: "status", value: "pending" } });
   }
-  // 업무 분류 버튼에서 호출됩니다. 회의를 벗어나면 참석자를, 프로젝트를 벗어나면
-  // 프로젝트명을 비워 현재 화면에 보이지 않는 입력이 저장 결과에 남지 않게 합니다.
+  // 분류 변경 시 필요한 프로젝트명·참석자 초기화도 Manager에서 함께 처리합니다.
   function selectCategory(category) {
     onChange({ target: { name: "category", value: category } });
-    if (form.category === "프로젝트" && category !== "프로젝트") {
-      onChange({ target: { name: "project", value: "" } });
-    }
-    if (form.category === "회의" && category !== "회의") {
-      onChange({ target: { name: "attendees", value: "" } });
-    }
   }
 
   return (
@@ -256,7 +244,7 @@ function ScheduleDateTimeFields({ form, onChange, fieldError }) {
   );
 }
 
-// 종일·기간·알림·공개 범위·반복 규칙을 한 구역에서 관리합니다. 별도 상태를 복제하지 않습니다.
+// 종일·기간·알림·공유 구분·반복 규칙을 한 구역에서 관리합니다. 별도 상태를 복제하지 않습니다.
 function ScheduleExtraSettings({ form, onChange, isOccurrence, fieldError }) {
   const repeatValue = form.repeatType + ":" + form.repeatInterval;
   // 사용자 지정 간격을 수정 없이 저장해도 기존 규칙이 바뀌지 않도록 선택지에 남깁니다.
@@ -356,23 +344,26 @@ function ScheduleExtraSettings({ form, onChange, isOccurrence, fieldError }) {
   );
 }
 
-// 같은 팝업을 사용하는 목록과 공통 테두리를 이 파일에서 함께 관리합니다.
-/* 전체 목록은 원본 반복 규칙을, 날짜 목록은 해당 발생일을 전달받습니다. onEdit에 원본 객체를 넘겨 수정 범위를 유지합니다. 정렬은 복사본에 적용합니다. */
-// 날짜 모드는 부모가 이미 펼친 발생 목록을 넘깁니다. 같은 날짜 조건을 다시 검사하지 않습니다.
-// 전체 건수는 원본 목록 개수를 따로 받아 날짜별 건수와 구분합니다.
+// 오류가 난 입력만 aria-invalid로 표시하고, 아래 오류 문구의 ID를 aria-describedby로 연결합니다.
 function fieldErrorProps(error, field) {
   return error?.field === field ? { "aria-invalid": true, "aria-describedby": `sm-error-${field}` } : {};
 }
 
+// 담당하는 필드의 첫 오류만 가까운 위치에 표시합니다. 하단의 저장·충돌 오류 안내와는 별개입니다.
 function ScheduleFieldError({ error, fields }) {
   return error && fields.includes(error.field)
     ? <p className="sm-field-error sm-form-wide" id={`sm-error-${error.field}`}>{error.message}</p> : null;
 }
 
+// 전체 목록은 원본 반복 규칙을, 날짜 목록은 부모가 펼친 해당 날짜의 발생 항목을 받습니다.
+// 수정 버튼은 전달받은 item을 그대로 넘겨 원본 전체와 한 회차의 수정 범위를 유지합니다.
+// 정렬·진행 상태 필터·페이지는 팝업 내부 표시 상태이며, 저장된 일정 배열은 변경하지 않습니다.
+// totalCount는 전체 원본 건수이고 items는 현재 목록 범위입니다. 상태 필터 후의 페이지 건수는 별도로 계산합니다.
 export function ScheduleListModal({
   items,
   filterDate,
   totalCount,
+  hasActiveFilter = false,
   onClearDateFilter,
   onEdit,
   onClose,
@@ -387,7 +378,7 @@ export function ScheduleListModal({
   const listContentRef = useRef(null);
   const pageSize = 20;
   const pageCount = Math.max(1, Math.ceil(matchingItems.length / pageSize));
-  // 삭제로 페이지가 줄어들면 마지막 유효 페이지를 표시합니다. 날짜·정렬 변경은 첫 페이지로 돌아갑니다.
+  // 삭제로 페이지가 줄어들면 마지막 유효 페이지를 표시합니다. 날짜·정렬·진행 상태 필터 변경은 첫 페이지로 돌아갑니다.
   const currentPage = Math.min(page, pageCount);
   useLayoutEffect(() => { setPage(current => Math.min(current, pageCount)); }, [pageCount]);
   useLayoutEffect(() => { setPage(1); }, [filterDate, statusFilter]);
@@ -444,7 +435,10 @@ export function ScheduleListModal({
     title = `${filterDate.replaceAll("-", ".")} 일정`;
     description = `${items.length}건 · 전체 ${totalCount}건`;
     emptyMessage = "선택한 날짜에 일정이 없습니다. 목록을 닫고 일정 등록 버튼으로 추가해 보세요.";
+    if (hasActiveFilter) emptyMessage = "선택한 날짜에 조건과 일치하는 일정이 없습니다. 검색어나 필터를 변경해 주세요.";
   }
+  // 원래 목록이 비었다면 상태 필터 탓으로 안내하지 않습니다. 상태로 걸러진 경우에만 해제를 제안합니다.
+  const isStatusEmpty = items.length > 0 && statusFilter !== "all" && matchingItems.length === 0;
   return (
     <ScheduleModal
       id="sm-list-title"
@@ -465,6 +459,8 @@ export function ScheduleListModal({
       }
     >
       <div className="sm-list-content" ref={listContentRef}>
+        {/* 정렬·상태·표시 건수는 한 영역에 두되 모두 현재 팝업의 표시만 바꿉니다. */}
+        <div className="sm-list-toolbar" role="group" aria-label="일정 목록 도구">
         <label className="sm-list-sort">목록 정렬
           <select value={sortOrder} onChange={event => { setSortOrder(event.target.value); setPage(1); }}>
             <option value="date">날짜순</option><option value="title">이름순</option><option value="person">담당자순</option>
@@ -475,7 +471,9 @@ export function ScheduleListModal({
             <option value="all">진행 상태 전체</option><option value="pending">예정 업무</option><option value="completed">완료 업무</option>
           </select>
         </label>
-        {statusFilter !== "all" && <p className="sm-form-note">진행 상태 필터는 업무 일정에만 적용됩니다. 결과 {matchingItems.length}건</p>}
+        <span className="sm-list-summary" role="status" aria-label="목록 표시 건수">표시 {matchingItems.length}건</span>
+        </div>
+        {statusFilter !== "all" && <p className="sm-form-note">진행 상태는 업무 일정에만 적용됩니다. 개인 일정은 전체에서 확인하세요.</p>}
         {sortedItems.length ? (
           sortedItems.slice((currentPage - 1) * pageSize, currentPage * pageSize).map(
             ({ item, dateLabel, detailLabel }) => (
@@ -505,7 +503,8 @@ export function ScheduleListModal({
           )
         ) : (
           <div className="sm-empty">
-            {statusFilter === "all" ? emptyMessage : "선택한 진행 상태에 해당하는 업무 일정이 없습니다."}
+            <p>{isStatusEmpty ? "선택한 진행 상태에 해당하는 업무 일정이 없습니다." : emptyMessage}</p>
+            {isStatusEmpty && <button type="button" className="sm-list-all-btn" onClick={() => setStatusFilter("all")}>진행 상태 전체 보기</button>}
           </div>
         )}
         {matchingItems.length > 0 && <nav className="sm-list-pagination" aria-label="일정 목록 페이지">

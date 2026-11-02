@@ -24,6 +24,7 @@ import { ScheduleEvent } from "./ScheduleItemParts";
 export default function ScheduleStaffWeek({
   people,
   personSearch,
+  hasActiveFilter = false,
   weekDates,
   items,
   selectedDate,
@@ -49,7 +50,9 @@ export default function ScheduleStaffWeek({
       <p className="sm-empty">
         {personSearch
           ? "검색한 이름과 일치하는 팀원이 없습니다. 검색어를 변경해 주세요."
-          : "등록된 팀원이 없습니다. 팀원 목록에서 먼저 등록해 주세요."}
+          : hasActiveFilter
+            ? "현재 조건에 표시할 팀원이 없습니다. 검색어나 필터를 변경해 주세요."
+            : "등록된 팀원이 없습니다. 팀원 목록에서 먼저 등록해 주세요."}
       </p>
     );
   }
