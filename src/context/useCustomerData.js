@@ -1,10 +1,8 @@
-
-import React, {useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { customers as initialCustomers } from "../data/mockData";
 
 
-export function useERPCustomerContext() {
-
+export function useCustomerData() {
 
     //고객 데이터 상태관리
     const [customers, setCustomers] = useState(() => {
@@ -80,4 +78,4 @@ export function useERPCustomerContext() {
     };
 }
 
-
+export default useCustomerData

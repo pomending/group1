@@ -37,64 +37,101 @@ export const products = [
 ];
 
 
+
 export const quotations = [
     {
         id: 1,
         customerId: 1,
         productId: 1,
+        employeeId: 1,
         quantity: 300,
         unitPrice: 8000,
+        createdAt: "2026-10-15",
+        validUntil: "2026-11-15",
+        paymentMethod: "계좌이체",
+        memo: "개별 포장 요청",
         status: "승인"
     },
     {
         id: 2,
         customerId: 2,
         productId: 2,
+        employeeId: 2,
         quantity: 500,
         unitPrice: 5000,
+        createdAt: "2026-10-20",
+        validUntil: "2026-11-20",
+        paymentMethod: "계좌이체",
+        memo: "회사 로고 인쇄 요청",
         status: "승인"
     },
     {
         id: 3,
         customerId: 3,
         productId: 3,
+        employeeId: 3,
         quantity: 400,
         unitPrice: 6000,
+        createdAt: "2026-10-22",
+        validUntil: "2026-11-22",
+        paymentMethod: "카드결제",
+        memo: "",
         status: "승인"
     },
     {
         id: 4,
         customerId: 1,
         productId: 4,
+        employeeId: 1,
         quantity: 1000,
         unitPrice: 2500,
+        createdAt: "2026-10-27",
+        validUntil: "2026-11-27",
+        paymentMethod: "계좌이체",
+        memo: "시제품 확인 후 제작 예정",
         status: "승인 대기"
     },
     {
         id: 5,
         customerId: 4,
         productId: 1,
+        employeeId: 2,
         quantity: 100,
         unitPrice: 8500,
+        createdAt: "2026-10-29",
+        validUntil: "2026-11-29",
+        paymentMethod: "계좌이체",
+        memo: "견적 조건 협의 실패",
         status: "거절"
     },
     {
         id: 6,
         customerId: 4,
         productId: 4,
+        employeeId: 3,
         quantity: 800,
         unitPrice: 2300,
+        createdAt: "2026-10-30",
+        validUntil: "2026-11-30",
+        paymentMethod: "계좌이체",
+        memo: "대량 주문 할인 적용",
         status: "승인"
     },
     {
         id: 7,
         customerId: 3,
         productId: 2,
+        employeeId: 1,
         quantity: 200,
         unitPrice: 5000,
+        createdAt: "2026-11-01",
+        validUntil: "2026-12-01",
+        paymentMethod: "카드결제",
+        memo: "",
         status: "승인"
     }
 ];
+
 
 
 // 고객/직원 이름을 보여주기 위한 임시 데이터입니다.
