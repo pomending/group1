@@ -42,13 +42,13 @@ function ProjectList(props) {
     };
 
     return (
-        <div className="project-app">
-            <div className="pm-shell">
+        <div className="project-app pj-page">
+            <div className="pm-shell pj-container">
 
                 {/* 페이지 제목 */}
                 <div className="pm-heading">
                     <div>
-                        <div className="pm-eyebrow">
+                        <div className="pm-eyebrow pj-eyebrow">
                             PROJECT MANAGEMENT
                         </div>
                         <h2>프로젝트 관리</h2>
@@ -58,7 +58,7 @@ function ProjectList(props) {
                     <div className="pm-heading-actions">
                         <button
                             type="button"
-                            className="pm-reset-btn"
+                            className="pm-reset-btn pj-btn"
                             onClick={() => {
                                 if (window.confirm("프로젝트 데이터를 초기 상태로 되돌리시겠습니까?")) {
                                     resetProjects();
@@ -69,7 +69,7 @@ function ProjectList(props) {
                         </button>
 
                         <button
-                            className="pm-btn"
+                            className="pm-btn pj-btn pj-primary"
                             onClick={() => props.setPage('newproject')}
                         >
                             + 새 프로젝트
@@ -79,17 +79,17 @@ function ProjectList(props) {
 
                 {/* 통계 */}
                 <div className="pm-stats">
-                    <div className="pm-stat">
+                    <div className="pm-stat pj-card">
                         <div className="pm-stat-label">전체 프로젝트</div>
                         <div className="pm-stat-value">{projects.length}</div>
                     </div>
-                    <div className="pm-stat">
+                    <div className="pm-stat pj-card">
                         <div className="pm-stat-label">진행 중</div>
                         <div className="pm-stat-value">
                             {projects.filter(project => getProjectStatus(project) === '진행 중').length}
                         </div>
                     </div>
-                    <div className="pm-stat">
+                    <div className="pm-stat pj-card">
                         <div className="pm-stat-label">지연</div>
                         <div className="pm-stat-value">
                             {projects.filter(project => isProjectDelayed(project)).length}
@@ -98,7 +98,7 @@ function ProjectList(props) {
                 </div>
 
                 {/* 프로젝트 목록 */}
-                <div className="pm-card">
+                <div className="pm-card pj-card">
                     <div className="pm-card-header">
                         <h3>프로젝트 목록</h3>
                         <span>총 {projects.length}개</span>
@@ -157,14 +157,14 @@ function ProjectList(props) {
                                             <div className="pm-project-date">마감 {project.dueDate}</div>
                                         </td>
                                         <td>
-                                            <span className={"pm-status pm-status-" + getProjectStatus(project).replaceAll(' ', '')}>
+                                            <span className={"pm-status pj-badge pm-status-" + getProjectStatus(project).replaceAll(' ', '')}>
                                                 {getProjectStatus(project)}
                                             </span>
                                         </td>
                                         <td>
                                             <div className="pm-progress">
-                                                <div className="pm-progress-bar">
-                                                    <div className="pm-progress-fill" style={{ width: '80%' }} />
+                                                <div className="pm-progress-bar pj-progress-track">
+                                                    <div className="pm-progress-fill pj-progress-fill" style={{ width: '80%' }} />
                                                 </div>
                                                 <span className="pm-progress-text">80%</span>
                                             </div>
