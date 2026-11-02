@@ -1,6 +1,6 @@
 //고객 목록 및 관리(조회 등록 수정 삭제 페이지이동 엑셀다운로드)
 
-import React, { useState,useEffect } from "react";
+import React, { useState, useEffect } from "react";
 //고객정보를 엑셀 파일로 생성하기 위한 라이브러리
 import ExcelJS from "exceljs";
 //생성된 엑셀 파일을 다운로드하기 위한 기능
@@ -12,16 +12,16 @@ import { useERP } from "../context/ERPContext";
 function CustomerManagement() {
     //ERPcontext에 있는 함수 가져오기
     const { customers, setCustomers, addCustomer,
-        saveEditedCustomer,deleteCustomers} = useERP();
-
+        saveEditedCustomer, deleteCustomers } = useERP();
+        
 
     //검색창에 입력한 검색어
     const [search, setSearch] = useState("");
     //검색조건으로 나온 고객목록
     const [searchList, setSearchList] = useState(customers);
-    useEffect(()=>{
+    useEffect(() => {
         setSearchList(customers)
-    },[customers])
+    }, [customers])
     //체크 박스로 선택한 고객들의 ID목록
     const [checkedIds, setCheckedIds] = useState([]);
     //현재 보고있는 페이지 번호
@@ -56,8 +56,8 @@ function CustomerManagement() {
         setCurrentPage(1);
     }
 
-    
-    
+
+
 
     //선택한 고객의 수정팝업 열기
     function openEditCustomer() {
@@ -71,7 +71,7 @@ function CustomerManagement() {
             "width=600,height=700"
         );
     }
-    
+
     //체크박스로 선택한 고객 삭제(체크가 되어있지 않은 목록을 불러와 저장)
     function deleteSelectedCustomers() {
         const deleteCount = checkedIds.length;
@@ -91,7 +91,7 @@ function CustomerManagement() {
         alert(`고객정보 ${deleteCount}건이 삭제되었습니다.`);
     }
 
-    
+
 
     //고객 등록·수정 팝업에서 부모 창의 함수와 데이터를 사용하도록 연결
     window.saveEditedCustomer = saveEditedCustomer;
