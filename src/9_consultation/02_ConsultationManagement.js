@@ -1,7 +1,10 @@
-import React from "react";
+import React, { useState } from "react";
 import "./02_ConsultationManagement.css";
 import { ConsultationList } from "./03_ConsultationList";
 function ConsultationManagement() {
+    //문의목록을 관리할 usestate
+    const[consultation,setConsultation]= useState(ConsultationList);
+
 
     return (
         <div className="consultation-page">
@@ -28,12 +31,7 @@ function ConsultationManagement() {
 
                 <label>이메일</label>
                 <input type="text" />
-
-                <label>문의 상품</label>
-                <input type="text" /><br />
-
-                <label>요청 수량</label>
-                <input type="text" />
+                               
 
                 <label>담당자</label>
                 <select>
@@ -78,27 +76,25 @@ function ConsultationManagement() {
                             <th>고객사 담당자</th>
                             <th>연락처</th>
                             <th>이메일</th>
-                            <th>문의 상품</th>
-                            <th>요청 수량</th>
                             <th>담당자</th>
                             <th>진행 상태</th>
 
                         </tr>
                     </thead>
                     <tbody>
-                        
-                        <tr>
+                        {consultation.map((item)=>(
+                        <tr key={item.id}>
                             <td><input type="checkbox" /></td>
-                            <td>삼성전자</td>
-                            <td>이메일</td>
-                            <td>김철수</td>
-                            <td>010-1111-1111</td>
-                            <td>se@hanmna.com</td>
-                            <td>머그컵</td>
-                            <td>400</td>
-                            <td>미배정</td>
-                            <td>처리중</td>
+                            <td>{item.companyName}</td>
+                            <td>{item.inquiryChannel}</td>
+                            <td>{item.customerManager}</td>
+                            <td>{item.phone}</td>
+                            <td>{item.email}</td>
+                            <td>{item.employeeName}</td>
+                            <td>{item.status}</td>
+                            
                         </tr>
+                        ))}
                     </tbody>
                 </table>
                 <div>
