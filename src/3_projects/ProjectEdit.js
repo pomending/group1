@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import "./ProjectEdit.css";
 import { useERP } from "../context/ERPContext";
 import { formatProjectId, formatQuotationId } from "../utils/formatUtils";
 import { getProjectStatus } from "../utils/projectStatus";
@@ -68,10 +67,10 @@ function ProjectEdit(props) {
 
     if (!selectedProject) {
         return (
-            <div className="pe-page">
-                <div className="pe-container">
+            <div className="pe-page pj-page">
+                <div className="pe-container pj-container">
                     <p>프로젝트를 찾을 수 없습니다.</p>
-                    <button className="pe-back" onClick={() => props.setPage("list")}>
+                    <button className="pe-back pj-back" onClick={() => props.setPage("list")}>
                         ← 프로젝트 목록으로
                     </button>
                 </div>
@@ -80,35 +79,35 @@ function ProjectEdit(props) {
     }
 
     return (
-        <div className="pe-page">
-            <div className="pe-container">
-                <button type="button" className="pe-back" onClick={() => props.setPage("list")}>
+        <div className="pe-page pj-page">
+            <div className="pe-container pj-container">
+                <button type="button" className="pe-back pj-back" onClick={() => props.setPage("list")}>
                     ← 프로젝트 목록으로
                 </button>
 
                 <header className="pe-heading">
                     <div>
-                        <p className="pe-eyebrow">PROJECT MANAGEMENT / EDIT</p>
+                        <p className="pe-eyebrow pj-eyebrow">PROJECT MANAGEMENT / EDIT</p>
                         <h1>프로젝트 수정</h1>
-                        <p className="pe-subtitle">기존 프로젝트 정보를 확인하고 필요한 항목을 변경하세요.</p>
+                        <p className="pe-subtitle pj-subtitle">기존 프로젝트 정보를 확인하고 필요한 항목을 변경하세요.</p>
                     </div>
                     <span className="pe-project-number">
                         {formatProjectId(selectedProject.id)}
                     </span>
                 </header>
 
-                <form className="pe-card" onSubmit={editProject}>
-                    <div className="pe-card-heading">
+                <form className="pe-card pj-card" onSubmit={editProject}>
+                    <div className="pe-card-heading pj-card-heading">
                         <div>
-                            <span className="pe-section-num">PROJECT INFO</span>
+                            <span className="pe-section-num pj-eyebrow">PROJECT INFO</span>
                             <h2>프로젝트 기본 정보</h2>
                         </div>
                         <span className="pe-card-note">고객사와 연결 견적은 변경할 수 없습니다.</span>
                     </div>
 
                     <div className="pe-grid">
-                        <div className="pe-field pe-full">
-                            <label htmlFor="pe-name">프로젝트명 <span className="pe-required">*</span></label>
+                        <div className="pe-field pe-full pj-field pj-full">
+                            <label htmlFor="pe-name">프로젝트명 <span className="pe-required pj-required">*</span></label>
                             <input
                                 id="pe-name"
                                 name="projectName"
@@ -118,14 +117,14 @@ function ProjectEdit(props) {
                             />
                         </div>
 
-                        <div className="pe-field">
+                        <div className="pe-field pj-field">
                             <label>고객사</label>
                             <div className="pe-readonly">
                                 {customer?.companyName ?? `고객 ID ${selectedProject.customerId}`}
                             </div>
                         </div>
 
-                        <div className="pe-field">
+                        <div className="pe-field pj-field">
                             <label>연결된 견적</label>
                             <div className="pe-readonly">
                                 {selectedProject.quotationId != null
@@ -134,7 +133,7 @@ function ProjectEdit(props) {
                             </div>
                         </div>
 
-                        <div className="pe-field">
+                        <div className="pe-field pj-field">
                             <label htmlFor="pe-manager">담당자</label>
                             <select
                                 id="pe-manager"
@@ -149,7 +148,7 @@ function ProjectEdit(props) {
                             </select>
                         </div>
 
-                        <div className="pe-field">
+                        <div className="pe-field pj-field">
                             <label>진행 상태</label>
                             <div className="pe-readonly pe-readonly-status">
                                 <span className="pe-status-dot" />
@@ -157,7 +156,7 @@ function ProjectEdit(props) {
                             </div>
                         </div>
 
-                        <div className="pe-field">
+                        <div className="pe-field pj-field">
                             <label htmlFor="pe-start-date">시작 예정일</label>
                             <input
                                 id="pe-start-date"
@@ -168,7 +167,7 @@ function ProjectEdit(props) {
                             />
                         </div>
 
-                        <div className="pe-field">
+                        <div className="pe-field pj-field">
                             <label htmlFor="pe-due-date">납품 예정일</label>
                             <input
                                 id="pe-due-date"
@@ -179,7 +178,7 @@ function ProjectEdit(props) {
                             />
                         </div>
 
-                        <div className="pe-field pe-full">
+                        <div className="pe-field pe-full pj-field pj-full">
                             <label htmlFor="pe-description">프로젝트 설명</label>
                             <textarea
                                 id="pe-description"
@@ -191,13 +190,13 @@ function ProjectEdit(props) {
                         </div>
                     </div>
 
-                    <footer className="pe-footer">
-                        <p><span className="pe-required">*</span> 필수 입력 항목</p>
-                        <div className="pe-actions">
-                            <button type="button" className="pe-btn pe-cancel" onClick={() => props.setPage("detail")}>
+                    <footer className="pe-footer pj-footer">
+                        <p><span className="pe-required pj-required">*</span> 필수 입력 항목</p>
+                        <div className="pe-actions pj-actions">
+                            <button type="button" className="pe-btn pe-cancel pj-btn" onClick={() => props.setPage("detail")}>
                                 취소
                             </button>
-                            <button type="submit" className="pe-btn pe-save">
+                            <button type="submit" className="pe-btn pe-save pj-btn pj-primary">
                                 변경사항 저장
                             </button>
                         </div>

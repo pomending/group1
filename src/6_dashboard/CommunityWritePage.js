@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import "./CommunityWrite.css";
@@ -7,22 +6,21 @@ function CommunityWritePage({ posts, setPosts }) {
 
     const navigate = useNavigate();
 
-    // 입력한 제목, 작성자, 내용
+    // 입력 상태
     const [title, setTitle] = useState("");
     const [writer, setWriter] = useState("");
     const [content, setContent] = useState("");
 
-
     // 게시글 등록
     const addPost = () => {
 
-        // 빈칸 검사
+        // 필수 입력 검사
         if (!title.trim() || !writer.trim() || !content.trim()) {
             alert("제목, 작성자, 내용을 모두 입력하세요.");
             return;
         }
 
-        // 새 게시글 만들기
+        // 신규 게시글
         const newPost = {
             id: Date.now(),
             title: title.trim(),
@@ -31,17 +29,16 @@ function CommunityWritePage({ posts, setPosts }) {
             date: new Date().toLocaleDateString("ko-KR")
         };
 
-        // 기존 글에 새 글 추가
+        // 게시글 목록 갱신
         const newPosts = [...posts, newPost];
 
-        // 화면과 브라우저에 저장
+        // 상태·로컬 저장
         setPosts(newPosts);
         localStorage.setItem("communityPosts", JSON.stringify(newPosts));
 
-        // 작성 완료 후 목록으로 이동
+        // 목록 이동
         navigate("/?page=community");
     };
-
 
     return (
         <div className="community">
@@ -82,7 +79,7 @@ function CommunityWritePage({ posts, setPosts }) {
                         onChange={(e) => setContent(e.target.value)}
                     />
 
-                    {/* 취소, 등록 버튼 */}
+                    {/* 취소·등록 버튼 */}
                     <div className="community-actions">
 
                         <Link

@@ -1,49 +1,148 @@
-import React from "react";
+import React, { useMemo, useState } from "react";
 import { useERP } from "../context/ERPContext";
+import EmployeeList from "./EmployeeList";
+import EmployeeForm from "./EmployeeForm";
+import EmployeeDetail from "./EmployeeDetail";
+import "./HrPage.css";
 
-function HrPage() {
+export default function HrPage() {
+    const {
+        employees = [], projects = [],
+        addEmployee, updateEmployee, deleteEmployee, resetEmployees
+    } = useERP();
 
-    const { employees } = useERP()
+    const [page, setPage] = useState("list");
+    const [selectedEmployeeId, setSelectedEmployeeId] = useState(null);
+    const selectedEmployee = employees.find(e => Number(e.id) === Number(selectedEmployeeId));
+
+    const departments = useMemo(() => {
+        const counts = {};
+        employees.forEach(e => {
+            const department = e.department || "미지정";
+            counts[department] = (counts[department] || 0) + 1;
+        });
+        return Object.entries(counts).sort((a, b) => b[1] - a[1]);
+    }, [employees]);
+
+    const showDetail = (id) => {
+        setSelectedEmployeeId(id);
+        setPage("detail");
+    };
+    const showEdit = (id) => {
+        setSelectedEmployeeId(id);
+        setPage("edit");
+    };
+    const handleSave = (data) => {
+        const result = page === "edit"
+            ? updateEmployee({ ...data, id: selectedEmployeeId })
+            : addEmployee(data);
+        if (result.ok) {
+            setSelectedEmployeeId(result.id);
+            setPage("detail");
+        }
+        return result;
+    };
+    const handleDelete = () => {
+        const result = deleteEmployee(selectedEmployeeId);
+        if (result.ok) {
+            setSelectedEmployeeId(null);
+            setPage("list");
+        }
+        return result;
+    };
+    const handleReset = () => {
+        if (window.confirm("직원 데이터를 초기 상태로 되돌릴까요? 등록·수정한 직원 정보가 모두 사라집니다.")) {
+            const result = resetEmployees();
+            if (!result.ok) {
+                window.alert(result.message);
+                return;
+            }
+            setSelectedEmployeeId(null);
+            setPage("list");
+        }
+    };
 
     return (
-        <div>
-            <h1>인적자원 관리</h1>
-            <p>직원 정보 및 부서별 인원 현황</p>
-            <div>
+        <div className="hr-app">
+            <main className="hr-shell">
+                <header className="hr-page-heading">
+                    <div>
+                        <p className="hr-eyebrow">HUMAN RESOURCES MANAGEMENT</p>
+                        <h1>인적자원 관리</h1>
+                        <p className="hr-muted">직원 정보 및 부서별 인원 현황을 관리합니다.</p>
+                    </div>
+                    <div className="hr-heading-actions">
+                        {page === "list" ? (
+                            <>
+                                <button type="button" className="hr-btn hr-btn-ghost" onClick={handleReset}>데이터 초기화</button>
+                                <button type="button" className="hr-btn hr-btn-primary" onClick={() => setPage("new")}>+ 직원 등록</button>
+                            </>
+                        ) : (
+                            <button type="button" className="hr-btn hr-btn-ghost" onClick={() => setPage("list")}>← 직원 목록</button>
+                        )}
+                    </div>
+                </header>
 
-                <div>
-                    <p>전체 직원</p>
-                    <h3>{employees.length}명</h3>
-                </div>
+                {page === "list" && (
+                    <>
+                        <section className="hr-stats" aria-label="인원 통계">
+                            <div className="hr-stat"><span>전체 직원</span><strong>{employees.length}<small>명</small></strong></div>
+                            <div className="hr-stat"><span>재직 직원</span><strong>{employees.filter(e => e.status === "재직").length}<small>명</small></strong></div>
+                            <div className="hr-stat"><span>휴직 직원</span><strong>{employees.filter(e => e.status === "휴직").length}<small>명</small></strong></div>
+                            <div className="hr-stat"><span>퇴사 직원</span><strong>{employees.filter(e => e.status === "퇴사").length}<small>명</small></strong></div>
+                        </section>
+                        <section className="hr-panel hr-department-panel">
+                            <div className="hr-section-title">
+                                <div><p className="hr-eyebrow">DEPARTMENT OVERVIEW</p><h2>부서별 인원 현황</h2></div>
+                                <span className="hr-subtle">총 {departments.length}개 부서</span>
+                            </div>
+                            {departments.length ? (
+                                <div className="hr-department-grid">
+                                    {departments.map(([name, count]) => (
+                                        <div className="hr-department-item" key={name}>
+                                            <div className="hr-department-meta"><span>{name}</span><strong>{count}명</strong></div>
+                                            <div className="hr-bar-track"><div className="hr-bar-fill" style={{ width: `${(count / employees.length) * 100}%` }} /></div>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : <p className="hr-empty">직원이 없습니다.</p>}
+                        </section>
+                        <EmployeeList employees={employees} projects={projects} onView={showDetail} onNew={() => setPage("new")} />
+                    </>
+                )}
 
-                <div>
-                    <p>재직 직원</p>
-                    <h3>{employees.filter(
-                        e => e.status === '재직'
-                    ).length}명</h3>
-                </div>
-
-                <div>
-                    <p>휴직 직원</p>
-                    <h3>{employees.filter(
-                        e => e.status === '휴직'
-                    ).length}명</h3>
-                </div>
-            </div>
-
-            <hr />
-
-            <div>
-                <h1>직원 목록</h1>
-
-                <div>
-                    
-                </div>
-
-            </div>
-
+                {page === "new" && (
+                    <EmployeeForm
+                        key="new"
+                        employees={employees}
+                        onCancel={() => setPage("list")}
+                        onSave={handleSave}
+                    />
+                )}
+                {page === "edit" && selectedEmployee && (
+                    <EmployeeForm
+                        key={`edit-${selectedEmployee.id}`}
+                        employee={selectedEmployee}
+                        employees={employees}
+                        onCancel={() => showDetail(selectedEmployee.id)}
+                        onSave={handleSave}
+                    />
+                )}
+                {page === "detail" && selectedEmployee && (
+                    <EmployeeDetail
+                        employee={selectedEmployee}
+                        projects={projects}
+                        onEdit={() => showEdit(selectedEmployee.id)}
+                        onDelete={handleDelete}
+                    />
+                )}
+                {((page === "edit" || page === "detail") && !selectedEmployee) && (
+                    <section className="hr-panel hr-empty">
+                        <h2>직원 정보를 찾을 수 없습니다.</h2>
+                        <button className="hr-btn hr-btn-primary" type="button" onClick={() => setPage("list")}>목록으로 돌아가기</button>
+                    </section>
+                )}
+            </main>
         </div>
-    )
+    );
 }
-
-export default HrPage

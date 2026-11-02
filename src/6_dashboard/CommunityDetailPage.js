@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import "./CommunityDetail.css";
@@ -8,16 +7,25 @@ function CommunityDetailPage({ posts, setPosts, postId }) {
 
     const navi = useNavigate();
 
-    // 현재 선택한 게시글 찾기
+    // 현재 게시글
     const post = posts.find(
         (item) => String(item.id) === String(postId)
     );
 
-    // 댓글을 작성할 때 입력하는 값
+    // 상세 목록 · 현재 페이지
+    const sortedPosts = [...posts].sort((a, b) => Number(b.id) - Number(a.id));
+    const initialIndex = sortedPosts.findIndex(item => String(item.id) === String(postId));
+    const [listPage, setListPage] = useState(() => Math.floor(Math.max(0, initialIndex) / 15) + 1);
+    const totalListPages = Math.max(1, Math.ceil(sortedPosts.length / 15));
+    const activeListPage = Math.min(listPage, totalListPages);
+    const listStart = (activeListPage - 1) * 15;
+    const visibleListPosts = sortedPosts.slice(listStart, listStart + 15);
+
+    // 댓글 입력값
     const [writer, setWriter] = useState("");
     const [content, setContent] = useState("");
 
-    // 게시글에 저장된 댓글 불러오기
+    // 댓글 불러오기
     const commentKey = "communityComments_" + postId;
 
     const [comments, setComments] = useState(() => {
@@ -28,24 +36,19 @@ function CommunityDetailPage({ posts, setPosts, postId }) {
         }
 
         try {
-            return JSON.parse(saved);
+            const data = JSON.parse(saved);
+            return Array.isArray(data) ? data : [];
         } catch {
             return [];
         }
     });
-
-
-    // ========================================
-    // 게시글 수정 기능 추가
-    // 기존 게시글의 번호와 작성일은 그대로 유지
-    // ========================================
-
+    // 게시글 수정 · 번호·작성일 유지
     const [isEditingPost, setIsEditingPost] = useState(false);
     const [editTitle, setEditTitle] = useState("");
     const [editWriter, setEditWriter] = useState("");
     const [editContent, setEditContent] = useState("");
 
-    // 수정 버튼을 누르면 현재 글을 입력칸에 표시
+    // 게시글 수정 초기값
     const startEditPost = () => {
         if (!post) return;
 
@@ -55,7 +58,7 @@ function CommunityDetailPage({ posts, setPosts, postId }) {
         setIsEditingPost(true);
     };
 
-    // 수정한 게시글 저장
+    // 게시글 수정 저장
     const saveEditPost = (e) => {
         e.preventDefault();
 
@@ -80,23 +83,19 @@ function CommunityDetailPage({ posts, setPosts, postId }) {
         setIsEditingPost(false);
     };
 
-
-    // ========================================
-    // 댓글 수정 기능 추가
-    // ========================================
-
+    // 댓글 수정
     const [editingCommentId, setEditingCommentId] = useState(null);
     const [editCommentWriter, setEditCommentWriter] = useState("");
     const [editCommentContent, setEditCommentContent] = useState("");
 
-    // 선택한 댓글의 작성자와 내용을 입력칸에 표시
+    // 댓글 수정 초기값
     const startEditComment = (comment) => {
         setEditingCommentId(comment.id);
         setEditCommentWriter(comment.writer || "");
         setEditCommentContent(comment.content || "");
     };
 
-    // 수정한 댓글 저장
+    // 댓글 수정 저장
     const saveEditComment = (e) => {
         e.preventDefault();
 
@@ -120,8 +119,7 @@ function CommunityDetailPage({ posts, setPosts, postId }) {
         setEditingCommentId(null);
     };
 
-
-    // 기존 댓글 등록 기능
+    // 댓글 등록
     const addComment = (e) => {
         e.preventDefault();
 
@@ -145,7 +143,7 @@ function CommunityDetailPage({ posts, setPosts, postId }) {
         setContent("");
     };
 
-    // 기존 댓글 삭제 기능
+    // 댓글 삭제
     const delComment = (commentId) => {
         if (!window.confirm("댓글을 삭제하겠습니까?")) {
             return;
@@ -156,10 +154,10 @@ function CommunityDetailPage({ posts, setPosts, postId }) {
         );
 
         setComments(newComments);
-        localStorage.setItem("commentKey", JSON.stringify(newComments));
+        localStorage.setItem(commentKey, JSON.stringify(newComments));
     };
 
-    // 기존 게시글 삭제 기능
+    // 게시글 삭제
     const delePost = () => {
         if (!window.confirm("게시글을 삭제하시겠습니까?")) {
             return;
@@ -178,16 +176,12 @@ function CommunityDetailPage({ posts, setPosts, postId }) {
     return (
         <div className="community">
 
-            <Link to="/?page=community" className="community-back">
-                ← 게시글 목록으로
-            </Link>
-
             <div className="community-board">
 
                 {post ? (
                     <div>
 
-                        {/* 게시글 수정 중에는 제목·작성자·내용 입력칸 표시 */}
+                        {/* 게시글 수정 폼 */}
                         {isEditingPost ? (
                             <form
                                 className="community-write"
@@ -233,19 +227,31 @@ function CommunityDetailPage({ posts, setPosts, postId }) {
                             </form>
                         ) : (
                             <>
-                                {/* 기존 게시글 내용 */}
+                                {/* 게시글 본문 */}
                                 <h1>{post.title}</h1>
 
                                 <div className="community-info">
-                                    <span>작성자: {post.writer}</span>
-                                    <span>작성일: {post.date}</span>
+                                    <div className="detail-post-meta">
+                                        <span>작성자: {post.writer}</span>
+                                        <span>작성일: {post.date}</span>
+                                    </div>
+                                    <div className="community-actions detail-top-actions">
+                                        <Link to="/?page=community" className="community-cancel">목록으로</Link>
+                                        <Link to="/?page=write" className="community-button">글쓰기</Link>
+                                        <button
+                                            type="button"
+                                            className="community-button"
+                                            onClick={startEditPost}
+                                        >수정</button>
+                                        <button type="button" className="community-cancel" onClick={delePost}>삭제</button>
+                                    </div>
                                 </div>
 
                                 <div className="community-content">
                                     {post.content}
                                 </div>
 
-                                {/* 기존 댓글 영역 */}
+                                {/* 댓글 영역 */}
                                 <div className="detail-comments">
                                     <h3>댓글 ({comments.length})</h3>
 
@@ -264,7 +270,7 @@ function CommunityDetailPage({ posts, setPosts, postId }) {
                                                 <strong>{comment.writer}</strong>
                                                 <span>{comment.date}</span>
 
-                                                {/* 댓글의 수정·삭제 버튼 */}
+                                                {/* 댓글 수정·삭제 */}
                                                 <div style={{ marginLeft: "auto", display: "flex", gap: "12px" }}>
                                                     <button
                                                         type="button"
@@ -283,7 +289,7 @@ function CommunityDetailPage({ posts, setPosts, postId }) {
                                                 </div>
                                             </div>
 
-                                            {/* 선택한 댓글만 수정 입력칸으로 전환 */}
+                                            {/* 선택 댓글 수정 */}
                                             {editingCommentId !== null &&
                                             String(editingCommentId) === String(comment.id) ? (
                                                 <form
@@ -319,7 +325,7 @@ function CommunityDetailPage({ posts, setPosts, postId }) {
                                         </div>
                                     ))}
 
-                                    {/* 기존 댓글 등록 */}
+                                    {/* 댓글 입력 폼 */}
                                     <hr />
                                     <form
                                         className="detail-comment-write"
@@ -341,6 +347,75 @@ function CommunityDetailPage({ posts, setPosts, postId }) {
                                         <button type="submit">댓글 등록</button>
                                     </form>
                                 </div>
+
+                                {/* 하단 글 목록 · 15개 */}
+                                <div className="detail-post-list" aria-label="다른 게시글 바로가기">
+                                    <div className="detail-post-list-scroll">
+                                        <table className="detail-post-list-table">
+                                            <thead>
+                                                <tr><th>번호</th><th>제목</th><th>작성자</th><th>작성일</th></tr>
+                                            </thead>
+                                            <tbody>
+                                                {visibleListPosts.map((item, index) => (
+                                                    <tr
+                                                        key={item.id}
+                                                        className={String(item.id) === String(postId) ? "detail-post-list-current" : ""}
+                                                        role={String(item.id) === String(postId) ? undefined : "link"}
+                                                        tabIndex={String(item.id) === String(postId) ? undefined : 0}
+                                                        style={String(item.id) === String(postId) ? undefined : { cursor: "pointer" }}
+                                                        onClick={() => {
+                                                            if (String(item.id) !== String(postId)) {
+                                                                navi("/?page=detail&id=" + encodeURIComponent(item.id));
+                                                            }
+                                                        }}
+                                                        onKeyDown={(event) => {
+                                                            if (event.target !== event.currentTarget) return;
+                                                            if (event.key !== "Enter" && event.key !== " ") return;
+                                                            if (String(item.id) === String(postId)) return;
+                                                            event.preventDefault();
+                                                            navi("/?page=detail&id=" + encodeURIComponent(item.id));
+                                                        }}
+                                                    >
+                                                        <td>{sortedPosts.length - listStart - index}</td>
+                                                        <td className="detail-post-list-title">
+                                                            {String(item.id) === String(postId)
+                                                                ? <strong>{item.title} (현재 글)</strong>
+                                                                : <Link
+                                                                    to={"/?page=detail&id=" + encodeURIComponent(item.id)}
+                                                                    onClick={(event) => event.stopPropagation()}
+                                                                >{item.title}</Link>}
+                                                        </td>
+                                                        <td>{item.writer}</td>
+                                                        <td>{item.date}</td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    {totalListPages > 1 && (
+                                        <nav className="board-pagination" aria-label="다른 게시글 페이지 이동">
+                                            <button
+                                                type="button"
+                                                disabled={activeListPage === 1}
+                                                onClick={() => setListPage(activeListPage - 1)}
+                                            >이전</button>
+                                            {Array.from({ length: totalListPages }, (_, index) => index + 1).map(number => (
+                                                <button
+                                                    type="button"
+                                                    key={number}
+                                                    className={number === activeListPage ? "active" : ""}
+                                                    aria-current={number === activeListPage ? "page" : undefined}
+                                                    onClick={() => setListPage(number)}
+                                                >{number}</button>
+                                            ))}
+                                            <button
+                                                type="button"
+                                                disabled={activeListPage === totalListPages}
+                                                onClick={() => setListPage(activeListPage + 1)}
+                                            >다음</button>
+                                        </nav>
+                                    )}
+                                </div>
                             </>
                         )}
                     </div>
@@ -348,36 +423,11 @@ function CommunityDetailPage({ posts, setPosts, postId }) {
                     <p>게시글을 찾을 수 없습니다.</p>
                 )}
 
-                {/* 기존 버튼을 유지하고 게시글 수정 버튼만 추가 */}
-                <div className="community-actions">
-                    <Link to="/?page=community" className="community-cancel">
-                        목록으로
-                    </Link>
-
-                    <Link to="/?page=write" className="community-button">
-                        글쓰기
-                    </Link>
-
-                    {post && !isEditingPost && (
-                        <button
-                            type="button"
-                            className="community-button"
-                            onClick={startEditPost}
-                        >
-                            수정
-                        </button>
-                    )}
-
-                    {post && (
-                        <button
-                            type="button"
-                            className="community-cancel"
-                            onClick={delePost}
-                        >
-                            삭제
-                        </button>
-                    )}
-                </div>
+                {!post && (
+                    <div className="community-actions">
+                        <Link to="/?page=community" className="community-cancel">목록으로</Link>
+                    </div>
+                )}
             </div>
         </div>
     );
