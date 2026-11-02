@@ -3,7 +3,6 @@ import './projects.css';
 import ProjectList from "./ProjectList";
 import ProjectForm from "./ProjectForm";
 import ProjectDetail from "./ProjectDetail";
-import { quotations } from "../data/mockData";
 import ProjectEdit from "./ProjectEdit";
 import NotFoundPage from "../components/NotFoundPage";
 import { Route, Routes } from "react-router-dom";
@@ -32,12 +31,11 @@ function ProjectPage() {
                     }
                     {/* 새 프로젝트 등록 화면 */}
                     {page === 'newproject' &&
-                        <ProjectForm setPage={setPage} quotations={quotations} />
+                        <ProjectForm setPage={setPage} />
                     }
                     {/* 프로젝트 상세 화면 */}
                     {page === 'detail' &&
-                        <ProjectDetail setPage={setPage} selectedProjectId={selectedProjectId}
-                            quotations={quotations} />
+                        <ProjectDetail setPage={setPage} selectedProjectId={selectedProjectId} />
                     }
                     {/* 프로젝트 수정 화면 */}
                     {page === 'edit' &&

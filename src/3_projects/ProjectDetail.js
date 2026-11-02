@@ -6,7 +6,15 @@ import { getProjectStatus } from "../utils/projectStatus";
 
 function ProjectDetail(props) {
 
-    const { projects, updateProject, deleteProject, customers, projectHistory, employees } = useERP()
+    const { projects,
+        updateProject,
+        deleteProject,
+        customers,
+        projectHistory,
+        employees,
+        quotations,
+        products
+    } = useERP()
 
     const selectedProject = projects.find(project => project.id === props.selectedProjectId);
 
@@ -26,7 +34,7 @@ function ProjectDetail(props) {
     }
 
     // 프로젝트에 연결된 견적/고객/직원을 각각 ID로 조회
-    const selectedQuotation = props.quotations.find(
+    const selectedQuotation = quotations.find(
         q => q.id === selectedProject.quotationId
     );
     const customer = customers.find(
@@ -34,6 +42,9 @@ function ProjectDetail(props) {
     );
     const manager = employees.find(
         emp => emp.id === selectedProject.managerId
+    );
+    const selectedProduct = products.find(
+        product => product.id === selectedQuotation?.productId
     );
 
     const histories = projectHistory
@@ -74,9 +85,7 @@ function ProjectDetail(props) {
     }
 
     const quotationTotal = selectedQuotation
-        ? selectedQuotation.items.reduce(
-            (sum, item) => sum + item.quantity * item.unitPrice, 0
-        )
+        ? selectedQuotation.quantity * selectedQuotation.unitPrice
         : 0;
 
     const delProject = () => {
@@ -357,14 +366,12 @@ function ProjectDetail(props) {
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {selectedQuotation.items.map((item, index) => (
-                                            <tr key={`${item.productId}-${index}`}>
-                                                <td>{item.productName}</td>
-                                                <td>{item.quantity.toLocaleString()}개</td>
-                                                <td>{formatPrice(item.unitPrice)}</td>
-                                                <td>{formatPrice(item.quantity * item.unitPrice)}</td>
-                                            </tr>
-                                        ))}
+                                        <tr>
+                                            <td>{selectedProduct?.productName ?? "상품 정보 없음"}</td>
+                                            <td>{selectedQuotation.quantity.toLocaleString()}개</td>
+                                            <td>{formatPrice(selectedQuotation.unitPrice)}</td>
+                                            <td>{formatPrice(quotationTotal)}</td>
+                                        </tr>
                                     </tbody>
                                 </table>
                             </div>
