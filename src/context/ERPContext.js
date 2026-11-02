@@ -1,9 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
-import {
-    initialProjects,
-    customers as initialCustomers,
-    initialEmployees
-} from "../data/mockData";
+import { initialProjects, initialEmployees } from "../data/mockData";
+import { useERPCustomerContext } from "./ERPCustomerContext";
+
 
 const ERPContext = createContext(null)
 
@@ -13,8 +11,18 @@ const NEXT_PH_ID_KEY = 'erp_project_history_next_id'
 const PH_KEY = 'erp_project_history'
 
 export function ERPProvider({ children }) {
+    //
 
-    const [customers, setCustomers] = useState(initialCustomers)
+    const {
+        customers,
+        setCustomers,
+        addCustomer,
+        saveEditedCustomer,
+        deleteCustomers
+    } = useERPCustomerContext();
+   
+
+
 
     const [employees, setEmployees] = useState(initialEmployees)
 
@@ -67,6 +75,8 @@ export function ERPProvider({ children }) {
 
     })
 
+
+
     useEffect(() => {
         // localStorage에 projects를 문자열로 변환해서 저장
         localStorage.setItem(STORAGE_KEY, JSON.stringify(projects))
@@ -76,6 +86,8 @@ export function ERPProvider({ children }) {
     useEffect(() => {
         localStorage.setItem(PH_KEY, JSON.stringify(projectHistory))
     }, [projectHistory])
+
+
 
     const addProject = (newProject) => {
 
@@ -178,8 +190,11 @@ export function ERPProvider({ children }) {
         localStorage.removeItem(NEXT_PH_ID_KEY)
 
     }
-   
-    
+
+
+
+
+
     return (
         <ERPContext.Provider value={{
             projects,
@@ -189,19 +204,25 @@ export function ERPProvider({ children }) {
             deleteProject,
             resetProjects,
             projectHistory,
+            employees,
+            setEmployees,
 
             employees,
             setEmployees,
 
             customers,
-            setCustomers
-            
+            setCustomers,
+            addCustomer,
+            saveEditedCustomer,
+            deleteCustomers
+
+
         }}>
             {children}
         </ERPContext.Provider>
     )
-    
-    
+
+
 }
 
 

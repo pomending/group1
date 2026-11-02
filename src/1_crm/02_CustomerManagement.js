@@ -1,6 +1,6 @@
 //고객 목록 및 관리(조회 등록 수정 삭제 페이지이동 엑셀다운로드)
 
-import React, { useState,useEffect } from "react";
+import React, { useState, useEffect } from "react";
 //고객정보를 엑셀 파일로 생성하기 위한 라이브러리
 import ExcelJS from "exceljs";
 //생성된 엑셀 파일을 다운로드하기 위한 기능
@@ -10,19 +10,18 @@ import { useERP } from "../context/ERPContext";
 
 
 function CustomerManagement() {
-    //현재등록된 전체 고객목록
-    const { customers, setCustomers} = useERP();
-
-
-
+    //ERPcontext에 있는 함수 가져오기
+    const { customers, setCustomers, addCustomer,
+        saveEditedCustomer, deleteCustomers } = useERP();
+        
 
     //검색창에 입력한 검색어
     const [search, setSearch] = useState("");
     //검색조건으로 나온 고객목록
     const [searchList, setSearchList] = useState(customers);
-    useEffect(()=>{
+    useEffect(() => {
         setSearchList(customers)
-    },[customers])
+    }, [customers])
     //체크 박스로 선택한 고객들의 ID목록
     const [checkedIds, setCheckedIds] = useState([]);
     //현재 보고있는 페이지 번호
@@ -57,30 +56,7 @@ function CustomerManagement() {
         setCurrentPage(1);
     }
 
-    //신규고객등록 및 목록추가
-    function addCustomer(newCustomer) {
-    // 저장된 다음 고객 ID 불러오기
-     const savedNextId = Number(localStorage.getItem("crm_next_id"));
-    // 현재 고객 목록에서 가장 큰 ID 찾기
-     const maxId = Math.max(
-        0,
-       ...customers.map((customer) => Number(customer.id) || 0)
-     );
-    // 다음 발급 ID와 현재 최대 ID + 1 중 큰 값 선택
-     const newId = Math.max(maxId + 1, savedNextId || 1);
-    // 다음에 발급할 ID 저장
-      localStorage.setItem("crm_next_id", String(newId + 1));
 
-     const updatedCustomers = [
-        { ...newCustomer, id: newId },
-        ...customers
-     ];
-    // 전체고객목록에 추가
-     setCustomers(updatedCustomers);
-    //화면에 표시할 목록 추가
-   
-    
-    }
 
 
     //선택한 고객의 수정팝업 열기
@@ -95,41 +71,27 @@ function CustomerManagement() {
             "width=600,height=700"
         );
     }
-    //수정한 고객정보 저장
-    function saveEditedCustomer(updateCustomer) {
-        const updateCustomers = customers.map((customer) =>
-            customer.id === updateCustomer.id
-                ? updateCustomer
-                : customer
-        );
-    
-        setCustomers(updateCustomers);
-        setSearchList(updateCustomers);
-        setSearch("");
-    }
+
     //체크박스로 선택한 고객 삭제(체크가 되어있지 않은 목록을 불러와 저장)
     function deleteSelectedCustomers() {
-
         const deleteCount = checkedIds.length;
-
         const isConfirmed = window.confirm(
             `선택한 고객 ${deleteCount}건을 삭제하시겠습니까?`
         );
         if (!isConfirmed) {
             return;
         }
-        const remainingCustomers = customers.filter((customer) =>
-            !checkedIds.includes(customer.id)
-        );
+        //삭제함수 context에서 가져오기
+        deleteCustomers(checkedIds);
 
-        setCustomers(remainingCustomers);
-        setSearchList(remainingCustomers);
         setSearch("");
         setCheckedIds([]);
         setCurrentPage(1);
 
         alert(`고객정보 ${deleteCount}건이 삭제되었습니다.`);
     }
+
+
 
     //고객 등록·수정 팝업에서 부모 창의 함수와 데이터를 사용하도록 연결
     window.saveEditedCustomer = saveEditedCustomer;
