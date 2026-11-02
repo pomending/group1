@@ -54,7 +54,7 @@ function ERPContent() {
                     <Routes>
                         <Route path="/" element={<DashboardPage />} />
 
-                        {/* <Route path='/login/*' element={<LoginPage />} /> */}
+                        <Route path='/login/*' element={<LoginPage />} />
 
                         <Route path="/crm/*" element={<CrmPage />} />
                         <Route path="/quotation/*" element={<QuotationPage />} />
