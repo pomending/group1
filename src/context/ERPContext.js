@@ -1,23 +1,22 @@
 import React, { createContext, useContext, useState } from "react";
 import {
-    customers as initialCustomers,
     initialEmployees,
     products as initialProducts,
     quotations as initialQuotations
 } from "../data/mockData";
 import useProjectData from "./useProjectData";
+import useCustomerData from "./useCustomerData"
 
 const ERPContext = createContext(null)
 
 export function ERPProvider({ children }) {
 
     const projectData = useProjectData()
+    const customerData = useCustomerData()
 
     const [products, setProducts] = useState(initialProducts)
 
     const [quotations, setQuotations] = useState(initialQuotations)
-
-    const [customers, setCustomers] = useState(initialCustomers)
 
     const [employees, setEmployees] = useState(initialEmployees)
    
@@ -26,17 +25,16 @@ export function ERPProvider({ children }) {
         <ERPContext.Provider value={{
             ...projectData,
 
+            ...customerData,
+
             employees,
             setEmployees,
-
-            customers,
-            setCustomers,
 
             products,
             setProducts,
 
             quotations,
-            setQuotations
+            setQuotations,
             
         }}>
             {children}
