@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./QuotationList.css";
+import {formatQuotationId} from "../utils/formatUtils";
 
-// 뒤로가기 버튼 만들기
 function QuotationList({quotations}) {
 
     const navi = useNavigate();
@@ -46,24 +46,32 @@ function QuotationList({quotations}) {
         setCurrentPage(1);
     }
 
+    const [sortOrder, setSortOrder] = useState("latest");
+
     const filteredQuotations = quotations.filter((quotation) => {
         const searchMatch =
-            quotation.code.toLowerCase().includes(appliedsearch.toLowerCase()) ||
-            quotation.client.toLowerCase().includes(appliedsearch.toLowerCase()) ||
-            quotation.product.toLowerCase().includes(appliedsearch.toLowerCase());
+            formatQuotationId(quotation.id).toLowerCase().includes(appliedsearch.toLowerCase()) ||
+            String(quotation.customerId).toLowerCase().includes(appliedsearch) ||
+            String(quotation.productId).toLowerCase().includes(appliedsearch);
 
         const startDateMatch =
-            appliedstartdate === "" || quotation.date >= appliedstartdate;
+            appliedstartdate === "" || quotation.createdAt >= appliedstartdate;
 
         const endDateMatch =
-            appliedenddate === "" || quotation.date <= appliedenddate;
+            appliedenddate === "" || quotation.createdAt <= appliedenddate;
 
         const statusMatch =
             appliedstatus === "전체 상태" ||
             quotation.status === appliedstatus;
 
         return searchMatch && startDateMatch && endDateMatch && statusMatch;
-    })
+    }).sort((a, b) => {
+        if(sortOrder === "latest"){
+            return new Date(b.createdAt) - new Date(a.createdAt);
+        }else {
+            return new Date(a.createdAt) - new Date(b.createdAt);
+        }
+    });
 
     //페이지네이션
     const itemsPerPage = 10;
@@ -190,7 +198,14 @@ function QuotationList({quotations}) {
             <section className="recent-quotation">
 
                 <h2>견적 목록</h2>
-
+                <div className="sort-select">
+                    <select
+                    value={sortOrder}
+                    onChange={(e) => setSortOrder(e.target.value)}>
+                        <option value="latest">최신순</option>
+                        <option value="oldest">오래된순</option>
+                    </select>
+                </div>
                 <div className="table-scroll">
                     <table>
                         <thead>
@@ -207,23 +222,22 @@ function QuotationList({quotations}) {
 
                         <tbody>
                             {currentQuotations.map((quotation) => (
-                                <tr key={quotation.code}>
-                                    <td>{quotation.code}</td>
-                                    <td>{quotation.client}</td>
-                                    <td>{quotation.product}</td>
-                                    <td>{quotation.date}</td>
-                                    <td>{quotation.amount.toLocaleString()}원</td>
+                                <tr key={quotation.id}>
+                                    <td>{formatQuotationId(quotation.id)}</td>
+                                    <td>{quotation.customerId}</td>
+                                    <td>{quotation.productId}</td>
+                                    <td>{quotation.createdAt}</td>
+                                    <td>{(quotation.quantity * quotation.unitPrice).toLocaleString()}원</td>
                                     <td>
                                         <span className={`status-badge ${quotation.status === "승인 대기" ? "pending" :
-                                                quotation.status === "승인 완료" ? "approved" :
-                                                    "rejected"
+                                                quotation.status === "승인 완료" ? "approved" : "rejected"
                                             }`}>
                                             {quotation.status}
 
                                         </span>
                                     </td>
                                     <td>
-                                        <button onClick={() => navi(`/quotation/detail/${quotation.code}`)}>
+                                        <button onClick={() => navi(`/quotation/detail/${quotation.id}`)}>
                                             상세
                                         </button>
                                     </td>

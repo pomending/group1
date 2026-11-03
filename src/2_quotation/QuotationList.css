@@ -399,3 +399,40 @@
   .summary-card h2.rejected-count {
     color: #dc2626;
   }
+
+  /* 정렬 영역 */
+.sort-select {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+/* 정렬 선택창 */
+.sort-select select {
+    width: 130px;
+    height: 40px;
+    padding: 0 12px;
+
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+
+    background-color: #ffffff;
+    color: #333333;
+
+    font-size: 14px;
+    cursor: pointer;
+
+    outline: none;
+}
+
+/* 선택창 클릭 및 포커스 */
+.sort-select select:focus {
+    border-color: #4f46e5;
+    box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.1);
+}
+
+/* 마우스 올렸을 때 */
+.sort-select select:hover {
+    border-color: #9ca3af;
+}
