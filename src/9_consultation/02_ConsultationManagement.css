@@ -88,3 +88,9 @@
 .consultation-page tbody tr:hover {
     background: #f5f8fc;
 }
+
+button:disabled {
+    background-color: #ccc;
+    color: #777;
+    cursor: not-allowed;
+}

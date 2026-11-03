@@ -1,5 +1,5 @@
 
-export const ConsultationList = [
+export const Consultations = [
     {   customerId : null,
         id: 1,
         companyName: "삼성전자",
