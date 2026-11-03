@@ -4,22 +4,19 @@ import { Routes, Route } from "react-router-dom";
 import QuotationList from "./QuotationList";
 import QuotationCreate from "./QuotationCreate";
 import QuotationDetail from "./QuotationDetail";
-import QuotationDashboard from "./QuotationDashboard";
 
-import {quotations as dummyQuotations} from "./Dummy";
+import {useERP} from "../context/ERPContext";
 
 import "./QuotationPage.css"
 
 function QuotationPage() {
 
-    //Dummy.js의 데이터를 초기 데이터로 사용
-    const [quotations, setQuotations] = useState(dummyQuotations);
+    const {quotations, setQuotations} = useERP();
 
     return (
         
             <Routes>
-                <Route index element={<QuotationDashboard quotations={quotations}/>} /> {/* index는 해당 메뉴의 첫화면을 보여준다 */}
-                <Route path="list" element={<QuotationList quotations={quotations}/>} />
+                <Route index element={<QuotationList quotations={quotations}/>} /> {/* index는 해당 메뉴의 첫화면을 보여준다 */}
                 <Route path="create" element={<QuotationCreate quotations={quotations} setQuotations={setQuotations}/>} />
                 <Route path="detail/:id" element={<QuotationDetail quotations={quotations} setQuotations={setQuotations}/>} />
             </Routes>

@@ -410,3 +410,155 @@
         flex: 1;
     }
 }
+
+/* 내부 담당자 입력 영역 */
+.form-group {
+    position: relative;
+}
+
+/* 직원 검색 결과 전체 */
+.employee-list {
+    position: relative;
+    display: block;
+    width: 100%;
+    max-height: 220px;
+    overflow-y: auto;
+    margin-top: 8px;
+    padding: 0;
+    background-color: #ffffff;
+    border: 1px solid #dce3ef;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+    box-sizing: border-box;
+}
+
+/* 직원 검색 결과 한 명 */
+.employee-list .employee-item {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    min-height: 58px;
+    padding: 12px 15px;
+    margin: 0;
+    background-color: #ffffff;
+    border: none;
+    border-bottom: 1px solid #edf0f5;
+    box-sizing: border-box;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+/* 마지막 직원의 아래쪽 테두리 제거 */
+.employee-list .employee-item:last-child {
+    border-bottom: none;
+}
+
+/* 마우스를 올렸을 때 */
+.employee-list .employee-item:hover {
+    background-color: #f5f7fc;
+}
+
+/* 직원 이름 - 왼쪽 */
+.employee-list .employee-item strong {
+    display: block;
+    font-size: 14px;
+    font-weight: 600;
+    color: #303b50;
+}
+
+/* 사원번호와 부서 - 오른쪽 */
+.employee-list .employee-info {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-end;
+    gap: 4px;
+    margin-left: auto;
+}
+
+/* 사원번호 */
+.employee-list .employee-info span:first-child {
+    font-size: 12px;
+    font-weight: 600;
+    color: #65748b;
+}
+
+/* 부서 */
+.employee-list .employee-info span:last-child {
+    font-size: 12px;
+    color: #8a94a6;
+}
+
+/* 검색 결과가 없을 때 */
+.employee-list p {
+    margin: 0;
+    padding: 15px;
+    font-size: 13px;
+    color: #8a94a6;
+    text-align: center;
+}
+
+/* 스크롤바 */
+.employee-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.employee-list::-webkit-scrollbar-thumb {
+    background-color: #d5dce8;
+    border-radius: 10px;
+}
+
+.employee-list::-webkit-scrollbar-track {
+    background-color: transparent;
+}
+
+/* 거래처 검색 영역 */
+.customer-list {
+    position: relative;
+    display: block;
+    width: 100%;
+    max-height: 220px;
+    overflow-y: auto;
+    margin-top: 8px;
+    padding: 0;
+    background-color: #fff;
+    border: 1px solid #dce3ef;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+    box-sizing: border-box;
+}
+
+.customer-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 15px;
+    border-bottom: 1px solid #edf0f5;
+    cursor: pointer;
+}
+
+.customer-item:last-child {
+    border-bottom: none;
+}
+
+.customer-item:hover {
+    background-color: #f5f7fc;
+}
+
+.customer-item strong {
+    font-size: 14px;
+    color: #303b50;
+}
+
+.customer-info {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+}
+
+.customer-info span {
+    font-size: 12px;
+    color: #8a94a6;
+}
