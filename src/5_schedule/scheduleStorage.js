@@ -49,7 +49,8 @@ export function mergeScheduleChanges(base, local, remote) {
 
 // 브라우저 저장소에서 일정을 읽고, 잘못된 필드를 기본값으로 정리합니다.
 export function loadSchedules() {
-  // 손상된 자료는 백업하고 읽기 실패 시 자동 저장을 막습니다.
+  // 일부 항목을 보정·제외할 때는 정리 전 JSON을 브라우저 저장소에 별도로 보존합니다. 수동 파일 백업 기능은 아닙니다.
+  // 전체 읽기가 실패하면 자동 저장을 막아 원본을 보호합니다.
   try {
     const raw = localStorage.getItem("made-mate-schedules");
     const savedItems = JSON.parse(raw || "[]");
@@ -123,7 +124,8 @@ export function loadSchedules() {
         color: typeColors[item.type] || typeColors["기획"],
       });
     }
-    // 이전 버전에서 날짜별로 저장한 반복 항목은 하나의 반복 규칙으로 합칩니다.
+    // 이전 버전의 같은 seriesId 반복 항목은 날짜순 정렬 후 가장 이른 항목 하나만 남깁니다.
+    // 여러 항목의 제목·상태·제외일 등을 합치는 병합은 하지 않습니다.
     // 이미 읽은 seriesId는 배열에 기억하고, 같은 그룹을 다시 만나면 건너뜁니다.
     const seenSeries = [];
     const items = [];

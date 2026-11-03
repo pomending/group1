@@ -224,7 +224,9 @@ export function useScheduleTeam() {
   };
 }
 
-// 새 일정의 폼만 현재 탭에 임시 보관합니다. 원본 일정·프로젝트·팀원 저장소에는 쓰지 않습니다.
+// 새 일정의 알려진 폼 필드만 sessionStorage의 made-mate-schedule-draft에 보관합니다. 같은 탭의 새로고침 후 복구용입니다.
+// 기존 일정 수정은 제외하며 원본 일정·프로젝트·팀원 저장소에는 쓰지 않습니다. 영구 보관이나 탭 간 동기화는 하지 않습니다.
+// 선택 날짜를 제외한 값이 모두 기본 상태로 돌아오면 임시 내용을 지웁니다. 오류가 있으면 자동 쓰기를 멈춥니다.
 export function useScheduleDraft(form, isEditing) {
   const key = "made-mate-schedule-draft";
   const [initial] = useState(() => {
@@ -257,6 +259,7 @@ export function useScheduleDraft(form, isEditing) {
       setDraft(values);
     } catch { setDraftError("작성 내용을 임시 보관하지 못했습니다. 창을 닫기 전에 일정을 저장해 주세요."); }
   }, [form, isEditing, draftError]);
+  // 새 일정 등록·닫기 승인 또는 사용자의 임시 보관 삭제·초기화에서 호출합니다. 삭제 실패도 화면에 알립니다.
   function clearDraft() {
     try { sessionStorage.removeItem(key); setDraft(null); setDraftError(""); }
     catch { setDraftError("임시 보관 내용을 삭제하지 못했습니다. 브라우저 저장소 설정을 확인해 주세요."); }

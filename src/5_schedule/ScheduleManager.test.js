@@ -25,6 +25,49 @@ import {
  */
 const storageKey = "made-mate-schedules";
 
+test.each([
+  [null, 0, false, "등록된 일정이 없습니다. 목록을 닫고 일정 등록 버튼으로 추가해 보세요."],
+  ["2026-11-04", 1, false, "선택한 날짜에 일정이 없습니다. 목록을 닫고 일정 등록 버튼으로 추가해 보세요."],
+  ["2026-11-04", 1, true, "선택한 날짜에 조건과 일치하는 일정이 없습니다. 검색어나 필터를 변경해 주세요."],
+])("빈 목록은 상태 필터보다 원래 비어 있는 이유를 먼저 안내한다: %s/%s/%s", (filterDate, totalCount, hasActiveFilter, message) => {
+  render(<ScheduleListModal items={[]} filterDate={filterDate} totalCount={totalCount} hasActiveFilter={hasActiveFilter}
+    onClose={jest.fn()} onEdit={jest.fn()} onClearDateFilter={jest.fn()} onToggleFavorite={jest.fn()} />);
+  fireEvent.change(screen.getByLabelText("목록 진행 상태"), { target: { value: "completed" } });
+  expect(screen.getByText(message)).toBeInTheDocument();
+  expect(screen.getByRole("status", { name: "목록 표시 건수" })).toHaveTextContent("표시 0건");
+  expect(screen.queryByRole("button", { name: "진행 상태 전체 보기" })).not.toBeInTheDocument();
+});
+
+test("목록 도구에서 상태 결과가 없으면 정렬을 유지하며 전체 보기로 돌아간다", () => {
+  const items = [makeStoredSchedule({ id: "work", scope: "업무용", status: "pending" }), makeStoredSchedule({ id: "personal" })];
+  const original = JSON.stringify(items);
+  render(<ScheduleListModal items={items} totalCount={items.length} onClose={jest.fn()} onEdit={jest.fn()} onToggleFavorite={jest.fn()} />);
+  const toolbar = screen.getByRole("group", { name: "일정 목록 도구" });
+  fireEvent.change(within(toolbar).getByLabelText("목록 정렬"), { target: { value: "title" } });
+  fireEvent.change(within(toolbar).getByLabelText("목록 진행 상태"), { target: { value: "completed" } });
+  expect(within(toolbar).getByRole("status", { name: "목록 표시 건수" })).toHaveTextContent("표시 0건");
+  expect(screen.getByText("선택한 진행 상태에 해당하는 업무 일정이 없습니다.")).toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "진행 상태 전체 보기" }));
+  expect(within(toolbar).getByLabelText("목록 정렬")).toHaveValue("title");
+  expect(within(toolbar).getByLabelText("목록 진행 상태")).toHaveValue("all");
+  expect(within(toolbar).getByRole("status", { name: "목록 표시 건수" })).toHaveTextContent("표시 2건");
+  expect(JSON.stringify(items)).toBe(original);
+});
+
+test("팀원이 등록돼 있어도 검색으로 행이 사라지면 조건 안내를 표시한다", async () => {
+  saveSchedules([makeSchedule({ person: "김담당" })]);
+  render(<ScheduleManager />);
+  const roster = localStorage.getItem("made-mate-schedule-team");
+  fireEvent.click(screen.getByRole("tab", { name: "담당자별 주간" }));
+  fireEvent.change(screen.getByLabelText("일정 검색"), { target: { value: "없는검색결과" } });
+  expect(screen.getByText("현재 조건에 표시할 팀원이 없습니다. 검색어나 필터를 변경해 주세요.")).toBeInTheDocument();
+  expect(screen.queryByText("등록된 팀원이 없습니다. 팀원 목록에서 먼저 등록해 주세요.")).not.toBeInTheDocument();
+  fireEvent.change(screen.getByLabelText("일정 검색"), { target: { value: "" } });
+  expect(screen.getByRole("region", { name: "담당자별 주간 일정표" })).toBeInTheDocument();
+  expect(localStorage.getItem("made-mate-schedule-team")).toBe(roster);
+  await act(async () => {});
+});
+
 test("입력 오류를 해당 칸에 연결하고 값을 고치면 안내를 해제한다", async () => {
   render(<ScheduleManager />);
   fireEvent.click(screen.getByRole("button", { name: "일정 등록", exact: true }));
@@ -763,7 +806,7 @@ afterEach(() => {
   jest.useRealTimers();
 });
 
-// 두 목록이 같은 프로젝트 이동 함수를 사용하므로 같은 입력으로 양쪽 진입 경로를 검사합니다.
+// 현재 입력 목록은 '프로젝트' 한 가지이므로 프로젝트 목록의 이동 경로를 검사합니다. 팀원 경로까지 검사하는 것은 아닙니다.
 test.each(["프로젝트"])("%s 목록에서 프로젝트를 누르면 가까운 날짜의 해당 일정과 상세 정보를 확인한다", async (source) => {
   jest.useFakeTimers("modern");
   jest.setSystemTime(new Date("2026-10-22T12:00:00"));
