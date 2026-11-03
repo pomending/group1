@@ -1,3 +1,4 @@
+
 /* 상단 헤더 전체 */
 .erp-layout .erp-topbar {
     position: sticky;
@@ -160,7 +161,7 @@
 }
 
 /* 오른쪽 영역 */
-.erp-layout .erp-topbar-user {
+.erp-topbar .erp-topbar-user {
     display: flex;
     flex-direction: row;
     align-items: center;
@@ -176,8 +177,29 @@
     padding: 0;
 }
 
+/* 마이페이지 버튼: 글자와 아이콘 전체 클릭 */
+.erp-topbar a.erp-topbar-user {
+    padding: 8px 12px;
+    background-color: #f7f5ff;
+    border-radius: 12px;
+    text-decoration: none;
+    color: #293044;
+    cursor: pointer;
+    box-sizing: border-box;
+}
+
+.erp-topbar a.erp-topbar-user:hover {
+    background-color: #eeeafd;
+    text-decoration: none;
+}
+
+.erp-topbar a.erp-topbar-user:visited {
+    color: #293044;
+    text-decoration: none;
+}
+
 /* 사용자 정보 */
-.erp-layout .erp-topbar-user-info {
+.erp-topbar .erp-topbar-user-info {
     display: flex;
     flex-direction: column;
     align-items: flex-end;
@@ -188,7 +210,7 @@
     padding: 0;
 }
 
-.erp-layout .erp-topbar-user-info strong {
+.erp-topbar .erp-topbar-user-info strong {
     color: #293044;
     font-size: 13px;
     font-weight: 700;
@@ -196,7 +218,7 @@
     white-space: nowrap;
 }
 
-.erp-layout .erp-topbar-user-info span {
+.erp-topbar .erp-topbar-user-info span {
     color: #8991a1;
     font-size: 11px;
     line-height: 1.3;
@@ -204,7 +226,7 @@
 }
 
 /* 원형 아바타 */
-.erp-layout .erp-topbar-avatar {
+.erp-topbar .erp-topbar-avatar {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -221,7 +243,7 @@
     border-radius: 50%;
 
     color: #7565d8;
-    font-size: 14px;
+    font-size: 18px;
     font-weight: 700;
     line-height: 1;
 }
@@ -250,11 +272,11 @@
         font-size: 14px;
     }
 
-    .erp-layout .erp-topbar-user-info {
-        display: none;
+    .erp-topbar .erp-topbar-user-info {
+        display: flex;
     }
 
-    .erp-layout .erp-topbar-avatar {
+    .erp-topbar .erp-topbar-avatar {
         flex-basis: 32px;
         width: 32px;
         height: 32px;

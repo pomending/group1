@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import "./Dashboard.css";
@@ -13,6 +14,7 @@ import CommunityDetailPage from "./CommunityDetailPage";
 import NoticePage from "./NoticePage";
 import NoticeWritePage from "./NoticeWritePage";
 import NoticeDetailPage from "./NoticeDetailPage";
+import MyPage from "./MyPage";
 
 // 마감일 · D-Day · 긴급 표시
 function getRemainingDays(project) {
@@ -109,6 +111,7 @@ function enterActualProjectPage(project = null) {
             }
         }
     }
+
     // 사이드바 탐색 · 기존 경로
     stopObserving();
 }
@@ -210,6 +213,11 @@ function DashboardPage() {
                 postId={searchParams.get("id")}
             />
         );
+    }
+
+    // 마이페이지 화면
+    if (page === "mypage") {
+        return <MyPage />;
     }
 
     return (
