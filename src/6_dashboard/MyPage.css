@@ -1,0 +1,216 @@
+
+/* 마이페이지 전체 */
+.mypage {
+    min-height: 100%;
+    padding: 30px;
+    background-color: #f5f7fa;
+    box-sizing: border-box;
+}
+
+/* 페이지 제목 */
+.mypage-title {
+    margin: 0 0 24px;
+    color: #293044;
+    font-size: 26px;
+}
+
+/* 흰색 정보 카드 */
+.mypage-card {
+    width: 100%;
+    padding: 28px;
+    background-color: white;
+    border: 1px solid #e2e5e8;
+    border-radius: 10px;
+    box-sizing: border-box;
+}
+
+/* 프로필 영역: 아이콘과 이름을 가로로 배치 */
+.mypage-profile {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    padding-bottom: 26px;
+    border-bottom: 1px solid #e8eaf0;
+}
+
+/* 동그란 프로필 아이콘 */
+.mypage-avatar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 68px;
+    height: 68px;
+    background-color: #eeeafd;
+    border-radius: 50%;
+    font-size: 32px;
+    flex-shrink: 0;
+}
+
+/* 사원 이름 */
+.mypage-profile-text h2 {
+    margin: 0 0 5px;
+    color: #293044;
+    font-size: 22px;
+}
+
+/* 부서와 직급 */
+.mypage-profile-text p {
+    margin: 0 0 5px;
+    color: #6c7484;
+    font-size: 14px;
+}
+
+/* 사원 번호 */
+.mypage-profile-text span {
+    color: #8991a1;
+    font-size: 13px;
+}
+
+/* 사원 정보 영역 */
+.mypage-section {
+    padding: 24px 0 28px;
+    border-bottom: 1px solid #e8eaf0;
+}
+
+.mypage-section h3 {
+    margin: 0 0 22px;
+    color: #293044;
+    font-size: 18px;
+}
+
+/* 정보 배치: 한 줄에 2개씩 */
+.mypage-info-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 26px 30px;
+}
+
+/* 각 정보의 이름과 값을 세로로 배치 */
+.mypage-info-item {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+/* 정보 이름: 아이디, 이메일 등 */
+.mypage-info-item span {
+    color: #8991a1;
+    font-size: 13px;
+}
+
+/* 정보 값 */
+.mypage-info-item strong {
+    color: #293044;
+    font-size: 15px;
+    overflow-wrap: anywhere;
+}
+
+/* 비밀번호 변경 영역 */
+.mypage-account {
+    padding-top: 22px;
+}
+
+/* 비밀번호 변경 버튼: 현재 비활성화 */
+.mypage-password-button {
+    padding: 0;
+    background: none;
+    border: none;
+    color: #50586a;
+    font-size: 15px;
+    font-weight: bold;
+    font-family: inherit;
+    cursor: not-allowed;
+}
+
+/* 화면 너비가 768px 이하이면 정보 1개씩 표시 */
+@media (max-width: 768px) {
+    .mypage {
+        padding: 16px;
+    }
+
+    .mypage-card {
+        padding: 20px;
+    }
+
+    .mypage-info-grid {
+        grid-template-columns: 1fr;
+        gap: 20px;
+    }
+}
+
+/* 사원 정보 제목과 수정 버튼을 한 줄에 배치 */
+.mypage-section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 22px;
+}
+
+.mypage-section-header h3 {
+    margin: 0;
+}
+
+/* 내 정보 수정 버튼 */
+.mypage-edit-button {
+    padding: 8px 12px;
+    background-color: #ffffff;
+    border: 1px solid #d9dce5;
+    border-radius: 6px;
+    color: #293044;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.mypage-edit-button:hover {
+    background-color: #f5f7fa;
+}
+
+/* 입력칸 제목 */
+.mypage-info-item label {
+    color: #8991a1;
+    font-size: 13px;
+}
+
+/* 이름, 이메일, 전화번호 입력칸 */
+.mypage-info-item input {
+    width: 100%;
+    padding: 9px 10px;
+    border: 1px solid #d9dce5;
+    border-radius: 6px;
+    font-size: 14px;
+    font-family: inherit;
+    box-sizing: border-box;
+}
+
+.mypage-info-item input:focus {
+    outline: 2px solid #d9d0fa;
+    border-color: #7565d8;
+}
+
+/* 저장과 취소 버튼 */
+.mypage-edit-buttons {
+    display: flex;
+    gap: 8px;
+    margin-top: 22px;
+}
+
+.mypage-save-button,
+.mypage-cancel-button {
+    padding: 9px 18px;
+    border-radius: 6px;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.mypage-save-button {
+    background-color: #7565d8;
+    color: white;
+    border: 1px solid #7565d8;
+}
+
+.mypage-cancel-button {
+    background-color: white;
+    color: #50586a;
+    border: 1px solid #d9dce5;
+}
