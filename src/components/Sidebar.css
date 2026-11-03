@@ -120,10 +120,36 @@
     font-size: 18px;
 }
 
-/* 하단 */
+/* 하단: 전체 초기화 버튼 */
+
+.erp-sidebar-actions {
+    margin-top: auto;
+    padding: 20px 8px 0;
+}
+
+.erp-sidebar-reset {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #5b647a;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--erp-sidebar-text);
+    font: inherit;
+    cursor: pointer;
+}
+
+.erp-sidebar-reset:hover {
+    background: #394258;
+    color: white;
+}
+
+.erp-sidebar-reset:focus-visible {
+    outline: 2px solid var(--erp-sidebar-accent);
+    outline-offset: 2px;
+}
 
 .erp-sidebar-footer {
-    margin-top: auto;
+    margin-top: 0;
     padding: 20px 12px 0;
     color: #8994ac;
     font-size: 10px;
@@ -147,6 +173,15 @@
     .erp-sidebar-section,
     .erp-sidebar-footer {
         display: none;
+    }
+
+    .erp-sidebar-actions {
+        margin-top: 12px;
+        padding: 0;
+    }
+
+    .erp-sidebar-reset {
+        width: auto;
     }
 
     .erp-sidebar-nav {

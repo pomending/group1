@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { formatEmployeeId, statusClass } from "../utils/employeeUtils";
+import { statusClass } from "../utils/employeeUtils";
+import { formatEmployeeId, formatProjectId } from "../utils/formatUtils";
 
 export default function EmployeeDetail({ employee, projects, onEdit, onDelete }) {
     const [error, setError] = useState("");
@@ -47,7 +48,7 @@ export default function EmployeeDetail({ employee, projects, onEdit, onDelete })
                         <thead><tr><th>프로젝트 ID</th><th>프로젝트명</th><th>진행 상태</th><th>시작일</th><th>납기일</th></tr></thead>
                         <tbody>{assignedProjects.map(project => (
                             <tr key={project.id}>
-                                <td className="hr-id">PJ-{String(project.id).padStart(3, "0")}</td>
+                                <td className="hr-id">{formatProjectId(project.id)}</td>
                                 <td><strong>{project.name}</strong></td>
                                 <td>{project.status}</td>
                                 <td>{project.startDate || "-"}</td>

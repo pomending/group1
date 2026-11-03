@@ -111,283 +111,298 @@ function ProjectDetail(props) {
     return (
         <div className="pd-page pj-page">
             <div className="pd-container pj-container">
-                <button className="pd-back pj-back" onClick={() => props.setPage('list')}>
-                    ← 프로젝트 목록으로
-                </button>
+                <div className="pd-top-actions">
+                    <button
+                        className="pd-back pj-back"
+                        onClick={() => props.setPage("list")}
+                    >
+                        ← 프로젝트 목록으로
+                    </button>
 
-                <div className="pd-heading">
-                    <div>
-                        <p className="pd-eyebrow pj-eyebrow">PROJECT MANAGEMENT / DETAIL</p>
-                        <h1>{selectedProject.name}</h1>
-                        <p>프로젝트의 기본 정보와 제작 진행 상황을 확인합니다.</p>
-                    </div>
-
-                    <div className="pd-heading-actions">
-                        <span className={
-                            "pd-status pj-badge pd-status-" +
-                            getProjectStatus(selectedProject).replaceAll(' ', '')
-                        }>
-                            {getProjectStatus(selectedProject)}
-                        </span>
-
-                        <button
-                            className="pd-edit-btn pj-btn pj-primary"
-                            onClick={() => props.setPage('edit')}
-                        >
-                            수정
-                        </button>
-
-                        <button className="pd-delete-btn pj-btn" onClick={delProject}>삭제</button>
-                    </div>
+                    <button
+                        className="pd-print-btn pj-btn"
+                        onClick={() => window.print()}
+                    >
+                        보고서 인쇄
+                    </button>
                 </div>
 
-                {/* 프로젝트 기본 정보 */}
-                <section className="pd-card pj-card">
-                    <div className="pd-card-header pj-card-heading">
+                <div className="project-report">
+
+                    <div className="pd-heading">
                         <div>
-                            <span className="pd-section-num pj-eyebrow">PROJECT INFO</span>
-                            <h2>프로젝트 기본 정보</h2>
+                            <p className="pd-eyebrow pj-eyebrow">PROJECT MANAGEMENT / DETAIL</p>
+                            <h1>{selectedProject.name}</h1>
+                            <p>프로젝트의 기본 정보와 제작 진행 상황을 확인합니다.</p>
                         </div>
-                        <span className="pd-number">{formatProjectId(selectedProject.id)}</span>
-                    </div>
 
-                    <div className="pd-info-grid">
-                        <div className="pd-info-item">
-                            <span>고객사</span>
-                            <strong>{customer?.companyName ?? `고객 ID ${selectedProject.customerId}`}</strong>
-                        </div>
-                        <div className="pd-info-item">
-                            <span>담당자</span>
-                            <strong>{manager?.name ?? "미배정"}</strong>
-                        </div>
-                        <div className="pd-info-item">
-                            <span>견적 번호</span>
-                            <strong>{selectedProject.quotationId != null
-                                ? formatQuotationId(selectedProject.quotationId)
-                                : "미연결"}</strong>
-                        </div>
-                        <div className="pd-info-item">
-                            <span>진행 상태</span>
-                            <strong>{getProjectStatus(selectedProject)}</strong>
-                        </div>
-                        <div className="pd-info-item">
-                            <span>시작 예정일</span>
-                            <strong>{selectedProject.startDate || "미정"}</strong>
-                        </div>
-                        <div className="pd-info-item">
-                            <span>납품 예정일</span>
-                            <strong>{selectedProject.dueDate || "미정"}</strong>
-                        </div>
-                        <div className="pd-info-item">
-                            <span>실제 완료일</span>
-                            <strong>{selectedProject.completedDate || "미완료"}</strong>
+                        <div className="pd-heading-actions">
+                            <span className={
+                                "pd-status pj-badge pd-status-" +
+                                getProjectStatus(selectedProject).replaceAll(' ', '')
+                            }>
+                                {getProjectStatus(selectedProject)}
+                            </span>
+
+                            <button
+                                className="pd-edit-btn pj-btn pj-primary"
+                                onClick={() => props.setPage('edit')}
+                            >
+                                수정
+                            </button>
+
+                            <button className="pd-delete-btn pj-btn" onClick={delProject}>삭제</button>
                         </div>
                     </div>
 
-                    <div className="pd-description">
-                        <span>프로젝트 설명</span>
-                        <p>{selectedProject.description || "등록된 설명이 없습니다."}</p>
-                    </div>
-                </section>
-
-                {/* 고객사 상세 정보 */}
-                <section className="pd-card pj-card">
-                    <div className="pd-card-header pj-card-heading">
-                        <div>
-                            <span className="pd-section-num pj-eyebrow">CUSTOMER INFO</span>
-                            <h2>고객사 상세 정보</h2>
-                        </div>
-                    </div>
-
-                    {customer ? (
-                        <>
-                            <div className="pd-info-grid">
-                                <div className="pd-info-item">
-                                    <span>고객사명</span>
-                                    <strong>{customer.companyName}</strong>
-                                </div>
-
-                                <div className="pd-info-item">
-                                    <span>사업자등록번호</span>
-                                    <strong>{customer.businessNumber || '미등록'}</strong>
-                                </div>
-
-                                <div className="pd-info-item">
-                                    <span>고객사 담당자</span>
-                                    <strong>{customer.customerManager || '미등록'}</strong>
-                                </div>
-
-                                <div className="pd-info-item">
-                                    <span>담당자 연락처</span>
-                                    <strong>{customer.phone || '미등록'}</strong>
-                                </div>
-
-                                <div className="pd-info-item">
-                                    <span>이메일</span>
-                                    <strong>{customer.email || '미등록'}</strong>
-                                </div>
-
-                                <div className="pd-info-item">
-                                    <span>주소</span>
-                                    <strong>{customer.address || '미등록'}</strong>
-                                </div>
+                    {/* 프로젝트 기본 정보 */}
+                    <section className="pd-card pj-card">
+                        <div className="pd-card-header pj-card-heading">
+                            <div>
+                                <span className="pd-section-num pj-eyebrow">PROJECT INFO</span>
+                                <h2>프로젝트 기본 정보</h2>
                             </div>
-
-                            <div className="pd-description">
-                                <span>고객 메모</span>
-                                <p>{customer.memo || '등록된 메모가 없습니다.'}</p>
-                            </div>
-                        </>
-                    ) : (
-                        <p className="pd-empty">
-                            연결된 고객사 정보를 찾을 수 없습니다.
-                        </p>
-                    )}
-                </section>
-
-                {/* 프로젝트 진행 현황 - 현재는 기존 목록과 동일하게 임시 80% */}
-                <section className="pd-card pj-card">
-                    <div className="pd-card-header pj-card-heading">
-                        <div>
-                            <span className="pd-section-num pj-eyebrow">PROGRESS</span>
-                            <h2>프로젝트 진행 현황</h2>
+                            <span className="pd-number">{formatProjectId(selectedProject.id)}</span>
                         </div>
-                        <strong className="pd-progress-percent">80%</strong>
-                    </div>
-                    <div className="pd-progress-track pj-progress-track">
-                        <div className="pd-progress-fill pj-progress-fill" style={{ width: '80%' }} />
-                    </div>
 
-                    <div className="pd-status-section">
-                        <h3>프로젝트 상태 변경</h3>
-
-                        <div className="pd-status-grid">
-                            <div className="pd-status-field pj-field">
-                                <label>현재 상태</label>
-                                <div className="pd-current-status">
-                                    {getProjectStatus(selectedProject)}
-                                </div>
+                        <div className="pd-info-grid">
+                            <div className="pd-info-item">
+                                <span>고객사</span>
+                                <strong>{customer?.companyName ?? `고객 ID ${selectedProject.customerId}`}</strong>
                             </div>
-
-                            <div className="pd-status-field pj-field">
-                                <label htmlFor="pd-status-select">변경할 상태</label>
-                                <select
-                                    id="pd-status-select"
-                                    value={status}
-                                    onChange={(e) => setStatus(e.target.value)}
-                                >
-                                    <option value="대기">대기</option>
-                                    <option value="진행 중">진행 중</option>
-                                    <option value="완료">완료</option>
-                                </select>
+                            <div className="pd-info-item">
+                                <span>담당자</span>
+                                <strong>{manager?.name ?? "미배정"}</strong>
+                            </div>
+                            <div className="pd-info-item">
+                                <span>견적 번호</span>
+                                <strong>{selectedProject.quotationId != null
+                                    ? formatQuotationId(selectedProject.quotationId)
+                                    : "미연결"}</strong>
+                            </div>
+                            <div className="pd-info-item">
+                                <span>진행 상태</span>
+                                <strong>{getProjectStatus(selectedProject)}</strong>
+                            </div>
+                            <div className="pd-info-item">
+                                <span>시작 예정일</span>
+                                <strong>{selectedProject.startDate || "미정"}</strong>
+                            </div>
+                            <div className="pd-info-item">
+                                <span>납품 예정일</span>
+                                <strong>{selectedProject.dueDate || "미정"}</strong>
+                            </div>
+                            <div className="pd-info-item">
+                                <span>실제 완료일</span>
+                                <strong>{selectedProject.completedDate || "미완료"}</strong>
                             </div>
                         </div>
 
-                        <button
-                            className="pd-status-save pj-btn pj-primary"
-                            onClick={saveStatus}
-                        >
-                            상태 변경
-                        </button>
-                    </div>
-                    <p className="pd-muted">현재는 임시 진행률입니다. 세부 작업 기능과 연결하면 실제 진행률로 교체할 수 있습니다.</p>
-                </section>
-
-                {/* 프로젝트 변경 이력 */}
-                <section className="pd-card pj-card">
-                    <div className="pd-card-header pj-card-heading">
-                        <div>
-                            <span className="pd-section-num pj-eyebrow">PROJECT HISTORY</span>
-                            <h2>프로젝트 변경 이력</h2>
+                        <div className="pd-description">
+                            <span>프로젝트 설명</span>
+                            <p>{selectedProject.description || "등록된 설명이 없습니다."}</p>
                         </div>
-                    </div>
+                    </section>
 
-                    {histories.length === 0 ? (
-                        <p className="pd-empty">변경 이력이 없습니다.</p>
-                    ) : (
-                        <div className="pd-history-list">
-                            {histories.map(history => (
-                                <div className="pd-history-item" key={history.id}>
-
-                                    <strong>
-                                        {new Date(history.changedAt).toLocaleString('ko-KR')}
-                                    </strong>
-
-                                    <ul>
-                                        {history.changes.map((change, index) => (
-                                            <li key={`${change.field}-${index}`}>
-                                                {fieldLabels[change.field] ?? change.field} :
-                                                {' '}
-                                                {formatHistoryValue(change.field, change.oldValue)}
-                                                {' → '}
-                                                {formatHistoryValue(change.field, change.newValue)}
-                                            </li>
-                                        ))}
-                                    </ul>
-
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                </section>
-
-                {/* 연결된 견적 내역 */}
-                <section className="pd-card pj-card">
-                    <div className="pd-card-header pj-card-heading">
-                        <div>
-                            <span className="pd-section-num pj-eyebrow">QUOTATION & TASKS</span>
-                            <h2>연결된 견적 및 세부 작업</h2>
-                        </div>
-                    </div>
-
-                    <h3 className="pd-subheading">연결 견적 정보</h3>
-                    {selectedQuotation ? (
-                        <div className="pd-quotation">
-                            <div className="pd-quotation-top">
-                                <div>
-                                    <span>견적 번호</span>
-                                    <strong>{formatQuotationId(selectedQuotation.id)}</strong>
-                                </div>
-                                <div>
-                                    <span>고객사</span>
-                                    <strong>{customer?.companyName ?? `고객 ID ${selectedQuotation.customerId}`}</strong>
-                                </div>
-                                <span className="pd-approved pj-approved pj-badge">{selectedQuotation.status}</span>
-                            </div>
-                            <div className="pd-table-wrap pj-quote-wrap">
-                                <table className="pd-quotation-table pj-quote-table">
-                                    <thead>
-                                        <tr>
-                                            <th>상품명</th>
-                                            <th>수량</th>
-                                            <th>단가</th>
-                                            <th>금액</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr>
-                                            <td>{selectedProduct?.productName ?? "상품 정보 없음"}</td>
-                                            <td>{selectedQuotation.quantity.toLocaleString()}개</td>
-                                            <td>{formatPrice(selectedQuotation.unitPrice)}</td>
-                                            <td>{formatPrice(quotationTotal)}</td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                            <div className="pd-quotation-total pj-quote-total">
-                                <span>총 견적 금액</span>
-                                <strong>{formatPrice(quotationTotal)}</strong>
+                    {/* 고객사 상세 정보 */}
+                    <section className="pd-card pj-card">
+                        <div className="pd-card-header pj-card-heading">
+                            <div>
+                                <span className="pd-section-num pj-eyebrow">CUSTOMER INFO</span>
+                                <h2>고객사 상세 정보</h2>
                             </div>
                         </div>
-                    ) : (
-                        <p className="pd-empty">연결된 견적 정보를 찾을 수 없습니다.</p>
-                    )}
 
-                    <h3 className="pd-subheading pd-tasks-heading">세부 작업</h3>
-                    <div className="pd-empty">
-                        세부 작업 관리 담당자의 데이터가 준비되면 이곳에 작업 목록을 표시할 예정입니다.
-                    </div>
-                </section>
+                        {customer ? (
+                            <>
+                                <div className="pd-info-grid">
+                                    <div className="pd-info-item">
+                                        <span>고객사명</span>
+                                        <strong>{customer.companyName}</strong>
+                                    </div>
+
+                                    <div className="pd-info-item">
+                                        <span>사업자등록번호</span>
+                                        <strong>{customer.businessNumber || '미등록'}</strong>
+                                    </div>
+
+                                    <div className="pd-info-item">
+                                        <span>고객사 담당자</span>
+                                        <strong>{customer.customerManager || '미등록'}</strong>
+                                    </div>
+
+                                    <div className="pd-info-item">
+                                        <span>담당자 연락처</span>
+                                        <strong>{customer.phone || '미등록'}</strong>
+                                    </div>
+
+                                    <div className="pd-info-item">
+                                        <span>이메일</span>
+                                        <strong>{customer.email || '미등록'}</strong>
+                                    </div>
+
+                                    <div className="pd-info-item">
+                                        <span>주소</span>
+                                        <strong>{customer.address || '미등록'}</strong>
+                                    </div>
+                                </div>
+
+                                <div className="pd-description">
+                                    <span>고객 메모</span>
+                                    <p>{customer.memo || '등록된 메모가 없습니다.'}</p>
+                                </div>
+                            </>
+                        ) : (
+                            <p className="pd-empty">
+                                연결된 고객사 정보를 찾을 수 없습니다.
+                            </p>
+                        )}
+                    </section>
+
+                    {/* 프로젝트 진행 현황 - 현재는 기존 목록과 동일하게 임시 80% */}
+                    <section className="pd-card pj-card">
+                        <div className="pd-card-header pj-card-heading">
+                            <div>
+                                <span className="pd-section-num pj-eyebrow">PROGRESS</span>
+                                <h2>프로젝트 진행 현황</h2>
+                            </div>
+                            <strong className="pd-progress-percent">80%</strong>
+                        </div>
+                        <div className="pd-progress-track pj-progress-track">
+                            <div className="pd-progress-fill pj-progress-fill" style={{ width: '80%' }} />
+                        </div>
+
+                        <div className="pd-status-section pd-status-editor">
+                            <h3>프로젝트 상태 변경</h3>
+
+                            <div className="pd-status-grid">
+                                <div className="pd-status-field pj-field">
+                                    <label>현재 상태</label>
+                                    <div className="pd-current-status">
+                                        {getProjectStatus(selectedProject)}
+                                    </div>
+                                </div>
+
+                                <div className="pd-status-field pj-field">
+                                    <label htmlFor="pd-status-select">변경할 상태</label>
+                                    <select
+                                        id="pd-status-select"
+                                        value={status}
+                                        onChange={(e) => setStatus(e.target.value)}
+                                    >
+                                        <option value="대기">대기</option>
+                                        <option value="진행 중">진행 중</option>
+                                        <option value="완료">완료</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <button
+                                className="pd-status-save pj-btn pj-primary"
+                                onClick={saveStatus}
+                            >
+                                상태 변경
+                            </button>
+                        </div>
+                        <p className="pd-muted">현재는 임시 진행률입니다. 세부 작업 기능과 연결하면 실제 진행률로 교체할 수 있습니다.</p>
+                    </section>
+
+                    {/* 프로젝트 변경 이력 */}
+                    <section className="pd-card pj-card pd-history-card">
+                        <div className="pd-card-header pj-card-heading">
+                            <div>
+                                <span className="pd-section-num pj-eyebrow">PROJECT HISTORY</span>
+                                <h2>프로젝트 변경 이력</h2>
+                            </div>
+                        </div>
+
+                        {histories.length === 0 ? (
+                            <p className="pd-empty">변경 이력이 없습니다.</p>
+                        ) : (
+                            <div className="pd-history-list">
+                                {histories.map(history => (
+                                    <div className="pd-history-item" key={history.id}>
+
+                                        <strong>
+                                            {new Date(history.changedAt).toLocaleString('ko-KR')}
+                                        </strong>
+
+                                        <ul>
+                                            {history.changes.map((change, index) => (
+                                                <li key={`${change.field}-${index}`}>
+                                                    {fieldLabels[change.field] ?? change.field} :
+                                                    {' '}
+                                                    {formatHistoryValue(change.field, change.oldValue)}
+                                                    {' → '}
+                                                    {formatHistoryValue(change.field, change.newValue)}
+                                                </li>
+                                            ))}
+                                        </ul>
+
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </section>
+
+                    {/* 연결된 견적 내역 */}
+                    <section className="pd-card pj-card pd-quotation-tasks-card">
+                        <div className="pd-card-header pj-card-heading">
+                            <div>
+                                <span className="pd-section-num pj-eyebrow">QUOTATION & TASKS</span>
+                                <h2>연결된 견적 및 세부 작업</h2>
+                            </div>
+                        </div>
+
+                        <h3 className="pd-subheading">연결 견적 정보</h3>
+                        {selectedQuotation ? (
+                            <div className="pd-quotation">
+                                <div className="pd-quotation-top">
+                                    <div>
+                                        <span>견적 번호</span>
+                                        <strong>{formatQuotationId(selectedQuotation.id)}</strong>
+                                    </div>
+                                    <div>
+                                        <span>고객사</span>
+                                        <strong>{customer?.companyName ?? `고객 ID ${selectedQuotation.customerId}`}</strong>
+                                    </div>
+                                    <span className="pd-approved pj-approved pj-badge">{selectedQuotation.status}</span>
+                                </div>
+                                <div className="pd-table-wrap pj-quote-wrap">
+                                    <table className="pd-quotation-table pj-quote-table">
+                                        <thead>
+                                            <tr>
+                                                <th>상품명</th>
+                                                <th>수량</th>
+                                                <th>단가</th>
+                                                <th>금액</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td>{selectedProduct?.productName ?? "상품 정보 없음"}</td>
+                                                <td>{selectedQuotation.quantity.toLocaleString()}개</td>
+                                                <td>{formatPrice(selectedQuotation.unitPrice)}</td>
+                                                <td>{formatPrice(quotationTotal)}</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div className="pd-quotation-total pj-quote-total">
+                                    <span>총 견적 금액</span>
+                                    <strong>{formatPrice(quotationTotal)}</strong>
+                                </div>
+                            </div>
+                        ) : (
+                            <p className="pd-empty">연결된 견적 정보를 찾을 수 없습니다.</p>
+                        )}
+
+                        <h3 className="pd-subheading pd-tasks-heading">세부 작업</h3>
+                        <div className="pd-empty">
+                            세부 작업 관리 담당자의 데이터가 준비되면 이곳에 작업 목록을 표시할 예정입니다.
+                        </div>
+                    </section>
+                </div>
             </div>
         </div>
     );

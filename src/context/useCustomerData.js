@@ -65,13 +65,20 @@ export function useCustomerData() {
 
 
 
+    // 전체 초기화 시 고객 목록과 다음 고객 ID도 원래 상태로 되돌린다.
+    function resetCustomers() {
+        localStorage.removeItem("crm_next_id");
+        setCustomers([...initialCustomers]);
+    }
+
     return {
 
         customers,
         setCustomers,
         addCustomer,
         saveEditedCustomer,
-        deleteCustomers
+        deleteCustomers,
+        resetCustomers
 
 
 

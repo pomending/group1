@@ -4,7 +4,7 @@ import { getDeadlineStatus, getProjectStatus, isProjectDelayed } from "../utils/
 
 function ProjectList(props) {
 
-    const { projects, resetProjects } = useERP()
+    const { projects } = useERP()
 
     const [sort, setSort] = useState('dueAsc')
 
@@ -56,18 +56,6 @@ function ProjectList(props) {
                     </div>
 
                     <div className="pm-heading-actions">
-                        <button
-                            type="button"
-                            className="pm-reset-btn pj-btn"
-                            onClick={() => {
-                                if (window.confirm("프로젝트 데이터를 초기 상태로 되돌리시겠습니까?")) {
-                                    resetProjects();
-                                }
-                            }}
-                        >
-                            데이터 초기화
-                        </button>
-
                         <button
                             className="pm-btn pj-btn pj-primary"
                             onClick={() => props.setPage('newproject')}

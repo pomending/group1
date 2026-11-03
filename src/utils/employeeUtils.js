@@ -2,9 +2,7 @@
 export const EMPLOYEE_STATUSES = ["재직", "휴직", "퇴사"];
 export const EMPLOYEE_POSITIONS = ["사원", "주임", "대리", "과장", "차장", "부장", "팀장"];
 
-export function formatEmployeeId(id) {
-    return `EMP-${String(id).padStart(3, "0")}`;
-}
+export const departmentNames = ["생산관리팀", "영업팀", "디자인팀", "품질관리팀", "물류팀", "경영지원팀"];
 
 export function statusClass(status) {
     return status === "재직" ? "working" : status === "휴직" ? "leave" : "resigned";
@@ -25,7 +23,9 @@ export function sanitizeEmployee(input = {}) {
 export function validateEmployee(input, employees, excludeId = null) {
     const employee = sanitizeEmployee(input);
     if (!employee.name) return "직원 이름을 입력해주세요.";
-    if (!employee.department) return "부서를 입력해주세요.";
+    if (!departmentNames.includes(employee.department)) {
+        return "목록에 있는 부서를 선택해주세요.";
+    }
     if (!employee.position) return "직급을 입력해주세요.";
     if (!EMPLOYEE_STATUSES.includes(employee.status)) return "올바른 재직 상태를 선택해주세요.";
 
