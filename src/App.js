@@ -8,6 +8,7 @@ import CrmPage from "./1_crm/01_CrmPage";
 import QuotationPage from "./2_quotation/QuotationPage";
 import ProjectPage from "./3_projects/ProjectPage";
 import TaskPage from "./4_tasks/TaskPage";
+import TaskDetail from "./4_tasks/TaskDetail";
 import SchedulePage from "./5_schedule/SchedulePage";
 import DashboardPage from "./6_dashboard/DashboardPage";
 import NotFoundPage from "./components/NotFoundPage";
@@ -60,6 +61,7 @@ function ERPContent() {
                         <Route path="/quotation/*" element={<QuotationPage />} />
                         <Route path="/projects/*" element={<ProjectPage />} />
                         <Route path="/tasks/*" element={<TaskPage />} />
+                        <Route path="/tasks/detail" element={<TaskDetail />}/>
                         <Route path="/schedule/*" element={<SchedulePage />} />
                         <Route path='/hr/*' element={<HrPage />} />
                         <Route path="/consultation/*" element={<ConsultationPage />} />
@@ -79,7 +81,11 @@ function App() {
             <ERPProvider>
                 <ERPContent />
             </ERPProvider>
+
+            
         </BrowserRouter>
+
+        
     );
 }
 
