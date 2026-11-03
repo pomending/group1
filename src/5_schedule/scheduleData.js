@@ -127,7 +127,7 @@ export function restoreDeletedSchedule(items, record) {
   return { items: [...items, record.before].sort(compareSchedules), error: "" };
 }
 
-// 고정 자릿수 날짜·시간은 문자열 순서가 시간 순서와 같습니다. 모든 목록에서 같은 비교 함수를 씁니다.
+// 고정 자릿수 날짜·시간은 문자열 순서가 시간 순서와 같습니다. 날짜·시간순 정렬의 공통 비교 함수입니다.
 export const compareSchedules = (a, b) =>
   `${a.date} ${a.time}`.localeCompare(`${b.date} ${b.time}`);
 
@@ -189,6 +189,8 @@ export function excludeOccurrence(item, date) {
  * 기간: date·endDate(YYYY-MM-DD), time·endTime(HH:mm), isAllDay
  * 참여자: person은 담당자 이름, attendees는 이름 배열입니다. 직원 FK가 아닙니다.
  * 반복: repeatType·repeatInterval·monthlyRule·monthlyOrdinal·monthlyWeekday·holidayRule
+ * 반복 종료: repeatEndType(none/until/count)·repeatEndDate·repeatCount로 종료 조건을 저장합니다.
+ * 알림: reminderMinutes는 시작 전 화면 알림의 분 단위이며 0이면 알림을 사용하지 않습니다.
  * 예외: excludedDates와 replacesScheduleId·replacesOccurrenceDate로 한 회차 변경을 구분합니다.
  * 표시용 occurrenceDate·multiDayOccurrence는 발생일 계산에서만 사용하며 폼에 복사하지 않습니다.
  */
@@ -684,7 +686,8 @@ export function findScheduleConflicts(
   return conflicts;
 }
 
-// 입력 검증만 수행합니다. 상태 변경·확인창·저장은 Manager가 담당합니다.
+// 첫 입력 오류를 { field, message }로 반환하고, 오류가 없으면 null을 반환합니다.
+// 상태 변경·확인창·저장은 Manager가 담당하며, 브라우저의 required/min/max 검사는 폼에서 별도로 동작합니다.
 export function getScheduleFormError(form) {
   const title = form.title.trim();
   const project = form.project.trim();

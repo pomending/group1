@@ -65,7 +65,7 @@ export default function ScheduleManager() {
   const { todayKey, currentTime } = useScheduleClock(selectedDate, setSelectedDate, setMonth);
   const calendarRef = useRef(null);
 
-  // 검색·공개·프로젝트 조건으로 달력과 선택 날짜 목록을 계산합니다. 즐겨찾기·다가오는 목록은 별도 기준입니다.
+  // 검색·공유 구분·프로젝트 조건으로 달력과 선택 날짜 목록을 계산합니다. 즐겨찾기·다가오는 목록은 별도 기준입니다.
   const [query, setQuery] = useState("");
   const [view, setView] = useState("monthly");
   const [scopeFilter, setScopeFilter] = useState("all");
@@ -181,8 +181,8 @@ export default function ScheduleManager() {
     }
   }, [items, currentTime, holidayDates, reminderNotice]);
 
-  // 검색어, 프로젝트, 공개 범위 조건으로 저장된 일정을 먼저 거릅니다.
-  // [2. 표시 데이터 계산] 원본 items → 검색·공개 범위 필터 → 반복 발생일 → 달력·선택 날짜 목록
+  // 검색어, 프로젝트, 공유 구분 조건으로 저장된 일정을 먼저 거릅니다.
+  // [2. 표시 데이터 계산] 원본 items → 검색·공유 구분 필터 → 반복 발생일 → 달력·선택 날짜 목록
   const keyword = query.trim().toLowerCase();
   const filteredItems = [];
   for (const item of items) {
@@ -281,6 +281,18 @@ export default function ScheduleManager() {
     if (event.target.type === "checkbox") value = event.target.checked;
     setForm((current) => {
       if (name === "durationMinutes") return { ...current, ...getScheduleDurationFields(current, Number(value)) };
+      // 입력 화면은 선택값만 보내고, 숨겨질 연관 필드는 이곳에서 한 번에 초기화합니다.
+      if (name === "scope") {
+        return { ...current, scope: value, category: "", project: "", attendees: "", person: "", status: "pending" };
+      }
+      if (name === "category") {
+        return {
+          ...current,
+          category: value,
+          project: current.category === "프로젝트" && value !== "프로젝트" ? "" : current.project,
+          attendees: current.category === "회의" && value !== "회의" ? "" : current.attendees,
+        };
+      }
       // state 객체를 직접 바꾸지 않고 복사한 뒤, 입력한 항목 하나만 바꿉니다.
       const nextForm = { ...current };
       if (name === "repeatPreset") {
@@ -295,7 +307,7 @@ export default function ScheduleManager() {
       return nextForm;
     });
   };
-  // item이 없으면 빈 폼, 있으면 수정용 폼입니다. 목록에서 수정해도 같은 함수를 사용합니다.
+  // item이 있으면 수정 폼을 만듭니다. 없으면 임시 보관을 복구하고, 임시 내용도 없으면 빈 등록 폼을 만듭니다.
   // 상단 일정 등록은 인자 없이, 상세 패널의 수정은 item을 전달해 이 함수를 호출합니다.
   // 새 등록과 수정이 같은 폼을 사용하되 수정 대상과 최초 저장 버전을 별도로 기억합니다.
   const openScheduleForm = (item) => {
@@ -304,7 +316,7 @@ export default function ScheduleManager() {
     setEditing(item || null);
     editingVersion.current = item ? items.find(schedule => schedule.id === item.id) : null;
     const nextForm = !item && draft ? { ...draft } : createScheduleForm(item);
-    // 수정은 저장된 날짜를 사용합니다. 새 등록일 때만 현재 선택한 날짜를 넣습니다.
+    // 수정·임시 복구는 해당 내용의 날짜를 유지합니다. 임시 보관이 없는 새 등록만 선택 날짜를 사용합니다.
     if (!item && !draft) nextForm.date = selectedDate;
     setForm(nextForm);
     setListOpen(false);
@@ -356,7 +368,8 @@ export default function ScheduleManager() {
     // 수정 끝
     const title = form.title.trim();
     const project = form.project.trim();
-    // 새 일정에는 프로젝트 ID도 저장해, 나중에 프로젝트 이름이 바뀌어도 연결을 유지합니다.
+    // 입력한 프로젝트명과 같은 프로젝트를 찾아 ID를 저장합니다. 기존 ID를 우선 조회하는 처리는 아직 없습니다.
+    // 주의: 3번에서 이름이 바뀐 뒤 예전 이름의 일정을 재저장하면 ID가 null이 될 수 있습니다. 연결 유지가 보장되지 않습니다.
     const linkedProject = projects.find((entry) => entry.name === project);
     const validationError = validateScheduleForm(form);
     if (validationError) {
@@ -475,7 +488,7 @@ export default function ScheduleManager() {
       return (occurrenceDate ? [...next, item] : next).sort(compareSchedules);
     });
     selectDate(form.date);
-    // 저장 후 프로젝트명·공개 범위가 바뀌어도 방금 저장한 일정이 필터에 가리지 않게 합니다.
+    // 저장 후 프로젝트명·공유 구분이 바뀌어도 방금 저장한 일정이 필터에 가리지 않게 합니다.
     clearScheduleFilters();
     closeScheduleForm();
   };
@@ -595,7 +608,7 @@ export default function ScheduleManager() {
 
   // 통계는 검색과 무관합니다.
   // 오늘 작업은 해당 날짜의 실제 발생 횟수이므로 반복 일정도 포함됩니다.
-  // 오늘 일정은 작업 구분과 관계없이 실제 발생하는 모든 일정을 셉니다.
+  // 직접 저장한 개인·업무 일정의 오늘 발생 건수를 셉니다. 프로젝트에서 읽어 온 시작일·마감일 표시는 포함하지 않습니다.
   // [7. 요약·부가 표시] 통계·즐겨찾기·다가오는 일정 등 각 화면에 전달할 값을 만듭니다.
   const todayWorkCount = expandSchedules(items, todayKey, todayKey, holidayDates).length;
   // 다가오는 목록은 검색과 무관하게 오늘 포함 7일 이내의 미완료 발생 일정 중 가까운 5건을 보여줍니다.
@@ -670,7 +683,7 @@ export default function ScheduleManager() {
           <button type="button" onClick={() => { const date = reminderNotice.date; setReminderNotice(null); showCurrentPeriod("daily", date); focusCalendar(); }}>일정 보기</button>
           <button type="button" aria-label="알림 닫기" onClick={() => setReminderNotice(null)}>닫기</button>
         </aside>}
-        {/* 회사와 사용자 정보를 보여주는 상단 영역 */}
+        {/* 회사·사용자 표시용 예시 영역입니다. 팀명과 아바타 글자는 현재 로그인 계정에서 읽지 않는 고정값입니다. */}
         <header className="sm-top">
           <div className="sm-brand">
             <div className="sm-mark">G</div>
@@ -833,6 +846,7 @@ export default function ScheduleManager() {
               : items
           }
           filterDate={listDateFilter}
+          hasActiveFilter={Boolean(listDateFilter && (query.trim() || selectedProject || scopeFilter !== "all"))}
           totalCount={items.length}
           onToggleFavorite={toggleFavorite}
           onClearDateFilter={() => setListDateFilter(null)}

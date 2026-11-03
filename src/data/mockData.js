@@ -1,5 +1,16 @@
-// 프로젝트 관리에서 임시로 사용하는 공통 더미 데이터입니다.
-// 나중에 팀원들의 데이터 구조가 정해지면 Context에서 관리하도록 옮길 수 있습니다.
+// 공통 ERP 더미 데이터
+// ID 참조: quotations.customerId -> customers.id
+//         quotations.productId  -> products.id
+//         quotations.employeeId -> initialEmployees.id (영업팀)
+//         customers.employeeId  -> initialEmployees.id (영업팀)
+//         consultations.customerId -> customers.id (nullable)
+//         consultations.employeeId -> initialEmployees.id (영업팀)
+//         initialProjects.quotationId -> quotations.id (승인된 견적)
+//         initialProjects.customerId  -> customers.id
+//         initialProjects.managerId   -> initialEmployees.id (생산관리팀)
+//         tasks.projectId             -> initialProjects.id
+//         tasks.managerId             -> initialEmployees.id (작업 관련 부서)
+// 주의: employees는 일부 팀원이 사용하는 임시 3명 목록입니다. HR 직원 20명은 initialEmployees를 사용합니다.
 
 export const products = [
     {
@@ -7,7 +18,7 @@ export const products = [
         productName: "스테인리스 텀블러",
         productPrice: 8000,
         productStatus: "판매 중",
-        productCreatedAt: "",
+        productCreatedAt: "2026-09-01",
         productUpdatedAt: ""
     },
     {
@@ -15,7 +26,7 @@ export const products = [
         productName: "캔버스 에코백",
         productPrice: 5000,
         productStatus: "판매 중",
-        productCreatedAt: "",
+        productCreatedAt: "2026-09-02",
         productUpdatedAt: ""
     },
     {
@@ -23,7 +34,7 @@ export const products = [
         productName: "세라믹 머그컵",
         productPrice: 6000,
         productStatus: "판매 중",
-        productCreatedAt: "",
+        productCreatedAt: "2026-09-03",
         productUpdatedAt: ""
     },
     {
@@ -31,19 +42,65 @@ export const products = [
         productName: "아크릴 키링",
         productPrice: 2500,
         productStatus: "판매 중",
-        productCreatedAt: "",
+        productCreatedAt: "2026-09-04",
         productUpdatedAt: ""
+    },
+    {
+        id: 5,
+        productName: "단체 티셔츠",
+        productPrice: 12000,
+        productStatus: "판매 중",
+        productCreatedAt: "2026-09-05",
+        productUpdatedAt: ""
+    },
+    {
+        id: 6,
+        productName: "로고 볼펜",
+        productPrice: 1300,
+        productStatus: "판매 중",
+        productCreatedAt: "2026-09-06",
+        productUpdatedAt: ""
+    },
+    {
+        id: 7,
+        productName: "패브릭 파우치",
+        productPrice: 7000,
+        productStatus: "판매 중",
+        productCreatedAt: "2026-09-07",
+        productUpdatedAt: ""
+    },
+    {
+        id: 8,
+        productName: "금속 배지",
+        productPrice: 3500,
+        productStatus: "판매 중",
+        productCreatedAt: "2026-09-08",
+        productUpdatedAt: ""
+    },
+    {
+        id: 9,
+        productName: "홍보용 노트",
+        productPrice: 4500,
+        productStatus: "판매 중",
+        productCreatedAt: "2026-09-09",
+        productUpdatedAt: ""
+    },
+    {
+        id: 10,
+        productName: "로고 스티커",
+        productPrice: 900,
+        productStatus: "판매중지",
+        productCreatedAt: "2026-09-10",
+        productUpdatedAt: "2026-10-29"
     }
 ];
-
-
 
 export const quotations = [
     {
         id: 1,
         customerId: 1,
         productId: 1,
-        employeeId: 1,
+        employeeId: 2,
         quantity: 300,
         unitPrice: 8000,
         createdAt: "2026-10-15",
@@ -56,33 +113,33 @@ export const quotations = [
         id: 2,
         customerId: 2,
         productId: 2,
-        employeeId: 2,
+        employeeId: 4,
         quantity: 500,
         unitPrice: 5000,
         createdAt: "2026-10-20",
         validUntil: "2026-11-20",
         paymentMethod: "계좌이체",
-        memo: "회사 로고 인쇄 요청",
+        memo: "학교 로고 인쇄 요청",
         status: "승인"
     },
     {
         id: 3,
         customerId: 3,
         productId: 3,
-        employeeId: 3,
+        employeeId: 11,
         quantity: 400,
         unitPrice: 6000,
         createdAt: "2026-10-22",
         validUntil: "2026-11-22",
         paymentMethod: "카드결제",
-        memo: "",
+        memo: "머그컵 제작 요청",
         status: "승인"
     },
     {
         id: 4,
         customerId: 1,
         productId: 4,
-        employeeId: 1,
+        employeeId: 2,
         quantity: 1000,
         unitPrice: 2500,
         createdAt: "2026-10-27",
@@ -95,7 +152,7 @@ export const quotations = [
         id: 5,
         customerId: 4,
         productId: 1,
-        employeeId: 2,
+        employeeId: 4,
         quantity: 100,
         unitPrice: 8500,
         createdAt: "2026-10-29",
@@ -108,7 +165,7 @@ export const quotations = [
         id: 6,
         customerId: 4,
         productId: 4,
-        employeeId: 3,
+        employeeId: 11,
         quantity: 800,
         unitPrice: 2300,
         createdAt: "2026-10-30",
@@ -121,28 +178,130 @@ export const quotations = [
         id: 7,
         customerId: 3,
         productId: 2,
-        employeeId: 1,
+        employeeId: 2,
         quantity: 200,
         unitPrice: 5000,
         createdAt: "2026-11-01",
         validUntil: "2026-12-01",
         paymentMethod: "카드결제",
-        memo: "",
+        memo: "친환경 에코백 추가 주문",
+        status: "승인"
+    },
+    {
+        id: 8,
+        customerId: 5,
+        productId: 6,
+        employeeId: 4,
+        quantity: 1000,
+        unitPrice: 1200,
+        createdAt: "2026-11-02",
+        validUntil: "2026-12-02",
+        paymentMethod: "계좌이체",
+        memo: "교육용 볼펜 대량 제작 문의",
+        status: "승인 대기"
+    },
+    {
+        id: 9,
+        customerId: 7,
+        productId: 5,
+        employeeId: 11,
+        quantity: 800,
+        unitPrice: 11500,
+        createdAt: "2026-11-03",
+        validUntil: "2026-12-03",
+        paymentMethod: "계좌이체",
+        memo: "행사 단체 티셔츠 제작 문의",
+        status: "승인 대기"
+    },
+    {
+        id: 10,
+        customerId: 8,
+        productId: 7,
+        employeeId: 2,
+        quantity: 300,
+        unitPrice: 6800,
+        createdAt: "2026-11-01",
+        validUntil: "2026-12-01",
+        paymentMethod: "카드결제",
+        memo: "재활용 소재 파우치 주문",
         status: "승인"
     }
 ];
 
+// 상담은 고객 등록 여부와 관계없이 생성할 수 있습니다.
+// 고객과 연결한 경우 customerId는 customers.id를 참조합니다.
+// employeeId는 initialEmployees의 영업팀 직원 ID입니다.
+export const consultations = [
+    {
+        id: 1,
+        customerId: 1,
+        companyName: "삼성전자",
+        inquiryChannel: "이메일",
+        customerManager: "김민수",
+        phone: "010-1234-5678",
+        email: "minsu@example.com",
+        employeeId: 2,
+        status: "문의 접수",
+        memo: "텀블러 500개 제작 문의"
+    },
+    {
+        id: 2,
+        customerId: 2,
+        companyName: "한국대학교",
+        inquiryChannel: "전화",
+        customerManager: "박지현",
+        phone: "010-2345-6789",
+        email: "jihyun@example.com",
+        employeeId: 4,
+        status: "문의 접수",
+        memo: "학교 행사 기념품 추가 제작 문의"
+    },
+    {
+        id: 3,
+        customerId: 3,
+        companyName: "그린컴퍼니",
+        inquiryChannel: "이메일",
+        customerManager: "정우성",
+        phone: "010-3456-7890",
+        email: "woosung@example.com",
+        employeeId: 11,
+        status: "문의 접수",
+        memo: "친환경 에코백 300개 제작 상담"
+    },
+    {
+        id: 4,
+        customerId: null,
+        companyName: "모아크래프트",
+        inquiryChannel: "전화",
+        customerManager: "정다현",
+        phone: "010-5555-0104",
+        email: "dahyun@moacraft.example",
+        employeeId: 19,
+        status: "문의 접수",
+        memo: "브랜드 굿즈 아크릴 키링 400개 제작 문의"
+    },
+    {
+        id: 5,
+        customerId: null,
+        companyName: "리프스튜디오",
+        inquiryChannel: "이메일",
+        customerManager: "서하린",
+        phone: "010-5555-0105",
+        email: "harin@leafstudio.example",
+        employeeId: 20,
+        status: "문의 접수",
+        memo: "신규 브랜드 홍보용 텀블러 견적 문의"
+    }
+];
 
-
-// 고객/직원 이름을 보여주기 위한 임시 데이터입니다.
-// CRM 및 직원 데이터 구조가 확정되면 공통 데이터로 교체하세요.
+// 고객의 담당 직원은 employeeId로 연결합니다 (initialEmployees의 영업팀 직원 참조).
 export const customers = [
     {
         id: 1,
         companyName: "삼성전자",
         businessNumber: "123-45-67890",
         customerManager: "김민수",
-        employeeName: "이준호",
+        employeeId: 2,
         phone: "010-1234-5678",
         email: "minsu@example.com",
         address: "경기도 수원시 영통구",
@@ -154,7 +313,7 @@ export const customers = [
         companyName: "한국대학교",
         businessNumber: "234-56-78901",
         customerManager: "박지현",
-        employeeName: "최유진",
+        employeeId: 4,
         phone: "010-2345-6789",
         email: "jihyun@example.com",
         address: "서울특별시 강남구",
@@ -166,7 +325,7 @@ export const customers = [
         companyName: "그린컴퍼니",
         businessNumber: "345-67-89012",
         customerManager: "정우성",
-        employeeName: "김도윤",
+        employeeId: 11,
         phone: "010-3456-7890",
         email: "woosung@example.com",
         address: "서울특별시 마포구",
@@ -178,7 +337,7 @@ export const customers = [
         companyName: "미래테크",
         businessNumber: "456-78-90123",
         customerManager: "이서연",
-        employeeName: "이준호",
+        employeeId: 4,
         phone: "010-4567-8901",
         email: "seoyeon@example.com",
         address: "경기도 성남시 분당구",
@@ -190,7 +349,7 @@ export const customers = [
         companyName: "한빛교육",
         businessNumber: "567-89-01234",
         customerManager: "최현우",
-        employeeName: "최유진",
+        employeeId: 4,
         phone: "010-5678-9012",
         email: "hyunwoo@example.com",
         address: "서울특별시 서초구",
@@ -202,7 +361,7 @@ export const customers = [
         companyName: "블루디자인",
         businessNumber: "678-90-12345",
         customerManager: "한지민",
-        employeeName: "김도윤",
+        employeeId: 19,
         phone: "010-6789-0123",
         email: "jimin@example.com",
         address: "서울특별시 성동구",
@@ -214,7 +373,7 @@ export const customers = [
         companyName: "대한스포츠",
         businessNumber: "789-01-23456",
         customerManager: "강태훈",
-        employeeName: "이준호",
+        employeeId: 11,
         phone: "010-7890-1234",
         email: "taehoon@example.com",
         address: "경기도 고양시 일산동구",
@@ -226,7 +385,7 @@ export const customers = [
         companyName: "에코라이프",
         businessNumber: "890-12-34567",
         customerManager: "윤하늘",
-        employeeName: "최유진",
+        employeeId: 2,
         phone: "010-8901-2345",
         email: "haneul@example.com",
         address: "인천광역시 연수구",
@@ -238,7 +397,7 @@ export const customers = [
         companyName: "서울문화재단",
         businessNumber: "901-23-45678",
         customerManager: "오세진",
-        employeeName: "김도윤",
+        employeeId: 20,
         phone: "010-9012-3456",
         email: "sejin@example.com",
         address: "서울특별시 종로구",
@@ -250,7 +409,7 @@ export const customers = [
         companyName: "스타트업허브",
         businessNumber: "112-34-56789",
         customerManager: "송지아",
-        employeeName: "이준호",
+        employeeId: 19,
         phone: "010-1122-3344",
         email: "jia@example.com",
         address: "서울특별시 강남구",
@@ -262,7 +421,7 @@ export const customers = [
         companyName: "드림푸드",
         businessNumber: "223-45-67890",
         customerManager: "임재혁",
-        employeeName: "최유진",
+        employeeId: 20,
         phone: "010-2233-4455",
         email: "jaehyuk@example.com",
         address: "경기도 안양시 동안구",
@@ -274,7 +433,7 @@ export const customers = [
         companyName: "아트스튜디오",
         businessNumber: "334-56-78901",
         customerManager: "배수빈",
-        employeeName: "김도윤",
+        employeeId: 2,
         phone: "010-3344-5566",
         email: "subin@example.com",
         address: "서울특별시 용산구",
@@ -286,7 +445,7 @@ export const customers = [
         companyName: "스마트솔루션",
         businessNumber: "445-67-89012",
         customerManager: "조민석",
-        employeeName: "이준호",
+        employeeId: 11,
         phone: "010-4455-6677",
         email: "minseok@example.com",
         address: "경기도 성남시 수정구",
@@ -298,7 +457,7 @@ export const customers = [
         companyName: "희망복지센터",
         businessNumber: "556-78-90123",
         customerManager: "신유진",
-        employeeName: "최유진",
+        employeeId: 19,
         phone: "010-5566-7788",
         email: "yujin@example.com",
         address: "서울특별시 노원구",
@@ -310,7 +469,7 @@ export const customers = [
         companyName: "코리아이벤트",
         businessNumber: "667-89-01234",
         customerManager: "장도현",
-        employeeName: "김도윤",
+        employeeId: 20,
         phone: "010-6677-8899",
         email: "dohyun@example.com",
         address: "서울특별시 송파구",
@@ -322,7 +481,7 @@ export const customers = [
         companyName: "네오미디어",
         businessNumber: "778-90-12345",
         customerManager: "문채원",
-        employeeName: "이준호",
+        employeeId: 2,
         phone: "010-7788-9900",
         email: "chaewon@example.com",
         address: "서울특별시 마포구",
@@ -334,7 +493,7 @@ export const customers = [
         companyName: "한강대학교",
         businessNumber: "889-01-23456",
         customerManager: "백승우",
-        employeeName: "최유진",
+        employeeId: 4,
         phone: "010-8899-0011",
         email: "seungwoo@example.com",
         address: "서울특별시 광진구",
@@ -346,7 +505,7 @@ export const customers = [
         companyName: "오렌지마케팅",
         businessNumber: "990-12-34567",
         customerManager: "류다은",
-        employeeName: "김도윤",
+        employeeId: 11,
         phone: "010-9900-1122",
         email: "daeun@example.com",
         address: "서울특별시 영등포구",
@@ -358,7 +517,7 @@ export const customers = [
         companyName: "베스트물류",
         businessNumber: "121-34-56789",
         customerManager: "홍준서",
-        employeeName: "이준호",
+        employeeId: 19,
         phone: "010-1212-3434",
         email: "junseo@example.com",
         address: "인천광역시 서구",
@@ -370,7 +529,7 @@ export const customers = [
         companyName: "라온엔터테인먼트",
         businessNumber: "232-45-67890",
         customerManager: "고은별",
-        employeeName: "최유진",
+        employeeId: 20,
         phone: "010-2323-4545",
         email: "eunbyeol@example.com",
         address: "서울특별시 강남구",
@@ -382,7 +541,7 @@ export const customers = [
         companyName: "유니온건설",
         businessNumber: "343-56-78901",
         customerManager: "서동욱",
-        employeeName: "김도윤",
+        employeeId: 2,
         phone: "010-3434-5656",
         email: "dongwook@example.com",
         address: "경기도 수원시 팔달구",
@@ -394,7 +553,7 @@ export const customers = [
         companyName: "플러스헬스",
         businessNumber: "454-67-89012",
         customerManager: "정소희",
-        employeeName: "이준호",
+        employeeId: 4,
         phone: "010-4545-6767",
         email: "sohee@example.com",
         address: "서울특별시 강동구",
@@ -406,7 +565,7 @@ export const customers = [
         companyName: "에이스모빌리티",
         businessNumber: "565-78-90123",
         customerManager: "차현석",
-        employeeName: "최유진",
+        employeeId: 11,
         phone: "010-5656-7878",
         email: "hyunseok@example.com",
         address: "경기도 화성시",
@@ -418,7 +577,7 @@ export const customers = [
         companyName: "봄날출판사",
         businessNumber: "676-89-01234",
         customerManager: "전하린",
-        employeeName: "김도윤",
+        employeeId: 19,
         phone: "010-6767-8989",
         email: "harin@example.com",
         address: "경기도 파주시",
@@ -430,7 +589,7 @@ export const customers = [
         companyName: "봄날트래블",
         businessNumber: "787-90-12345",
         customerManager: "남지훈",
-        employeeName: "이준호",
+        employeeId: 20,
         phone: "010-7878-9090",
         email: "jihoon@example.com",
         address: "서울특별시 중구",
@@ -443,7 +602,7 @@ export const customers = [
         companyName: "한빛테크",
         businessNumber: "123-45-67826",
         customerManager: "김도윤",
-        employeeName: "이준혁",
+        employeeId: 2,
         phone: "010-2000-0026",
         email: "contact26@example.com",
         address: "서울특별시 강남구 테헤란로 126",
@@ -455,7 +614,7 @@ export const customers = [
         companyName: "미래솔루션",
         businessNumber: "123-45-67827",
         customerManager: "박서연",
-        employeeName: "최민수",
+        employeeId: 4,
         phone: "010-2000-0027",
         email: "contact27@example.com",
         address: "서울특별시 송파구 올림픽로 227",
@@ -467,7 +626,7 @@ export const customers = [
         companyName: "그린웨이브",
         businessNumber: "123-45-67828",
         customerManager: "이하준",
-        employeeName: "김지훈",
+        employeeId: 11,
         phone: "010-2000-0028",
         email: "contact28@example.com",
         address: "경기도 성남시 분당구 판교로 128",
@@ -479,7 +638,7 @@ export const customers = [
         companyName: "블루핀미디어",
         businessNumber: "123-45-67829",
         customerManager: "최유진",
-        employeeName: "박지은",
+        employeeId: 19,
         phone: "010-2000-0029",
         email: "contact29@example.com",
         address: "서울특별시 마포구 월드컵북로 29",
@@ -491,7 +650,7 @@ export const customers = [
         companyName: "에이원디자인",
         businessNumber: "123-45-67830",
         customerManager: "정민재",
-        employeeName: "이준혁",
+        employeeId: 20,
         phone: "010-2000-0030",
         email: "contact30@example.com",
         address: "서울특별시 서초구 서초대로 130",
@@ -503,7 +662,7 @@ export const customers = [
         companyName: "다온컴퍼니",
         businessNumber: "123-45-67831",
         customerManager: "강수빈",
-        employeeName: "최민수",
+        employeeId: 2,
         phone: "010-2000-0031",
         email: "contact31@example.com",
         address: "경기도 하남시 미사강변대로 31",
@@ -515,7 +674,7 @@ export const customers = [
         companyName: "넥스트랩",
         businessNumber: "123-45-67832",
         customerManager: "윤지호",
-        employeeName: "김지훈",
+        employeeId: 4,
         phone: "010-2000-0032",
         email: "contact32@example.com",
         address: "서울특별시 강동구 천호대로 132",
@@ -527,7 +686,7 @@ export const customers = [
         companyName: "오렌지팩토리",
         businessNumber: "123-45-67833",
         customerManager: "한예린",
-        employeeName: "박지은",
+        employeeId: 11,
         phone: "010-2000-0033",
         email: "contact33@example.com",
         address: "인천광역시 연수구 센트럴로 33",
@@ -539,7 +698,7 @@ export const customers = [
         companyName: "스마트링크",
         businessNumber: "123-45-67834",
         customerManager: "서준영",
-        employeeName: "이준혁",
+        employeeId: 19,
         phone: "010-2000-0034",
         email: "contact34@example.com",
         address: "서울특별시 구로구 디지털로 134",
@@ -551,7 +710,7 @@ export const customers = [
         companyName: "모먼트스튜디오",
         businessNumber: "123-45-67835",
         customerManager: "배하은",
-        employeeName: "최민수",
+        employeeId: 20,
         phone: "010-2000-0035",
         email: "contact35@example.com",
         address: "서울특별시 성동구 성수이로 35",
@@ -563,7 +722,7 @@ export const customers = [
         companyName: "에코플러스",
         businessNumber: "123-45-67836",
         customerManager: "임도현",
-        employeeName: "김지훈",
+        employeeId: 2,
         phone: "010-2000-0036",
         email: "contact36@example.com",
         address: "경기도 수원시 영통구 광교로 136",
@@ -575,7 +734,7 @@ export const customers = [
         companyName: "비전파트너스",
         businessNumber: "123-45-67837",
         customerManager: "신가은",
-        employeeName: "박지은",
+        employeeId: 4,
         phone: "010-2000-0037",
         email: "contact37@example.com",
         address: "서울특별시 영등포구 국제금융로 37",
@@ -587,7 +746,7 @@ export const customers = [
         companyName: "라온마케팅",
         businessNumber: "123-45-67838",
         customerManager: "오태민",
-        employeeName: "이준혁",
+        employeeId: 11,
         phone: "010-2000-0038",
         email: "contact38@example.com",
         address: "서울특별시 종로구 종로 138",
@@ -599,7 +758,7 @@ export const customers = [
         companyName: "코어시스템즈",
         businessNumber: "123-45-67839",
         customerManager: "유나경",
-        employeeName: "최민수",
+        employeeId: 19,
         phone: "010-2000-0039",
         email: "contact39@example.com",
         address: "경기도 안양시 동안구 시민대로 139",
@@ -611,7 +770,7 @@ export const customers = [
         companyName: "프라임유통",
         businessNumber: "123-45-67840",
         customerManager: "조현우",
-        employeeName: "김지훈",
+        employeeId: 20,
         phone: "010-2000-0040",
         email: "contact40@example.com",
         address: "경기도 광명시 일직로 40",
@@ -623,7 +782,7 @@ export const customers = [
         companyName: "베스트크리에이티브",
         businessNumber: "123-45-67841",
         customerManager: "문서아",
-        employeeName: "박지은",
+        employeeId: 2,
         phone: "010-2000-0041",
         email: "contact41@example.com",
         address: "서울특별시 용산구 한강대로 141",
@@ -635,7 +794,7 @@ export const customers = [
         companyName: "플러스네트워크",
         businessNumber: "123-45-67842",
         customerManager: "백지훈",
-        employeeName: "이준혁",
+        employeeId: 4,
         phone: "010-2000-0042",
         email: "contact42@example.com",
         address: "서울특별시 금천구 가산디지털로 142",
@@ -647,7 +806,7 @@ export const customers = [
         companyName: "더나은교육",
         businessNumber: "123-45-67843",
         customerManager: "노예지",
-        employeeName: "최민수",
+        employeeId: 11,
         phone: "010-2000-0043",
         email: "contact43@example.com",
         address: "서울특별시 동작구 상도로 43",
@@ -659,7 +818,7 @@ export const customers = [
         companyName: "아이디어웍스",
         businessNumber: "123-45-67844",
         customerManager: "남승현",
-        employeeName: "김지훈",
+        employeeId: 19,
         phone: "010-2000-0044",
         email: "contact44@example.com",
         address: "경기도 고양시 일산동구 중앙로 144",
@@ -671,7 +830,7 @@ export const customers = [
         companyName: "퍼스트이벤트",
         businessNumber: "123-45-67845",
         customerManager: "홍채원",
-        employeeName: "박지은",
+        employeeId: 20,
         phone: "010-2000-0045",
         email: "contact45@example.com",
         address: "서울특별시 중구 세종대로 45",
@@ -683,7 +842,7 @@ export const customers = [
         companyName: "세움테크놀로지",
         businessNumber: "123-45-67846",
         customerManager: "고민준",
-        employeeName: "이준혁",
+        employeeId: 2,
         phone: "010-2000-0046",
         email: "contact46@example.com",
         address: "경기도 용인시 기흥구 동백중앙로 146",
@@ -695,7 +854,7 @@ export const customers = [
         companyName: "리버스컴퍼니",
         businessNumber: "123-45-67847",
         customerManager: "차서윤",
-        employeeName: "최민수",
+        employeeId: 4,
         phone: "010-2000-0047",
         email: "contact47@example.com",
         address: "서울특별시 광진구 아차산로 47",
@@ -707,7 +866,7 @@ export const customers = [
         companyName: "온누리서비스",
         businessNumber: "123-45-67848",
         customerManager: "주하람",
-        employeeName: "김지훈",
+        employeeId: 11,
         phone: "010-2000-0048",
         email: "contact48@example.com",
         address: "경기도 부천시 원미구 길주로 148",
@@ -719,7 +878,7 @@ export const customers = [
         companyName: "디지털브릿지",
         businessNumber: "123-45-67849",
         customerManager: "송다인",
-        employeeName: "박지은",
+        employeeId: 19,
         phone: "010-2000-0049",
         email: "contact49@example.com",
         address: "서울특별시 강서구 마곡중앙로 49",
@@ -731,7 +890,7 @@ export const customers = [
         companyName: "유니온브랜드",
         businessNumber: "123-45-67850",
         customerManager: "장시우",
-        employeeName: "이준혁",
+        employeeId: 20,
         phone: "010-2000-0050",
         email: "contact50@example.com",
         address: "경기도 남양주시 다산중앙로 150",
@@ -741,11 +900,110 @@ export const customers = [
 
 ];
 
-
+// 팀원들이 임시로 참조하는 직원 목록 (유지)
 export const employees = [
     { id: 1, name: "김민수" },
     { id: 2, name: "이지현" },
     { id: 3, name: "박준호" }
+];
+
+export const tasks = [
+    {
+        id: 1,
+        projectId: 1,
+        taskName: "제작 관리",
+        status: "완료",
+        managerId: 1,
+        memo: "생산 계획과 자재 확인 완료"
+    },
+    {
+        id: 2,
+        projectId: 1,
+        taskName: "텀블러 인쇄 및 제작",
+        status: "진행 중",
+        managerId: 6,
+        memo: "300개 인쇄 작업 진행 중"
+    },
+    {
+        id: 3,
+        projectId: 1,
+        taskName: "텀블러 품질 검사",
+        status: "대기",
+        managerId: 7,
+        memo: "제작 완료 후 검사 예정"
+    },
+    {
+        id: 4,
+        projectId: 2,
+        taskName: "에코백 원단 준비",
+        status: "대기",
+        managerId: 13,
+        memo: "원단 수량 확인 필요"
+    },
+    {
+        id: 5,
+        projectId: 2,
+        taskName: "에코백 재단·봉제·인쇄",
+        status: "대기",
+        managerId: 6,
+        memo: "500개 제작 예정"
+    },
+    {
+        id: 6,
+        projectId: 3,
+        taskName: "머그컵 제작",
+        status: "완료",
+        managerId: 1,
+        memo: "400개 제작 완료"
+    },
+    {
+        id: 7,
+        projectId: 3,
+        taskName: "머그컵 품질 검사",
+        status: "완료",
+        managerId: 14,
+        memo: "검수 완료"
+    },
+    {
+        id: 8,
+        projectId: 3,
+        taskName: "머그컵 포장 및 출고",
+        status: "완료",
+        managerId: 9,
+        memo: "출고 완료"
+    },
+    {
+        id: 9,
+        projectId: 4,
+        taskName: "아크릴 키링 인쇄·가공",
+        status: "대기",
+        managerId: 6,
+        memo: "800개 제작 예정"
+    },
+    {
+        id: 10,
+        projectId: 4,
+        taskName: "아크릴 키링 품질 검사",
+        status: "대기",
+        managerId: 7,
+        memo: "가공 완료 후 검사"
+    },
+    {
+        id: 11,
+        projectId: 5,
+        taskName: "에코백 원단 및 부자재 준비",
+        status: "진행 중",
+        managerId: 13,
+        memo: "200개 제작 자재 확보 중"
+    },
+    {
+        id: 12,
+        projectId: 5,
+        taskName: "에코백 제작 및 인쇄",
+        status: "대기",
+        managerId: 1,
+        memo: "자재 준비 후 착수 예정"
+    }
 ];
 
 export const initialProjects = [
@@ -772,9 +1030,44 @@ export const initialProjects = [
         completedDate: null,
         status: "대기",
         description: "홍보용 에코백 500개 제작"
+    },
+    {
+        id: 3,
+        name: "그린컴퍼니 머그컵 제작",
+        quotationId: 3,
+        customerId: 3,
+        managerId: 1,
+        startDate: "2026-10-23",
+        dueDate: "2026-11-02",
+        completedDate: "2026-11-01",
+        status: "완료",
+        description: "행사용 세라믹 머그컵 400개 제작 및 출고 완료"
+    },
+    {
+        id: 4,
+        name: "미래테크 아크릴 키링 제작",
+        quotationId: 6,
+        customerId: 4,
+        managerId: 13,
+        startDate: "2026-11-02",
+        dueDate: "2026-11-25",
+        completedDate: null,
+        status: "대기",
+        description: "홍보용 아크릴 키링 800개 제작"
+    },
+    {
+        id: 5,
+        name: "그린컴퍼니 에코백 추가 제작",
+        quotationId: 7,
+        customerId: 3,
+        managerId: 6,
+        startDate: "2026-11-03",
+        dueDate: "2026-12-04",
+        completedDate: null,
+        status: "진행 중",
+        description: "친환경 에코백 200개 추가 제작"
     }
-]
-
+];
 
 export const initialEmployees = [
     {
@@ -956,5 +1249,25 @@ export const initialEmployees = [
         email: "sohee@example.com",
         phone: "010-0000-0018",
         hireDate: "2026-03-02"
+    },
+    {
+        id: 19,
+        name: "권서현",
+        department: "영업팀",
+        position: "대리",
+        status: "재직",
+        email: "seohyun@example.com",
+        phone: "010-0000-0019",
+        hireDate: "2022-11-07"
+    },
+    {
+        id: 20,
+        name: "정민준",
+        department: "영업팀",
+        position: "사원",
+        status: "재직",
+        email: "minjun@example.com",
+        phone: "010-0000-0020",
+        hireDate: "2024-04-15"
     }
 ];

@@ -1,9 +1,18 @@
 import React from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import "./Sidebar.css";
+import { useERP } from "../context/ERPContext";
 
 function Sidebar() {
     const location = useLocation();
+    const { resetAllData } = useERP();
+
+    const handleResetAll = () => {
+        if (!window.confirm("모든 ERP 데이터를 초기 상태로 되돌릴까요?\n등록·수정한 내용은 사라집니다.")) {
+            return;
+        }
+        resetAllData();
+    };
 
     const menus = [
         { name: "대시보드", path: "/", icon: "▦" },
@@ -53,6 +62,16 @@ function Sidebar() {
                     );
                 })}
             </nav>
+
+            <div className="erp-sidebar-actions">
+                <button
+                    type="button"
+                    className="erp-sidebar-reset"
+                    onClick={handleResetAll}
+                >
+                    전체 데이터 초기화
+                </button>
+            </div>
 
             <div className="erp-sidebar-footer">
                 TEAM ERP PROJECT

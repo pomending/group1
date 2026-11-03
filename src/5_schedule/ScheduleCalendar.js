@@ -35,7 +35,7 @@ export default function ScheduleCalendar({
   holidayDates,
   calendarDays,
   visibleItems,
-  // Manager가 검색·공개 필터를 통과한 전체 일정에서 추린 사람 이름 목록입니다.
+  // Manager가 검색·공유 구분 필터를 통과한 전체 일정에서 추린 사람 이름 목록입니다.
   // visibleItems는 표시 기간의 일정 목록이라 이번 주 0건인 사람을 만들 때 이 별도 목록이 필요합니다.
   staffPeople,
   staffPersonSearch,
@@ -106,7 +106,7 @@ export default function ScheduleCalendar({
               value={query}
               onChange={(event) => onQueryChange(event.target.value)}
             />
-            {/* 검색어만 비웁니다. 기간·공개 범위·업무 상태는 변경하지 않습니다. */}
+            {/* 검색어만 비웁니다. 기간·공유 구분·업무 상태는 변경하지 않습니다. */}
             <button type="button" className="sm-search-reset" aria-label="검색 초기화"
               title="검색 초기화" disabled={!query} onClick={() => onQueryChange("")}>
               <ScheduleIcon name="reset" />
@@ -247,7 +247,7 @@ export default function ScheduleCalendar({
       )}
 
       {/* 주간 날짜는 부모가 월요일부터 7개로 계산해 전달합니다.
-          날짜 헤더/빈 공간은 날짜 선택, 내부 일정 버튼은 내용 수정으로 구분됩니다. */}
+          날짜 헤더/빈 공간은 날짜를 선택하고, 내부 일정 버튼은 선택 날짜 상세 패널을 갱신합니다. 수정 창은 열지 않습니다. */}
       {view === "weekly" && (
         <div className="sm-week-view">
           {weekDates.map(({ date, key }, index) => {
@@ -289,6 +289,7 @@ export default function ScheduleCalendar({
           onToggleFavorite={onToggleFavorite}
           people={staffPeople}
           personSearch={staffPersonSearch}
+          hasActiveFilter={Boolean(query.trim() || selectedProject || scopeFilter !== "all")}
           weekDates={weekDates}
           items={visibleItems}
           selectedDate={selectedDate}

@@ -12,14 +12,14 @@
  * props로 전달한 onEdit, onDelete는 Manager의 함수입니다. 목록은 실행할 대상을 인자로 전달할 뿐입니다.
  * 원본 반복 일정과 날짜별 발생 일정은 수정 범위가 다르므로 부모가 준 객체를 그대로 넘깁니다.
  */
-import { ScheduleAgendaItem, ScheduleAttendees, ScheduleFavorite, ScheduleVisibility, ScheduleIcon } from "./ScheduleItemParts";
+import { ScheduleAgendaItem, ScheduleAttendees, ScheduleFavorite, ScheduleTimeRow, ScheduleIcon } from "./ScheduleItemParts";
 import React from "react";
 import { weekDays, getScheduleTime, getRepeatLabel, getScheduleInterval } from "./scheduleData";
 import ScheduleDirectory from "./ScheduleDirectory";
 
 /* directoryItems는 전체 원본, favoriteItems는 고정된 원본입니다. selectedItems는 선택 날짜·필터 결과, upcomingSchedules는 오늘 포함 7일 이내 미완료 일정 중 가까운 5건입니다. 자식 state로 복사하지 않습니다. */
 // 목록별 기준은 위의 props 설명을 따릅니다. 선택 날짜·즐겨찾기·다가오는 일정은 같은 목록이 아닙니다.
-// 검색·공개 필터와 반복 계산은 이미 부모에서 처리되므로 여기서는 받은 배열만 표시합니다.
+// 검색·공유 구분 필터와 반복 계산은 이미 부모에서 처리되므로 여기서는 받은 배열만 표시합니다.
 // 부모가 넘겨준 선택 날짜의 일정과 가까운 미완료 일정 목록을 보여줍니다.
 // 수정·삭제·완료 여부 변경은 실제 데이터를 관리하는 부모 함수에 맡깁니다.
 export default function ScheduleSidebar({
@@ -73,13 +73,7 @@ export default function ScheduleSidebar({
                   </button>
                   <ScheduleFavorite item={item} onToggleFavorite={onToggleFavorite} />
                 </div>
-                <div className="sm-favorite-time-row">
-                  <span className="sm-favorite-time">
-                    <ScheduleIcon name="clock" />
-                    <time>{getScheduleTime(item)}</time>
-                  </span>
-                  <ScheduleVisibility visibility={item.visibility} />
-                </div>
+                <ScheduleTimeRow item={item} />
                 {/* dl은 이름과 값의 묶음입니다. dt는 '프로젝트' 같은 설명 이름,
                     dd는 실제 값입니다. 두 줄로 나눠 제목·프로젝트·담당자가 섞이지 않게 합니다. */}
                 {item.scope !== "개인 일정용" && <dl className="sm-favorite-info">

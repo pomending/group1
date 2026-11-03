@@ -15,7 +15,7 @@ import {
 
 /* 여러 보기가 같은 카드·배지·조작 부품을 사용합니다. 색상은 --sm-event-color로 전달하며 데이터 변경은 부모 콜백에 맡깁니다. */
 // 상태 코드로 표시 문구를 찾습니다. 없는 코드면 첫 항목인 '예정'을 사용합니다.
-// 배지·툴팁·선택창이 이 함수를 공유하므로 같은 상태를 서로 다르게 표시하지 않습니다.
+// 이 파일의 배지·툴팁·상태 선택은 이 함수를 사용합니다. 폼의 선택지는 같은 scheduleStatuses 정의를 직접 사용합니다.
 function getStatusOption(status) {
   for (const option of scheduleStatuses) {
     if (option.value === status) return option;
@@ -33,7 +33,7 @@ export function ScheduleStatus({ status }) {
   );
 }
 
-// 공개 범위는 진행 상태와 다른 정보입니다. 색뿐 아니라 글자로도 구분합니다.
+// 공유 구분은 진행 상태와 다른 정보입니다. 색뿐 아니라 글자로도 구분합니다.
 // 이 배지는 저장된 분류를 표시하며, 로그인 사용자별 접근 권한을 검사하는 기능은 아닙니다.
 export function ScheduleVisibility({ visibility }) {
   let label = "회사 공유";
@@ -78,7 +78,7 @@ export function ScheduleEvent({ item, onSelect, compact = false, roleLabel, onTo
     onSelect(item);
   }
   // 버튼 안에 별 버튼을 중첩하지 않고, 일정 박스 안에 제목 버튼과 별 버튼을 나란히 둡니다.
-  // 제목은 상세창, 별은 즐겨찾기만 실행하므로 서로의 동작이 섞이지 않습니다.
+  // 제목은 선택 날짜 상세 패널을 갱신하고, 별은 즐겨찾기만 바꿉니다. 제목 클릭으로 수정 창을 열지 않습니다.
   if (compact) {
     return (
       <div className={"sm-event sm-event-compact " + (isProjectMilestone ? "sm-event-project" : "")} style={{ "--sm-event-color": item.color }}
@@ -175,6 +175,16 @@ export function ScheduleAttendees({ item, paragraph = false }) {
   return <small>참석자: {names}</small>;
 }
 
+// 즐겨찾기·선택 날짜 카드가 같은 시간 행을 사용합니다. 프로젝트 기준일에는 공유 배지를 표시하지 않습니다.
+export function ScheduleTimeRow({ item }) {
+  return (
+    <div className="sm-favorite-time-row">
+      <span className="sm-favorite-time"><ScheduleIcon name="clock" /><time>{getScheduleTime(item)}</time></span>
+      {!item.isProjectMilestone && <ScheduleVisibility visibility={item.visibility} />}
+    </div>
+  );
+}
+
 // 선택 날짜 패널의 일정 한 건입니다. 작업 구분·참석자·메모를 함께 표시합니다.
 // 실제 수정·삭제는 이 컴포넌트가 하지 않고 부모가 전달한 함수에 item을 넘깁니다.
 export function ScheduleAgendaItem({ item, onEdit, onDelete, onStatusChange, onToggleFavorite }) {
@@ -186,10 +196,7 @@ export function ScheduleAgendaItem({ item, onEdit, onDelete, onStatusChange, onT
         <strong className="sm-favorite-title">{item.title}</strong>
         {!isProjectMilestone && <ScheduleFavorite item={item} onToggleFavorite={onToggleFavorite} />}
       </div>
-      <div className="sm-favorite-time-row">
-        <span className="sm-favorite-time"><ScheduleIcon name="clock" /><time>{getScheduleTime(item)}</time></span>
-        {!isProjectMilestone && <ScheduleVisibility visibility={item.visibility} />}
-      </div>
+      <ScheduleTimeRow item={item} />
       <dl className="sm-favorite-info">
         {isProjectMilestone
           ? <><dt>구분</dt><dd>프로젝트 일정</dd><dt>프로젝트</dt><dd>{item.project}</dd><dt>담당자</dt><dd>{item.projectManager || "미지정"}</dd><dt>기준일</dt><dd>{item.milestoneType}</dd></>

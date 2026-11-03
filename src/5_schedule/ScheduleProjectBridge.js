@@ -1,5 +1,6 @@
 /* [파일 안내] 기존 프로젝트 데이터와 달력 표시 사이의 변환
  * 입력: Manager가 ERPContext에서 읽은 프로젝트·일정
+ * 담당자 이름: 현재 ../data/mockData의 employees에서 managerId로 찾습니다. Context의 직원 상태를 읽는 구조는 아닙니다.
  * createProjectMilestones: 시작일·마감일을 읽기 전용 달력 항목으로 변환
  * getProjectScheduleSummaries: 프로젝트에 해당하는 일정 요약 생성
  * 이 파일은 변환만 하며 Context 업데이트는 Manager에서 실행합니다.

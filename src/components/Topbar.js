@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import "./Topbar.css";
@@ -25,9 +26,16 @@ function Topbar({ isCollapsed, setIsCollapsed }) {
             location.pathname.startsWith(menu.path + "/");
     });
 
-    const pageName = currentMenu
-        ? currentMenu.name
-        : "페이지를 찾을 수 없음";
+    // 마이페이지인지 확인
+    const isMyPage = location.pathname === "/" &&
+        new URLSearchParams(location.search).get("page") === "mypage";
+
+    // 현재 페이지 이름
+    const pageName = isMyPage
+        ? "마이페이지"
+        : currentMenu
+            ? currentMenu.name
+            : "페이지를 찾을 수 없음";
 
     return (
         <header className="erp-topbar">
@@ -47,7 +55,7 @@ function Topbar({ isCollapsed, setIsCollapsed }) {
                     <div className="erp-topbar-breadcrumb">
                         <Link to="/">홈</Link>
 
-                        {location.pathname !== "/" && (
+                        {(location.pathname !== "/" || isMyPage) && (
                             <>
                                 <span>/</span>
                                 <span>{pageName}</span>
@@ -62,13 +70,13 @@ function Topbar({ isCollapsed, setIsCollapsed }) {
 
             </div>
 
-            <div className="erp-topbar-user">
+            <Link to="/?page=mypage" className="erp-topbar-user">
                 <div className="erp-topbar-user-info">
-                    <strong>GOODS ERP</strong>
-                    <span>Team Project</span>
+                    <strong>마이페이지</strong>
+                    <span>내 정보 보기</span>
                 </div>
-                <div className="erp-topbar-avatar">T</div>
-            </div>
+                <div className="erp-topbar-avatar">👤</div>
+            </Link>
 
         </header>
     );
