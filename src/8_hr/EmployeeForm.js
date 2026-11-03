@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { EMPLOYEE_POSITIONS, EMPLOYEE_STATUSES } from "../utils/employeeUtils";
+import { departmentNames, EMPLOYEE_POSITIONS, EMPLOYEE_STATUSES } from "../utils/employeeUtils";
 
 const emptyEmployee = {
     name: "", department: "", position: "사원", status: "재직",
@@ -14,12 +14,12 @@ export default function EmployeeForm({ employee, employees, onSave, onCancel }) 
         email: employee.email || "", phone: employee.phone || "", hireDate: employee.hireDate || ""
     } : { ...emptyEmployee });
     const [error, setError] = useState("");
-    const departmentOptions = [...new Set(employees.map(e => e.department).filter(Boolean))].sort();
-    const change = e => {
+
+    const change = (e) => {
         setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
         if (error) setError("");
     };
-    const submit = e => {
+    const submit = (e) => {
         e.preventDefault();
         const result = onSave(form);
         if (!result.ok) setError(result.message || "직원 정보를 저장하지 못했습니다.");
@@ -41,9 +41,24 @@ export default function EmployeeForm({ employee, employees, onSave, onCancel }) 
                     <label className="hr-field"><span>직원 이름 <em>*</em></span>
                         <input className="hr-input" name="name" value={form.name} onChange={change} placeholder="이름 입력" maxLength={30} required />
                     </label>
-                    <label className="hr-field"><span>부서 <em>*</em></span>
-                        <input className="hr-input" name="department" value={form.department} onChange={change} list="hr-department-suggestions" placeholder="부서 입력 또는 선택" maxLength={50} required />
-                        <datalist id="hr-department-suggestions">{departmentOptions.map(dep => <option key={dep} value={dep} />)}</datalist>
+                    <label className="hr-field">
+                        <span>부서 <em>*</em></span>
+
+                        <select
+                            className="hr-input"
+                            name="department"
+                            value={form.department}
+                            onChange={change}
+                            required
+                        >
+                            <option value="">부서를 선택하세요</option>
+
+                            {departmentNames.map(department => (
+                                <option key={department} value={department}>
+                                    {department}
+                                </option>
+                            ))}
+                        </select>
                     </label>
                     <label className="hr-field"><span>직급 <em>*</em></span>
                         <input className="hr-input" name="position" value={form.position} onChange={change} list="hr-position-suggestions" maxLength={30} required />

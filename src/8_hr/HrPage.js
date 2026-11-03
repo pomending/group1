@@ -1,28 +1,31 @@
-import React, { useMemo, useState } from "react";
+import React, { useState } from "react";
 import { useERP } from "../context/ERPContext";
 import EmployeeList from "./EmployeeList";
 import EmployeeForm from "./EmployeeForm";
 import EmployeeDetail from "./EmployeeDetail";
 import "./HrPage.css";
+import { departmentNames } from "../utils/employeeUtils";
 
 export default function HrPage() {
     const {
-        employees = [], projects = [],
-        addEmployee, updateEmployee, deleteEmployee, resetEmployees
+        employees, projects,
+        addEmployee, updateEmployee, deleteEmployee
     } = useERP();
 
     const [page, setPage] = useState("list");
     const [selectedEmployeeId, setSelectedEmployeeId] = useState(null);
     const selectedEmployee = employees.find(e => Number(e.id) === Number(selectedEmployeeId));
 
-    const departments = useMemo(() => {
-        const counts = {};
-        employees.forEach(e => {
-            const department = e.department || "미지정";
-            counts[department] = (counts[department] || 0) + 1;
-        });
-        return Object.entries(counts).sort((a, b) => b[1] - a[1]);
-    }, [employees]);
+
+
+    const departments = departmentNames
+        .map(department => ({
+            name: department,
+            count: employees.filter(employee =>
+                employee.department === department
+            ).length
+        }))
+        .sort((a, b) => b.count - a.count);
 
     const showDetail = (id) => {
         setSelectedEmployeeId(id);
@@ -50,17 +53,6 @@ export default function HrPage() {
         }
         return result;
     };
-    const handleReset = () => {
-        if (window.confirm("직원 데이터를 초기 상태로 되돌릴까요? 등록·수정한 직원 정보가 모두 사라집니다.")) {
-            const result = resetEmployees();
-            if (!result.ok) {
-                window.alert(result.message);
-                return;
-            }
-            setSelectedEmployeeId(null);
-            setPage("list");
-        }
-    };
 
     return (
         <div className="hr-app">
@@ -74,7 +66,6 @@ export default function HrPage() {
                     <div className="hr-heading-actions">
                         {page === "list" ? (
                             <>
-                                <button type="button" className="hr-btn hr-btn-ghost" onClick={handleReset}>데이터 초기화</button>
                                 <button type="button" className="hr-btn hr-btn-primary" onClick={() => setPage("new")}>+ 직원 등록</button>
                             </>
                         ) : (
@@ -96,16 +87,23 @@ export default function HrPage() {
                                 <div><p className="hr-eyebrow">DEPARTMENT OVERVIEW</p><h2>부서별 인원 현황</h2></div>
                                 <span className="hr-subtle">총 {departments.length}개 부서</span>
                             </div>
-                            {departments.length ? (
+                            {employees.length > 0 ? (
                                 <div className="hr-department-grid">
-                                    {departments.map(([name, count]) => (
-                                        <div className="hr-department-item" key={name}>
-                                            <div className="hr-department-meta"><span>{name}</span><strong>{count}명</strong></div>
-                                            <div className="hr-bar-track"><div className="hr-bar-fill" style={{ width: `${(count / employees.length) * 100}%` }} /></div>
+                                    {departments.map(department => (
+                                        <div
+                                            className="hr-department-item"
+                                            key={department.name}
+                                        >
+                                            <div className="hr-department-meta">
+                                                <span>{department.name}</span>
+                                                <strong>{department.count}명</strong>
+                                            </div>
                                         </div>
                                     ))}
                                 </div>
-                            ) : <p className="hr-empty">직원이 없습니다.</p>}
+                            ) : (
+                                <p className="hr-empty">직원이 없습니다.</p>
+                            )}
                         </section>
                         <EmployeeList employees={employees} projects={projects} onView={showDetail} onNew={() => setPage("new")} />
                     </>

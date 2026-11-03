@@ -1,5 +1,6 @@
-import React, { useMemo, useState } from "react";
-import { formatEmployeeId, statusClass } from "../utils/employeeUtils";
+import React, { useState } from "react";
+import { departmentNames, statusClass } from "../utils/employeeUtils";
+import { formatEmployeeId } from "../utils/formatUtils";
 
 const PAGE_SIZE = 8;
 
@@ -10,25 +11,30 @@ export default function EmployeeList({ employees, projects, onView, onNew }) {
     const [sort, setSort] = useState("newest");
     const [page, setPage] = useState(1);
 
-    const departments = useMemo(() =>
-        [...new Set(employees.map(e => e.department).filter(Boolean))].sort(),
-    [employees]);
+    const keyword = search.trim().toLowerCase();
 
-    const filtered = useMemo(() => {
-        const keyword = search.trim().toLowerCase();
-        const result = employees.filter(employee => {
-            const matchesSearch = [employee.name, employee.email, employee.phone, String(employee.id)]
-                .some(value => String(value ?? "").toLowerCase().includes(keyword));
-            return matchesSearch && (!department || employee.department === department) &&
-                (!status || employee.status === status);
-        });
-        return result.sort((a, b) => {
-            if (sort === "name") return a.name.localeCompare(b.name, "ko");
-            if (sort === "oldest") return (a.hireDate || "").localeCompare(b.hireDate || "");
-            if (sort === "recentId") return b.id - a.id;
-            return (b.hireDate || "").localeCompare(a.hireDate || "") || b.id - a.id;
-        });
-    }, [employees, search, department, status, sort]);
+    const filtered = employees.filter(employee => {
+        const matchesSearch = [
+            employee.name,
+            employee.email,
+            employee.phone,
+            String(employee.id)
+        ].some(value =>
+            String(value ?? "").toLowerCase().includes(keyword)
+        );
+
+        return matchesSearch &&
+            (!department || employee.department === department) &&
+            (!status || employee.status === status);
+    });
+
+    filtered.sort((a, b) => {
+        if (sort === "name") return a.name.localeCompare(b.name, "ko");
+        if (sort === "oldest") return (a.hireDate || "").localeCompare(b.hireDate || "");
+        if (sort === "recentId") return b.id - a.id;
+
+        return (b.hireDate || "").localeCompare(a.hireDate || "") || b.id - a.id;
+    });
 
     const maxPage = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
     const currentPage = Math.min(page, maxPage);
@@ -49,7 +55,7 @@ export default function EmployeeList({ employees, projects, onView, onNew }) {
                 <input className="hr-input hr-search" aria-label="직원 검색" placeholder="이름, 이메일, 연락처 검색" value={search} onChange={e => changeSearch(e.target.value)} />
                 <select className="hr-input hr-select" aria-label="부서 필터" value={department} onChange={e => changeDepartment(e.target.value)}>
                     <option value="">전체 부서</option>
-                    {departments.map(d => <option key={d} value={d}>{d}</option>)}
+                    {departmentNames.map(d => <option key={d} value={d}>{d}</option>)}
                 </select>
                 <select className="hr-input hr-select" aria-label="상태 필터" value={status} onChange={e => changeStatus(e.target.value)}>
                     <option value="">전체 상태</option>
