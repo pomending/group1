@@ -1,6 +1,8 @@
+
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import "./CommunityWrite.css";
+import { getBoardUser } from "./MyPage";
 
 // 공지사항 작성
 function NoticeWritePage({ posts, setPosts }) {
@@ -10,15 +12,19 @@ function NoticeWritePage({ posts, setPosts }) {
     // 입력 상태
     const [type, setType] = useState("normal");
     const [title, setTitle] = useState("");
-    const [writer, setWriter] = useState("");
     const [content, setContent] = useState("");
 
     // 공지 등록
     const addPost = () => {
+        const currentUser = getBoardUser();
+        if (!currentUser) {
+            alert("직원 정보를 찾을 수 없습니다. 마이페이지에서 이메일을 확인하세요.");
+            return;
+        }
 
         // 필수 입력 검사
-        if (!title.trim() || !writer.trim() || !content.trim()) {
-            alert("제목, 작성자, 내용을 모두 입력하세요.");
+        if (!title.trim() || !content.trim()) {
+            alert("제목과 내용을 모두 입력하세요.");
             return;
         }
 
@@ -28,7 +34,9 @@ function NoticeWritePage({ posts, setPosts }) {
             id: Date.now(),
             type: type,
             title: title.trim(),
-            writer: writer.trim(),
+            writer: currentUser.name,
+            authorEmail: currentUser.email,
+            authorEmployeeId: currentUser.employeeId,
             content: content.trim(),
             date: new Date().toLocaleDateString("ko-KR")
         };
@@ -72,14 +80,6 @@ function NoticeWritePage({ posts, setPosts }) {
                         placeholder="제목을 입력하세요."
                         value={title}
                         onChange={(e) => setTitle(e.target.value)}
-                    />
-
-                    <label>작성자</label>
-                    <input
-                        type="text"
-                        placeholder="작성자 이름"
-                        value={writer}
-                        onChange={(e) => setWriter(e.target.value)}
                     />
 
                     <label>내용</label>
