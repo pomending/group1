@@ -30,21 +30,31 @@ function ConsultationManagement() {
 
     const saveConsultation = () => {
 
+        if ((editData.companyName || "").trim() === ""
+            || (editData.customerManager || "").trim() === ""
+            || (editData.phone || "").trim() === "") {
+            alert("필수등록정보(고객사명, 고객사 담당자명, 연락처)를 입력해주세요.")
+            return;
+        }
+
+
         if (editData.id) {
             setConsultation(
                 consultation.map((item) =>
                     item.id === editData.id ? editData : item
                 )
             )
+            alert("문의 정보가 수정되었습니다.")
         }
         else {
             const newId = Math.max(
                 0,
                 ...consultation.map((item) => item.id)) + 1;
             const newConsultation = {
-                ...editData, id: newId
+                ...editData, id: newId, status: editData.status || "문의 접수"
             };
             setConsultation([...consultation, newConsultation]);
+            alert("새로운 문의가 등록되었습니다.")
 
         }
         setEditData({});
@@ -63,6 +73,9 @@ function ConsultationManagement() {
         )
 
         setCheckedIds([]);
+        if (checkIds.includes(editData.id)) {
+            setEditData({})
+        }
     }
 
 
@@ -72,15 +85,19 @@ function ConsultationManagement() {
     }
 
     // 업체명 검색어에 일치하는 문의 목록을 필터링
-    const filteredConsultation= consultation.filter((item) => item.companyName.includes(searchResult))
+    const filteredConsultation = consultation.filter((item) => item.companyName.includes(searchResult))
 
     return (
         <div className="consultation-page">
+            <h2>문의 관리</h2>
             <div className="consultation-box">
-                <h2>문의 관리</h2>
                 <h6>고객 문의 접수 및 처리 현황 관리</h6>
 
-                <h4>문의 등록/수정</h4>
+                <h4>문의 등록/수정
+                    <span>
+                        {editData.id ? "기존 정보 수정중" : "신규 문의 등록 중"}
+                    </span>
+                </h4>
                 <label>고객사명</label>
                 <input type="text"
                     value={editData?.companyName || ""}
@@ -124,7 +141,7 @@ function ConsultationManagement() {
                 <label>담당자</label>
                 <select value={editData?.employeeName || ""}
                     onChange={(e) => setEditData(
-                        { ...editData, employeeName: (e.target.value) }
+                        { ...editData, employeeName: e.target.value }
                     )}>
                     <option value="">미배정</option>
                     <option>홍길동</option>
@@ -135,7 +152,7 @@ function ConsultationManagement() {
 
                 <label>진행상태</label>
                 <select
-                    value={editData?.status || ""}
+                    value={editData?.status || "문의 접수"}
                     onChange={(e) => setEditData(
                         { ...editData, status: (e.target.value) }
                     )}>
@@ -211,11 +228,11 @@ function ConsultationManagement() {
 
                                 </tr>
                             ))}
-                            {filteredConsultation.length===0 &&(
-                                <tr>
-                                    <td colSpan={8}>검색 결과가 없습니다</td>
-                                </tr>
-                            )}
+                        {filteredConsultation.length === 0 && (
+                            <tr>
+                                <td colSpan={8}>검색 결과가 없습니다</td>
+                            </tr>
+                        )}
                     </tbody>
                 </table>
                 <div>

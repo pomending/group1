@@ -1,14 +1,21 @@
 //고객 등록 화면
 import react, { useState } from "react";
+import { useERP } from "../context/ERPContext";
+import { validateCustomer,formatBusinessNumber } from "../utils/customerUtils";
 import "./03_CustomerForm.css";
+
+
 function CustomerRegister() {
 
+    const { employees, addCustomer } = useERP();
+
+
     //고객정보를 저장할 state
-    const [formData, setFormData] = useState({
+    const [customerData, setCustomerData] = useState({
         companyName: "",
         businessNumber: "",
         customerManager: "",
-        employeeName: "",
+        employeeId: null,
         phone: "",
         email: "",
         address: "",
@@ -16,166 +23,115 @@ function CustomerRegister() {
         memo: ""
     })
 
-    const fields = [
-        { name: "companyName", label: "고객사명" },
-        { name: "businessNumber", label: "사업자등록번호" },
-        { name: "customerManager", label: "고객사 담당자명" },
-        { name: "phone", label: "연락처" },
-        { name: "email", label: "이메일" },
-        { name: "address", label: "주소" },
-        { name: "memo", label: "메모" },
-        { name: "employeeName", label: "담당자" }
-    ];
+
+
 
     function registerCustomer(e) {
-        e.preventDefault()
-
-
-
-        if (formData.companyName.trim() === "" || formData.customerManager.trim() === ""
-            || formData.phone.trim() === "") {
-            alert("필수등록정보(고객사명, 고객사 담당자명, 연락처)를 입력해주세요.");
-            return;
-
-        }
-
-        if (
-            formData.businessNumber !== "" &&
-            formData.businessNumber.replace(/-/g, "").length !== 10
-        ) {
-            alert("사업자등록번호를 확인해 주세요.");
-            return;
-        }
-
-
-        const phoneNumbers = formData.phone.replace(/-/g, "");
-
-        if (
-            (phoneNumbers.startsWith("02") &&
-                phoneNumbers.length !== 9 &&
-                phoneNumbers.length !== 10) ||
-            (!phoneNumbers.startsWith("02") &&
-                phoneNumbers.length !== 10 &&
-                phoneNumbers.length !== 11)
-        ) {
-            alert("연락처를 확인해주세요.");
-            return;
-        }
+        e.preventDefault();
+        //new date() 현재 날짜와 시간을 가져오는 코드
         const today = new Date();
-
-        const createdAt =
-            today.getFullYear() + "-" +
-            String(today.getMonth() + 1).padStart(2, "0") + "-" +
-            String(today.getDate()).padStart(2, "0");
+        //.toLocaleDateString("sv-SE"); 문자열 형태의 날짜로 변환하는 메서드 ,괄호안에 코드를 쓰면 국가나 언어별 형식으로 가져올수있게 함
+        const createdAt = new Date().toLocaleDateString("sv-SE");
+        
+        //필수입력값 유효성검사
+        if(!validateCustomer(customerData)){
+            return;
+        }
 
         window.opener.addCustomer({
-            ...formData,
+            ...customerData,
             createdAt: createdAt
         });
-        alert("고객이 등록되었습니다.")
-        window.close();
 
-
+        alert("고객이 등록되었습니다.");
     }
 
 
 
-
-
     return (
-
-
         <div className="crm-form-page">
-            <div className="crm-form-header">
-                <h2>고객 등록</h2>
-                <p>신규 고객사 정보를 입력해 주세요.</p>
+
+
+            <div className="crm-form-field">
+                <label>고객사명 <span className="crm-required">*</span></label>
+                <input value={customerData.companyName}
+                    onChange={(e) => (
+                        setCustomerData({ ...customerData, companyName: e.target.value })
+                    )} />
             </div>
-            <form className="crm-form" onSubmit={registerCustomer}>
-                {fields.map((field) => (
-                    <div className="crm-form-field" key={field.name}>
-                        <label>
-                            {field.label}
-                            {["companyName", "customerManager", "phone"].includes(field.name) && (
-                                <span className="crm-required"> *</span>
-                            )}
-                        </label>
 
-                        <input
-                            value={formData[field.name]}
-                            onChange={(e) => {
-                                const value = e.target.value;
+            <div className="crm-form-field">
+                <label>사업자등록번호</label>
+                <input value={customerData.businessNumber}
+                    onChange={(e) => (
+                        setCustomerData({ ...customerData, 
+                            businessNumber: formatBusinessNumber(e.target.value) })
+                    )} />
+            </div>
 
-                                if (field.name === "businessNumber" || field.name === "phone") {
-                                    if (/[^0-9]/.test(value.replace(/-/g, ""))) {
-                                        alert(
-                                            field.name === "businessNumber"
-                                                ? "사업자등록번호는 숫자만 입력 가능합니다."
-                                                : "연락처는 숫자만 입력 가능합니다."
-                                        );
-                                        return;
-                                    }
-                                }
+            <div className="crm-form-field">
+                <label>고객사 담당자명 <span className="crm-required">*</span></label>
+                <input value={customerData.customerManager}
+                    onChange={(e) =>
+                        setCustomerData({ ...customerData, customerManager: e.target.value })
+                    } />
+            </div>
 
-                                let formatted = value;
+            <div className="crm-form-field">
+                <label>연락처 <span className="crm-required">*</span></label>
+                <input value={customerData.phone}
+                    onChange={(e) =>
+                        setCustomerData({ ...customerData, phone: e.target.value })
+                    } />
+            </div>
 
-                                if (field.name === "businessNumber") {
-                                    const numbers = value.replace(/-/g, "").slice(0, 10);
+            <div className="crm-form-field">
+                <label>이메일</label>
+                <input value={customerData.email}
+                    onChange={(e) =>
+                        setCustomerData({ ...customerData, email: e.target.value })
+                    } />
+            </div>
 
-                                    formatted = numbers;
+            <div className="crm-form-field">
+                <label>주소</label>
+                <input value={customerData.address}
+                    onChange={(e) =>
+                        setCustomerData({ ...customerData, address: e.target.value })
+                    } />
+            </div>
 
-                                    if (numbers.length > 5) {
-                                        formatted = numbers.slice(0, 3) + "-"
-                                            + numbers.slice(3, 5) + "-"
-                                            + numbers.slice(5);
-                                    } else if (numbers.length > 3) {
-                                        formatted = numbers.slice(0, 3) + "-"
-                                            + numbers.slice(3);
-                                    }
-                                }
+            <div className="crm-form-field">
+                <label>메모</label>
+                <input value={customerData.memo}
+                    onChange={(e) =>
+                        setCustomerData({ ...customerData, memo: e.target.value })
+                    } />
+            </div>
 
-                                let formattedPhone = value;
+            <div className="crm-form-field">
+                <label>담당자</label>
+                <select value={(customerData.employeeId) ?? ""}
+                    onChange={(e) =>
+                        setCustomerData({
+                            ...customerData,
+                            employeeId: e.target.value === "" ? null : Number(e.target.value)
+                        })
+                    }>
+                    <option value="">미배정</option>
+                    {employees
+                        .filter((employee) => employee.department === "영업팀")
+                        .map((employee) =>
+                            <option key={employee.id}
+                                value={employee.id}>{employee.name}</option>)}
+                </select>
+            </div>
 
-                                if (field.name === "phone") {
-                                    const phoneNumbers = value.replace(/-/g, "").slice(0, 11);
+            <div>
+                <button onClick={registerCustomer}>고객 등록</button>
+            </div>
 
-                                    formattedPhone = phoneNumbers;
 
-                                    if (phoneNumbers.startsWith("02")) {
-                                        if (phoneNumbers.length > 6) {
-                                            formattedPhone = phoneNumbers.slice(0, 2) + "-"
-                                                + phoneNumbers.slice(2, -4) + "-"
-                                                + phoneNumbers.slice(-4);
-                                        } else if (phoneNumbers.length > 2) {
-                                            formattedPhone = phoneNumbers.slice(0, 2) + "-"
-                                                + phoneNumbers.slice(2);
-                                        }
-                                    } else {
-                                        if (phoneNumbers.length > 7) {
-                                            formattedPhone = phoneNumbers.slice(0, 3) + "-"
-                                                + phoneNumbers.slice(3, -4) + "-"
-                                                + phoneNumbers.slice(-4);
-                                        } else if (phoneNumbers.length > 3) {
-                                            formattedPhone = phoneNumbers.slice(0, 3) + "-"
-                                                + phoneNumbers.slice(3);
-                                        }
-                                    }
-                                }
-
-                                setFormData({
-                                    ...formData,
-                                    [field.name]: field.name === "businessNumber"
-                                        ? formatted
-                                        : field.name === "phone"
-                                            ? formattedPhone
-                                            : value
-                                });
-                            }}
-                        />
-                    </div>
-                ))}
-
-                <button type="submit">등록</button>
-            </form>
         </div>
 
     )

@@ -12,7 +12,7 @@ import { useERP } from "../context/ERPContext";
 function CustomerManagement() {
     //ERPcontext에 있는 함수 가져오기
     const { customers, setCustomers, addCustomer,
-        saveEditedCustomer, deleteCustomers } = useERP();
+        saveEditedCustomer, deleteCustomers, employees  } = useERP();
         
 
     //검색창에 입력한 검색어
@@ -121,7 +121,10 @@ function CustomerManagement() {
         ];
         //고객정보를 반복하여 엑셀시트에 한 행씩 추가
         data.forEach((customer) => {
-            worksheet.addRow(customer);
+                const employee = employees.find((employee)=>
+                    employee.id===customer.employeeId)
+            
+            worksheet.addRow({...customer,employeeName : employee?.name});
         });
         // 엑셀 문서를 실제 파일 데이터로 변환
         const buffer = await workbook.xlsx.writeBuffer();
@@ -303,7 +306,8 @@ function CustomerManagement() {
                                         <td>{customer.address}</td>
                                         <td>{customer.createdAt}</td>
                                         <td>{customer.memo}</td>
-                                        <td>{customer.employeeName}</td>
+                                        <td>{employees.find((employee)=>
+                                            employee.id === customer.employeeId)?.name}</td>
                                     </tr>
                                 ))
                             )}
