@@ -1,6 +1,8 @@
+
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import "./CommunityWrite.css";
+import { getBoardUser } from "./MyPage";
 
 function CommunityWritePage({ posts, setPosts }) {
 
@@ -8,15 +10,19 @@ function CommunityWritePage({ posts, setPosts }) {
 
     // 입력 상태
     const [title, setTitle] = useState("");
-    const [writer, setWriter] = useState("");
     const [content, setContent] = useState("");
 
     // 게시글 등록
     const addPost = () => {
+        const currentUser = getBoardUser();
+        if (!currentUser) {
+            alert("직원 정보를 찾을 수 없습니다. 마이페이지에서 이메일을 확인하세요.");
+            return;
+        }
 
         // 필수 입력 검사
-        if (!title.trim() || !writer.trim() || !content.trim()) {
-            alert("제목, 작성자, 내용을 모두 입력하세요.");
+        if (!title.trim() || !content.trim()) {
+            alert("제목과 내용을 모두 입력하세요.");
             return;
         }
 
@@ -24,7 +30,9 @@ function CommunityWritePage({ posts, setPosts }) {
         const newPost = {
             id: Date.now(),
             title: title.trim(),
-            writer: writer.trim(),
+            writer: currentUser.name,
+            authorEmail: currentUser.email,
+            authorEmployeeId: currentUser.employeeId,
             content: content.trim(),
             date: new Date().toLocaleDateString("ko-KR")
         };
@@ -60,15 +68,6 @@ function CommunityWritePage({ posts, setPosts }) {
                         placeholder="제목을 입력하세요."
                         value={title}
                         onChange={(e) => setTitle(e.target.value)}
-                    />
-
-                    {/* 작성자 */}
-                    <label>작성자</label>
-                    <input
-                        type="text"
-                        placeholder="작성자 이름"
-                        value={writer}
-                        onChange={(e) => setWriter(e.target.value)}
                     />
 
                     {/* 내용 */}
