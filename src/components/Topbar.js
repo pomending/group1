@@ -10,11 +10,14 @@ function Topbar({ isCollapsed, setIsCollapsed }) {
     const menus = [
         { path: "/", name: "대시보드" },
         { path: "/crm", name: "고객 관리" },
+        { path: "/consultation", name: "상담 관리" },
         { path: "/quotation", name: "견적 관리" },
         { path: "/product", name: "상품 관리" },
         { path: "/projects", name: "프로젝트 관리" },
         { path: "/tasks", name: "세부 작업 관리" },
-        { path: "/schedule", name: "일정 관리" }
+        { path: "/schedule", name: "일정 관리" },
+        { path: "/hr/accounts", name: "계정 관리" },
+        { path: "/hr", name: "인적 자원 관리" }
     ];
 
     const currentMenu = menus.find(menu => {

@@ -5,18 +5,21 @@ import EmployeeForm from "./EmployeeForm";
 import EmployeeDetail from "./EmployeeDetail";
 import "./HrPage.css";
 import { departmentNames } from "../utils/employeeUtils";
+import { useNavigate } from "react-router-dom";
 
 export default function HrPage() {
+
     const {
         employees, projects,
-        addEmployee, updateEmployee, deleteEmployee
+        addEmployee, updateEmployee, deleteEmployee,
+        currentUser
     } = useERP();
 
     const [page, setPage] = useState("list");
     const [selectedEmployeeId, setSelectedEmployeeId] = useState(null);
     const selectedEmployee = employees.find(e => Number(e.id) === Number(selectedEmployeeId));
 
-
+    const navi = useNavigate()
 
     const departments = departmentNames
         .map(department => ({
@@ -66,6 +69,15 @@ export default function HrPage() {
                     <div className="hr-heading-actions">
                         {page === "list" ? (
                             <>
+                                {currentUser?.role === "ADMIN" && (
+                                    <button
+                                        type="button"
+                                        className="hr-btn hr-btn-account"
+                                        onClick={() => navi("/hr/accounts")}
+                                    >
+                                        계정 관리
+                                    </button>
+                                )}
                                 <button type="button" className="hr-btn hr-btn-primary" onClick={() => setPage("new")}>+ 직원 등록</button>
                             </>
                         ) : (
