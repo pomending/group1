@@ -1,9 +1,13 @@
 // 기존 고객정보 조회 및 수정, 입력값 검증, 수정 내용 저장
-import"./03_CustomerForm.css";
+import "./03_CustomerForm.css";
 import React, { useState } from "react";
 import { useLocation } from "react-router-dom";
+import { useERP } from "../context/ERPContext";
 
 function CustomerEdit() {
+
+    const { employees } = useERP();
+
     //현재 페이지의 URL 주소정보
     const location = useLocation();
     //URL에서 필요한 값을 가져오기 위한 객체
@@ -17,16 +21,7 @@ function CustomerEdit() {
 
     const [EditingCustomerData, setEditingCustomerData] = useState(CustomerData || {});
 
-    const fields = [
-        { name: "companyName", label: "고객사명" },
-        { name: "businessNumber", label: "사업자등록번호" },
-        { name: "customerManager", label: "고객사 담당자" },
-        { name: "phone", label: "연락처" },
-        { name: "email", label: "이메일" },
-        { name: "address", label: "주소" },
-        { name: "memo", label: "메모" },
-        { name: "employeeName", label: "내부 담당자" }
-    ];
+
 
     function updateCustomer(e) {
         e.preventDefault();
@@ -61,7 +56,7 @@ function CustomerEdit() {
             return;
         }
 
-        
+
         window.opener.saveEditedCustomer(EditingCustomerData);
         alert("고객의 정보가 수정되었습니다.")
         window.close();
@@ -69,98 +64,94 @@ function CustomerEdit() {
 
     return (
         <div className="crm-form-page">
-    
+
             <div className="crm-form-header">
                 <h2>고객정보 수정</h2>
                 <p>기존 고객사 정보를 수정해 주세요.</p>
             </div>
-    
+
+
             <form className="crm-form" onSubmit={updateCustomer}>
-                {fields.map((field) => (
-                    <div className="crm-form-field" key={field.name}>
-                        <label>
-                            {field.label}
-                            {["companyName", "customerManager", "phone"].includes(field.name) && (
-                                <span className="crm-required"> *</span>
-                            )}
-                        </label>
-    
-                        <input
-                            value={EditingCustomerData[field.name] || ""}
-                            onChange={(e) => {
-                                const value = e.target.value;
-    
-                                if (field.name === "businessNumber" || field.name === "phone") {
-                                    if (/[^0-9]/.test(value.replace(/-/g, ""))) {
-                                        alert(
-                                            field.name === "businessNumber"
-                                                ? "사업자등록번호는 숫자만 입력 가능합니다."
-                                                : "연락처는 숫자만 입력 가능합니다."
-                                        );
-                                        return;
-                                    }
-                                }
-    
-                                let formatted = value;
-    
-                                if (field.name === "businessNumber") {
-                                    const numbers = value.replace(/-/g, "").slice(0, 10);
-    
-                                    formatted = numbers;
-    
-                                    if (numbers.length > 5) {
-                                        formatted = numbers.slice(0, 3) + "-"
-                                            + numbers.slice(3, 5) + "-"
-                                            + numbers.slice(5);
-                                    } else if (numbers.length > 3) {
-                                        formatted = numbers.slice(0, 3) + "-"
-                                            + numbers.slice(3);
-                                    }
-                                }
-    
-                                let formattedPhone = value;
-    
-                                if (field.name === "phone") {
-                                    const phoneNumbers = value.replace(/-/g, "").slice(0, 11);
-    
-                                    formattedPhone = phoneNumbers;
-    
-                                    if (phoneNumbers.startsWith("02")) {
-                                        if (phoneNumbers.length > 6) {
-                                            formattedPhone = phoneNumbers.slice(0, 2) + "-"
-                                                + phoneNumbers.slice(2, -4) + "-"
-                                                + phoneNumbers.slice(-4);
-                                        } else if (phoneNumbers.length > 2) {
-                                            formattedPhone = phoneNumbers.slice(0, 2) + "-"
-                                                + phoneNumbers.slice(2);
-                                        }
-                                    } else {
-                                        if (phoneNumbers.length > 7) {
-                                            formattedPhone = phoneNumbers.slice(0, 3) + "-"
-                                                + phoneNumbers.slice(3, -4) + "-"
-                                                + phoneNumbers.slice(-4);
-                                        } else if (phoneNumbers.length > 3) {
-                                            formattedPhone = phoneNumbers.slice(0, 3) + "-"
-                                                + phoneNumbers.slice(3);
-                                        }
-                                    }
-                                }
-    
-                                setEditingCustomerData({
-                                    ...EditingCustomerData,
-                                    [field.name]: field.name === "businessNumber"
-                                        ? formatted
-                                        : field.name === "phone"
-                                            ? formattedPhone
-                                            : value
-                                });
-                            }}
-                        />
-                    </div>
-                ))}
-    
+
+                <div className="crm-form-field">
+                    <label>고객사명 <span className="crm-required">*</span></label>
+                    <input value={EditingCustomerData.companyName}
+                        onChange={(e) => (
+                            setEditingCustomerData({ ...EditingCustomerData, companyName: e.target.value })
+                        )} />
+                </div>
+
+                <div className="crm-form-field">
+                    <label>사업자등록번호</label>
+                    <input value={EditingCustomerData.businessNumber}
+                        onChange={(e) => (
+                            setEditingCustomerData({ ...EditingCustomerData, businessNumber: e.target.value })
+                        )} />
+                </div>
+
+                <div className="crm-form-field">
+                    <label>고객사 담당자 <span className="crm-required">*</span></label>
+                    <input value={EditingCustomerData.customerManager}
+                        onChange={(e) => (
+                            setEditingCustomerData({ ...EditingCustomerData, customerManager: e.target.value })
+                        )} />
+                </div>
+
+                <div className="crm-form-field">
+                    <label>연락처 <span className="crm-required">*</span></label>
+                    <input value={EditingCustomerData.phone}
+                        onChange={(e) => (
+                            setEditingCustomerData({ ...EditingCustomerData, phone: e.target.value })
+                        )} />
+                </div>
+
+                <div className="crm-form-field">
+                    <label>이메일</label>
+                    <input value={EditingCustomerData.email}
+                        onChange={(e) => (
+                            setEditingCustomerData({ ...EditingCustomerData, email: e.target.value })
+                        )} />
+                </div>
+
+                <div className="crm-form-field">
+                    <label>주소</label>
+                    <input value={EditingCustomerData.address}
+                        onChange={(e) => (
+                            setEditingCustomerData({ ...EditingCustomerData, address: e.target.value })
+                        )} />
+                </div>
+
+                <div className="crm-form-field">
+                    <label>메모</label>
+                    <input value={EditingCustomerData.memo}
+                        onChange={(e) => (
+                            setEditingCustomerData({ ...EditingCustomerData, memo: e.target.value })
+                        )} />
+                </div>
+
+                <div className="crm-form-field">
+                    <label>내부 담당자</label>
+                    <select value={EditingCustomerData.employeeId ?? ""}
+                        onChange={(e) => (
+                            setEditingCustomerData({
+                                ...EditingCustomerData,
+                                employeeId: e.target.value === "" ? null : Number(e.target.value)
+                            })
+                        )}>
+                        <option value="">미배정</option>
+                        {employees
+                            .filter((employee) => (employee.department === "영업팀"))
+                            .map((employee) =>
+                                <option key={employee.id}
+                                    value={employee.id}>{employee.name}</option>)}
+
+                    </select>
+                </div>
+
                 <button type="submit">수정완료</button>
+
             </form>
+
         </div>
     );
 }
