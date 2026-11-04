@@ -1,0 +1,50 @@
+/* 상품관리 전용 pd- 접두사로 공통 화면 스타일과 구분합니다. */
+.pd-app, .pd-app * { box-sizing: border-box; }
+.pd-app { min-width: 0; min-height: 100vh; padding: 24px; background: #f6f7fb; color: #303348; font: 14px/1.5 "Malgun Gothic", Arial, sans-serif; }
+.pd-app :where(div) { width: auto; margin: 0; }
+.pd-app .pd-shell { max-width: 1240px; margin: 0 auto; }
+.pd-app h1 { margin: 0 0 6px; font-size: 27px; }
+.pd-app h2 { margin: 0; font-size: 19px; }
+.pd-app .pd-muted { margin: 0; color: #72788d; font-size: 13px; }
+.pd-app .pd-eyebrow { margin: 0 0 5px; color: #7565d8; font-size: 11px; font-weight: 700; letter-spacing: 1px; }
+.pd-heading, .pd-list-heading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; margin-bottom: 20px !important; }
+.pd-app .pd-button { width: auto; min-height: 40px; padding: 9px 16px; border: 1px solid #dfe2ec; border-radius: 8px; background: #fff; color: #46506a; font: inherit; cursor: pointer; }
+.pd-app .pd-button:hover { background: #f3f1ff; border-color: #b4a9ea; }
+.pd-app .pd-primary { border-color: #7565d8; background: #7565d8; color: #fff; }
+.pd-app .pd-primary:hover { background: #6252c3; }
+.pd-app :is(button, input, select):focus-visible { outline: 2px solid #7565d8; outline-offset: 3px; }
+.pd-app .pd-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-bottom: 18px; }
+.pd-stat, .pd-panel { padding: 22px; border: 1px solid #e4e6ef; border-radius: 12px; background: #fff; min-width: 0; }
+.pd-stat span { display: block; color: #72788d; font-size: 13px; margin-bottom: 8px; }
+.pd-stat strong { font-size: 29px; }
+.pd-stat small { margin-left: 6px; color: #72788d; font-size: 13px; font-weight: 400; }
+.pd-app .pd-filters { display: flex; align-items: flex-end; flex-wrap: wrap; gap: 12px; margin-bottom: 20px; }
+.pd-app label { display: grid; gap: 7px; min-width: 0; font-size: 13px; font-weight: 600; }
+.pd-app .pd-search { flex: 1 1 230px; }
+.pd-app input, .pd-app select { width: 100%; min-width: 0; min-height: 42px; padding: 10px 12px; border: 1px solid #dfe2ec; border-radius: 8px; background: #fff; color: #303348; font: inherit; }
+.pd-app .pd-table-scroll { max-width: 100%; overflow-x: auto; }
+.pd-table { width: 100%; min-width: 760px; border-collapse: collapse; text-align: left; font-size: 13px; }
+.pd-table th { padding: 12px; background: #f7f8fc; color: #72788d; white-space: nowrap; }
+.pd-table td { padding: 15px 12px; border-bottom: 1px solid #eef0f5; }
+.pd-table tbody tr:hover { background: #fcfbff; }
+.pd-name { max-width: 320px; overflow-wrap: anywhere; font-weight: 600; }
+.pd-price { white-space: nowrap; }
+.pd-badge { display: inline-block; padding: 4px 9px; border-radius: 20px; white-space: nowrap; font-size: 12px; }
+.pd-selling { background: #eaf5ee; color: #377455; }
+.pd-stopped { background: #f1f2f6; color: #73798b; }
+.pd-app .pd-edit { min-height: 34px; padding: 5px 12px; }
+.pd-table .pd-empty { text-align: center; padding: 40px 18px; color: #72788d; }
+.pd-app .pd-form { display: grid; gap: 20px; max-width: 680px; margin-top: 24px; }
+.pd-app .pd-form-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.pd-app .pd-form-actions { display: flex; justify-content: flex-end; gap: 8px; padding-top: 16px; border-top: 1px solid #eef0f5; }
+.pd-notice { padding: 12px 16px; border-radius: 8px; background: #eeebfc; color: #5949aa; }
+.pd-error { margin: 0; color: #b33d4b; }
+@media (max-width: 600px) {
+  .pd-app { padding: 18px 12px; }
+  .pd-app .pd-stats { gap: 8px; }
+  .pd-stat { padding: 14px 10px; }
+  .pd-stat strong { font-size: 23px; }
+  .pd-panel { padding: 18px 14px; }
+  .pd-app .pd-form-row { grid-template-columns: minmax(0, 1fr); }
+  .pd-filters > label:not(.pd-search) { flex: 1; }
+}

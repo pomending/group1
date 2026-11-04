@@ -1,5 +1,6 @@
 /* [파일 안내] 일정 화면 진입점
  * 연결: App.js의 /schedule 경로 → 이 파일 → ScheduleManager.js
+ * 실행 조건: App.js에서 상위 ERPProvider가 프로젝트·직원 Context를 제공합니다.
  * 화면 구성을 찾으려면 ScheduleManager.js를 확인합니다.
  */
 
