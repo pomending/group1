@@ -113,3 +113,29 @@
   .hr-info-grid { grid-template-columns: 1fr; }
   .hr-filters .hr-select { flex: 1 1 130px; }
 }
+/* 계정 관리 버튼 */
+.hr-btn-account {
+  padding: 10px 16px;
+  background-color: #ffffff;
+  color: #334155;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s, border-color 0.2s;
+}
+
+.hr-btn-account:hover {
+  background-color: #f1f5f9;
+  border-color: #94a3b8;
+}
+
+.hr-btn-account:active {
+  background-color: #e2e8f0;
+}
+
+.hr-btn-account:focus-visible {
+  outline: 2px solid #64748b;
+  outline-offset: 2px;
+}
