@@ -17,6 +17,7 @@ import { ERPProvider } from "./context/ERPContext";
 import LoginPage from "./7_login/LoginPage";
 import HrPage from "./8_hr/HrPage";
 import ConsultationPage from "./9_consultation/01_ConsultationPage";
+import ProductPage from "./10_product/ProductPage";
 
 function ERPContent() {
 
@@ -65,6 +66,7 @@ function ERPContent() {
                         <Route path="/schedule/*" element={<SchedulePage />} />
                         <Route path='/hr/*' element={<HrPage />} />
                         <Route path="/consultation/*" element={<ConsultationPage />} />
+                        <Route path="/product/*" element={<ProductPage />} />
                         <Route path="*" element={<NotFoundPage />} />
                     </Routes>
 

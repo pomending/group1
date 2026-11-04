@@ -3,11 +3,12 @@ import {
     products as initialProducts,
     quotations as initialQuotations,
     consultations as initialConsultations,
-    tasks as initialTasks
+    tasks as initialTasks,
 } from "../data/mockData";
 import useProjectData from "./useProjectData";
 import useEmployeeData from "./useEmployeeData";
 import useCustomerData from "./useCustomerData";
+import { initialAccounts } from "../data/mockAccounts";
 
 const ERPContext = createContext(null);
 
@@ -21,8 +22,9 @@ export function ERPProvider({ children }) {
     const [quotations, setQuotations] = useState(initialQuotations);
     const [consultations, setConsultations] = useState(initialConsultations);
     const [tasks, setTasks] = useState(initialTasks);
+    const [accounts, setAccounts] = useState(initialAccounts);
 
-    // 프로젝트에서 담당자로 사용 중인 직원은 삭제하지 않는다.
+    // 담당자로 사용 중인 직원은 삭제하지 않는다.
     const deleteEmployee = (id) => {
 
         const hasProject = projectData.projects.some(
@@ -92,7 +94,9 @@ export function ERPProvider({ children }) {
             consultations,
             setConsultations,
             tasks,
-            setTasks
+            setTasks,
+            accounts,
+            setAccounts
         }}>
             {children}
         </ERPContext.Provider>

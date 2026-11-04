@@ -1,10 +1,10 @@
 import React from "react";
-import { NavLink, useLocation } from "react-router-dom";
+import { NavLink } from "react-router-dom";
 import "./Sidebar.css";
 import { useERP } from "../context/ERPContext";
 
 function Sidebar() {
-    const location = useLocation();
+
     const { resetAllData } = useERP();
 
     const handleResetAll = () => {
@@ -17,10 +17,13 @@ function Sidebar() {
     const menus = [
         { name: "대시보드", path: "/", icon: "▦" },
         { name: "고객 관리", path: "/crm", icon: "♙" },
+        { name: "상담 관리", path: "/consultation", icon: "☏" },
         { name: "견적 관리", path: "/quotation", icon: "▤" },
+        { name: "상품 관리", path: "/product", icon: "▧" },
         { name: "프로젝트 관리", path: "/projects", icon: "▣" },
         { name: "세부 작업 관리", path: "/tasks", icon: "☑" },
-        { name: "일정 관리", path: "/schedule", icon: "▦" }
+        { name: "일정 관리", path: "/schedule", icon: "▦" },
+        { name: "인적 자원 관리", path: "/hr", icon: "♧" }
     ];
 
     return (
@@ -40,9 +43,6 @@ function Sidebar() {
 
             <nav className="erp-sidebar-nav">
                 {menus.map(menu => {
-                    const isRelatedProduct =
-                        menu.path === "/quotation" &&
-                        location.pathname.startsWith("/product");
 
                     return (
                         <NavLink
@@ -51,7 +51,7 @@ function Sidebar() {
                             end={menu.path === "/"}
                             className={({ isActive }) =>
                                 "erp-sidebar-link" +
-                                (isActive || isRelatedProduct ? " active" : "")
+                                (isActive ? " active" : "")
                             }
                         >
                             <span className="erp-sidebar-icon">

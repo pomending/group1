@@ -62,7 +62,7 @@ function ProjectEdit(props) {
             description
         })
 
-        props.setPage("list");
+        props.setPage("detail");
     };
 
     if (!selectedProject) {
