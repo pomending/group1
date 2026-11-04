@@ -237,7 +237,7 @@ export function getScheduleProjectId(item) {
   return typeof id === "string" && id.trim() ? id : null;
 }
 
-// 입력 필드만 복사하므로 ID·즐겨찾기·제외일·수정 회차 연결은 새 일정으로 넘어가지 않습니다.
+// 원본 일정 ID·즐겨찾기·제외일·수정 회차 연결은 복제하지 않습니다. 선택 프로젝트 ID는 유지합니다.
 export function createScheduleCopyForm(item) {
   const form = createScheduleForm(item);
   form.title = `${form.title.slice(0, 75)} (복사)`;
@@ -288,7 +288,7 @@ function getMonthlyOccurrence(item, start, month) {
   return new Date(month.getFullYear(), month.getMonth(), 1 + (weekday - first.getDay() + 7) % 7 + (ordinal - 1) * 7);
 }
 
-// 기본 폼의 키만 골라 저장용 ID나 occurrenceDate가 입력 객체에 섞이지 않게 합니다.
+// 기본 폼의 키를 복사하고 연결 정보 projectId만 별도로 보존합니다. 원본 일정 id와 occurrenceDate는 복사하지 않습니다.
 // 참석자 배열은 입력용 문자열로 바꾸고, 반복 한 번 수정은 일반 일정으로 분리할 준비를 합니다.
 export const createScheduleForm = (item) => {
   const form = createEmptyForm();
@@ -299,6 +299,8 @@ export const createScheduleForm = (item) => {
   }
   form.scope = getScheduleScope(item);
   form.category = getScheduleCategory(item);
+  // 프로젝트 ID는 입력창에 표시하지 않는 연결 정보입니다. 원본 일정의 id와 구분합니다.
+  form.projectId = getScheduleProjectId(item);
   form.attendees = normalizeAttendees(item.attendees).join(", ");
   form.repeatType = item.repeatType || "none";
   form.repeatInterval = getRepeatInterval(item);

@@ -1,5 +1,5 @@
 /* [파일 안내] 일정 화면의 상태·계산·사용자 동작 연결
- * 입력: ERPContext의 프로젝트, scheduleHooks의 일정·팀원·공휴일 상태
+ * 입력: ERPContext의 프로젝트·직원, scheduleHooks의 일정·팀원·공휴일 상태
  * 계산: scheduleData에서 반복 발생일·검색 대상·시간 충돌을 계산합니다.
  * 출력: Calendar·Sidebar·Directory·FormModal에 표시값과 콜백을 전달합니다.
  * 저장 흐름: FormModal → updateForm → addSchedule → setItems → useScheduleStorage
@@ -10,7 +10,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useScheduleClock, useScheduleHolidays, useScheduleStorage, useScheduleTeam, useScheduleDraft } from "./scheduleHooks";
 import { loadSchedules } from "./scheduleStorage";
-import { createProjectMilestones, getProjectScheduleSummaries } from "./ScheduleProjectBridge";
+import { createProjectMilestones, getProjectScheduleSummaries, resolveScheduleProject } from "./ScheduleProjectBridge";
 import ScheduleCalendar from "./ScheduleCalendar";
 import ScheduleFormModal, { ScheduleListModal } from "./ScheduleFormModal";
 import ScheduleSidebar from "./ScheduleSidebar";
@@ -23,7 +23,6 @@ import {
   getScheduleDurationFields,
   restoreDeletedSchedule,
   getRepeatEndOptions,
-  getScheduleProjectId,
   findScheduleConflicts,
   compareSchedules,
   excludeOccurrence,
@@ -51,9 +50,15 @@ const createScheduleId = () =>
 
 /* 화면과 일정 관리 훅을 연결하는 조정 컴포넌트입니다. */
 export default function ScheduleManager() {
-  // [1. 상태 준비] 프로젝트·일정·팀원·선택 날짜를 준비합니다. 저장 관련 세부 처리는 scheduleHooks에서 확인합니다.
+  // [1. 상태 준비] 프로젝트·직원·일정·팀원·선택 날짜를 준비합니다.
+  // 실제 화면은 ERPProvider 내부에서 실행해야 합니다. useERP는 Provider가 없으면 오류를 던집니다.
+  // 아래 선택적 접근과 빈 배열은 누락된 필드에 대한 보완이며 Provider 없이 실행할 수 있다는 뜻은 아닙니다.
   const erp = useERP();
   const projects = erp?.projects || EMPTY_PROJECTS;
+  // Context의 useEmployeeData가 erp_employees 저장값을 먼저 읽고, 없거나 읽지 못하면 mockData의 initialEmployees를 사용합니다.
+  // 5번은 원본 데이터를 직접 import하지 않고 제공된 직원 목록으로 프로젝트 담당자 이름만 표시합니다.
+  // 일정 자체의 담당자·참석자는 별도 팀원 목록의 이름이며, 직원 ID로 연결하거나 직원 정보를 수정하지 않습니다.
+  const employees = erp.employees;
   const updateProject = erp?.updateProject;
 
   // 월간 달력의 기준 월과 현재 선택 날짜입니다.
@@ -207,7 +212,7 @@ export default function ScheduleManager() {
     to = weekDates[6].key;
   }
   // 프로젝트 날짜도 검색·프로젝트 선택 조건을 따르며, 회사 공유 일정 필터에서만 달력에 표시합니다.
-  const projectMilestones = createProjectMilestones(projects).filter((item) => {
+  const projectMilestones = createProjectMilestones(projects, employees).filter((item) => {
     if (selectedProject && item.project !== selectedProject) return false;
     if (scopeFilter === "private") return false;
     return (item.title + " " + item.project).toLowerCase().includes(keyword);
@@ -283,15 +288,20 @@ export default function ScheduleManager() {
       if (name === "durationMinutes") return { ...current, ...getScheduleDurationFields(current, Number(value)) };
       // 입력 화면은 선택값만 보내고, 숨겨질 연관 필드는 이곳에서 한 번에 초기화합니다.
       if (name === "scope") {
-        return { ...current, scope: value, category: "", project: "", attendees: "", person: "", status: "pending" };
+        return { ...current, scope: value, category: "", project: "", projectId: null, attendees: "", person: "", status: "pending" };
       }
       if (name === "category") {
         return {
           ...current,
           category: value,
           project: current.category === "프로젝트" && value !== "프로젝트" ? "" : current.project,
+          projectId: current.category === "프로젝트" && value !== "프로젝트" ? null : current.projectId,
           attendees: current.category === "회의" && value !== "회의" ? "" : current.attendees,
         };
+      }
+      // 사용자가 프로젝트명을 바꾸면 기존 ID를 해제하고 저장할 때 새 이름으로 연결합니다.
+      if (name === "project") {
+        return { ...current, project: value, projectId: value.trim() === current.project.trim() ? current.projectId : null };
       }
       // state 객체를 직접 바꾸지 않고 복사한 뒤, 입력한 항목 하나만 바꿉니다.
       const nextForm = { ...current };
@@ -316,6 +326,7 @@ export default function ScheduleManager() {
     setEditing(item || null);
     editingVersion.current = item ? items.find(schedule => schedule.id === item.id) : null;
     const nextForm = !item && draft ? { ...draft } : createScheduleForm(item);
+    if (item) Object.assign(nextForm, resolveScheduleProject(nextForm, projects));
     // 수정·임시 복구는 해당 내용의 날짜를 유지합니다. 임시 보관이 없는 새 등록만 선택 날짜를 사용합니다.
     if (!item && !draft) nextForm.date = selectedDate;
     setForm(nextForm);
@@ -332,6 +343,7 @@ export default function ScheduleManager() {
     if (!editing || editing.isProjectMilestone) return;
     restoringDraftRef.current = false;
     const copy = createScheduleCopyForm(editing);
+    Object.assign(copy, resolveScheduleProject(copy, projects));
     setEditing(null);
     editingVersion.current = null;
     setFormError("");
@@ -367,10 +379,8 @@ export default function ScheduleManager() {
     }
     // 수정 끝
     const title = form.title.trim();
-    const project = form.project.trim();
-    // 입력한 프로젝트명과 같은 프로젝트를 찾아 ID를 저장합니다. 기존 ID를 우선 조회하는 처리는 아직 없습니다.
-    // 주의: 3번에서 이름이 바뀐 뒤 예전 이름의 일정을 재저장하면 ID가 null이 될 수 있습니다. 연결 유지가 보장되지 않습니다.
-    const linkedProject = projects.find((entry) => entry.name === project);
+    // 이름 변경 후에도 기존 ID를 유지합니다. 직접 입력 변경은 updateForm에서 이전 ID를 해제합니다.
+    const projectFields = resolveScheduleProject(form, projects);
     const validationError = validateScheduleForm(form);
     if (validationError) {
       setFormError(validationError);
@@ -407,8 +417,7 @@ export default function ScheduleManager() {
       description: form.description.trim(),
       person,
       attendees,
-      project,
-      projectId: getScheduleProjectId({ ...form, project, projectId: linkedProject?.id }),
+      ...projectFields,
     };
     // 반복 규칙은 다음 1년을 확인하고, 휴일 이동 설정은 범위 끝에서 밀릴 날짜도 포함합니다.
     let conflictEndKey = form.endDate || form.date;
@@ -729,8 +738,11 @@ export default function ScheduleManager() {
         {(storageError || loadedSchedules.readError) && (
           <p className="sm-storage-warning" role="alert">
             {loadedSchedules.readError
-              ? "저장된 일정을 읽지 못해 기존 데이터 보호를 위해 자동 저장을 중지했습니다. 현재 화면의 변경 내용은 저장되지 않습니다. 저장소 접근 또는 원본 데이터를 확인한 뒤 새로고침하세요."
+              ? "저장된 일정을 읽지 못해 기존 데이터 보호를 위해 자동 저장을 중지했습니다. 현재 화면의 변경 내용은 저장되지 않습니다. 저장소 접근 또는 원본 데이터를 확인한 뒤 다시 불러오세요."
               : "브라우저에 일정을 저장하지 못했습니다. 새로고침하면 변경 내용이 사라질 수 있습니다."}
+            {loadedSchedules.readError && !storageConflict && (
+              <button type="button" className="sm-secondary-btn" onClick={reloadConflictingSchedules}>현재 변경을 버리고 저장된 일정 불러오기</button>
+            )}
           </p>
         )}
         {teamStorageUnavailable && (

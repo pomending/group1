@@ -61,15 +61,16 @@ export function useScheduleHolidays(calendarYear) {
         }));
 
         const dates = {};
-        let currentYearLoaded = false;
+        let loadedYears = 0;
         for (const result of results) {
           if (result.status !== "fulfilled" || !Array.isArray(result.value.holidays)) continue;
-          if (result.value.year === calendarYear) currentYearLoaded = true;
+          loadedYears += 1;
           for (const holiday of result.value.holidays) {
             dates[holiday.date] = holiday.localName || holiday.name;
           }
         }
-        if (active) setHolidayInfo({ year: calendarYear, dates, error: !currentYearLoaded });
+        // 연말·연초 회차는 앞뒤 연도의 공휴일도 사용하므로 일부 실패도 안내합니다.
+        if (active) setHolidayInfo({ year: calendarYear, dates, error: loadedYears !== years.length });
       } catch {
         if (active) setHolidayInfo({ year: calendarYear, dates: {}, error: true });
       }
@@ -84,7 +85,7 @@ export function useScheduleHolidays(calendarYear) {
 
 // 일정 로드·저장, 다른 탭과의 동기화, 저장 충돌 처리를 한곳에서 관리합니다.
 export function useScheduleStorage() {
-  const [loadedSchedules] = useState(loadSchedules);
+  const [loadedSchedules, setLoadedSchedules] = useState(loadSchedules);
   const [items, setItems] = useState(loadedSchedules.items);
   const savedVersion = useRef({ raw: loadedSchedules.raw, items: loadedSchedules.items });
   const editingVersion = useRef(null);
@@ -162,8 +163,12 @@ export function useScheduleStorage() {
       return;
     }
     savedVersion.current = { raw: remote.raw, items: remote.items };
+    // 정상 재조회한 결과로 초기 오류도 해제합니다. 실패 시에는 위에서 반환해 원본을 보호합니다.
+    setLoadedSchedules(remote);
     setItems(remote.items);
     setStorageConflict(false);
+    setStorageError(false);
+    setSaveState("saving");
   }
 
   return {
