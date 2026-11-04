@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import "./CommunityWrite.css";
@@ -51,29 +50,23 @@ function NoticeWritePage({ posts, setPosts }) {
         // 목록 이동
         navigate("/?page=notice");
     };
-
     return (
         <div className="community">
             <Link to="/?page=notice" className="community-back">
                 ← 공지사항 목록으로
             </Link>
-
             <div className="community-board">
                 <h1>공지사항 글쓰기</h1>
-
                 <div className="community-write">
-
                     {/* 공지 유형 선택 */}
                     <label>공지 유형</label>
                     <select
                         className="notice-type-select"
                         value={type}
-                        onChange={(e) => setType(e.target.value)}
-                    >
+                        onChange={(e) => setType(e.target.value)}>
                         <option value="normal">일반 공지</option>
                         <option value="important">중요공지</option>
                     </select>
-
                     <label>제목</label>
                     <input
                         type="text"
@@ -81,19 +74,16 @@ function NoticeWritePage({ posts, setPosts }) {
                         value={title}
                         onChange={(e) => setTitle(e.target.value)}
                     />
-
                     <label>내용</label>
                     <textarea
                         placeholder="내용을 입력하세요."
                         value={content}
                         onChange={(e) => setContent(e.target.value)}
                     />
-
                     <div className="community-actions">
                         <Link to="/?page=notice" className="community-cancel">
                             취소
                         </Link>
-
                         <button className="community-button" onClick={addPost}>
                             등록하기
                         </button>

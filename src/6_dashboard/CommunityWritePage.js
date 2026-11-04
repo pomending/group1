@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import "./CommunityWrite.css";
@@ -47,20 +46,14 @@ function CommunityWritePage({ posts, setPosts }) {
         // 목록 이동
         navigate("/?page=community");
     };
-
     return (
         <div className="community">
-
             <Link to="/?page=community" className="community-back">
                 ← 게시글 목록으로
             </Link>
-
             <div className="community-board">
-
                 <h1>글쓰기</h1>
-
                 <div className="community-write">
-
                     {/* 제목 */}
                     <label>제목</label>
                     <input
@@ -69,7 +62,6 @@ function CommunityWritePage({ posts, setPosts }) {
                         value={title}
                         onChange={(e) => setTitle(e.target.value)}
                     />
-
                     {/* 내용 */}
                     <label>내용</label>
                     <textarea
@@ -77,26 +69,19 @@ function CommunityWritePage({ posts, setPosts }) {
                         value={content}
                         onChange={(e) => setContent(e.target.value)}
                     />
-
                     {/* 취소·등록 버튼 */}
                     <div className="community-actions">
-
                         <Link
                             to="/?page=community"
-                            className="community-cancel"
-                        >
+                            className="community-cancel">
                             취소
                         </Link>
-
                         <button
                             className="community-button"
-                            onClick={addPost}
-                        >
+                            onClick={addPost}>
                             등록하기
                         </button>
-
                     </div>
-
                 </div>
             </div>
         </div>

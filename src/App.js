@@ -18,7 +18,7 @@ import HrPage from "./8_hr/HrPage";
 import ConsultationPage from "./9_consultation/01_ConsultationPage";
 import ProductPage from "./10_product/ProductPage";
 
-const REQUIRE_LOGIN = false;
+const REQUIRE_LOGIN = true;
 
 function ERPContent() {
 

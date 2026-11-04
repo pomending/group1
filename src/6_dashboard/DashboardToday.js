@@ -24,7 +24,6 @@ function DashboardToday() {
     const projects = Array.isArray(erp?.projects) ? erp.projects : [];
 
     const [now, setNow] = useState(() => new Date());
-
     useEffect(() => {
         // 날짜·화면 갱신
         const refresh = () => setNow(new Date());
@@ -36,12 +35,10 @@ function DashboardToday() {
         const onVisible = () => {
             if (!document.hidden) refresh();
         };
-
         window.addEventListener("focus", refresh);
         window.addEventListener("storage", onStorage);
         document.addEventListener("visibilitychange", onVisible);
         const timer = setInterval(refresh, 60000);
-
         return () => {
             window.removeEventListener("focus", refresh);
             window.removeEventListener("storage", onStorage);
@@ -97,21 +94,17 @@ function DashboardToday() {
     for (let number = 1; number <= last.getDate(); number++) {
         days.push(number);
     }
-
     return (
         <div className="today-box">
-
             {/* 연도·월 표시 */}
             <div className="today-month">
                 {year}년 {month + 1}월
             </div>
-
             <div className="today-weekdays">
                 {["일", "월", "화", "수", "목", "금", "토"].map((name) => (
                     <span key={name}>{name}</span>
                 ))}
             </div>
-
             <div className="today-days">
                 {days.map((number, index) => {
                     if (number === null) {
@@ -136,7 +129,6 @@ function DashboardToday() {
                     const label = firstSchedule
                         ? (firstSchedule.project || firstSchedule.title)
                         : "";
-
                     return (
                         <div
                             key={currentDate}
@@ -144,16 +136,13 @@ function DashboardToday() {
                                 currentDate === today
                                     ? "today-day today-current"
                                     : "today-day"
-                            }
-                        >
+                            }>
                             <span className="today-date">{number}</span>
-
                             {firstSchedule && (
                                 <span className="today-project" title={label}>
                                     {label}
                                 </span>
                             )}
-
                             {daySchedules.length > 1 && (
                                 <span className="today-more">
                                     +{daySchedules.length - 1}건
@@ -163,11 +152,9 @@ function DashboardToday() {
                     );
                 })}
             </div>
-
             <div className="today-title">
                 오늘 등록된 일정 ({todaySchedules.length})
             </div>
-
             {todaySchedules.length === 0 ? (
                 <p className="today-empty">
                     오늘 등록된 일정이 없습니다.
@@ -178,24 +165,20 @@ function DashboardToday() {
                         <Link
                             to="/schedule"
                             className="today-item"
-                            key={String(item.id) + "-" + item.date + "-" + index}
-                        >
+                            key={String(item.id) + "-" + item.date + "-" + index}>
                             {/* 일정 시간 */}
                             <span className="today-time">
                                 {getScheduleTime(item)}
                             </span>
-
                             {/* 프로젝트 일정 제목 */}
                             {item.project && !item.isProjectMilestone && (
                                 <span className="today-name">
                                     {item.project}
                                 </span>
                             )}
-
                             <span className="today-detail">
                                 {item.title}
                             </span>
-
                             {item.status === "completed" && (
                                 <span className="today-done">완료</span>
                             )}

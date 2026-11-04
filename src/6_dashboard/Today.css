@@ -1,4 +1,3 @@
-
 /* 일정 카드 높이 */
 .dashboard .dashboard-right .schedule-card {
     height: auto;
@@ -73,7 +72,6 @@
     border-radius: 4px;
     background: #fff;
     overflow: hidden;
-
     display: flex;
     flex-direction: column;
     align-items: stretch;
@@ -109,11 +107,9 @@
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
-
     border-radius: 2px;
     background: #e7f1f7;
     color: #215370;
-
     padding: 2px 1px;
     font-size: 10px;
     line-height: 14px;
@@ -159,7 +155,6 @@
     flex-direction: column;
     gap: 2px;
     min-width: 0;
-
     padding: 7px 3px;
     border-bottom: 1px solid #e6e8eb;
     color: inherit;
