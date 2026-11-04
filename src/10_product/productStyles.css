@@ -1,50 +1,107 @@
-/* 상품관리 전용 pd- 접두사로 공통 화면 스타일과 구분합니다. */
+/* 상품관리 전용 스타일. pd- 접두사는 다른 파트와의 스타일 충돌을 줄입니다.
+ * [1] 화면·제목 → [2] 조작 버튼 → [3] 현황·검색 → [4] 표·페이지 → [5] 입력 폼 → [6] 좁은 화면
+ * 표는 내부에서 가로 스크롤하고, 화면 전체는 남은 작업 영역 폭을 사용합니다.
+ */
+/* [1] 화면·제목: 긴 제목도 페이지 폭을 밀어내지 않도록 줄바꿈합니다. */
 .pd-app, .pd-app * { box-sizing: border-box; }
 .pd-app { min-width: 0; min-height: 100vh; padding: 24px; background: #f6f7fb; color: #303348; font: 14px/1.5 "Malgun Gothic", Arial, sans-serif; }
 .pd-app :where(div) { width: auto; margin: 0; }
-.pd-app .pd-shell { max-width: 1240px; margin: 0 auto; }
+.pd-app .pd-shell { width: 100%; min-width: 0; max-width: 1240px; margin: 0 auto; }
 .pd-app h1 { margin: 0 0 6px; font-size: 27px; }
 .pd-app h2 { margin: 0; font-size: 19px; }
 .pd-app .pd-muted { margin: 0; color: #72788d; font-size: 13px; }
 .pd-app .pd-eyebrow { margin: 0 0 5px; color: #7565d8; font-size: 11px; font-weight: 700; letter-spacing: 1px; }
-.pd-heading, .pd-list-heading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; margin-bottom: 20px !important; }
-.pd-app .pd-button { width: auto; min-height: 40px; padding: 9px 16px; border: 1px solid #dfe2ec; border-radius: 8px; background: #fff; color: #46506a; font: inherit; cursor: pointer; }
+.pd-app .pd-heading, .pd-app .pd-list-heading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; margin-bottom: 20px; }
+.pd-heading > div { min-width: 0; max-width: 100%; }
+.pd-app :is(h1, h2, .pd-notice, .pd-error) { overflow-wrap: anywhere; }
+/* [2] 버튼·키보드 초점: Tab 이동 시에도 선택 위치를 확인할 수 있게 합니다. */
+.pd-app .pd-button { display: inline-flex; align-items: center; justify-content: center; width: auto; min-height: 40px; padding: 9px 16px; border: 1px solid #dfe2ec; border-radius: 8px; background: #fff; color: #46506a; font: inherit; line-height: 1.4; white-space: nowrap; cursor: pointer; }
 .pd-app .pd-button:hover { background: #f3f1ff; border-color: #b4a9ea; }
 .pd-app .pd-primary { border-color: #7565d8; background: #7565d8; color: #fff; }
 .pd-app .pd-primary:hover { background: #6252c3; }
+.pd-app .pd-button:disabled { cursor: default; opacity: .45; }
+.pd-app .pd-button:disabled:hover { background: #fff; border-color: #dfe2ec; }
 .pd-app :is(button, input, select):focus-visible { outline: 2px solid #7565d8; outline-offset: 3px; }
+/* [3] 현황은 전체 상품 기준이며 검색 결과 수와 구분합니다. */
 .pd-app .pd-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-bottom: 18px; }
 .pd-stat, .pd-panel { padding: 22px; border: 1px solid #e4e6ef; border-radius: 12px; background: #fff; min-width: 0; }
+.pd-app button.pd-stat { width: 100%; color: inherit; font: inherit; text-align: left; overflow-wrap: anywhere; cursor: pointer; }
+.pd-app button.pd-stat:hover { border-color: #b4a9ea; }
+.pd-app button.pd-stat[aria-pressed="true"] { border-color: #7565d8; background: #f3f1ff; box-shadow: inset 0 0 0 1px #7565d8; }
+/* 조회 조건 안내는 화면을 늘리지 않고 보조기기에 전달합니다. */
+.pd-app .pd-sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
 .pd-stat span { display: block; color: #72788d; font-size: 13px; margin-bottom: 8px; }
 .pd-stat strong { font-size: 29px; }
 .pd-stat small { margin-left: 6px; color: #72788d; font-size: 13px; font-weight: 400; }
 .pd-app .pd-filters { display: flex; align-items: flex-end; flex-wrap: wrap; gap: 12px; margin-bottom: 20px; }
 .pd-app label { display: grid; gap: 7px; min-width: 0; font-size: 13px; font-weight: 600; }
 .pd-app .pd-search { flex: 1 1 230px; }
+.pd-filters > label:not(.pd-search) { flex: 0 1 160px; }
 .pd-app input, .pd-app select { width: 100%; min-width: 0; min-height: 42px; padding: 10px 12px; border: 1px solid #dfe2ec; border-radius: 8px; background: #fff; color: #303348; font: inherit; }
+.pd-app .pd-price-filter { min-width: 0; margin-bottom: 20px; padding: 12px; border: 1px solid #e4e6ef; border-radius: 8px; }
+.pd-app .pd-price-filter summary { cursor: pointer; overflow-wrap: anywhere; }
+.pd-app .pd-price-filter summary:focus-visible { outline: 2px solid #7565d8; outline-offset: 3px; }
+.pd-app .pd-price-range { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 12px 0 8px; max-width: 680px; }
+/* [4] 긴 상품명은 셀 안에서 줄바꿈하고, 7열 표의 최소 너비는 내부 스크롤로 확보합니다. */
 .pd-app .pd-table-scroll { max-width: 100%; overflow-x: auto; }
 .pd-table { width: 100%; min-width: 760px; border-collapse: collapse; text-align: left; font-size: 13px; }
 .pd-table th { padding: 12px; background: #f7f8fc; color: #72788d; white-space: nowrap; }
 .pd-table td { padding: 15px 12px; border-bottom: 1px solid #eef0f5; }
 .pd-table tbody tr:hover { background: #fcfbff; }
 .pd-name { max-width: 320px; overflow-wrap: anywhere; font-weight: 600; }
+.pd-app .pd-name-link { max-width: 100%; padding: 0; border: 0; background: transparent; color: #6252c3; font: inherit; font-weight: 600; text-align: left; white-space: normal; overflow-wrap: anywhere; cursor: pointer; }
+.pd-name-link:hover { text-decoration: underline; text-underline-offset: 3px; }
+.pd-app .pd-status-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+.pd-app .pd-list-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; max-width: 100%; }
+/* 목록의 보조 버튼은 같은 높이·여백을 사용하고, 등록 버튼의 강조색과 구분합니다. */
+.pd-app .pd-status-toggle, .pd-app .pd-edit, .pd-app .pd-export { min-height: 40px; min-width: 72px; padding: 8px 12px; font-size: 12px; }
 .pd-price { white-space: nowrap; }
 .pd-badge { display: inline-block; padding: 4px 9px; border-radius: 20px; white-space: nowrap; font-size: 12px; }
 .pd-selling { background: #eaf5ee; color: #377455; }
 .pd-stopped { background: #f1f2f6; color: #73798b; }
-.pd-app .pd-edit { min-height: 34px; padding: 5px 12px; }
 .pd-table .pd-empty { text-align: center; padding: 40px 18px; color: #72788d; }
+.pd-app .pd-empty-content { display: grid; justify-items: center; gap: 12px; }
+.pd-empty-content p { margin: 0; overflow-wrap: anywhere; }
+.pd-app .pd-pagination { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-top: 18px; }
+.pd-app .pd-page-controls { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
+.pd-page-controls > span { color: #72788d; font-size: 13px; white-space: nowrap; }
+/* [5] 폼은 기본 2열, 좁은 화면은 1열입니다. 저장·취소는 입력 영역 아래에 둡니다. */
 .pd-app .pd-form { display: grid; gap: 20px; max-width: 680px; margin-top: 24px; }
+.pd-app .pd-field { display: grid; align-content: start; gap: 7px; min-width: 0; }
+.pd-app .pd-field-label { display: flex; align-items: baseline; flex-wrap: wrap; gap: 6px; }
+.pd-app .pd-form-intro { margin-top: 8px; }
+.pd-app .pd-required { color: #72788d; font-size: 11px; font-weight: 400; }
+.pd-app .pd-field-hint { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 4px 12px; margin: 0; color: #72788d; font-size: 12px; overflow-wrap: anywhere; }
+.pd-app .pd-price-preview { margin: 0; color: #5949aa; font-size: 13px; font-weight: 600; overflow-wrap: anywhere; }
+.pd-app [aria-invalid="true"] { border-color: #b33d4b; }
+.pd-app .pd-details { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 24px; max-width: 800px; margin: 0 0 24px; }
+.pd-details > div { min-width: 0; padding: 16px 0; border-bottom: 1px solid #eef0f5; }
+.pd-details dt { color: #72788d; font-size: 13px; }
+.pd-details dd { margin: 6px 0 0; font-weight: 600; overflow-wrap: anywhere; }
+.pd-app .pd-detail-summary { padding: 0 18px; border-radius: 10px; background: #f7f8fc; }
+.pd-app .pd-detail-name { grid-column: 1 / -1; }
+.pd-detail-name dd { font-size: 21px; }
+.pd-app .pd-detail-price { font-size: 23px; color: #5949aa; }
+.pd-app .pd-detail-meta-title { margin: 0; font-size: 15px; }
+.pd-app .pd-detail-meta { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .pd-app .pd-form-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
-.pd-app .pd-form-actions { display: flex; justify-content: flex-end; gap: 8px; padding-top: 16px; border-top: 1px solid #eef0f5; }
+.pd-app .pd-form-actions { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 8px; padding-top: 16px; border-top: 1px solid #eef0f5; }
 .pd-notice { padding: 12px 16px; border-radius: 8px; background: #eeebfc; color: #5949aa; }
 .pd-error { margin: 0; color: #b33d4b; }
+/* [6] 작은 화면에서 필터와 페이지 조작을 다음 줄로 내려 잘림을 방지합니다. */
 @media (max-width: 600px) {
   .pd-app { padding: 18px 12px; }
   .pd-app .pd-stats { gap: 8px; }
   .pd-stat { padding: 14px 10px; }
   .pd-stat strong { font-size: 23px; }
   .pd-panel { padding: 18px 14px; }
+  .pd-app .pd-list-actions { width: 100%; justify-content: space-between; gap: 8px; }
   .pd-app .pd-form-row { grid-template-columns: minmax(0, 1fr); }
-  .pd-filters > label:not(.pd-search) { flex: 1; }
+  .pd-app .pd-price-range { grid-template-columns: minmax(0, 1fr); }
+  .pd-app .pd-details { grid-template-columns: minmax(0, 1fr); }
+  .pd-app .pd-search { flex-basis: 100%; }
+  .pd-filters > label:not(.pd-search) { flex: 1 1 130px; }
+  .pd-app .pd-form-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .pd-app .pd-form-actions > button { width: 100%; min-width: 0; white-space: normal; overflow-wrap: anywhere; }
+  .pd-app .pd-page-controls { width: 100%; justify-content: space-between; }
 }
