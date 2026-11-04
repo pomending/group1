@@ -8,6 +8,7 @@
 import React from "react";
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import ScheduleManager from "./ScheduleManager";
+import { useERP } from "../context/ERPContext";
 import { loadSchedules, mergeScheduleChanges } from "./scheduleStorage";
 import ScheduleFormModal, { ScheduleListModal } from "./ScheduleFormModal";
 import { ScheduleAgendaItem, ScheduleEvent } from "./ScheduleItemParts";
@@ -24,6 +25,13 @@ import {
  * 내부 함수의 모양보다 검색·등록·반복 수정 후 화면과 저장 데이터가 맞는지를 검사합니다.
  */
 const storageKey = "made-mate-schedules";
+
+// 실제 화면은 ERPProvider가 필수입니다. 여기서는 useERP를 대체하고 각 검사 전에 빈 목록으로 초기화합니다.
+// 연결 검사에서만 프로젝트를 지정하며 updateProject는 제공하지 않아 실제 프로젝트 저장·이력 변경은 실행하지 않습니다.
+// 따라서 이 검사의 통과가 실제 Provider 연동까지 검증했다는 뜻은 아닙니다. 직원 매핑은 Bridge 테스트에서 별도 검사합니다.
+jest.mock("../context/ERPContext", () => {
+  return { useERP: jest.fn() };
+});
 
 test.each([
   [null, 0, false, "등록된 일정이 없습니다. 목록을 닫고 일정 등록 버튼으로 추가해 보세요."],
@@ -469,6 +477,21 @@ test("손상된 저장 자료는 저장 중지 상태로 표시하고 원본을 
   expect(localStorage.getItem(storageKey)).toBe("{invalid-json");
   await act(async () => {});
 });
+test("읽기 실패 안내에서 정상 자료를 다시 불러오면 저장 중지와 경고를 해제한다", async () => {
+  localStorage.setItem(storageKey, "{invalid-json");
+  render(<ScheduleManager />);
+  const reload = screen.getByRole("button", { name: "현재 변경을 버리고 저장된 일정 불러오기" });
+  fireEvent.click(reload);
+  expect(screen.getByRole("status", { name: "일정 저장 상태" })).toHaveTextContent("저장 중지");
+  expect(localStorage.getItem(storageKey)).toBe("{invalid-json");
+  // 실제 브라우저가 아닌 테스트 저장소에서 외부 접근 문제가 해결된 상황을 준비합니다.
+  saveSchedules([makeSchedule()]);
+  fireEvent.click(reload);
+  expect(screen.getByRole("status", { name: "일정 저장 상태" })).toHaveTextContent("브라우저에 저장 완료");
+  expect(screen.getByRole("button", { name: "전체 일정 (1)" })).toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: "현재 변경을 버리고 저장된 일정 불러오기" })).not.toBeInTheDocument();
+  await act(async () => {});
+});
 test.each(["취소", "닫기", "배경", "Escape"])("작성 중 %s로 닫기를 시도하면 취소 시 입력을 유지하고 확인 시에만 닫는다", async action => {
   render(<ScheduleManager />);
   const opener = screen.getByRole("button", { name: "일정 등록", exact: true });
@@ -612,6 +635,67 @@ test.each([
 ])("프로젝트 연결 ID를 기존 자료형을 유지하며 선택값으로 처리한다: %j", (item, expected) => {
   expect(getScheduleProjectId(item)).toBe(expected);
 });
+test.each([
+  ["이름 변경", null, "새 이름", 1],
+  ["다른 프로젝트", "다른 이름", "다른 이름", 2],
+  ["직접 입력", "자유 입력", "자유 입력", null],
+  ["업무 분류 변경", "업무", "", null],
+  ["개인 전환", "개인 일정용", "", null],
+  ["삭제된 프로젝트", null, "이전 이름", 1],
+])("프로젝트 연결을 저장까지 유지하거나 명시적으로 변경한다: %s", async (mode, value, expectedName, expectedId) => {
+  const projects = mode === "삭제된 프로젝트"
+    ? [{ id: 2, name: "이전 이름" }]
+    : [{ id: 1, name: "새 이름" }, { id: 2, name: "다른 이름" }];
+  useERP.mockReturnValue({ projects, employees: [] });
+  const originalProjects = JSON.stringify(projects);
+  saveSchedules([makeSchedule({ scope: "업무용", category: "프로젝트", project: "이전 이름", projectId: 1 })]);
+  render(<ScheduleManager />);
+  fireEvent.click(screen.getByRole("button", { name: "전체 일정 (1)" }));
+  fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "검증용 마감 일정 수정" }));
+  expect(screen.getByLabelText("프로젝트")).toHaveValue(mode === "삭제된 프로젝트" ? "이전 이름" : "새 이름");
+  if (mode === "업무 분류 변경" || mode === "개인 전환") {
+    fireEvent.click(screen.getByRole("button", { name: value, exact: true }));
+  } else if (value) {
+    fireEvent.change(screen.getByLabelText("프로젝트"), { target: { value } });
+  }
+  fireEvent.click(screen.getByRole("button", { name: "수정 저장" }));
+  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  expect(JSON.parse(localStorage.getItem(storageKey))[0]).toMatchObject({ project: expectedName, projectId: expectedId });
+  expect(JSON.stringify(projects)).toBe(originalProjects);
+  await act(async () => {});
+});
+
+test("편집창을 연 뒤 프로젝트 이름이 변경돼도 저장 시 ID와 최신 이름을 유지한다", async () => {
+  useERP.mockReturnValue({ projects: [{ id: 1, name: "이전 이름" }], employees: [] });
+  saveSchedules([makeSchedule({ scope: "업무용", category: "프로젝트", project: "이전 이름", projectId: 1 })]);
+  const { rerender } = render(<ScheduleManager />);
+  fireEvent.click(screen.getByRole("button", { name: "전체 일정 (1)" }));
+  fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "검증용 마감 일정 수정" }));
+  useERP.mockReturnValue({ projects: [{ id: 1, name: "편집 중 변경" }], employees: [] });
+  rerender(<ScheduleManager />);
+  fireEvent.click(screen.getByRole("button", { name: "수정 저장" }));
+  expect(JSON.parse(localStorage.getItem(storageKey))[0]).toMatchObject({ project: "편집 중 변경", projectId: 1 });
+  await act(async () => {});
+});
+
+test("프로젝트 이름 변경 후 반복 한 회차를 수정해도 원본과 분리 회차의 연결을 유지한다", async () => {
+  useERP.mockReturnValue({ projects: [{ id: 1, name: "새 이름" }], employees: [] });
+  saveSchedules([makeSchedule({ scope: "업무용", category: "프로젝트", project: "이전 이름", projectId: 1, repeatType: "weekly" })]);
+  render(<ScheduleManager />);
+  const panel = screen.getByRole("heading", { name: "선택한 날짜 일정" }).closest("section");
+  fireEvent.click(within(panel).getByRole("button", { name: "검증용 마감 일정 수정" }));
+  expect(screen.getByLabelText("프로젝트")).toHaveValue("새 이름");
+  fireEvent.change(screen.getByLabelText("일정 이름"), { target: { value: "[테스트] 분리 회차" } });
+  fireEvent.click(screen.getByRole("button", { name: "수정 저장" }));
+  const saved = JSON.parse(localStorage.getItem(storageKey));
+  expect(saved).toHaveLength(2);
+  expect(saved.find(item => item.id === "test-schedule")).toMatchObject({ projectId: 1, excludedDates: [getTodayKey()] });
+  expect(saved.find(item => item.title === "[테스트] 분리 회차")).toMatchObject({
+    project: "새 이름", projectId: 1, repeatType: "none", replacesScheduleId: "test-schedule",
+  });
+  await act(async () => {});
+});
+
 test.each(["input", "change"])("날짜·시간 %s 이벤트 후 포커스를 옮기지 않고 제출해도 입력값을 저장한다", async eventType => {
   render(<ScheduleManager />);
   fireEvent.click(screen.getByRole("button", { name: "일정 등록", exact: true }));
@@ -790,6 +874,7 @@ test("monthly weekday rules repeat on the chosen ordinal weekday", () => {
 });
 
 beforeEach(() => {
+  useERP.mockReturnValue({ projects: [], employees: [] });
   // 테스트끼리 저장 데이터를 공유하지 않도록 비웁니다.
   // 실제 공휴일 서버 대신 빈 정상 응답을 사용해 인터넷 상태가 결과에 영향을 주지 않게 합니다.
   localStorage.clear();
