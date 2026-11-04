@@ -1,10 +1,9 @@
 import React from "react";
-import { NavLink, useLocation } from "react-router-dom";
+import { NavLink } from "react-router-dom";
 import "./Sidebar.css";
 import { useERP } from "../context/ERPContext";
 
 function Sidebar() {
-    const location = useLocation();
     const { resetAllData } = useERP();
 
     const handleResetAll = () => {
@@ -41,10 +40,6 @@ function Sidebar() {
 
             <nav className="erp-sidebar-nav">
                 {menus.map(menu => {
-                    const isRelatedProduct =
-                        menu.path === "/quotation" &&
-                        location.pathname.startsWith("/product");
-
                     return (
                         <NavLink
                             key={menu.path}
@@ -52,7 +47,7 @@ function Sidebar() {
                             end={menu.path === "/"}
                             className={({ isActive }) =>
                                 "erp-sidebar-link" +
-                                (isActive || isRelatedProduct ? " active" : "")
+                                (isActive ? " active" : "")
                             }
                         >
                             <span className="erp-sidebar-icon">
