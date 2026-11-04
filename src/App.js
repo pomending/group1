@@ -1,7 +1,5 @@
 import React, { useState } from "react";
-import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
-
-import Sidebar from "./components/Sidebar";
+import { BrowserRouter, Routes, Route, useLocation, Navigate } from "react-router-dom";
 import "./ERPLayout.css";
 
 import CrmPage from "./1_crm/01_CrmPage";
@@ -13,11 +11,14 @@ import SchedulePage from "./5_schedule/SchedulePage";
 import DashboardPage from "./6_dashboard/DashboardPage";
 import NotFoundPage from "./components/NotFoundPage";
 import Topbar from "./components/Topbar";
-import { ERPProvider } from "./context/ERPContext";
+import Sidebar from "./components/Sidebar";
+import { ERPProvider, useERP } from "./context/ERPContext";
 import LoginPage from "./7_login/LoginPage";
 import HrPage from "./8_hr/HrPage";
 import ConsultationPage from "./9_consultation/01_ConsultationPage";
 import ProductPage from "./10_product/ProductPage";
+
+const REQUIRE_LOGIN = false;
 
 function ERPContent() {
 
@@ -25,9 +26,22 @@ function ERPContent() {
 
     const [isCollapsed, setIsCollapsed] = useState(false);
 
-    // 로그인 페이지는 ERP 레이아웃 없이 표시
+    const { currentUser, currentEmployee } = useERP();
+
+    const isAuthenticated =
+        currentUser?.status === "활성" &&
+        ["재직", "휴직"].includes(currentEmployee?.status);
+
+    // 로그인 화면은 직접 접근 가능
     if (location.pathname === "/login") {
-        return <LoginPage />;
+        return REQUIRE_LOGIN && isAuthenticated
+            ? <Navigate to="/" replace />
+            : <LoginPage />;
+    }
+
+    // 로그인 필수 모드에서만 접근 제한
+    if (REQUIRE_LOGIN && !isAuthenticated) {
+        return <Navigate to="/login" replace />;
     }
 
     const isPopup =
@@ -56,13 +70,11 @@ function ERPContent() {
                     <Routes>
                         <Route path="/" element={<DashboardPage />} />
 
-                        <Route path='/login/*' element={<LoginPage />} />
-
                         <Route path="/crm/*" element={<CrmPage />} />
                         <Route path="/quotation/*" element={<QuotationPage />} />
                         <Route path="/projects/*" element={<ProjectPage />} />
                         <Route path="/tasks/*" element={<TaskPage />} />
-                        <Route path="/tasks/detail" element={<TaskDetail />}/>
+                        <Route path="/tasks/detail" element={<TaskDetail />} />
                         <Route path="/schedule/*" element={<SchedulePage />} />
                         <Route path='/hr/*' element={<HrPage />} />
                         <Route path="/consultation/*" element={<ConsultationPage />} />
@@ -84,10 +96,10 @@ function App() {
                 <ERPContent />
             </ERPProvider>
 
-            
+
         </BrowserRouter>
 
-        
+
     );
 }
 
