@@ -20,24 +20,18 @@ function NoticePage({ posts }) {
     const currentPage = Math.min(page, Math.max(1, totalPages));
     const startIndex = (currentPage - 1) * pageSize;
     const visibleNotices = recentNotices.slice(startIndex, startIndex + pageSize);
-
     return (
         <div className="community">
-
             <h1>공지사항</h1>
             <p>사내 공지사항을 확인하는 공간입니다.</p>
-
             <div className="community-board">
-
                 <div className="community-top">
                     <h3>공지사항 목록</h3>
-
                     {/* 글쓰기 이동 */}
                     <Link to="/?page=notice-write" className="community-button">
                         글쓰기
                     </Link>
                 </div>
-
                 <table>
                     <thead>
                         <tr>
@@ -48,15 +42,13 @@ function NoticePage({ posts }) {
                             <th>작성일</th>
                         </tr>
                     </thead>
-
                     <tbody>
                         {/* 공지사항 행 */}
                         {visibleNotices.map((notice, index) =>
                             <tr
                                 key={notice.id}
                                 onClick={() => navigate("/?page=notice-detail&id=" + notice.id)}
-                                style={{ cursor: "pointer" }}
-                            >
+                                style={{ cursor: "pointer" }}>
                                 <td>{recentNotices.length - startIndex - index}</td>
                                 <td>
                                     {notice.type === "important" ? "중요공지" : "일반 공지"}
@@ -68,7 +60,6 @@ function NoticePage({ posts }) {
                         )}
                     </tbody>
                 </table>
-
                 {/* 페이지 이동 */}
                 {totalPages > 1 && (
                     <nav className="board-pagination" aria-label="공지사항 페이지 이동">
@@ -83,8 +74,7 @@ function NoticePage({ posts }) {
                                 key={number}
                                 className={number === currentPage ? "active" : ""}
                                 aria-current={number === currentPage ? "page" : undefined}
-                                onClick={() => setPage(number)}
-                            >
+                                onClick={() => setPage(number)}>
                                 {number}
                             </button>
                         ))}
@@ -95,7 +85,6 @@ function NoticePage({ posts }) {
                         >다음</button>
                     </nav>
                 )}
-
                 {/* 빈 목록 */}
                 {posts.length === 0 && (
                     <p className="community-empty">등록된 공지사항이 없습니다.</p>

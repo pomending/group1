@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import "./Dashboard.css";
@@ -7,7 +6,6 @@ import DashboardToday from "./DashboardToday";
 // 프로젝트 데이터
 import { useERP } from "../context/ERPContext";
 import { getProjectStatus } from "../utils/projectStatus";
-
 import CommunityPage from "./CommunityPage";
 import CommunityWritePage from "./CommunityWritePage";
 import CommunityDetailPage from "./CommunityDetailPage";
@@ -48,7 +46,6 @@ function getRemainingDays(project) {
 
     // 남은 일수
     const daysLeft = (dueDay - today) / (24 * 60 * 60 * 1000);
-
     if (daysLeft > 0) {
         return { label: `D-${daysLeft}`, urgent: daysLeft <= 3 };
     }
@@ -129,8 +126,7 @@ function readPosts(key) {
 function DashboardPage() {
     const [searchParams] = useSearchParams();
 
-    // 프로젝트 상태
-    const { projects } = useERP();
+    const { currentUser, currentEmployee, logout, projects } = useERP()
 
     const page = searchParams.get("page");
 
@@ -169,7 +165,6 @@ function DashboardPage() {
     if (page === "community") {
         return <CommunityPage posts={posts} />;
     }
-
     if (page === "write") {
         return (
             <CommunityWritePage
@@ -178,7 +173,6 @@ function DashboardPage() {
             />
         );
     }
-
     if (page === "detail") {
         return (
             <CommunityDetailPage
@@ -194,7 +188,6 @@ function DashboardPage() {
     if (page === "notice") {
         return <NoticePage posts={noticePosts} />;
     }
-
     if (page === "notice-write") {
         return (
             <NoticeWritePage
@@ -203,7 +196,6 @@ function DashboardPage() {
             />
         );
     }
-
     if (page === "notice-detail") {
         return (
             <NoticeDetailPage
@@ -219,34 +211,27 @@ function DashboardPage() {
     if (page === "mypage") {
         return <MyPage />;
     }
-
     return (
         <div className="dashboard">
-
             <h1>대시보드</h1>
-
             {/* 중요공지 */}
             <div className="dashboard-banner">
                 <strong>NOTICE</strong>
-
                 {importantNotice ? (
                     <Link
                         to={
                             "/?page=notice-detail&id=" +
                             importantNotice.id
                         }
-                        className="notice-banner-link"
-                    >
+                        className="notice-banner-link">
                         {importantNotice.title}
                     </Link>
                 ) : (
                     <span>등록된 중요공지가 없습니다.</span>
                 )}
             </div>
-
             {/* 프로젝트 관리 카드 */}
             <div className="dashboard-card dashboard-project-card">
-
                 {/* 프로젝트 목록 이동 */}
                 <button
                     type="button"
@@ -259,17 +244,14 @@ function DashboardPage() {
                         cursor: "pointer"
                     }}
                 />
-
                 <h3>프로젝트 관리</h3>
-
                 {recentProjects.length === 0 ? (
                     <p>등록된 프로젝트가 없습니다.</p>
                 ) : (
                     recentProjects.map(project => (
                         <div
                             key={project.id}
-                            className="dashboard-post"
-                        >
+                            className="dashboard-post">
                             {/* 프로젝트 상세 이동 */}
                             <button
                                 type="button"
@@ -287,23 +269,19 @@ function DashboardPage() {
                                     cursor: "pointer",
                                     font: "inherit",
                                     width: "100%"
-                                }}
-                            >
+                                }}>
                                 <span className="dashboard-post-title">
                                     {project.name}
                                 </span>
-
                                 <span className="dashboard-post-writer">
                                     {getProjectStatus(project)}
                                 </span>
-
                                 <span
                                     className="dashboard-post-date"
                                     style={getRemainingDays(project).urgent ? {
                                         color: "#c0392b",
                                         fontWeight: 700
-                                    } : undefined}
-                                >
+                                    } : undefined}>
                                     {getRemainingDays(project).label}
                                 </span>
                             </button>
@@ -311,45 +289,35 @@ function DashboardPage() {
                     ))
                 )}
             </div>
-
             {/* 게시판·일정 배치 */}
             <div className="dashboard-grid">
-
                 <div className="dashboard-left">
-
                     {/* 공지사항 */}
                     <div className="dashboard-card">
-
                         <Link
                             to="/?page=notice"
-                            className="dashboard-community-heading"
-                        >
+                            className="dashboard-community-heading">
                             <h3>공지사항</h3>
                         </Link>
-
                         {recentNotices.length === 0 ? (
                             <p>등록된 공지사항이 없습니다.</p>
                         ) : (
                             recentNotices.map(post => (
                                 <div
                                     className="dashboard-post"
-                                    key={post.id}
-                                >
+                                    key={post.id}>
                                     <Link
                                         className="dashboard-post-link"
                                         to={
                                             "/?page=notice-detail&id=" +
                                             post.id
-                                        }
-                                    >
+                                        }>
                                         <span className="dashboard-post-title">
                                             {post.title}
                                         </span>
-
                                         <span className="dashboard-post-writer">
                                             {post.writer}
                                         </span>
-
                                         <span className="dashboard-post-date">
                                             {post.date}
                                         </span>
@@ -358,40 +326,32 @@ function DashboardPage() {
                             ))
                         )}
                     </div>
-
                     {/* 사내 커뮤니티 */}
                     <div className="dashboard-card">
-
                         <Link
                             to="/?page=community"
-                            className="dashboard-community-heading"
-                        >
+                            className="dashboard-community-heading">
                             <h3>사내 커뮤니티</h3>
                         </Link>
-
                         {recentPosts.length === 0 ? (
                             <p>등록된 게시글이 없습니다.</p>
                         ) : (
                             recentPosts.map(post => (
                                 <div
                                     className="dashboard-post"
-                                    key={post.id}
-                                >
+                                    key={post.id}>
                                     <Link
                                         className="dashboard-post-link"
                                         to={
                                             "/?page=detail&id=" +
                                             post.id
-                                        }
-                                    >
+                                        }>
                                         <span className="dashboard-post-title">
                                             {post.title}
                                         </span>
-
                                         <span className="dashboard-post-writer">
                                             {post.writer}
                                         </span>
-
                                         <span className="dashboard-post-date">
                                             {post.date}
                                         </span>
@@ -400,24 +360,18 @@ function DashboardPage() {
                             ))
                         )}
                     </div>
-
                 </div>
-
                 {/* 오늘의 일정 */}
                 <div className="dashboard-right">
                     <div className="dashboard-card schedule-card">
-
                         <Link
                             to="/schedule"
-                            className="dashboard-community-heading"
-                        >
+                            className="dashboard-community-heading">
                             <h3>오늘의 일정</h3>
                         </Link>
-
                         <DashboardToday />
                     </div>
                 </div>
-
             </div>
         </div>
     );

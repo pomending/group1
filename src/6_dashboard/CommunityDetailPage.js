@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import "./CommunityDetail.css";
@@ -34,11 +33,9 @@ function CommunityDetailPage({ posts, setPosts, postId }) {
 
     const [comments, setComments] = useState(() => {
         const saved = localStorage.getItem(commentKey);
-
         if (!saved) {
             return [];
         }
-
         try {
             const data = JSON.parse(saved);
             return Array.isArray(data) ? data : [];
@@ -46,6 +43,7 @@ function CommunityDetailPage({ posts, setPosts, postId }) {
             return [];
         }
     });
+
     // 게시글 수정 · 번호·작성일 유지
     const [isEditingPost, setIsEditingPost] = useState(false);
     const [editTitle, setEditTitle] = useState("");
@@ -54,7 +52,6 @@ function CommunityDetailPage({ posts, setPosts, postId }) {
     // 게시글 수정 초기값
     const startEditPost = () => {
         if (!canEditPost) return;
-
         setEditTitle(post.title || "");
         setEditContent(post.content || "");
         setIsEditingPost(true);
@@ -63,12 +60,10 @@ function CommunityDetailPage({ posts, setPosts, postId }) {
     // 게시글 수정 저장
     const saveEditPost = (e) => {
         e.preventDefault();
-
         if (!isBoardAuthor(post, getBoardUser())) {
             alert("작성자만 수정할 수 있습니다.");
             return;
         }
-
         if (!editTitle.trim() || !editContent.trim()) {
             alert("제목과 내용을 모두 입력하세요.");
             return;
@@ -83,7 +78,6 @@ function CommunityDetailPage({ posts, setPosts, postId }) {
                 }
                 : item
         );
-
         setPosts(newPosts);
         localStorage.setItem("communityPosts", JSON.stringify(newPosts));
         setIsEditingPost(false);
@@ -128,7 +122,6 @@ function CommunityDetailPage({ posts, setPosts, postId }) {
             alert("댓글 작성자만 수정할 수 있습니다.");
             return;
         }
-
         if (!editCommentContent.trim()) {
             alert("댓글 내용을 입력하세요.");
             return;
@@ -142,7 +135,6 @@ function CommunityDetailPage({ posts, setPosts, postId }) {
                 }
                 : comment
         );
-
         setComments(newComments);
         localStorage.setItem(commentKey, JSON.stringify(newComments));
         setEditingCommentId(null);
@@ -157,7 +149,6 @@ function CommunityDetailPage({ posts, setPosts, postId }) {
             alert("직원 정보를 찾을 수 없습니다.");
             return;
         }
-
         if (!content.trim()) {
             alert("댓글 내용을 입력하세요");
             return;
@@ -173,7 +164,6 @@ function CommunityDetailPage({ posts, setPosts, postId }) {
         };
 
         const newComments = [...comments, newComment];
-
         setComments(newComments);
         localStorage.setItem(commentKey, JSON.stringify(newComments));
         setContent("");
@@ -183,18 +173,17 @@ function CommunityDetailPage({ posts, setPosts, postId }) {
     const addReply = (e, parentComment) => {
         e.preventDefault();
 
-        // 원댓글에만 답글을 달 수 있고, 삭제된 원댓글에는 달지 않습니다.
+        // 삭제된 댓글에는 답글을 달지 않습니다.
         const parent = comments.find((item) =>
             String(item.id) === String(parentComment.id)
         );
-        if (!parent || parent.parentId != null || parent.deleted) return;
+        if (!parent || parent.deleted) return;
 
         const activeUser = getBoardUser();
         if (!activeUser) {
             alert("직원 정보를 찾을 수 없습니다.");
             return;
         }
-
         if (!replyContent.trim()) {
             alert("답글 내용을 입력하세요.");
             return;
@@ -251,11 +240,16 @@ function CommunityDetailPage({ posts, setPosts, postId }) {
             : comments.filter((item) => String(item.id) !== String(commentId));
 
         // 마지막 답글이 삭제되었다면 비어 있는 원댓글 자리도 정리합니다.
-        const cleanedComments = newComments.filter((item) =>
-            !item.deleted || newComments.some((reply) =>
-                reply.parentId != null && String(reply.parentId) === String(item.id)
-            )
-        );
+        let cleanedComments = newComments;
+        let previousLength;
+        do {
+            previousLength = cleanedComments.length;
+            cleanedComments = cleanedComments.filter((item) =>
+                !item.deleted || cleanedComments.some((reply) =>
+                    reply.parentId != null && String(reply.parentId) === String(item.id)
+                )
+            );
+        } while (cleanedComments.length !== previousLength);
         setComments(cleanedComments);
         localStorage.setItem(commentKey, JSON.stringify(cleanedComments));
     };
@@ -273,29 +267,46 @@ function CommunityDetailPage({ posts, setPosts, postId }) {
         const newPosts = posts.filter(
             (item) => String(item.id) !== String(postId)
         );
-
         setPosts(newPosts);
         localStorage.setItem("communityPosts", JSON.stringify(newPosts));
         localStorage.removeItem(commentKey);
         navi("/?page=community");
     };
 
+    // 댓글과 답글을 모든 단계에서 부모 바로 아래 순서로 펼칩니다.
+    // 깊이가 늘어나도 카드 너비가 지나치게 좁아지지 않도록 들여쓰기만 제한합니다.
+    const threadedComments = [];
+    const visitedCommentIds = new Set();
+    const pendingComments = comments
+        .filter((item) => item.parentId == null)
+        .map((item) => ({ item, depth: 0 }))
+        .reverse();
+    while (pendingComments.length > 0) {
+        const { item, depth } = pendingComments.pop();
+        const itemId = String(item.id);
+        if (visitedCommentIds.has(itemId)) continue;
+        visitedCommentIds.add(itemId);
+        threadedComments.push({ item, depth });
+
+        // 기존 저장 배열 순서를 유지하며 자식 답글을 바로 아래에 배치합니다.
+        for (let i = comments.length - 1; i >= 0; i--) {
+            const reply = comments[i];
+            if (reply.parentId != null && String(reply.parentId) === itemId) {
+                pendingComments.push({ item: reply, depth: depth + 1 });
+            }
+        }
+    }
     return (
         <div className="community">
-
             <div className="community-board">
-
                 {post ? (
                     <div>
-
                         {/* 게시글 수정 폼 */}
                         {isEditingPost && canEditPost ? (
                             <form
                                 className="community-write"
-                                onSubmit={saveEditPost}
-                            >
+                                onSubmit={saveEditPost}>
                                 <h1>게시글 수정</h1>
-
                                 <label htmlFor="edit-post-title">제목</label>
                                 <input
                                     id="edit-post-title"
@@ -303,20 +314,17 @@ function CommunityDetailPage({ posts, setPosts, postId }) {
                                     value={editTitle}
                                     onChange={(e) => setEditTitle(e.target.value)}
                                 />
-
                                 <label htmlFor="edit-post-content">내용</label>
                                 <textarea
                                     id="edit-post-content"
                                     value={editContent}
                                     onChange={(e) => setEditContent(e.target.value)}
                                 />
-
                                 <div className="community-actions">
                                     <button
                                         type="button"
                                         className="community-cancel"
-                                        onClick={() => setIsEditingPost(false)}
-                                    >
+                                        onClick={() => setIsEditingPost(false)}>
                                         취소
                                     </button>
                                     <button type="submit" className="community-button">
@@ -328,7 +336,6 @@ function CommunityDetailPage({ posts, setPosts, postId }) {
                             <>
                                 {/* 게시글 본문 */}
                                 <h1>{post.title}</h1>
-
                                 <div className="community-info">
                                     <div className="detail-post-meta">
                                         <span>작성자: {post.writer}</span>
@@ -349,120 +356,69 @@ function CommunityDetailPage({ posts, setPosts, postId }) {
                                         )}
                                     </div>
                                 </div>
-
                                 <div className="community-content">
                                     {post.content}
                                 </div>
-
                                 {/* 댓글 영역 */}
                                 <div className="detail-comments">
                                     <h3>댓글 ({comments.filter((item) => !item.deleted).length})</h3>
-
                                     {comments.filter((item) => !item.deleted).length === 0 && (
                                         <p className="detail-comment-empty">
                                             등록된 댓글이 없습니다.
                                         </p>
                                     )}
-
-                                    {comments.filter((item) => item.parentId == null).map((comment) => (
+                                    {threadedComments.map(({ item: comment, depth }) => {
+                                        const indent = Math.min(depth * 30, 150);
+                                        const replyIndent = Math.min((depth + 1) * 30, 150);
+                                        return (
                                         <React.Fragment key={comment.id}>
+                                            {/* 댓글과 모든 단계의 답글을 별도 카드로 표시 */}
                                             <div
                                                 className="detail-comment-item"
-                                            >
-                                            <div className="detail-comment-info" style={{ borderBottom: "1px dashed #d5dce3", paddingBottom: "6px", flexWrap: "wrap" }}>
-                                                <strong>{comment.deleted ? "삭제된 댓글" : comment.writer}</strong>
-
-                                                {/* 답글 버튼은 모든 사용자에게, 수정·삭제는 작성자에게만 표시 */}
-                                                {!comment.deleted && (
-                                                <div style={{ marginLeft: "auto", display: "flex", gap: "12px" }}>
-                                                    <button
-                                                        type="button"
-                                                        style={{ marginLeft: 0 }}
-                                                        onClick={() => {
-                                                            setReplyToId(comment.id);
-                                                            setReplyContent("");
-                                                        }}
-                                                    >
-                                                        답글
-                                                    </button>
-                                                    {isBoardAuthor(comment, currentUser) && (
-                                                        <>
-                                                            <button
-                                                                type="button"
-                                                                style={{ marginLeft: 0 }}
-                                                                onClick={() => startEditComment(comment)}
-                                                            >
-                                                                수정
-                                                            </button>
-                                                            <button
-                                                                type="button"
-                                                                style={{ marginLeft: 0 }}
-                                                                onClick={() => delComment(comment.id)}
-                                                            >
-                                                                삭제
-                                                            </button>
-                                                        </>
-                                                    )}
-                                                </div>
+                                                style={depth > 0 ? {
+                                                    width: `calc(100% - ${indent}px)`,
+                                                    marginLeft: `${indent}px`,
+                                                    marginTop: "10px",
+                                                    marginBottom: "10px",
+                                                    paddingLeft: "12px",
+                                                    borderLeft: "2px solid #cbd5e1",
+                                                    backgroundColor: "#fff",
+                                                    position: "relative",
+                                                    boxSizing: "border-box"
+                                                } : undefined}>
+                                                {depth > 0 && (
+                                                    <span aria-hidden="true" style={{ position: "absolute", left: "-22px", top: "10px", color: "#7b8794" }}>↳</span>
                                                 )}
-                                                <span style={{ marginLeft: comment.deleted ? "auto" : "12px", whiteSpace: "nowrap" }}>{comment.date}</span>
-                                            </div>
-
-                                            {/* 선택 댓글 수정 */}
-                                            {editingCommentId !== null &&
-                                            String(editingCommentId) === String(comment.id) &&
-                                            !comment.deleted && isBoardAuthor(comment, currentUser) ? (
-                                                <form
-                                                    className="detail-comment-write"
-                                                    onSubmit={saveEditComment}
-                                                >
-                                                    <textarea
-                                                        placeholder="댓글 내용을 입력하세요"
-                                                        value={editCommentContent}
-                                                        onChange={(e) => setEditCommentContent(e.target.value)}
-                                                    />
-
-                                                    <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px" }}>
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => setEditingCommentId(null)}
-                                                        >
-                                                            취소
-                                                        </button>
-                                                        <button type="submit">수정 완료</button>
-                                                    </div>
-                                                </form>
-                                            ) : (
-                                                <p>{comment.deleted ? "삭제된 댓글입니다." : comment.content}</p>
-                                            )}
-                                            </div>
-
-                                            {/* 답글은 원댓글 아래에 한 단계로 표시합니다. */}
-                                        {comments.filter((reply) =>
-                                            reply.parentId != null && String(reply.parentId) === String(comment.id)
-                                        ).map((reply) => (
-                                            <div
-                                                className="detail-comment-item"
-                                                key={reply.id}
-                                                style={{ width: "calc(100% - 30px)", marginLeft: "30px", marginTop: "10px", marginBottom: "10px", paddingLeft: "12px", borderLeft: "2px solid #cbd5e1", backgroundColor: "#fff", position: "relative" }}
-                                            >
-                                                <span aria-hidden="true" style={{ position: "absolute", left: "-22px", top: "10px", color: "#7b8794" }}>↳</span>
                                                 <div className="detail-comment-info" style={{ borderBottom: "1px dashed #d5dce3", paddingBottom: "6px", flexWrap: "wrap" }}>
-                                                    <strong>{reply.writer}</strong>
-                                                    {isBoardAuthor(reply, currentUser) && (
+                                                    <strong>{comment.deleted ? "삭제된 댓글" : comment.writer}</strong>
+                                                    {/* 답글은 모든 단계에 표시, 수정·삭제는 작성자에게만 표시 */}
+                                                    {!comment.deleted && (
                                                         <div style={{ marginLeft: "auto", display: "flex", gap: "12px" }}>
-                                                            <button type="button" onClick={() => startEditComment(reply)}>수정</button>
-                                                            <button type="button" onClick={() => delComment(reply.id)}>삭제</button>
+                                                            <button
+                                                                type="button"
+                                                                style={{ marginLeft: 0 }}
+                                                                onClick={() => {
+                                                                    setReplyToId(comment.id);
+                                                                    setReplyContent("");
+                                                                }}>
+                                                                답글
+                                                            </button>
+                                                            {isBoardAuthor(comment, currentUser) && (
+                                                                <>
+                                                                    <button type="button" style={{ marginLeft: 0 }} onClick={() => startEditComment(comment)}>수정</button>
+                                                                    <button type="button" style={{ marginLeft: 0 }} onClick={() => delComment(comment.id)}>삭제</button>
+                                                                </>
+                                                            )}
                                                         </div>
                                                     )}
-                                                    <span style={{ marginLeft: isBoardAuthor(reply, currentUser) ? "12px" : "auto", whiteSpace: "nowrap" }}>{reply.date}</span>
+                                                    <span style={{ marginLeft: comment.deleted ? "auto" : "12px", whiteSpace: "nowrap" }}>{comment.date}</span>
                                                 </div>
                                                 {editingCommentId !== null &&
-                                                String(editingCommentId) === String(reply.id) &&
-                                                isBoardAuthor(reply, currentUser) ? (
+                                                String(editingCommentId) === String(comment.id) &&
+                                                !comment.deleted && isBoardAuthor(comment, currentUser) ? (
                                                     <form className="detail-comment-write" onSubmit={saveEditComment}>
                                                         <textarea
-                                                            placeholder="답글 내용을 입력하세요"
+                                                            placeholder="댓글 내용을 입력하세요"
                                                             value={editCommentContent}
                                                             onChange={(e) => setEditCommentContent(e.target.value)}
                                                         />
@@ -472,43 +428,41 @@ function CommunityDetailPage({ posts, setPosts, postId }) {
                                                         </div>
                                                     </form>
                                                 ) : (
-                                                    <p>{reply.content}</p>
+                                                    <p>{comment.deleted ? "삭제된 댓글입니다." : comment.content}</p>
                                                 )}
                                             </div>
-                                        ))}
-
-                                        {replyToId !== null && String(replyToId) === String(comment.id) && !comment.deleted && (
-                                            <form className="detail-comment-write" style={{ width: "calc(100% - 30px)", marginLeft: "30px", boxSizing: "border-box" }} onSubmit={(e) => addReply(e, comment)}>
-                                                <textarea
-                                                    placeholder="답글 내용을 입력하세요"
-                                                    value={replyContent}
-                                                    onChange={(e) => setReplyContent(e.target.value)}
-                                                />
-                                                <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px" }}>
-                                                    <button type="button" onClick={() => { setReplyToId(null); setReplyContent(""); }}>취소</button>
-                                                    <button type="submit">답글 등록</button>
-                                                </div>
-                                            </form>
-                                        )}
+                                            {replyToId !== null && String(replyToId) === String(comment.id) && !comment.deleted && (
+                                                <form
+                                                    className="detail-comment-write"
+                                                    style={{ width: `calc(100% - ${replyIndent}px)`, marginLeft: `${replyIndent}px`, boxSizing: "border-box" }}
+                                                    onSubmit={(e) => addReply(e, comment)}>
+                                                    <textarea
+                                                        placeholder="답글 내용을 입력하세요"
+                                                        value={replyContent}
+                                                        onChange={(e) => setReplyContent(e.target.value)}
+                                                    />
+                                                    <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px" }}>
+                                                        <button type="button" onClick={() => { setReplyToId(null); setReplyContent(""); }}>취소</button>
+                                                        <button type="submit">답글 등록</button>
+                                                    </div>
+                                                </form>
+                                            )}
                                         </React.Fragment>
-                                    ))}
-
+                                        );
+                                    })}
                                     {/* 댓글 입력 폼 */}
                                     <hr />
                                     <form
                                         className="detail-comment-write"
-                                        onSubmit={addComment}
-                                    >
+                                        onSubmit={addComment}>
                                         <textarea
                                             placeholder="댓글 내용을 입력하세요"
                                             value={content}
                                             onChange={(e) => setContent(e.target.value)}
                                         />
-
                                         <button type="submit">댓글 등록</button>
                                     </form>
                                 </div>
-
                                 {/* 하단 글 목록 · 15개 */}
                                 <div className="detail-post-list" aria-label="다른 게시글 바로가기">
                                     <div className="detail-post-list-scroll">
@@ -535,8 +489,7 @@ function CommunityDetailPage({ posts, setPosts, postId }) {
                                                             if (String(item.id) === String(postId)) return;
                                                             event.preventDefault();
                                                             navi("/?page=detail&id=" + encodeURIComponent(item.id));
-                                                        }}
-                                                    >
+                                                        }}>
                                                         <td>{sortedPosts.length - listStart - index}</td>
                                                         <td className="detail-post-list-title">
                                                             {String(item.id) === String(postId)
@@ -583,7 +536,6 @@ function CommunityDetailPage({ posts, setPosts, postId }) {
                 ) : (
                     <p>게시글을 찾을 수 없습니다.</p>
                 )}
-
                 {!post && (
                     <div className="community-actions">
                         <Link to="/?page=community" className="community-cancel">목록으로</Link>
