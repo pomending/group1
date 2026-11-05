@@ -139,11 +139,11 @@ function DashboardPage() {
         () => readPosts("noticePosts")
     );
 
-    // 미완료 프로젝트 · 최신 3개
+    // 미완료 프로젝트 · 최신 4개
     const recentProjects = [...projects]
         .filter(project => getProjectStatus(project) !== "완료")
         .sort((a, b) => Number(b.id) - Number(a.id))
-        .slice(0, 3);
+        .slice(0, 4);
 
     // 일반 공지 · 최신 6개
     const recentNotices = [...noticePosts]

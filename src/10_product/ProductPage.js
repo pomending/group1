@@ -1,9 +1,9 @@
 /* 상품관리 진입 화면: ERPContext의 상품 목록을 읽고 등록·수정합니다.
  * 진입: App.js의 /product 경로 → ProductPage → 상세(ProductDetails) 또는 등록·수정(ProductForm)
- * 데이터: ERPProvider 내부에서 useERP() → products / setProducts 사용
+ * 데이터: ERPProvider가 useProductData로 상태 생성 → useERP()로 products / addProduct / updateProduct 사용
  * 표시: 전체 현황 집계 → 검색·상태 필터 → 정렬 → 10개 단위 표시
- * 저장: ProductForm 검증 → saveProduct에서 전달 필드 선택 → Context 갱신 → 목록 또는 원래 상세로 복귀
- * Context의 setProducts는 공통 상품 상태를 갱신하며, 현재는 새로고침 후 저장을 보장하지 않습니다.
+ * 저장: 입력 전달 → 편집 충돌 검사 → 상품 Hook 공통 검증·갱신 → 목록 또는 원래 상세로 복귀
+ * 상품 Hook은 브라우저 저장 성공 뒤 공통 상태를 갱신하며 새로고침 시 저장 목록을 복구합니다.
  */
 import React, { useLayoutEffect, useRef, useState } from "react";
 import { saveAs } from "file-saver";
@@ -12,7 +12,7 @@ import ProductForm from "./ProductForm";
 import ProductDetails from "./ProductDetails";
 import {
   formatProductDate, getProductStatus, productStatuses, normalizeProductName,
-  compareProductDates, createProductCsv, getProductInput, updateProduct, getProductPriceRange,
+  compareProductDates, createProductCsv, getProductInput, getProductPriceRange,
 } from "./productData";
 import "./productStyles.css";
 
@@ -29,7 +29,7 @@ const productSorters = {
 
 export default function ProductPage() {
   // [1] 데이터와 화면 상태: Context 상품과 검색·편집 조건을 분리합니다.
-  const { products, setProducts } = useERP();
+  const { products, addProduct, updateProduct, productStorageError } = useERP();
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("all");
   const [sort, setSort] = useState("newest");
@@ -58,8 +58,9 @@ export default function ProductPage() {
   const statusCounts = productStatuses.map(option => [
     option.value, option.label, products.filter(product => product.productStatus === option.value).length,
   ]);
+  const searchQuery = normalizeProductName(query);
   const visible = products.filter(product =>
-    normalizeProductName(product.productName).includes(normalizeProductName(query))
+    (normalizeProductName(product.productName).includes(searchQuery) || String(product.id) === query.trim())
     && (status === "all" || product.productStatus === status)
     && !range.error && product.productPrice >= range.min && product.productPrice <= range.max
   ).sort((a, b) => productSorters[sort](a, b)
@@ -115,6 +116,13 @@ export default function ProductPage() {
     setCurrentPage(1);
   }
 
+  // 검색어·판매 상태·정렬은 유지하며 단가 경계만 해제합니다.
+  function resetPriceRange() {
+    setPriceRange({ min: "", max: "" });
+    setCurrentPage(1);
+    focusTargets.current.get("min-price")?.focus();
+  }
+
   // 페이지를 자르기 전 검색·필터·정렬 결과 전체를 내려받습니다. 상품 상태와 저장소에는 쓰지 않습니다.
   function exportProducts() {
     if (!visible.length) return;
@@ -129,36 +137,22 @@ export default function ProductPage() {
 
   // [3] 저장: 전달 필드 선택 → 편집 충돌 검사 → Context 갱신 → 이전 화면 복귀.
   function saveProduct(values) {
-    // Context로 보낼 입력값은 상품명·단가·상태로 제한합니다. ID·날짜는 아래에서 관리합니다.
+    // 입력은 상품명·단가·상태로 제한하고 ID·날짜 생성은 Context의 상품 Hook에 맡깁니다.
     const input = getProductInput(values);
     const isNew = editing.id == null;
     if (!isNew) {
       const original = products.find(product => product.id === editing.id);
-      if (!original) return "수정할 상품을 찾을 수 없습니다. 취소한 뒤 목록을 확인해 주세요.";
+      if (!original) return { ok: false, field: null, message: "수정할 상품을 찾을 수 없습니다. 취소한 뒤 목록을 확인해 주세요." };
       // 수정창을 열 때 복사한 값과 현재 Context 값을 비교합니다. 다른 상품의 변경은 막지 않습니다.
       const fields = ["productName", "productPrice", "productStatus", "productCreatedAt", "productUpdatedAt"];
       if (fields.some(key => original[key] !== editing[key])) {
-        return "편집 중 상품 정보가 다른 화면에서 변경되었습니다. 입력 내용을 확인한 뒤 취소하고 다시 수정해 주세요.";
-      }
-      // 정리된 저장값이 같으면 공통 상태·수정일을 갱신하지 않습니다.
-      if (Object.keys(input).every(key => input[key] === original[key])) {
-        setNotice("변경된 내용이 없습니다.");
-        closeEditor();
-        return;
+        return { ok: false, field: null, message: "편집 중 상품 정보가 다른 화면에서 변경되었습니다. 입력 내용을 확인한 뒤 취소하고 다시 수정해 주세요." };
       }
     }
-    const now = new Date().toISOString();
-    // 함수형 갱신으로 최신 목록의 최대 ID 다음 번호를 발급합니다. 기존 견적의 단가는 수정하지 않습니다.
-    setProducts(current => {
-      if (!isNew) return updateProduct(current, editing.id, input, now);
-      return [...current, {
-        ...input,
-        id: Math.max(0, ...current.map(product => Number(product.id) || 0)) + 1,
-        productCreatedAt: now,
-        productUpdatedAt: "",
-      }];
-    });
-    setNotice(isNew ? "상품을 등록했습니다." : "상품을 수정했습니다.");
+    // ID·날짜 생성과 공통 목록 갱신은 상품 Hook에 맡깁니다. 기존 견적 단가는 수정하지 않습니다.
+    const result = isNew ? addProduct(input) : updateProduct({ id: editing.id, ...input });
+    if (!result.ok) return result;
+    setNotice(!result.changed ? "변경된 내용이 없습니다." : isNew ? "상품을 등록했습니다." : "상품을 수정했습니다.");
     closeEditor();
     // 기존 상품 수정은 검색·페이지를 유지하고 신규 등록일 때만 조건을 해제합니다.
     if (isNew) {
@@ -166,6 +160,7 @@ export default function ProductPage() {
       focusRequest.current = "register";
       resetConditions();
     }
+    return result;
   }
 
   // 목록의 상태 변경도 동일한 Context 상품만 갱신합니다. 취소하면 수정일과 상태를 유지합니다.
@@ -173,9 +168,13 @@ export default function ProductPage() {
     const next = getProductStatus(product.productStatus).nextValue;
     const label = getProductStatus(next).label;
     if (!window.confirm(`'${product.productName}' 상품을 ${label} 상태로 변경할까요?`)) return;
-    const now = new Date().toISOString();
-    setProducts(current => updateProduct(current, product.id, { productStatus: next }, now));
-    setNotice(`판매 상태를 ${label}로 변경했습니다.`);
+    const result = updateProduct({ id: product.id, productStatus: next });
+    if (!result.ok) {
+      setNotice(result.message);
+      return;
+    }
+    const particle = label === "판매 중" ? "으로" : "로";
+    setNotice(result.changed ? `판매 상태를 ${label}${particle} 변경했습니다.` : "변경된 내용이 없습니다.");
   }
 
   // [4] 목록·상세·등록/수정은 하나씩 표시합니다. 상세에서 수정 취소 시 같은 상품 상세로 돌아갑니다.
@@ -200,13 +199,13 @@ export default function ProductPage() {
           )}
         </header>
 
+        {productStorageError && <p className="pd-error" role="alert">{productStorageError}</p>}
         {notice && <p className="pd-notice" role="status" aria-label="상품 처리 결과">{notice}</p>}
         {editing !== null ? (
           <ProductForm
             key={`${editorMode}:${editing.id ?? "new"}`}
             mode={editorMode}
             product={editing}
-            products={products}
             onSave={saveProduct}
             onCancel={() => {
               setNotice("");
@@ -223,6 +222,7 @@ export default function ProductPage() {
             }}
             onEdit={() => openEditor(selectedProduct, "detail-edit")}
             onCopy={copyProduct}
+            onStatusChange={changeProductStatus}
           />
         ) : (
           <>
@@ -261,8 +261,8 @@ export default function ProductPage() {
               </div>
               {/* 조회 조건은 상품 데이터와 분리하며, 변경 시 첫 페이지를 표시합니다. */}
               <div className="pd-filters">
-                <label className="pd-search">상품명 검색
-                  <input ref={focusRef("search")} type="search" value={query} onChange={event => { setQuery(event.target.value); setCurrentPage(1); }} placeholder="상품명을 입력하세요" />
+                <label className="pd-search">상품명·번호 검색
+                  <input ref={focusRef("search")} type="search" value={query} onChange={event => { setQuery(event.target.value); setCurrentPage(1); }} placeholder="상품명 또는 상품 번호를 입력하세요" />
                 </label>
                 <label>판매 상태
                   <select value={status} onChange={event => filterByStatus(event.target.value)}>
@@ -287,7 +287,7 @@ export default function ProductPage() {
                 <summary>추가 검색 조건{hasPriceRange ? " · 단가 조건 적용 중" : ""}</summary>
                 <div className="pd-price-range">
                   <label>최소 단가 (원)
-                    <input type="number" min={0} max={Number.MAX_SAFE_INTEGER} step={1}
+                    <input ref={focusRef("min-price")} type="number" min={0} max={Number.MAX_SAFE_INTEGER} step={1}
                       value={priceRange.min} onChange={event => filterByPrice("min", event.target.value)}
                       placeholder="제한 없음" aria-invalid={!!range.error || undefined}
                       aria-describedby={range.error ? "pd-price-range-hint pd-price-range-error" : "pd-price-range-hint"} />
@@ -301,6 +301,9 @@ export default function ProductPage() {
                 </div>
                 <p id="pd-price-range-hint" className="pd-field-hint">입력하면 바로 조회합니다. 빈 값은 제한 없음이며 양 끝 금액을 포함합니다.</p>
                 {range.error && <p id="pd-price-range-error" className="pd-error" role="alert">{range.error}</p>}
+                <div className="pd-price-filter-actions">
+                  <button type="button" className="pd-button" disabled={!hasPriceRange} onClick={resetPriceRange}>단가 조건 해제</button>
+                </div>
               </details>
               <div className="pd-table-scroll" role="region" aria-label="상품 목록 표" tabIndex={0}>
                 <table className="pd-table">

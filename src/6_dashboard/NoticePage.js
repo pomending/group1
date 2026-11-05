@@ -1,5 +1,7 @@
+
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { useERP } from "../context/ERPContext";
 import "./Community.css";
 
 // 공지사항 목록
@@ -7,6 +9,8 @@ function NoticePage({ posts }) {
 
     // 페이지 이동
     const navigate = useNavigate();
+    const { currentUser: account } = useERP();
+    const canWrite = account?.status === "활성" && ["ADMIN", "MANAGER"].includes(account.role);
     const [page, setPage] = useState(1);
 
     // 최신순 정렬
@@ -28,9 +32,9 @@ function NoticePage({ posts }) {
                 <div className="community-top">
                     <h3>공지사항 목록</h3>
                     {/* 글쓰기 이동 */}
-                    <Link to="/?page=notice-write" className="community-button">
-                        글쓰기
-                    </Link>
+                    {canWrite && (
+                        <Link to="/?page=notice-write" className="community-button">글쓰기</Link>
+                    )}
                 </div>
                 <table>
                     <thead>

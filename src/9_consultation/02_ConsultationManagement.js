@@ -1,9 +1,13 @@
 import React, { useState } from "react";
 import "./02_ConsultationManagement.css";
 import { Consultations } from "./03_Consultations";
+import { useERP } from "../context/ERPContext";
+import { formatPhone, validatePhone } from "../utils/customerUtils";
 function ConsultationManagement() {
     //문의목록을 관리할 usestate
-    const [consultation, setConsultation] = useState(Consultations);
+    const { consultations, addConsultation,updateConsultation,
+            deleteConsultations,employees
+     } = useERP();
 
     //체크박스로 선택한 문의 Id를 저장할 usestate
     const [checkIds, setCheckedIds] = useState([]);
@@ -20,7 +24,7 @@ function ConsultationManagement() {
 
     const editConsultation = () => {
 
-        const selectedConsultation = consultation.find(
+        const selectedConsultation = consultations.find(
             (item) => item.id === checkIds[0])
         setEditData(selectedConsultation);
         alert("문의 상세정보를 불러왔습니다.\n상단에서 내용을 확인하거나 수정할 수 있습니다.");
@@ -37,25 +41,13 @@ function ConsultationManagement() {
             return;
         }
 
-
         if (editData.id) {
-            setConsultation(
-                consultation.map((item) =>
-                    item.id === editData.id ? editData : item
-                )
-            )
+            updateConsultation(editData);
             alert("문의 정보가 수정되었습니다.")
         }
         else {
-            const newId = Math.max(
-                0,
-                ...consultation.map((item) => item.id)) + 1;
-            const newConsultation = {
-                ...editData, id: newId, status: editData.status || "문의 접수"
-            };
-            setConsultation([...consultation, newConsultation]);
+            addConsultation(editData)
             alert("새로운 문의가 등록되었습니다.")
-
         }
         setEditData({});
         setCheckedIds([]);
@@ -68,9 +60,7 @@ function ConsultationManagement() {
             return;
         }
 
-        setConsultation(consultation.filter((item) =>
-            !checkIds.includes(item.id))
-        )
+        deleteConsultations(checkIds)
 
         setCheckedIds([]);
         if (checkIds.includes(editData.id)) {
@@ -85,7 +75,7 @@ function ConsultationManagement() {
     }
 
     // 업체명 검색어에 일치하는 문의 목록을 필터링
-    const filteredConsultation = consultation.filter((item) => item.companyName.includes(searchResult))
+    const filteredConsultation = consultations.filter((item) => item.companyName.includes(searchResult))
 
     return (
         <div className="consultation-page">
@@ -127,7 +117,7 @@ function ConsultationManagement() {
                 <input type="text"
                     value={editData?.phone || ""}
                     onChange={(e) => setEditData(
-                        { ...editData, phone: (e.target.value) }
+                        { ...editData, phone: formatPhone(e.target.value) }
                     )} /><br />
 
                 <label>이메일</label>
@@ -139,14 +129,19 @@ function ConsultationManagement() {
 
 
                 <label>담당자</label>
-                <select value={editData?.employeeName || ""}
-                    onChange={(e) => setEditData(
-                        { ...editData, employeeName: e.target.value }
-                    )}>
+                <select value={(editData.employeeId) ?? ""}
+                    onChange={(e) =>
+                        setEditData({
+                            ...editData,
+                            employeeId: e.target.value === "" ? null : Number(e.target.value)
+                        })
+                    }>
                     <option value="">미배정</option>
-                    <option>홍길동</option>
-                    <option>고길동</option>
-                    <option>김길동</option>
+                    {employees
+                        .filter((employee) => employee.department === "영업팀")
+                        .map((employee) =>
+                            <option key={employee.id}
+                                value={employee.id}>{employee.name}</option>)}
                 </select>
                 <br />
 
@@ -156,7 +151,7 @@ function ConsultationManagement() {
                     onChange={(e) => setEditData(
                         { ...editData, status: (e.target.value) }
                     )}>
-                    <option>문의접수</option>
+                    <option>문의 접수</option>
                     <option>처리 중</option>
                     <option>견적 요청</option>
                     <option>문의 종료</option>
@@ -223,7 +218,7 @@ function ConsultationManagement() {
                                     <td>{item.customerManager}</td>
                                     <td>{item.phone}</td>
                                     <td>{item.email}</td>
-                                    <td>{item.employeeName}</td>
+                                    <td>{employees.find((employee)=> employee.id===item.employeeId)?.name}</td>
                                     <td>{item.status}</td>
 
                                 </tr>

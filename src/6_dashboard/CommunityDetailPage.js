@@ -1,5 +1,7 @@
+
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { useERP } from "../context/ERPContext";
 import "./CommunityDetail.css";
 import "./CommunityWrite.css";
 import { getBoardUser, isBoardAuthor } from "./MyPage";
@@ -13,8 +15,11 @@ function CommunityDetailPage({ posts, setPosts, postId }) {
         (item) => String(item.id) === String(postId)
     );
 
+    const { currentUser: account } = useERP();
+    const isAdmin = account?.status === "활성" && account?.role === "ADMIN";
     const currentUser = getBoardUser();
     const canEditPost = isBoardAuthor(post, currentUser);
+    const canDeletePost = isAdmin || canEditPost;
 
     // 상세 목록 · 현재 페이지
     const sortedPosts = [...posts].sort((a, b) => Number(b.id) - Number(a.id));
@@ -219,8 +224,8 @@ function CommunityDetailPage({ posts, setPosts, postId }) {
         const targetComment = comments.find(
             item => String(item.id) === String(commentId)
         );
-        if (targetComment?.deleted || !isBoardAuthor(targetComment, getBoardUser())) {
-            alert("댓글 작성자만 삭제할 수 있습니다.");
+        if (!targetComment || targetComment.deleted || (!isAdmin && !isBoardAuthor(targetComment, getBoardUser()))) {
+            alert("댓글 삭제 권한이 없습니다.");
             return;
         }
         if (!window.confirm("댓글을 삭제하겠습니까?")) {
@@ -256,8 +261,8 @@ function CommunityDetailPage({ posts, setPosts, postId }) {
 
     // 게시글 삭제
     const delePost = () => {
-        if (!isBoardAuthor(post, getBoardUser())) {
-            alert("작성자만 삭제할 수 있습니다.");
+        if (!post || (!isAdmin && !isBoardAuthor(post, getBoardUser()))) {
+            alert("게시글 삭제 권한이 없습니다.");
             return;
         }
         if (!window.confirm("게시글을 삭제하시겠습니까?")) {
@@ -345,14 +350,14 @@ function CommunityDetailPage({ posts, setPosts, postId }) {
                                         <Link to="/?page=community" className="community-cancel">목록으로</Link>
                                         <Link to="/?page=write" className="community-button">글쓰기</Link>
                                         {canEditPost && (
-                                            <>
-                                                <button
-                                                    type="button"
-                                                    className="community-button"
-                                                    onClick={startEditPost}
-                                                >수정</button>
-                                                <button type="button" className="community-cancel" onClick={delePost}>삭제</button>
-                                            </>
+                                            <button
+                                                type="button"
+                                                className="community-button"
+                                                onClick={startEditPost}
+                                            >수정</button>
+                                        )}
+                                        {canDeletePost && (
+                                            <button type="button" className="community-cancel" onClick={delePost}>삭제</button>
                                         )}
                                     </div>
                                 </div>
@@ -391,7 +396,7 @@ function CommunityDetailPage({ posts, setPosts, postId }) {
                                                 )}
                                                 <div className="detail-comment-info" style={{ borderBottom: "1px dashed #d5dce3", paddingBottom: "6px", flexWrap: "wrap" }}>
                                                     <strong>{comment.deleted ? "삭제된 댓글" : comment.writer}</strong>
-                                                    {/* 답글은 모든 단계에 표시, 수정·삭제는 작성자에게만 표시 */}
+                                                    {/* 답글은 모두 표시, 수정은 작성자만, 삭제는 작성자와 관리자 */}
                                                     {!comment.deleted && (
                                                         <div style={{ marginLeft: "auto", display: "flex", gap: "12px" }}>
                                                             <button
@@ -404,10 +409,10 @@ function CommunityDetailPage({ posts, setPosts, postId }) {
                                                                 답글
                                                             </button>
                                                             {isBoardAuthor(comment, currentUser) && (
-                                                                <>
-                                                                    <button type="button" style={{ marginLeft: 0 }} onClick={() => startEditComment(comment)}>수정</button>
-                                                                    <button type="button" style={{ marginLeft: 0 }} onClick={() => delComment(comment.id)}>삭제</button>
-                                                                </>
+                                                                <button type="button" style={{ marginLeft: 0 }} onClick={() => startEditComment(comment)}>수정</button>
+                                                            )}
+                                                            {(isAdmin || isBoardAuthor(comment, currentUser)) && (
+                                                                <button type="button" style={{ marginLeft: 0 }} onClick={() => delComment(comment.id)}>삭제</button>
                                                             )}
                                                         </div>
                                                     )}

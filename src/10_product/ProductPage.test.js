@@ -1,9 +1,10 @@
-import React, { useState } from "react";
-import { act, fireEvent, render, screen, within } from "@testing-library/react";
+import React from "react";
+import { act, fireEvent, render, renderHook, screen, within } from "@testing-library/react";
 import ProductPage from "./ProductPage";
 import { useERP } from "../context/ERPContext";
 import { saveAs } from "file-saver";
-import { createProductCsv, getProductInput, updateProduct } from "./productData";
+import { createProductCsv, getProductInput } from "./productData";
+import useProductData from "../context/useProductData";
 
 // 조작만 공통화합니다. 검증과 시나리오의 순서는 각 테스트에 남깁니다.
 function clickButton(name) {
@@ -26,16 +27,81 @@ test("전달 필드는 입력 세 개로 제한하고 원본 메타데이터와 
 
 test("공통 갱신은 대상 상품의 변경 필드·수정일만 바꾸고 다른 정보와 원본을 유지한다", () => {
   const source = [
-    { id: 1, productPrice: 8000, productStatus: "판매 중", productCreatedAt: "2026-11-01", extra: "유지" },
-    { id: 2, productPrice: 900 },
+    { id: 1, productName: "원본", productPrice: 8000, productStatus: "판매 중", productCreatedAt: "2026-11-01", extra: "유지" },
+    { id: 2, productName: "다른 상품", productPrice: 900 },
   ];
   const before = JSON.stringify(source);
-  const result = updateProduct(source, 1, { productPrice: 10000 }, "2026-11-04");
-  expect(result[0]).toEqual({ ...source[0], productPrice: 10000, productUpdatedAt: "2026-11-04" });
-  expect(result[1]).toBe(source[1]);
+  initialProducts = source;
+  const { result } = renderHook(() => useProductData(source));
+  const untouched = result.current.products[1];
+  act(() => result.current.updateProduct({ id: 1, productPrice: 10000, productCreatedAt: "변경 금지", extra: "변경 금지" }));
+  expect(result.current.products[0]).toEqual({ ...source[0], productPrice: 10000, productUpdatedAt: expect.any(String) });
+  expect(Number.isFinite(Date.parse(result.current.products[0].productUpdatedAt))).toBe(true);
+  expect(result.current.products[1]).toBe(untouched);
+  expect(result.current.products[1]).toEqual(source[1]);
   expect(JSON.stringify(source)).toBe(before);
-  expect(updateProduct(result, 1, { productPrice: 10000 }, "2026-11-05")[0]).toBe(result[0]);
-  expect(updateProduct(result, 99, { productPrice: 0 }, "2026-11-05")).toEqual(result);
+  const saved = result.current.products;
+  act(() => result.current.updateProduct({ id: 1, productPrice: 10000 }));
+  expect(result.current.products[0]).toBe(saved[0]);
+  act(() => result.current.updateProduct({ id: 99, productPrice: 0 }));
+  expect(result.current.products).toEqual(saved);
+});
+
+test("상품 Hook을 여러 곳에서 사용해도 같은 Context를 공유하며 연속 등록의 ID와 날짜를 자동 생성한다", () => {
+  const SharedContext = React.createContext(null);
+  function Wrapper({ children }) {
+    const productData = useProductData(initialProducts);
+    return <SharedContext.Provider value={productData}>{children}</SharedContext.Provider>;
+  }
+  useERP.mockImplementation(() => React.useContext(SharedContext));
+  const original = JSON.stringify(initialProducts);
+  const { result } = renderHook(() => ({ first: useERP(), second: useERP() }), { wrapper: Wrapper });
+  const values = { productName: "[테스트] 공유 등록", productPrice: 1000, productStatus: "판매 중", id: 999, productCreatedAt: "변경 금지", query: "제외" };
+  act(() => {
+    result.current.first.addProduct(values);
+    result.current.second.addProduct({ ...values, productName: "[테스트] 연속 등록" });
+  });
+  expect(result.current.first.products).toBe(result.current.second.products);
+  expect(result.current.first.products.slice(2).map(product => product.id)).toEqual([3, 4]);
+  expect(result.current.second.products[2]).toEqual({
+    id: 3, productName: values.productName, productPrice: 1000, productStatus: "판매 중",
+    productCreatedAt: expect.any(String), productUpdatedAt: "",
+  });
+  expect(Number.isFinite(Date.parse(result.current.second.products[2].productCreatedAt))).toBe(true);
+  act(() => result.current.second.updateProduct({ id: 3, productStatus: "판매중지" }));
+  expect(result.current.first.products[2].productStatus).toBe("판매중지");
+  expect(JSON.stringify(initialProducts)).toBe(original);
+});
+
+test("상품 초기화는 초기 목록을 복구하고 mockData 원본과 다른 상태에는 쓰지 않는다", () => {
+  const { result } = renderHook(() => useProductData(initialProducts));
+  const before = JSON.stringify(initialProducts);
+  expect(result.current.products[0]).not.toBe(initialProducts[0]);
+  act(() => {
+    result.current.addProduct({ productName: "[테스트] 초기화", productPrice: 1000, productStatus: "판매 중" });
+    result.current.updateProduct({ id: 1, productPrice: 2000 });
+  });
+  expect(result.current.products).toHaveLength(3);
+  act(() => result.current.resetProducts());
+  expect(result.current.products).toEqual(initialProducts);
+  expect(result.current.products[0]).not.toBe(initialProducts[0]);
+  expect(JSON.stringify(initialProducts)).toBe(before);
+});
+
+test("실제 ERPProvider의 상품 초기화와 전체 초기화가 같은 상품 Hook을 갱신한다", () => {
+  const { ERPProvider, useERP: useRealERP } = jest.requireActual("../context/ERPContext");
+  const { result } = renderHook(() => useRealERP(), { wrapper: ERPProvider });
+  const originalProducts = JSON.stringify(result.current.products);
+  const originalProjects = JSON.stringify(result.current.projects);
+  const values = { productName: "[테스트] Provider 초기화", productPrice: 1000, productStatus: "판매 중" };
+  act(() => result.current.addProduct(values));
+  expect(JSON.stringify(result.current.products)).not.toBe(originalProducts);
+  act(() => result.current.resetProducts());
+  expect(JSON.stringify(result.current.products)).toBe(originalProducts);
+  expect(JSON.stringify(result.current.projects)).toBe(originalProjects);
+  act(() => result.current.addProduct(values));
+  act(() => result.current.resetAllData());
+  expect(JSON.stringify(result.current.products)).toBe(originalProducts);
 });
 
 // 새 화면만 검사합니다. 실제 Context·브라우저 저장소·기존 상품에는 쓰지 않습니다.
@@ -44,6 +110,8 @@ jest.mock("file-saver", () => ({ saveAs: jest.fn() }));
 let currentContext;
 let initialProducts;
 beforeEach(() => {
+  // jsdom의 가짜 상품 저장소만 검사마다 분리합니다. 실제 Chrome 저장소에는 접근하지 않습니다.
+  localStorage.removeItem("erp_products");
   saveAs.mockReset();
   jest.spyOn(window, "confirm").mockReturnValue(true);
   initialProducts = [
@@ -51,13 +119,272 @@ beforeEach(() => {
     { id: 2, productName: "스티커", productPrice: 900, productStatus: "판매중지", productCreatedAt: "2026-09-02", productUpdatedAt: "" },
   ];
   useERP.mockImplementation(function useTestProducts() {
-    const [products, setProducts] = useState(initialProducts);
-    currentContext = { products, setProducts };
+    currentContext = useProductData(initialProducts);
     return currentContext;
   });
 });
 
-afterEach(() => jest.restoreAllMocks());
+afterEach(() => {
+  jest.restoreAllMocks();
+  localStorage.removeItem("erp_products");
+});
+
+test("판매 중지·등록·수정 결과는 재진입 후에도 저장된 상품 정보로 복구된다", () => {
+  const view = renderHook(() => useProductData(initialProducts));
+  act(() => {
+    view.result.current.updateProduct({ id: 1, productStatus: "판매중지" });
+    view.result.current.addProduct({ productName: "[테스트] 저장 유지", productPrice: 12345, productStatus: "판매 중" });
+    view.result.current.updateProduct({ id: 3, productName: "[테스트] 저장 수정", productPrice: 0 });
+  });
+  const saved = JSON.stringify(view.result.current.products);
+  expect(localStorage.getItem("erp_products")).toBe(saved);
+  view.unmount();
+  const { result } = renderHook(() => useProductData(initialProducts));
+  expect(JSON.stringify(result.current.products)).toBe(saved);
+  expect(result.current.products[0].productStatus).toBe("판매중지");
+  expect(result.current.products[2]).toMatchObject({ id: 3, productName: "[테스트] 저장 수정", productPrice: 0 });
+  expect(result.current.productStorageError).toBe("");
+});
+
+test("저장된 빈 목록을 초기 상품으로 채우지 않으며 명시적 초기화는 상품 저장소만 갱신한다", () => {
+  localStorage.setItem("erp_products", "[]");
+  localStorage.setItem("[테스트] 다른 저장소", "유지");
+  const { result } = renderHook(() => useProductData(initialProducts));
+  expect(result.current.products).toEqual([]);
+  act(() => result.current.resetProducts());
+  expect(result.current.products).toEqual(initialProducts);
+  expect(JSON.parse(localStorage.getItem("erp_products"))).toEqual(initialProducts);
+  expect(localStorage.getItem("[테스트] 다른 저장소")).toBe("유지");
+  localStorage.removeItem("[테스트] 다른 저장소");
+});
+
+test.each(["{broken", "{}", '[{"id":1}]'])("손상된 상품 저장값 %s는 덮어쓰지 않고 변경 저장을 차단한다", raw => {
+  localStorage.setItem("erp_products", raw);
+  const { result } = renderHook(() => useProductData(initialProducts));
+  expect(result.current.productStorageError).toContain("읽지 못했습니다");
+  const before = result.current.products;
+  let outcome;
+  act(() => { outcome = result.current.updateProduct({ id: 1, productStatus: "판매중지" }); });
+  expect(outcome).toMatchObject({ ok: false, field: null });
+  expect(result.current.products).toBe(before);
+  expect(localStorage.getItem("erp_products")).toBe(raw);
+});
+
+test("상품 저장 실패는 성공으로 반환하지 않고 원본을 유지하며 재시도 성공 시 오류를 해제한다", () => {
+  localStorage.setItem("erp_products", JSON.stringify(initialProducts));
+  const { result } = renderHook(() => useProductData(initialProducts));
+  const before = result.current.products;
+  const originalSet = Storage.prototype.setItem;
+  const write = jest.spyOn(Storage.prototype, "setItem").mockImplementation(function(key, value) {
+    if (key === "erp_products") throw new Error("quota");
+    return originalSet.call(this, key, value);
+  });
+  let outcome;
+  act(() => { outcome = result.current.updateProduct({ id: 1, productStatus: "판매중지" }); });
+  expect(outcome).toMatchObject({ ok: false, field: null });
+  expect(result.current.productStorageError).toContain("저장하지 못했습니다");
+  expect(result.current.products).toBe(before);
+  expect(JSON.parse(localStorage.getItem("erp_products"))).toEqual(initialProducts);
+  write.mockRestore();
+  act(() => { outcome = result.current.updateProduct({ id: 1, productStatus: "판매중지" }); });
+  expect(outcome).toMatchObject({ ok: true, changed: true });
+  expect(result.current.productStorageError).toBe("");
+  expect(JSON.parse(localStorage.getItem("erp_products"))[0].productStatus).toBe("판매중지");
+});
+
+test("화면에서 상품 저장이 실패하면 입력을 유지하고 재시도 때만 등록한다", () => {
+  const originalSet = Storage.prototype.setItem;
+  const write = jest.spyOn(Storage.prototype, "setItem").mockImplementation(function(key, value) {
+    if (key === "erp_products") throw new Error("quota");
+    return originalSet.call(this, key, value);
+  });
+  render(<ProductPage />);
+  clickButton("+ 상품 등록");
+  changeInput("상품명", "[테스트] 저장 재시도");
+  changeInput("기본 단가 (원)", "1000");
+  clickButton("등록 저장");
+  expect(screen.getByLabelText("상품명")).toHaveValue("[테스트] 저장 재시도");
+  expect(screen.getAllByRole("alert").length).toBeGreaterThan(0);
+  expect(screen.queryByRole("status", { name: "상품 처리 결과" })).not.toBeInTheDocument();
+  expect(currentContext.products).toHaveLength(2);
+  write.mockRestore();
+  clickButton("등록 저장");
+  expect(currentContext.products).toHaveLength(3);
+  expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  expect(JSON.parse(localStorage.getItem("erp_products"))).toHaveLength(3);
+});
+
+test("단가만 해제하면 다른 조회 조건을 유지하고 첫 페이지로 돌아가며 잘못된 범위도 해제된다", () => {
+  initialProducts = makeProducts(23);
+  render(<ProductPage />);
+  const before = JSON.stringify(currentContext.products);
+  changeInput("상품명·번호 검색", "상품");
+  changeInput("판매 상태", "판매 중");
+  changeInput("정렬", "priceAsc");
+  fireEvent.click(screen.getByText("추가 검색 조건"));
+  changeInput("최소 단가 (원)", "100");
+  changeInput("최대 단가 (원)", "2300");
+  clickButton("다음");
+  clickButton("단가 조건 해제");
+  expect(screen.getByLabelText("최소 단가 (원)")).toHaveValue(null);
+  expect(screen.getByLabelText("최대 단가 (원)")).toHaveValue(null);
+  expect(screen.getByLabelText("최소 단가 (원)")).toHaveFocus();
+  expect(screen.getByRole("button", { name: "단가 조건 해제" })).toBeDisabled();
+  expect(screen.getByLabelText("현재 상품 페이지")).toHaveTextContent("1 / 2 페이지");
+  changeInput("최소 단가 (원)", "1000");
+  changeInput("최대 단가 (원)", "500");
+  expect(screen.getByRole("alert")).toBeInTheDocument();
+  clickButton("단가 조건 해제");
+  expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  expect(screen.getByLabelText("상품명·번호 검색")).toHaveValue("상품");
+  expect(screen.getByLabelText("판매 상태")).toHaveValue("판매 중");
+  expect(screen.getByLabelText("정렬")).toHaveValue("priceAsc");
+  expect(screen.getByRole("status", { name: "상품 조회 결과" })).toHaveTextContent("조회 12건");
+  expect(JSON.stringify(currentContext.products)).toBe(before);
+});
+
+test("번호 검색은 전체 번호로 비교하고 이름 부분 검색과 상태·단가 조건도 함께 적용한다", async () => {
+  initialProducts = [
+    { ...initialProducts[0], id: 12, productName: "에코백", productPrice: 5000 },
+    { ...initialProducts[0], id: 123, productName: "머그컵", productPrice: 6000 },
+    { ...initialProducts[1], id: 30, productName: "행사12 상품", productPrice: 7000 },
+  ];
+  render(<ProductPage />);
+  const before = JSON.stringify(currentContext.products);
+  changeInput("상품명·번호 검색", " 12 ");
+  expect(screen.getByRole("button", { name: "에코백 수정" })).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "행사12 상품 수정" })).toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: "머그컵 수정" })).not.toBeInTheDocument();
+  changeInput("판매 상태", "판매 중");
+  changeInput("최소 단가 (원)", "6000");
+  expect(screen.getByRole("status", { name: "상품 조회 결과" })).toHaveTextContent("조회 0건");
+  changeInput("최소 단가 (원)", "5000");
+  expect(screen.getByRole("status", { name: "상품 조회 결과" })).toHaveTextContent("조회 1건");
+  clickButton("CSV 내보내기");
+  const [blob] = saveAs.mock.calls[0];
+  const text = await new Promise(resolve => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.readAsText(blob);
+  });
+  expect(text).toContain('"12","에코백"');
+  expect(text).not.toContain('"123","머그컵"');
+  expect(text).not.toContain("행사12 상품");
+  changeInput("상품명·번호 검색", "에코");
+  expect(screen.getByRole("button", { name: "에코백 수정" })).toBeInTheDocument();
+  expect(JSON.stringify(currentContext.products)).toBe(before);
+});
+
+test("상세의 판매 상태 변경은 취소 시 유지하고 승인 시 상세·목록·수정일에 함께 반영된다", () => {
+  render(<ProductPage />);
+  const before = JSON.stringify(currentContext.products);
+  clickButton("텀블러 상세 보기");
+  const detail = screen.getByRole("region", { name: "상품 상세" });
+  window.confirm.mockReturnValue(false);
+  clickButton("텀블러 판매 중지");
+  expect(window.confirm).toHaveBeenCalledTimes(1);
+  expect(JSON.stringify(currentContext.products)).toBe(before);
+  window.confirm.mockReturnValue(true);
+  clickButton("텀블러 판매 중지");
+  expect(within(detail).getByText("판매 중지")).toBeInTheDocument();
+  expect(screen.getByRole("status", { name: "상품 처리 결과" })).toHaveTextContent("판매 상태를 판매 중지로 변경했습니다.");
+  expect(within(detail).getByRole("button", { name: "텀블러 판매 재개" })).toBeInTheDocument();
+  expect(currentContext.products[0].productUpdatedAt).not.toBe("");
+  expect(currentContext.products[1]).toEqual(initialProducts[1]);
+  clickButton("목록으로");
+  expect(screen.getByRole("button", { name: "텀블러 판매 재개" })).toBeInTheDocument();
+  changeInput("판매 상태", "판매중지");
+  clickButton("텀블러 상세 보기");
+  clickButton("텀블러 판매 재개");
+  expect(screen.getByRole("region", { name: "상품 상세" })).toBeInTheDocument();
+  expect(currentContext.products[0].productStatus).toBe("판매 중");
+  expect(screen.getByRole("status", { name: "상품 처리 결과" })).toHaveTextContent("판매 상태를 판매 중으로 변경했습니다.");
+  clickButton("목록으로");
+  expect(screen.getByLabelText("판매 상태")).toHaveValue("판매중지");
+  expect(screen.queryByRole("button", { name: "텀블러 상세 보기" })).not.toBeInTheDocument();
+  expect(screen.getByRole("heading", { name: "상품 목록" })).toHaveFocus();
+});
+
+test("상세 상태 변경 실패는 성공 안내 없이 현재 정보를 유지한다", () => {
+  useERP.mockImplementation(function useFailedUpdate() {
+    currentContext = useProductData(initialProducts);
+    return { ...currentContext, updateProduct: () => ({ ok: false, field: null, message: "[테스트] 변경 실패" }) };
+  });
+  render(<ProductPage />);
+  const before = JSON.stringify(currentContext.products);
+  clickButton("텀블러 상세 보기");
+  clickButton("텀블러 판매 중지");
+  expect(screen.getByRole("status", { name: "상품 처리 결과" })).toHaveTextContent("[테스트] 변경 실패");
+  expect(screen.getByRole("button", { name: "텀블러 판매 중지" })).toBeInTheDocument();
+  expect(JSON.stringify(currentContext.products)).toBe(before);
+});
+
+test.each([
+  [{ productName: "   " }, "productName"],
+  [{ productName: "가".repeat(101) }, "productName"],
+  [{ productName: " 텀블러 " }, "productName"],
+  [{ productPrice: "" }, "productPrice"],
+  [{ productPrice: "   " }, "productPrice"],
+  [{ productPrice: null }, "productPrice"],
+  [{ productPrice: true }, "productPrice"],
+  [{ productPrice: -1 }, "productPrice"],
+  [{ productPrice: 1.5 }, "productPrice"],
+  [{ productPrice: Number.MAX_SAFE_INTEGER + 1 }, "productPrice"],
+  [{ productStatus: "알 수 없음" }, "productStatus"],
+])("화면 밖에서 등록해도 잘못된 상품을 차단한다: %j", (changes, field) => {
+  const { result } = renderHook(() => useProductData(initialProducts));
+  const before = result.current.products;
+  let outcome;
+  act(() => {
+    outcome = result.current.addProduct({ productName: "[테스트] 공통 검증", productPrice: 1000, productStatus: "판매 중", ...changes });
+  });
+  expect(outcome).toMatchObject({ ok: false, field, message: expect.any(String) });
+  expect(result.current.products).toBe(before);
+});
+
+test("부분 수정도 중복·값을 검증하고 실패 시 수정일과 원본을 유지한다", () => {
+  const { result } = renderHook(() => useProductData(initialProducts));
+  const before = result.current.products;
+  for (const [changes, field] of [
+    [{ productName: "스티커" }, "productName"],
+    [{ productPrice: "bad" }, "productPrice"],
+    [{ productStatus: "bad" }, "productStatus"],
+  ]) {
+    let outcome;
+    act(() => { outcome = result.current.updateProduct({ id: 1, ...changes }); });
+    expect(outcome).toMatchObject({ ok: false, field });
+    expect(result.current.products).toBe(before);
+  }
+  let missing;
+  act(() => { missing = result.current.updateProduct({ id: 99, productPrice: 1000 }); });
+  expect(missing).toMatchObject({ ok: false, field: null, message: expect.stringContaining("찾을 수 없습니다") });
+});
+
+test("공통 검증은 연속 호출에서도 중복을 막고 정리된 값과 성공·변경 여부를 반환한다", () => {
+  const { result } = renderHook(() => useProductData(initialProducts));
+  const add = result.current.addProduct;
+  let first, duplicate;
+  act(() => {
+    first = add({ productName: "  [테스트] Batch  ", productPrice: "12000", productStatus: "판매 중" });
+    duplicate = add({ productName: "[테스트] BATCH", productPrice: 1000, productStatus: "판매 중" });
+  });
+  expect(first).toMatchObject({ ok: true, changed: true, product: { id: 3, productName: "[테스트] Batch", productPrice: 12000 } });
+  expect(duplicate).toMatchObject({ ok: false, field: "productName" });
+  expect(result.current.products).toHaveLength(3);
+  const saved = result.current.products;
+  let unchanged;
+  act(() => { unchanged = result.current.updateProduct({ id: 3, productName: " [테스트] Batch ", productPrice: "12000" }); });
+  expect(unchanged).toMatchObject({ ok: true, changed: false, product: saved[2] });
+  expect(result.current.products).toBe(saved);
+  const update = result.current.updateProduct;
+  let conflict;
+  act(() => {
+    update({ id: 1, productName: "[테스트] 연속 수정" });
+    conflict = update({ id: 2, productName: " [테스트] 연속 수정 " });
+  });
+  expect(conflict).toMatchObject({ ok: false, field: "productName" });
+  expect(result.current.products[1]).toEqual(initialProducts[1]);
+});
 
 test("단가 범위는 양 끝을 포함하고 페이지·조회·상태 조건에 함께 적용되며 초기화된다", () => {
   initialProducts = makeProducts(23);
@@ -171,7 +498,7 @@ test("현황 카드와 상태 선택은 동기화되고 검색·정렬은 유지
   const selling = within(cards).getByRole("button", { name: /^판매 중 12\s*개$/ });
   const stopped = within(cards).getByRole("button", { name: /^판매 중지 11\s*개$/ });
   const all = within(cards).getByRole("button", { name: /^전체 상품 23\s*개$/ });
-  changeInput("상품명 검색", "상품");
+  changeInput("상품명·번호 검색", "상품");
   changeInput("정렬", "priceAsc");
   clickButton("다음");
   fireEvent.click(selling);
@@ -183,7 +510,7 @@ test("현황 카드와 상태 선택은 동기화되고 검색·정렬은 유지
   expect(selling).toHaveAttribute("aria-pressed", "false");
   fireEvent.click(all);
   expect(all).toHaveAttribute("aria-pressed", "true");
-  expect(screen.getByLabelText("상품명 검색")).toHaveValue("상품");
+  expect(screen.getByLabelText("상품명·번호 검색")).toHaveValue("상품");
   expect(screen.getByLabelText("정렬")).toHaveValue("priceAsc");
   expect(JSON.stringify(currentContext.products)).toBe(before);
 });
@@ -213,9 +540,9 @@ test("조회 안내는 결과 건수가 같아도 검색어와 판매 상태 변
   const result = screen.getByRole("status", { name: "상품 조회 결과" });
   expect(result).toHaveAttribute("aria-live", "polite");
   expect(result).toHaveAttribute("aria-atomic", "true");
-  changeInput("상품명 검색", "텀블러");
+  changeInput("상품명·번호 검색", "텀블러");
   expect(result).toHaveTextContent("검색어 텀블러, 전체 상태, 조회 1건");
-  changeInput("상품명 검색", "스티커");
+  changeInput("상품명·번호 검색", "스티커");
   expect(result).toHaveTextContent("검색어 스티커, 전체 상태, 조회 1건");
   changeInput("판매 상태", "판매 중");
   expect(result).toHaveTextContent("검색어 스티커, 판매 중, 조회 0건");
@@ -248,7 +575,7 @@ test.each([
 test("CSV 내보내기는 현재 페이지가 아닌 필터 결과 전체를 정렬순으로 내려받는다", async () => {
   initialProducts = makeProducts(23);
   render(<ProductPage />);
-  changeInput("상품명 검색", "상품");
+  changeInput("상품명·번호 검색", "상품");
   changeInput("판매 상태", "판매 중");
   changeInput("정렬", "priceAsc");
   fireEvent.click(screen.getByRole("button", { name: "다음", exact: true }));
@@ -282,7 +609,7 @@ test("CSV는 한글·따옴표·줄바꿈과 계산식처럼 보이는 상품명
 
 test("빈 결과에서는 내보내기를 막고 다운로드 실패 시 목록을 유지한다", () => {
   render(<ProductPage />);
-  changeInput("상품명 검색", "없음");
+  changeInput("상품명·번호 검색", "없음");
   expect(screen.getByRole("button", { name: "CSV 내보내기" })).toBeDisabled();
   clickButton("초기화");
   saveAs.mockImplementation(() => { throw new Error("download failed"); });
@@ -342,14 +669,14 @@ test.each([
   initialProducts = [{ ...initialProducts[0], productName }];
   render(<ProductPage />);
   const before = JSON.stringify(currentContext.products);
-  fireEvent.change(screen.getByLabelText("상품명 검색"), { target: { value: query } });
+  fireEvent.change(screen.getByLabelText("상품명·번호 검색"), { target: { value: query } });
   expect(screen.getByRole("button", { name: `${productName} 수정` })).toBeInTheDocument();
   expect(JSON.stringify(currentContext.products)).toBe(before);
 });
 
 test("상품을 검색하고 판매 상태로 필터링한 뒤 초기화한다", () => {
   render(<ProductPage />);
-  changeInput("상품명 검색", "텀블러");
+  changeInput("상품명·번호 검색", "텀블러");
   expect(screen.getByRole("button", { name: "텀블러 수정" })).toBeInTheDocument();
   expect(screen.queryByRole("button", { name: "스티커 수정" })).not.toBeInTheDocument();
   changeInput("판매 상태", "판매중지");
@@ -364,10 +691,10 @@ test("빈 결과의 조건 초기화는 정렬·상품을 유지하고 검색칸
   const before = JSON.stringify(currentContext.products);
   changeInput("정렬", "oldest");
   changeInput("판매 상태", "판매중지");
-  changeInput("상품명 검색", "결과 없음");
+  changeInput("상품명·번호 검색", "결과 없음");
   clickButton("검색 조건 초기화");
-  expect(screen.getByLabelText("상품명 검색")).toHaveValue("");
-  expect(screen.getByLabelText("상품명 검색")).toHaveFocus();
+  expect(screen.getByLabelText("상품명·번호 검색")).toHaveValue("");
+  expect(screen.getByLabelText("상품명·번호 검색")).toHaveFocus();
   expect(screen.getByLabelText("판매 상태")).toHaveValue("all");
   expect(screen.getByLabelText("정렬")).toHaveValue("oldest");
   expect(screen.getByRole("button", { name: "텀블러 수정" })).toBeInTheDocument();
@@ -516,7 +843,7 @@ test("23개 상품을 10개씩 표시하고 검색·상태·정렬 변경 시 �
   expect(screen.getByRole("status", { name: "현재 상품 페이지" })).toHaveTextContent("3 / 3 페이지");
   expect(within(table).getAllByRole("row")).toHaveLength(4);
   expect(screen.getByRole("button", { name: "다음", exact: true })).toBeDisabled();
-  changeInput("상품명 검색", "상품01");
+  changeInput("상품명·번호 검색", "상품01");
   expect(screen.getByRole("button", { name: "상품01 수정" })).toBeInTheDocument();
   expect(screen.queryByRole("navigation", { name: "상품 목록 페이지" })).not.toBeInTheDocument();
   clickButton("초기화");
@@ -665,11 +992,11 @@ test("상세·수정에서 돌아오면 ID로 기억한 원래 버튼에 초점�
 
 test("복귀할 상품이 필터에서 사라지면 목록 제목으로 초점을 옮긴다", () => {
   render(<ProductPage />);
-  changeInput("상품명 검색", "텀블러");
+  changeInput("상품명·번호 검색", "텀블러");
   clickButton("텀블러 수정");
   changeInput("상품명", "새 이름");
   clickButton("수정 저장");
-  expect(screen.getByLabelText("상품명 검색")).toHaveValue("텀블러");
+  expect(screen.getByLabelText("상품명·번호 검색")).toHaveValue("텀블러");
   expect(screen.getByRole("heading", { name: "상품 목록" })).toHaveFocus();
 });
 

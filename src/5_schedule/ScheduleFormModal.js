@@ -91,7 +91,7 @@ export default function ScheduleFormModal({
       {/* 이름·프로젝트명은 사전에 없는 고유명사가 많으므로 브라우저 맞춤법 검사를 끕니다.
           spellCheck=false는 입력 내용을 바꾸지 않고 맞춤법 표시만 제어하며 자식 입력창에 상속됩니다.
           한글을 조합하는 동안 운영체제가 표시하는 입력기 밑줄과는 별개의 브라우저 설정입니다. */}
-      <form ref={formRef} className="sm-form" onSubmit={onSubmit} spellCheck={false} autoCorrect="off"
+      <form ref={formRef} className="sm-form" aria-labelledby="sm-form-title" onSubmit={onSubmit} spellCheck={false} autoCorrect="off"
         onInvalid={event => setNativeError(getScheduleFormError(form) || { field: event.target.name, message: event.target.validationMessage })}>
         {/* 입력값은 부모 form에서 받으며 onChange로 갱신합니다. 브라우저 입력 제한과 별개로 저장 시에도 검증합니다. */}
         {/* 각 입력창을 직접 작성해 name과 form의 속성이 어떻게 연결되는지 바로 볼 수 있습니다.
@@ -250,7 +250,7 @@ function ScheduleExtraSettings({ form, onChange, isOccurrence, fieldError }) {
   // 사용자 지정 간격을 수정 없이 저장해도 기존 규칙이 바뀌지 않도록 선택지에 남깁니다.
   const commonRepeat = ["none:1", "weekly:1", "weekly:2", "monthly:1"].includes(repeatValue);
   return (
-  <details className="sm-extra-settings sm-form-wide">
+  <details className="sm-extra-settings sm-form-wide" aria-label="일정 추가 설정">
     <summary>추가 설정 · 공유 구분·반복·알림</summary>
     <div className="sm-extra-fields">
       {/* 종일 선택 시 위의 시작·종료 시간 입력란은 숨기지만 기존 값은 저장용으로 유지합니다. */}
@@ -593,6 +593,7 @@ function ScheduleModal({
   return (
     <div
       className="sm-modal-backdrop"
+      aria-label="일정 팝업 배경"
       onMouseDown={handleBackgroundClick}
     >
       <section

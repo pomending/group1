@@ -20,7 +20,7 @@ import ProductPage from "./10_product/ProductPage";
 import AccountManagement from "./8_hr/AccountManagement";
 import ChangePasswordPage from "./7_login/ChangePasswordPage";
 
-const REQUIRE_LOGIN = true;
+const REQUIRE_LOGIN = false;
 
 function ERPContent() {
 
@@ -82,14 +82,6 @@ function ERPContent() {
                         <Route path="/tasks/*" element={<TaskPage />} />
                         <Route path="/tasks/detail" element={<TaskDetail />} />
                         <Route path="/schedule/*" element={<SchedulePage />} />
-                        <Route
-                            path="/hr/accounts"
-                            element={
-                                isAuthenticated && currentUser?.role === "ADMIN"
-                                    ? <AccountManagement />
-                                    : <Navigate to="/hr" replace />
-                            }
-                        />
                         <Route path='/hr/*' element={<HrPage />} />
                         <Route path="/consultation/*" element={<ConsultationPage />} />
                         <Route path="/product/*" element={<ProductPage />} />
