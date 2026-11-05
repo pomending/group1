@@ -10,6 +10,7 @@ import useCustomerData from "./useCustomerData";
 import useAccountData from "./useAccountData";
 import useAuthData from "./useAuthData";
 import useProductData from "./useProductData";
+import useConsultationData from "./useConsultationData";
 
 const ERPContext = createContext(null);
 
@@ -21,9 +22,9 @@ export function ERPProvider({ children }) {
     const productData = useProductData();
     const accountData = useAccountData(employeeData.employees);
     const authData = useAuthData(accountData.accounts, employeeData.employees);
+    const consultationData = useConsultationData();
 
     const [quotations, setQuotations] = useState(initialQuotations);
-    const [consultations, setConsultations] = useState(initialConsultations);
     const [tasks, setTasks] = useState(initialTasks);
 
     // 담당자로 사용 중인 직원은 삭제하지 않는다.
@@ -42,7 +43,7 @@ export function ERPProvider({ children }) {
             customer => Number(customer.employeeId) === Number(id)
         );
 
-        const hasConsultation = consultations.some(
+        const hasConsultation = consultationData.consultations.some(
             consultation => Number(consultation.employeeId) === Number(id)
         );
 
@@ -80,11 +81,12 @@ export function ERPProvider({ children }) {
         customerData.resetCustomers();
         productData.resetProducts();
         accountData.resetAccounts();
+       
         authData.logout();
+
 
         // 별도 Hook이 아직 없는 모듈의 Context 상태도 초기화
         setQuotations([...initialQuotations]);
-        setConsultations([...initialConsultations]);
         setTasks([...initialTasks]);
     };
 
@@ -96,13 +98,12 @@ export function ERPProvider({ children }) {
             ...productData,
             ...accountData,
             ...authData,
+            ...consultationData,
             deleteEmployee, // 기본 삭제 함수를 안전한 통합 함수로 덮어씀
             resetAllData,
 
             quotations,
             setQuotations,
-            consultations,
-            setConsultations,
             tasks,
             setTasks,
         }}>

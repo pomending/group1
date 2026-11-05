@@ -1,5 +1,7 @@
+
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { useERP } from "../context/ERPContext";
 import "./CommunityWrite.css";
 import { getBoardUser } from "./MyPage";
 
@@ -7,14 +9,22 @@ import { getBoardUser } from "./MyPage";
 function NoticeWritePage({ posts, setPosts }) {
 
     const navigate = useNavigate();
+    const { currentUser: account } = useERP();
+    const isAdmin = account?.status === "활성" && account?.role === "ADMIN";
+    const canWrite = isAdmin || (account?.status === "활성" && account?.role === "MANAGER");
 
     // 입력 상태
     const [type, setType] = useState("normal");
     const [title, setTitle] = useState("");
     const [content, setContent] = useState("");
+    const noticeType = isAdmin ? type : "normal";
 
     // 공지 등록
     const addPost = () => {
+        if (!canWrite || (noticeType === "important" && !isAdmin)) {
+            alert("공지사항 작성 권한이 없습니다.");
+            return;
+        }
         const currentUser = getBoardUser();
         if (!currentUser) {
             alert("직원 정보를 찾을 수 없습니다. 마이페이지에서 이메일을 확인하세요.");
@@ -31,7 +41,7 @@ function NoticeWritePage({ posts, setPosts }) {
         // 시간 기반 ID
         const newPost = {
             id: Date.now(),
-            type: type,
+            type: noticeType,
             title: title.trim(),
             writer: currentUser.name,
             authorEmail: currentUser.email,
@@ -50,6 +60,19 @@ function NoticeWritePage({ posts, setPosts }) {
         // 목록 이동
         navigate("/?page=notice");
     };
+
+    if (!canWrite) {
+        return (
+            <div className="community">
+                <div className="community-board">
+                    <h1>공지사항 글쓰기</h1>
+                    <p>공지사항 작성 권한이 없습니다.</p>
+                    <Link to="/?page=notice" className="community-cancel">목록으로</Link>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="community">
             <Link to="/?page=notice" className="community-back">
@@ -62,10 +85,10 @@ function NoticeWritePage({ posts, setPosts }) {
                     <label>공지 유형</label>
                     <select
                         className="notice-type-select"
-                        value={type}
+                        value={noticeType}
                         onChange={(e) => setType(e.target.value)}>
                         <option value="normal">일반 공지</option>
-                        <option value="important">중요공지</option>
+                        {isAdmin && <option value="important">중요공지</option>}
                     </select>
                     <label>제목</label>
                     <input

@@ -353,3 +353,143 @@
         min-width: 650px;
     }
 }
+
+
+
+.project-detail {
+  display: flex;
+  gap: 20px;
+  margin-top: 0px;
+}
+
+.project-detail > div {
+  flex: 1;
+  min-width: 0;
+}
+
+.project-detail p {
+  margin-bottom: 10px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.project-detail select,
+.project-detail input {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #d5d9e2;
+  border-radius: 7px;
+  background-color: white;
+  box-sizing: border-box;
+}
+
+.save-btn {
+  float:right;
+  padding: 10px 20px;
+  margin:10px 0px;
+  background-color: #2563eb;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+/* 마우스를 올렸을 때 */
+.save-btn:hover {
+  background-color: #1d4ed8;
+  box-shadow: 0 3px 8px rgba(37, 99, 235, 0.25);
+}
+
+/* 버튼을 클릭했을 때 */
+.save-btn:active {
+  transform: translateY(1px);
+}
+
+/* 키보드 포커스 */
+.save-btn:focus-visible {
+  outline: 3px solid #bfdbfe;
+  outline-offset: 2px;
+}
+
+
+/* 등록된 작업 목록 */
+.td-task-list {
+  margin-top: 80px;
+  padding-top: 25px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.td-task-list-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 18px;
+}
+
+.td-task-list-header h4 {
+  font-size: 17px;
+  font-weight: 700;
+  color: #222;
+  margin: 0;
+}
+
+.td-task-list-header span {
+  font-size: 13px;
+  color: #64748b;
+}
+
+/* 작업 테이블 */
+.td-task-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: center;
+  font-size: 14px;
+}
+
+.td-task-table th {
+  background: #f8fafc;
+  color: #475569;
+  font-weight: 600;
+  padding: 14px 10px;
+  border-top: 1px solid #e5e7eb;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.td-task-table td {
+  padding: 15px 10px;
+  border-bottom: 1px solid #e5e7eb;
+  color: #334155;
+}
+
+.td-task-status {
+  display: inline-block;
+  padding: 5px 12px;
+  border-radius: 20px;
+  background: #eff6ff;
+  color: #2563eb;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.td-delete-btn {
+  padding: 6px 12px;
+  border: 1px solid #fecaca;
+  border-radius: 5px;
+  background: #fff;
+  color: #dc2626;
+  cursor: pointer;
+}
+
+.td-delete-btn:hover {
+  background: #fef2f2;
+}
+
+.td-no-task {
+  padding: 35px !important;
+  color: #94a3b8 !important;
+}
+
+
