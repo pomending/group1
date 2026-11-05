@@ -900,13 +900,6 @@ export const customers = [
 
 ];
 
-// 팀원들이 임시로 참조하는 직원 목록 (유지)
-export const employees = [
-    { id: 1, name: "김민수" },
-    { id: 2, name: "이지현" },
-    { id: 3, name: "박준호" }
-];
-
 export const tasks = [
     {
         id: 1,
@@ -914,95 +907,95 @@ export const tasks = [
         taskName: "제작 관리",
         status: "완료",
         managerId: 1,
-        memo: "생산 계획과 자재 확인 완료"
+        memo: "텀블러 300개 제작 완료"
     },
     {
         id: 2,
         projectId: 1,
-        taskName: "텀블러 인쇄 및 제작",
+        taskName: "검수 관리",
         status: "진행 중",
-        managerId: 6,
-        memo: "300개 인쇄 작업 진행 중"
+        managerId: 7,
+        memo: "텀블러 300개 품질 검사 진행 중"
     },
     {
         id: 3,
         projectId: 1,
-        taskName: "텀블러 품질 검사",
+        taskName: "포장 관리",
         status: "대기",
-        managerId: 7,
-        memo: "제작 완료 후 검사 예정"
+        managerId: 14,
+        memo: "검수 완료 후 포장 예정"
     },
     {
         id: 4,
         projectId: 2,
-        taskName: "에코백 원단 준비",
+        taskName: "제작 관리",
         status: "대기",
         managerId: 13,
-        memo: "원단 수량 확인 필요"
+        memo: "에코백 원단 준비 및 500개 제작 예정"
     },
     {
         id: 5,
         projectId: 2,
-        taskName: "에코백 재단·봉제·인쇄",
+        taskName: "검수 관리",
         status: "대기",
         managerId: 6,
-        memo: "500개 제작 예정"
+        memo: "에코백 제작 완료 후 품질 검사 예정"
     },
     {
         id: 6,
         projectId: 3,
-        taskName: "머그컵 제작",
+        taskName: "제작 관리",
         status: "완료",
         managerId: 1,
-        memo: "400개 제작 완료"
+        memo: "머그컵 400개 제작 완료"
     },
     {
         id: 7,
         projectId: 3,
-        taskName: "머그컵 품질 검사",
+        taskName: "검수 관리",
         status: "완료",
         managerId: 14,
-        memo: "검수 완료"
+        memo: "머그컵 400개 품질 검사 완료"
     },
     {
         id: 8,
         projectId: 3,
-        taskName: "머그컵 포장 및 출고",
+        taskName: "배송 관리",
         status: "완료",
         managerId: 9,
-        memo: "출고 완료"
+        memo: "머그컵 포장 및 출고·배송 완료"
     },
     {
         id: 9,
         projectId: 4,
-        taskName: "아크릴 키링 인쇄·가공",
+        taskName: "제작 관리",
         status: "대기",
         managerId: 6,
-        memo: "800개 제작 예정"
+        memo: "아크릴 키링 800개 인쇄 및 가공 예정"
     },
     {
         id: 10,
         projectId: 4,
-        taskName: "아크릴 키링 품질 검사",
+        taskName: "검수 관리",
         status: "대기",
         managerId: 7,
-        memo: "가공 완료 후 검사"
+        memo: "아크릴 키링 가공 완료 후 품질 검사 예정"
     },
     {
         id: 11,
         projectId: 5,
-        taskName: "에코백 원단 및 부자재 준비",
+        taskName: "제작 관리",
         status: "진행 중",
         managerId: 13,
-        memo: "200개 제작 자재 확보 중"
+        memo: "에코백 200개 제작을 위한 자재 준비 중"
     },
     {
         id: 12,
         projectId: 5,
-        taskName: "에코백 제작 및 인쇄",
+        taskName: "포장 관리",
         status: "대기",
-        managerId: 1,
-        memo: "자재 준비 후 착수 예정"
+        managerId: 14,
+        memo: "에코백 제작 및 검수 완료 후 포장 예정"
     }
 ];
 
@@ -1069,11 +1062,12 @@ export const initialProjects = [
     }
 ];
 
+
 export const initialEmployees = [
     {
         id: 1,
         name: "김민수",
-        department: "생산관리팀",
+        department: "생산팀",
         position: "과장",
         status: "재직",
         email: "minsu@example.com",
@@ -1093,7 +1087,7 @@ export const initialEmployees = [
     {
         id: 3,
         name: "박준호",
-        department: "디자인팀",
+        department: "경영지원팀",
         position: "사원",
         status: "재직",
         email: "junho@example.com",
@@ -1113,7 +1107,7 @@ export const initialEmployees = [
     {
         id: 5,
         name: "정하늘",
-        department: "디자인팀",
+        department: "경영지원팀",
         position: "대리",
         status: "재직",
         email: "haneul@example.com",
@@ -1123,7 +1117,7 @@ export const initialEmployees = [
     {
         id: 6,
         name: "오세훈",
-        department: "생산관리팀",
+        department: "생산팀",
         position: "사원",
         status: "재직",
         email: "sehun@example.com",
@@ -1133,7 +1127,7 @@ export const initialEmployees = [
     {
         id: 7,
         name: "한서연",
-        department: "품질관리팀",
+        department: "생산팀",
         position: "대리",
         status: "재직",
         email: "seoyeon@example.com",
@@ -1143,7 +1137,7 @@ export const initialEmployees = [
     {
         id: 8,
         name: "윤태호",
-        department: "품질관리팀",
+        department: "경영지원팀",
         position: "사원",
         status: "휴직",
         email: "taeho@example.com",
@@ -1163,7 +1157,7 @@ export const initialEmployees = [
     {
         id: 10,
         name: "배현우",
-        department: "경영지원팀",
+        department: "인사팀",
         position: "과장",
         status: "재직",
         email: "hyunwoo@example.com",
@@ -1183,7 +1177,7 @@ export const initialEmployees = [
     {
         id: 12,
         name: "김나연",
-        department: "디자인팀",
+        department: "경영지원팀",
         position: "사원",
         status: "재직",
         email: "nayeon@example.com",
@@ -1193,7 +1187,7 @@ export const initialEmployees = [
     {
         id: 13,
         name: "이승우",
-        department: "생산관리팀",
+        department: "생산팀",
         position: "대리",
         status: "재직",
         email: "seungwoo@example.com",
@@ -1203,7 +1197,7 @@ export const initialEmployees = [
     {
         id: 14,
         name: "조수빈",
-        department: "품질관리팀",
+        department: "생산팀",
         position: "과장",
         status: "재직",
         email: "subin@example.com",
@@ -1243,7 +1237,7 @@ export const initialEmployees = [
     {
         id: 18,
         name: "백소희",
-        department: "경영지원팀",
+        department: "인사팀",
         position: "사원",
         status: "재직",
         email: "sohee@example.com",
@@ -1269,5 +1263,35 @@ export const initialEmployees = [
         email: "minjun@example.com",
         phone: "010-0000-0020",
         hireDate: "2024-04-15"
+    },
+    {
+        id: 21,
+        name: "장예진",
+        department: "인사팀",
+        position: "대리",
+        status: "재직",
+        email: "yejin@example.com",
+        phone: "010-0000-0021",
+        hireDate: "2022-05-16"
+    },
+    {
+        id: 22,
+        name: "홍성민",
+        department: "경영지원팀",
+        position: "과장",
+        status: "재직",
+        email: "seongmin@example.com",
+        phone: "010-0000-0022",
+        hireDate: "2020-02-10"
+    },
+    {
+        id: 23,
+        name: "유다은",
+        department: "경영지원팀",
+        position: "사원",
+        status: "재직",
+        email: "daeun@example.com",
+        phone: "010-0000-0023",
+        hireDate: "2026-09-01"
     }
 ];

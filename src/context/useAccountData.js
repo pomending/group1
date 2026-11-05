@@ -1,13 +1,11 @@
 import { useEffect, useState } from "react";
 import { initialAccounts } from "../data/mockAccounts";
+import { ACCOUNT_ROLES, ENABLE_STATUS } from "../utils/accountUtils";
 
 function useAccountData(employees) {
 
     const STORAGE_KEY = 'erp_accounts'
     const NEXT_ID_KEY = 'erp_account_next_id'
-
-    const ACCOUNT_ROLES = ["EMPLOYEE", "MANAGER", "ADMIN"];
-    const ENABLE_STATUS = ["활성", "비활성"];
 
     const [accounts, setAccounts] = useState(() => {
 
