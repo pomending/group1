@@ -11,7 +11,7 @@ import { useERP } from "../context/ERPContext";
 
 function CustomerManagement() {
     //ERPcontext에 있는 함수 가져오기
-    const { customers, setCustomers, addCustomer,
+    const { customers, addCustomer,
         saveEditedCustomer, deleteCustomers, employees  } = useERP();
         
 
