@@ -1,12 +1,12 @@
 /* 입력값은 저장 전까지 이 폼에서 관리합니다. 취소하면 공통 상품 목록은 변경되지 않습니다.
- * 입력 → 이름·금액·중복·판매 상태 검증 → 부모 onSave로 전달
+ * 입력 → 부모 onSave → 상품 Hook의 공통 검증 → 필드별 오류 또는 저장 결과
  * 검증 실패는 첫 오류의 입력칸 아래에 표시하고 초점을 옮깁니다. 해당 입력을 바꾸면 안내를 해제합니다.
- * products는 부모의 최신 Context 목록입니다. product는 신규 등록 시 빈 객체, 복사 등록 시 입력 세 필드입니다.
- * onSave에는 검증된 상품명·숫자 단가·판매 상태만 전달합니다. ID·날짜와 화면 상태는 포함하지 않습니다.
- * onSave가 오류 문구를 반환하면 창을 유지하고 안내합니다. 취소 확인은 이 화면의 취소 버튼에 적용합니다.
+ * product는 신규 등록 시 빈 객체, 복사 등록 시 입력 세 필드입니다.
+ * onSave에는 입력한 이름·금액 문자열·상태만 전달합니다. 값 검증과 숫자 변환은 상품 Hook에서 합니다.
+ * { ok: false, field, message }를 받으면 입력을 유지하고 안내합니다. 취소 확인은 취소 버튼에 적용합니다.
  */
 import React, { useRef, useState } from "react";
-import { PRODUCT_STATUS, productStatuses, normalizeProductName } from "./productData";
+import { PRODUCT_STATUS, productStatuses } from "./productData";
 
 // 저장 데이터와 분리된 화면 문구입니다. 신규 등록·기존 수정·복사 등록을 구분합니다.
 const formLabels = {
@@ -15,7 +15,7 @@ const formLabels = {
   copy: { title: "상품 복사 등록", cancelMessage: "복사한 상품의 작성 내용을 저장하지 않고 취소할까요?" },
 };
 
-export default function ProductForm({ product, products, onSave, onCancel, mode = "create" }) {
+export default function ProductForm({ product, onSave, onCancel, mode = "create" }) {
   // 편집 시작값은 고정합니다. 다른 입력을 했다가 원래 값으로 되돌리면 취소 확인이 필요 없습니다.
   const [initial] = useState(() => ({
     name: product.productName || "",
@@ -66,18 +66,11 @@ export default function ProductForm({ product, products, onSave, onCancel, mode 
 
   function submit(event) {
     event.preventDefault();
-    if (!name.trim()) { showError("name", "상품명을 입력해 주세요."); return; }
-    if (name.length > 100) { showError("name", "상품명은 100자 이내로 입력해 주세요."); return; }
-    if (price === "" || !Number.isSafeInteger(amount) || amount < 0) {
-      showError("price", "기본 단가는 0 이상의 정수로 입력해 주세요."); return;
+    const result = onSave({ productName: name, productPrice: price, productStatus: status });
+    if (!result.ok) {
+      const fields = { productName: "name", productPrice: "price", productStatus: "status" };
+      showError(fields[result.field] || null, result.message);
     }
-    // 앞뒤 공백·영문 대소문자·동일한 유니코드 표기를 정리해 비교하고 수정 중인 상품은 제외합니다.
-    if (products.some(item => item.id !== product.id && normalizeProductName(item.productName) === normalizeProductName(name))) {
-      showError("name", "이미 등록된 상품명입니다. 다른 이름을 입력해 주세요."); return;
-    }
-    if (!productStatuses.some(option => option.value === status)) { showError("status", "판매 상태를 선택해 주세요."); return; }
-    const message = onSave({ productName: name.trim(), productPrice: amount, productStatus: status });
-    if (message) setError({ field: null, message });
   }
 
   function cancel() {
@@ -90,7 +83,7 @@ export default function ProductForm({ product, products, onSave, onCancel, mode 
     <section className="pd-panel" aria-labelledby="pd-form-title">
       <h2 id="pd-form-title">{title}</h2>
       <p className="pd-muted pd-form-intro">상품명과 기본 단가는 필수 입력 항목입니다.</p>
-      {/* noValidate로 브라우저 팝업 대신 동일한 검증 순서·인접 문구를 사용합니다. 검증은 submit에서 수행합니다. */}
+      {/* 브라우저 팝업 대신 상품 Hook이 반환한 오류를 해당 입력칸 아래에 표시합니다. */}
       <form
         className="pd-form"
         aria-labelledby="pd-form-title"

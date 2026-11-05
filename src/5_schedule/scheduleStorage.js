@@ -143,7 +143,7 @@ export function loadSchedules() {
       items.push(schedule);
     }
     // 일부 항목이 잘못되어 제외되더라도 정리 전 원본은 복구할 수 있게 남깁니다.
-    if (needsBackup || normalized.length !== savedItems.length) {
+    if (needsBackup || items.length !== savedItems.length) {
       localStorage.setItem(`made-mate-schedules-backup-${Date.now()}`, raw);
     }
     return { items, readError: false, raw };
