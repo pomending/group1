@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+
+import React, { useEffect, useRef, useState } from "react";
 import { useERP } from "../context/ERPContext";
 import { initialAccounts } from "../data/mockAccounts";
 import { initialEmployees } from "../data/mockData";
@@ -73,12 +74,77 @@ export function isBoardAuthor(item, user) {
     );
 }
 
+// 직원별로 저장한 프로필 사진을 읽습니다.
+function loadProfilePhoto(employeeId) {
+    if (employeeId == null) return "";
+    try {
+        return localStorage.getItem("erpProfilePhoto_" + employeeId) || "";
+    } catch (error) {
+        return "";
+    }
+}
+
 function MyPage() {
 
     // ERPContext에서 실제 로그인한 계정과 직원 정보를 받아옵니다.
-    const { currentUser: account, currentEmployee: basicEmployee } = useERP();
+    const { currentUser: account, currentEmployee: basicEmployee, logout, changePassword } = useERP();
     const loginEmail = basicEmployee?.email || "";
     const storageKey = "erpMyPageInfo_" + loginEmail.trim().toLowerCase();
+
+    // 프로필 사진은 로그인한 직원 번호로 구분해 저장합니다.
+    const photoKey = account?.employeeId != null ? "erpProfilePhoto_" + account.employeeId : "";
+    const photoInputRef = useRef(null);
+    const [profilePhoto, setProfilePhoto] = useState(() => loadProfilePhoto(account?.employeeId));
+
+    useEffect(() => {
+        setProfilePhoto(loadProfilePhoto(account?.employeeId));
+    }, [account?.employeeId]);
+
+    // 사진을 정사각형으로 잘라 저장하면 두 화면에서 동일하게 보입니다.
+    const changeProfilePhoto = (event) => {
+        const file = event.target.files?.[0];
+        event.target.value = "";
+        if (!file || !photoKey) return;
+        if (!["image/jpeg", "image/png", "image/webp", "image/gif"].includes(file.type)) {
+            alert("JPG, PNG, WEBP, GIF 이미지 파일을 선택해 주세요.");
+            return;
+        }
+        if (file.size > 10 * 1024 * 1024) {
+            alert("10MB 이하의 이미지를 선택해 주세요.");
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = () => {
+            const image = new Image();
+            image.onload = () => {
+                const canvas = document.createElement("canvas");
+                canvas.width = 256;
+                canvas.height = 256;
+                const ctx = canvas.getContext("2d");
+                if (!ctx) return;
+
+                const size = Math.min(image.width, image.height);
+                ctx.fillStyle = "#e9e5ff";
+                ctx.fillRect(0, 0, 256, 256);
+                ctx.drawImage(image, (image.width - size) / 2, (image.height - size) / 2,
+                    size, size, 0, 0, 256, 256);
+
+                try {
+                    const photo = canvas.toDataURL("image/jpeg", 0.85);
+                    localStorage.setItem(photoKey, photo);
+                    setProfilePhoto(photo);
+                    window.dispatchEvent(new Event("erpProfilePhotoChanged"));
+                } catch (error) {
+                    alert("프로필 사진을 저장할 수 없습니다.");
+                }
+            };
+            image.onerror = () => alert("이미지를 열 수 없습니다.");
+            image.src = reader.result;
+        };
+        reader.onerror = () => alert("이미지 파일을 읽을 수 없습니다.");
+        reader.readAsDataURL(file);
+    };
 
     // 기존 마이페이지의 정보 수정 기능을 유지합니다.
     const [updatedEmployee, setUpdatedEmployee] = useState(null);
@@ -128,6 +194,50 @@ function MyPage() {
         setIsEditing(false);
     };
 
+    // 비밀번호 변경 입력 상태
+    const [showPasswordForm, setShowPasswordForm] = useState(false);
+    const [currentPassword, setCurrentPassword] = useState("");
+    const [newPassword, setNewPassword] = useState("");
+    const [confirmPassword, setConfirmPassword] = useState("");
+
+    // 비밀번호 변경 창 닫기
+    const closePasswordForm = () => {
+        setShowPasswordForm(false);
+        setCurrentPassword("");
+        setNewPassword("");
+        setConfirmPassword("");
+    };
+
+    // Context의 changePassword 함수를 호출합니다.
+    const handleChangePassword = () => {
+        if (!account) return;
+        if (!currentPassword || !newPassword || !confirmPassword) {
+            alert("비밀번호를 모두 입력해 주세요.");
+            return;
+        }
+        if (newPassword !== confirmPassword) {
+            alert("새 비밀번호가 서로 일치하지 않습니다.");
+            return;
+        }
+        if (currentPassword === newPassword) {
+            alert("현재 비밀번호와 다른 비밀번호를 입력해 주세요.");
+            return;
+        }
+        const success = changePassword(account.id, currentPassword, newPassword, confirmPassword);
+        if (!success) {
+            alert("현재 비밀번호가 올바르지 않습니다.");
+            return;
+        }
+        closePasswordForm();
+        alert("비밀번호가 변경되었습니다.");
+    };
+
+    // 기존 Context의 로그아웃 기능을 사용합니다.
+    const handleLogout = () => {
+        logout();
+        alert("로그아웃되었습니다.");
+    };
+
     // 직원이 존재하지 않는 경우
     if (!employee) {
         return (
@@ -146,9 +256,22 @@ function MyPage() {
                 <form onSubmit={saveInfo}>
                     {/* 상단 프로필 */}
                     <div className="mypage-profile">
-                        <div className="mypage-avatar">
-                            👤
-                        </div>
+                        <button
+                            type="button"
+                            className="mypage-avatar"
+                            aria-label="프로필 사진 등록 또는 변경"
+                            title="사진을 누르면 프로필 사진을 변경할 수 있습니다."
+                            onClick={() => photoInputRef.current?.click()}>
+                            {profilePhoto ? <img src={profilePhoto} alt="" /> : "👤"}
+                        </button>
+                        <input
+                            ref={photoInputRef}
+                            className="mypage-photo-input"
+                            type="file"
+                            accept="image/jpeg,image/png,image/webp,image/gif"
+                            onChange={changeProfilePhoto}
+                            aria-label="프로필 사진 파일 선택"
+                        />
                         <div className="mypage-profile-text">
                             {/* 직원 이름 */}
                             {isEditing ? (
@@ -259,8 +382,8 @@ function MyPage() {
                                 </button>
                             </div>
                         )}
-                        {/* 계정 정보: 나중에 로그인 계정 데이터와 연결할 부분 */}
-                        <div style={{ marginTop: "28px" }}>
+                        {/* 실제 로그인 계정 정보 */}
+                        <div className="mypage-account-section">
                             <h3>계정 정보</h3>
                             <div className="mypage-info-grid">
                                 <div className="mypage-info-item">
@@ -287,18 +410,7 @@ function MyPage() {
                                             : "계정 데이터 없음"}
                                     </strong>
                                 </div>
-                                <div className="mypage-info-item">
-                                    <span>최초 비밀번호 변경</span>
-                                    <strong>
-                                        {account
-                                            ? (
-                                                account.mustChangePassword
-                                                    ? "필요"
-                                                    : "불필요"
-                                            )
-                                            : "확인할 계정 없음"}
-                                    </strong>
-                                </div>
+                                
                                 {account && (
                                     <div className="mypage-info-item">
                                         <span>계정 생성일 (UTC)</span>
@@ -309,15 +421,65 @@ function MyPage() {
                                 )}
                             </div>
                         </div>
-                        {/* 비밀번호 변경 */}
+                        {/* 계정 관리 버튼 */}
                         <div className="mypage-account">
                             <button
                                 type="button"
                                 className="mypage-password-button"
-                                disabled>
+                                onClick={() => showPasswordForm ? closePasswordForm() : setShowPasswordForm(true)}>
                                 🔒 비밀번호 변경
                             </button>
+                            <button type="button" className="mypage-logout-button" onClick={handleLogout}>
+                                로그아웃
+                            </button>
                         </div>
+                        {/* 비밀번호 변경 입력창 */}
+                        {showPasswordForm && (
+                            <div className="mypage-password-panel">
+                                <h4>비밀번호 변경</h4>
+                                <div className="mypage-password-fields" onKeyDown={(e) => {
+                                    if (e.key === "Enter" && e.target.tagName === "INPUT") {
+                                        e.preventDefault();
+                                        handleChangePassword();
+                                    }
+                                }}>
+                                    <div className="mypage-password-field">
+                                        <label htmlFor="mypage-current-password">현재 비밀번호</label>
+                                        <input
+                                            id="mypage-current-password"
+                                            type="password"
+                                            value={currentPassword}
+                                            onChange={(e) => setCurrentPassword(e.target.value)}
+                                            autoComplete="current-password"
+                                        />
+                                    </div>
+                                    <div className="mypage-password-field">
+                                        <label htmlFor="mypage-new-password">새 비밀번호</label>
+                                        <input
+                                            id="mypage-new-password"
+                                            type="password"
+                                            value={newPassword}
+                                            onChange={(e) => setNewPassword(e.target.value)}
+                                            autoComplete="new-password"
+                                        />
+                                    </div>
+                                    <div className="mypage-password-field">
+                                        <label htmlFor="mypage-confirm-password">새 비밀번호 확인</label>
+                                        <input
+                                            id="mypage-confirm-password"
+                                            type="password"
+                                            value={confirmPassword}
+                                            onChange={(e) => setConfirmPassword(e.target.value)}
+                                            autoComplete="new-password"
+                                        />
+                                    </div>
+                                </div>
+                                <div className="mypage-password-actions">
+                                    <button type="button" onClick={closePasswordForm}>취소</button>
+                                    <button type="button" className="mypage-password-save" onClick={handleChangePassword}>변경하기</button>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </form>
             </div>

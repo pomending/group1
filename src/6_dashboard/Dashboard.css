@@ -1,3 +1,4 @@
+
 /* 대시보드 전체 */
 .dashboard {
     background-color: #f5f7fa;
@@ -112,6 +113,7 @@
 .dashboard-project-card {
     position: relative;
     margin-bottom: 20px;
+    align-self: start;
 }
 
 /* 프로젝트 목록 클릭 */
@@ -315,6 +317,7 @@
         grid-template-columns: minmax(0, 1fr) 360px;
         column-gap: 20px;
         row-gap: 20px;
+        grid-template-rows: auto auto max-content minmax(min-content, 1fr);
         align-content: start;
     }
 
