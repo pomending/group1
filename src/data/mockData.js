@@ -105,6 +105,7 @@ export const quotations = [
         unitPrice: 8000,
         createdAt: "2026-10-15",
         validUntil: "2026-11-15",
+        deliveryDate: "2026-11-25",
         paymentMethod: "계좌이체",
         memo: "개별 포장 요청",
         status: "승인"
@@ -118,6 +119,7 @@ export const quotations = [
         unitPrice: 5000,
         createdAt: "2026-10-20",
         validUntil: "2026-11-20",
+        deliveryDate: "2026-11-30",
         paymentMethod: "계좌이체",
         memo: "학교 로고 인쇄 요청",
         status: "승인"
@@ -131,6 +133,7 @@ export const quotations = [
         unitPrice: 6000,
         createdAt: "2026-10-22",
         validUntil: "2026-11-22",
+        deliveryDate: "2026-12-02",
         paymentMethod: "카드결제",
         memo: "머그컵 제작 요청",
         status: "승인"
@@ -144,6 +147,7 @@ export const quotations = [
         unitPrice: 2500,
         createdAt: "2026-10-27",
         validUntil: "2026-11-27",
+        deliveryDate: "2026-12-10",
         paymentMethod: "계좌이체",
         memo: "시제품 확인 후 제작 예정",
         status: "승인 대기"
@@ -157,6 +161,7 @@ export const quotations = [
         unitPrice: 8500,
         createdAt: "2026-10-29",
         validUntil: "2026-11-29",
+        deliveryDate: "2026-12-05",
         paymentMethod: "계좌이체",
         memo: "견적 조건 협의 실패",
         status: "거절"
@@ -170,6 +175,7 @@ export const quotations = [
         unitPrice: 2300,
         createdAt: "2026-10-30",
         validUntil: "2026-11-30",
+        deliveryDate: "2026-12-10",
         paymentMethod: "계좌이체",
         memo: "대량 주문 할인 적용",
         status: "승인"
@@ -183,6 +189,7 @@ export const quotations = [
         unitPrice: 5000,
         createdAt: "2026-11-01",
         validUntil: "2026-12-01",
+        deliveryDate: "2026-12-08",
         paymentMethod: "카드결제",
         memo: "친환경 에코백 추가 주문",
         status: "승인"
@@ -196,6 +203,7 @@ export const quotations = [
         unitPrice: 1200,
         createdAt: "2026-11-02",
         validUntil: "2026-12-02",
+        deliveryDate: "2026-12-15",
         paymentMethod: "계좌이체",
         memo: "교육용 볼펜 대량 제작 문의",
         status: "승인 대기"
@@ -209,6 +217,7 @@ export const quotations = [
         unitPrice: 11500,
         createdAt: "2026-11-03",
         validUntil: "2026-12-03",
+        deliveryDate: "2026-12-18",
         paymentMethod: "계좌이체",
         memo: "행사 단체 티셔츠 제작 문의",
         status: "승인 대기"
@@ -222,6 +231,7 @@ export const quotations = [
         unitPrice: 6800,
         createdAt: "2026-11-01",
         validUntil: "2026-12-01",
+        deliveryDate: "2026-12-12",
         paymentMethod: "카드결제",
         memo: "재활용 소재 파우치 주문",
         status: "승인"

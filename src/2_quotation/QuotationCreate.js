@@ -1,21 +1,23 @@
 import React, { useState } from "react";
 import "./QuotationCreate.css"
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useERP } from "../context/ERPContext";
 import { formatQuotationId, formatEmployeeId } from "../utils/formatUtils";
 
 function QuotationCreate({ quotations, setQuotations }) {
 
     const navi = useNavigate();
-    const [createAt, setCreateAt] = useState();
+    const location = useLocation();
+
+    const [createAt, setCreateAt] = useState("");
     const { customers, products, employees } = useERP();
 
     const [customerId, setCustomerId] = useState("")
     const [productId, setProductId] = useState("")
     const [employeeId, setEmployeeId] = useState("")
 
-    //거래처 전체 정보 저장하는 변수
-    const [selectedCustomer, setSelectedCustomer] = useState(null)
+    const [productSearch, setProductSearch] = useState("")
+    const [showProductList, setShowProductList] = useState(false)
 
     //내부 담당자 담을 변수
     const [employeeSearch, setEmployeeSearch] = useState("")
@@ -24,6 +26,9 @@ function QuotationCreate({ quotations, setQuotations }) {
     //내부 담당자 검색 필터링
     const filteredEmployees = employees.filter((employee) =>
         employee.status === "재직" && employee.name.includes(employeeSearch))
+
+    //거래처 전체 정보 저장하는 변수
+    const [selectedCustomer, setSelectedCustomer] = useState(null)
 
     //거래처 담을 변수
     const [customerSearch, setCustomerSearch] = useState("")
@@ -34,6 +39,30 @@ function QuotationCreate({ quotations, setQuotations }) {
         customer.companyName.includes(customerSearch)
     )
 
+    //판매중인 상품 검색
+    const filteredProducts = products.filter((product) =>
+        product.productStatus === "판매 중" &&
+        product.productName.includes(productSearch)
+    )
+
+    //단가 상태값
+    const [unitPrice, setUnitPrice] = useState("")
+
+    //수량 상태값
+    const [quantity, setQuantity] = useState("")
+
+    //상품 총 금액 계산
+    const totalPrice = Number(quantity) * Number(unitPrice)
+
+    //부가세 및 최종 견적 금액
+    const vat = totalPrice * 0.1;
+    const finalPrice = totalPrice + vat;
+
+    //거래조건 상태값
+    const [validUntil, setValidUntil] = useState("")
+    const [deliveryDate, setDeliveryDate] = useState("")
+    const [paymentMethod, setPaymentMethod] = useState("")
+    const [memo, setMemo] = useState("")
 
     //다음 견적 ID 생성
     const nextId = Math.max(
@@ -47,7 +76,7 @@ function QuotationCreate({ quotations, setQuotations }) {
 
     //견적서 임시저장
     const handleTempSave = () => {
-        saveQuotation("임시저장");
+        saveQuotation("임시 저장");
     };
 
     //견적서 저장
@@ -57,24 +86,89 @@ function QuotationCreate({ quotations, setQuotations }) {
 
     //공통 저장 함수
     const saveQuotation = (status) => {
+
+        if (status === "승인 대기") {
+            if (!customerId || !productId || !employeeId) {
+                alert("거래처, 상품, 내부 담당자를 선택해주세요")
+                return;
+            }
+
+            if (!quantity || !unitPrice || !createAt) {
+                alert("작성일, 수량, 단가를 입력해주세요")
+                return;
+            }
+        }
         const newQuotation = {
-            id: nextId,
-            customerId: Number(customerId),
-            productId: Number(productId),
-            employeeId: Number(employeeId),
-            quantity: 0,
-            unitPrice: 0,
+            id: editQuotation ? editQuotation.id : nextId,
+            customerId: customerId ? Number(customerId) : null,
+            productId: productId ? Number(productId) : null,
+            employeeId: employeeId ? Number(employeeId) : null,
+            quantity: quantity === "" ? 0 : Number(quantity),
+            unitPrice: quantity === "" ? 0 : Number(unitPrice),
             createdAt: createAt,
-            validUntil: "",
-            paymentMethod: "",
-            memo: "",
-            status: status
+            validUntil,
+            deliveryDate,
+            paymentMethod,
+            memo,
+            status
         }
 
-        setQuotations([...quotations, newQuotation])
-
+        if (editQuotation) {
+            //기존 견적서 수정
+            setQuotations(
+                quotations.map(q =>
+                    q.id === editQuotation.id ? newQuotation : q
+                )
+            )
+        } else {
+            //신규 견적서 등록
+            setQuotations([...quotations, newQuotation])
+        }
         navi("/quotation")
     }
+
+    //
+    const editId = location.state?.editId
+    const editQuotation = quotations.find(
+        q => q.id === Number(editId)
+    )
+
+    React.useEffect(() => {
+        if (!editQuotation) return;
+
+        setCustomerId(editQuotation.customerId || "");
+        setProductId(editQuotation.productId || "");
+        setEmployeeId(editQuotation.employeeId || "");
+
+        //거래처 정보를 찾아서 화면에 다시 연결하는 과정
+        setCustomerId(editQuotation.customerId || "");
+
+        const customer = customers.find(
+            c => c.id === editQuotation.customerId
+        );
+
+        setSelectedCustomer(customer || null);
+        setCustomerSearch(customer?.companyName || "");
+
+        setEmployeeSearch(
+            employees.find(e => e.id === editQuotation.employeeId)?.name || ""
+        )
+
+        setProductSearch(
+            products.find(p => p.id === editQuotation.productId)?.productName || ""
+        )
+
+
+        setQuantity(editQuotation.quantity || "");
+        setUnitPrice(editQuotation.unitPrice || "");
+
+        setCreateAt(editQuotation.createdAt || "");
+        setValidUntil(editQuotation.validUntil || "");
+        setDeliveryDate(editQuotation.deliveryDate || "");
+
+        setPaymentMethod(editQuotation.paymentMethod || "");
+        setMemo(editQuotation.memo || "");
+    }, [editQuotation]);
 
     return (
         <div className="quotation-create">
@@ -99,7 +193,7 @@ function QuotationCreate({ quotations, setQuotations }) {
                             <label>견적 번호</label>
                             <input
                                 type="text"
-                                value={formatQuotationId(nextId)}
+                                value={formatQuotationId(editQuotation ? editQuotation.id : nextId)}
                                 readOnly
                                 className="readonly-input"
                             />
@@ -126,14 +220,16 @@ function QuotationCreate({ quotations, setQuotations }) {
                                     setShowEmployeeList(true);
                                 }}
                                 onFocus={() => setShowEmployeeList(true)}
+                                onBlur={() => setShowEmployeeList(false)}
                             />
-                            {showEmployeeList && employeeSearch && (
+                            {showEmployeeList && (
                                 <div className="employee-list">
                                     {filteredEmployees.length > 0 ? (
                                         filteredEmployees.map((employee) => (
                                             <div
                                                 key={employee.id}
                                                 className="employee-item"
+                                                onMouseDown={(e) => e.preventDefault()}
                                                 onClick={() => {
                                                     setEmployeeId(employee.id)
                                                     setEmployeeSearch(employee.name)
@@ -176,18 +272,21 @@ function QuotationCreate({ quotations, setQuotations }) {
                                 onChange={(e) => {
                                     setCustomerSearch(e.target.value)
                                     setCustomerId("")
+                                    setSelectedCustomer(null)
                                     setShowCustomerList(true)
                                 }}
                                 onFocus={() => setShowCustomerList(true)}
+                                onBlur={() => setShowCustomerList(false)}
                             />
 
-                            {showCustomerList && customerSearch && (
+                            {showCustomerList && (
                                 <div className="customer-list">
                                     {filteredCustomers.length > 0 ? (
                                         filteredCustomers.map((customer) => (
                                             <div
                                                 key={customer.id}
                                                 className="customer-item"
+                                                onMouseDown={(e) => e.preventDefault()}
                                                 onClick={() => {
                                                     setCustomerId(customer.id)
                                                     setCustomerSearch(customer.companyName)
@@ -242,21 +341,63 @@ function QuotationCreate({ quotations, setQuotations }) {
                             <label>상품명</label>
                             <input
                                 type="text"
-                                placeholder="상품명을 입력하세요." />
+                                placeholder="상품명을 입력하세요."
+                                value={productSearch}
+                                onChange={(e) => {
+                                    setProductSearch(e.target.value)
+                                    setProductId("")
+                                    setUnitPrice("")
+                                    setQuantity("")
+                                    setShowProductList(true)
+                                }}
+                                onFocus={() => setShowProductList(true)}
+                                onBlur={() => setShowProductList(false)}
+                            />
+                            {showProductList && (
+                                <div className="product-list">
+                                    {filteredProducts.length > 0 ? (
+                                        filteredProducts.map((product) => (
+                                            <div
+                                                key={product.id}
+                                                className="product-item"
+                                                onMouseDown={(e) => e.preventDefault()}
+                                                onClick={() => {
+                                                    setProductId(product.id);
+                                                    setProductSearch(product.productName);
+                                                    setShowProductList(false);
+                                                    setUnitPrice(product.productPrice)
+                                                }}
+                                            >
+                                                <strong>{product.productName}</strong>
+
+                                                <div>
+                                                    <span>{product.productPrice.toLocaleString()}원</span>
+                                                </div>
+                                            </div>
+                                        ))
+                                    ) : (
+                                        <p>검색 결과가 없습니다.</p>
+                                    )}
+                                </div>
+                            )}
                         </div>
 
                         <div className="form-group">
                             <label>수량</label>
                             <input
                                 type="number"
-                                placeholder="수량을 입력하세요." />
+                                placeholder="수량을 입력하세요."
+                                value={quantity}
+                                onChange={(e) => setQuantity(e.target.value)} />
                         </div>
 
                         <div className="form-group">
                             <label>단가 (원)</label>
                             <input
                                 type="number"
-                                placeholder="단가를 입력하세요." />
+                                placeholder="단가를 입력하세요."
+                                value={unitPrice}
+                                onChange={(e) => setUnitPrice(e.target.value)} />
                         </div>
 
                         <div className="form-group">
@@ -264,6 +405,7 @@ function QuotationCreate({ quotations, setQuotations }) {
                             <input
                                 type="number"
                                 placeholder="자동 계산"
+                                value={totalPrice}
                                 readOnly
                                 className="readonly-input"
                             />
@@ -280,17 +422,17 @@ function QuotationCreate({ quotations, setQuotations }) {
                     <div className="amount-grid">
                         <div className="amount-item">
                             <span>공급가액</span>
-                            <strong>0원</strong>
+                            <strong>{totalPrice.toLocaleString()}원</strong>
                         </div>
 
                         <div className="amount-item">
                             <span>부가세 (10%)</span>
-                            <strong>0원</strong>
+                            <strong>{vat.toLocaleString()}원</strong>
                         </div>
 
                         <div className="amount-item total-amount">
                             <span>최종 견적 금액</span>
-                            <strong>0원</strong>
+                            <strong>{finalPrice.toLocaleString()}원</strong>
                         </div>
                     </div>
                 </section>
@@ -306,17 +448,23 @@ function QuotationCreate({ quotations, setQuotations }) {
                             <label>견적 유효 기간</label>
                             <input
                                 type="text"
-                                placeholder="예: 발행일로부터 30일" />
+                                placeholder="예: 발행일로부터 30일"
+                                value={validUntil}
+                                onChange={(e) => setValidUntil(e.target.value)} />
                         </div>
 
                         <div className="form-group">
                             <label>납품 예정일</label>
-                            <input type="date" />
+                            <input type="date"
+                                value={deliveryDate}
+                                onChange={(e) => setDeliveryDate(e.target.value)} />
                         </div>
 
                         <div className="form-group">
                             <label>결제 방법</label>
-                            <select defaultValue="">
+                            <select
+                                value={paymentMethod}
+                                onChange={(e) => setPaymentMethod(e.target.value)}>
                                 <option value="" disabled>결제방법을 선택하세요.</option>
                                 <option value="계좌이체">계좌이체</option>
                                 <option value="카드결제">카드결제</option>
@@ -328,7 +476,9 @@ function QuotationCreate({ quotations, setQuotations }) {
                             <label>특이사항</label>
                             <input
                                 type="text"
-                                placeholder="특이사항을 입력하세요." />
+                                placeholder="특이사항을 입력하세요."
+                                value={memo}
+                                onChange={(e) => setMemo(e.target.value)} />
                         </div>
                     </div>
                 </section>

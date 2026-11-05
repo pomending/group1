@@ -1,11 +1,15 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import "./QuotationList.css";
-import {formatQuotationId} from "../utils/formatUtils";
+import { formatCustomerName, formatProductName, formatQuotationId } from "../utils/formatUtils";
+import { useERP } from "../context/ERPContext";
 
-function QuotationList({quotations}) {
+function QuotationList({ quotations }) {
+
+    const { customers, products, setQuotations } = useERP()
 
     const navi = useNavigate();
+    const location = useLocation();
 
     //검색 조건 상태
     const [search, setSearch] = useState("");
@@ -21,7 +25,12 @@ function QuotationList({quotations}) {
 
     //현재 페이지
     const [currentPage, setCurrentPage] = useState(1);
-        
+
+    //임시저장 열기 닫기 기능
+    const [showTempModel, setShowTempModel] = useState(
+        location.state?.openTempModal || false
+    )
+
     //검색 버튼 클릭
     const handleSearch = () => {
         setAppliedSearch(search);
@@ -49,6 +58,9 @@ function QuotationList({quotations}) {
     const [sortOrder, setSortOrder] = useState("latest");
 
     const filteredQuotations = quotations.filter((quotation) => {
+
+        if (quotation.status === "임시 저장") return false;
+
         const searchMatch =
             formatQuotationId(quotation.id).toLowerCase().includes(appliedsearch.toLowerCase()) ||
             String(quotation.customerId).toLowerCase().includes(appliedsearch) ||
@@ -66,9 +78,9 @@ function QuotationList({quotations}) {
 
         return searchMatch && startDateMatch && endDateMatch && statusMatch;
     }).sort((a, b) => {
-        if(sortOrder === "latest"){
+        if (sortOrder === "latest") {
             return new Date(b.createdAt) - new Date(a.createdAt);
-        }else {
+        } else {
             return new Date(a.createdAt) - new Date(b.createdAt);
         }
     });
@@ -93,9 +105,88 @@ function QuotationList({quotations}) {
 
     return (
         <div className="quotation-menu">
+
+            {showTempModel && (
+                <div className="temp-modal-overlay">
+
+                    <div className="temp-modal">
+
+                        <div className="temp-modal-header">
+                            <h2>임시 저장 목록</h2>
+
+                            <button onClick={() => setShowTempModel(false)}>
+                                X
+                            </button>
+
+                        </div>
+
+                        <div className="temp-modal-content">
+                            {quotations.filter(q => q.status === "임시 저장").length > 0 ? (
+                                quotations.filter(q => q.status === "임시 저장")
+                                    .map(q => (
+                                        <div
+                                            key={q.id}
+                                            className="temp-modal-item"
+                                        >
+                                            <strong>
+                                                {formatQuotationId(q.id)}
+                                            </strong>
+
+                                            <span>
+                                                {formatCustomerName(customers, q.customerId)}
+                                            </span>
+
+                                            <span>
+                                                {formatProductName(products, q.productId)}
+                                            </span>
+
+                                            <span>
+                                                {q.createdAt}
+                                            </span>
+
+                                            <button
+                                                onClick={() => {
+                                                    navi("/quotation/create", {
+                                                        state: { editId: q.id }
+                                                    })
+                                                }}>
+                                                불러오기
+                                            </button>
+
+                                            <button onClick={() => {
+                                                if (window.confirm("이 임시 저장 견적서를 삭제하시겠습니까?")) {
+                                                    setQuotations(
+                                                        quotations.filter(item => item.id !== q.id)
+                                                    )
+                                                }
+                                            }}>
+                                                삭제
+                                            </button>
+
+                                        </div>
+                                    ))
+                            ) : (
+                                <p>저장된 임시 견적서가 없습니다.</p>
+                            )}
+                        </div>
+
+                    </div>
+
+                </div>
+            )}
+
             <header className="quotation-header">
                 <h1>견적 관리</h1>
                 <p>고객 주문에 대한 견적서 작성 및 승인 상태 관리합니다</p>
+
+                <button onClick={() => setShowTempModel(true)}>
+                    임시 저장(
+                    {quotations.filter(q => q.status === "임시 저장").length}
+                    )
+                </button>
+
+
+
                 <input
                     type="button"
                     value="+ 새 견적 작성"
@@ -200,8 +291,8 @@ function QuotationList({quotations}) {
                 <h2>견적 목록</h2>
                 <div className="sort-select">
                     <select
-                    value={sortOrder}
-                    onChange={(e) => setSortOrder(e.target.value)}>
+                        value={sortOrder}
+                        onChange={(e) => setSortOrder(e.target.value)}>
                         <option value="latest">최신순</option>
                         <option value="oldest">오래된순</option>
                     </select>
@@ -224,13 +315,13 @@ function QuotationList({quotations}) {
                             {currentQuotations.map((quotation) => (
                                 <tr key={quotation.id}>
                                     <td>{formatQuotationId(quotation.id)}</td>
-                                    <td>{quotation.customerId}</td>
-                                    <td>{quotation.productId}</td>
+                                    <td>{formatCustomerName(customers, quotation.customerId)}</td>
+                                    <td>{formatProductName(products, quotation.productId)}</td>
                                     <td>{quotation.createdAt}</td>
                                     <td>{(quotation.quantity * quotation.unitPrice).toLocaleString()}원</td>
                                     <td>
                                         <span className={`status-badge ${quotation.status === "승인 대기" ? "pending" :
-                                                quotation.status === "승인 완료" ? "approved" : "rejected"
+                                            quotation.status === "승인 완료" ? "approved" : "rejected"
                                             }`}>
                                             {quotation.status}
 
