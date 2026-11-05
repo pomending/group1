@@ -1,5 +1,7 @@
+
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { useERP } from "../context/ERPContext";
 import "./CommunityDetail.css";
 import "./CommunityWrite.css";
 import { getBoardUser, isBoardAuthor } from "./MyPage";
@@ -13,8 +15,13 @@ function NoticeDetailPage({ posts, setPosts, postId }) {
         (item) => String(item.id) === String(postId)
     );
 
+    const { currentUser: account } = useERP();
+    const isAdmin = account?.status === "활성" && account?.role === "ADMIN";
+    const canWrite = isAdmin || (account?.status === "활성" && account?.role === "MANAGER");
     const currentUser = getBoardUser();
-    const canEditPost = isBoardAuthor(post, currentUser);
+    const canEditPost = isBoardAuthor(post, currentUser) &&
+        (isAdmin || (canWrite && post?.type === "normal"));
+    const canDeletePost = isAdmin || canEditPost;
 
     // 일반 공지 댓글 · 중요공지 제외
     const showComments = post ? post.type === "normal" : false;
@@ -63,8 +70,12 @@ function NoticeDetailPage({ posts, setPosts, postId }) {
     // 공지 수정 저장
     const saveEditPost = (e) => {
         e.preventDefault();
-        if (!isBoardAuthor(post, getBoardUser())) {
-            alert("작성자만 수정할 수 있습니다.");
+        if (!canEditPost || !isBoardAuthor(post, getBoardUser())) {
+            alert("이 공지사항을 수정할 권한이 없습니다.");
+            return;
+        }
+        if (editType !== "normal" && (!isAdmin || editType !== "important")) {
+            alert("중요공지는 관리자만 작성하거나 수정할 수 있습니다.");
             return;
         }
         if (
@@ -247,8 +258,8 @@ function NoticeDetailPage({ posts, setPosts, postId }) {
         const targetComment = comments.find(
             item => String(item.id) === String(commentId)
         );
-        if (targetComment?.deleted || !isBoardAuthor(targetComment, getBoardUser())) {
-            alert("댓글 작성자만 삭제할 수 있습니다.");
+        if (!targetComment || targetComment.deleted || (!isAdmin && !isBoardAuthor(targetComment, getBoardUser()))) {
+            alert("댓글 삭제 권한이 없습니다.");
             return;
         }
         if (!window.confirm("댓글을 삭제하겠습니까?")) {
@@ -284,8 +295,8 @@ function NoticeDetailPage({ posts, setPosts, postId }) {
 
     // 공지사항 삭제
     const deletePost = () => {
-        if (!isBoardAuthor(post, getBoardUser())) {
-            alert("작성자만 삭제할 수 있습니다.");
+        if (!post || (!isAdmin && !canEditPost)) {
+            alert("이 공지사항을 삭제할 권한이 없습니다.");
             return;
         }
         if (!window.confirm("공지사항을 삭제하시겠습니까?")) {
@@ -341,7 +352,7 @@ function NoticeDetailPage({ posts, setPosts, postId }) {
                                 {/* 수정 중 이동·삭제 */}
                                 <div className="community-actions detail-top-actions">
                                     <Link to="/?page=notice" className="community-cancel">목록으로</Link>
-                                    <Link to="/?page=notice-write" className="community-button">글쓰기</Link>
+                                    {canWrite && <Link to="/?page=notice-write" className="community-button">글쓰기</Link>}
                                     <button type="button" className="community-cancel" onClick={deletePost}>삭제</button>
                                 </div>
                                 <label htmlFor="notice-edit-type">
@@ -357,9 +368,9 @@ function NoticeDetailPage({ posts, setPosts, postId }) {
                                     <option value="normal">
                                         일반 공지
                                     </option>
-                                    <option value="important">
-                                        중요공지
-                                    </option>
+                                    {isAdmin && (
+                                        <option value="important">중요공지</option>
+                                    )}
                                 </select>
                                 <label htmlFor="notice-edit-title">
                                     제목
@@ -408,16 +419,16 @@ function NoticeDetailPage({ posts, setPosts, postId }) {
                                     </div>
                                     <div className="community-actions detail-top-actions">
                                         <Link to="/?page=notice" className="community-cancel">목록으로</Link>
-                                        <Link to="/?page=notice-write" className="community-button">글쓰기</Link>
+                                        {canWrite && <Link to="/?page=notice-write" className="community-button">글쓰기</Link>}
                                         {canEditPost && (
-                                            <>
-                                                <button
-                                                    type="button"
-                                                    className="community-button"
-                                                    onClick={startEditPost}
-                                                >수정</button>
-                                                <button type="button" className="community-cancel" onClick={deletePost}>삭제</button>
-                                            </>
+                                            <button
+                                                type="button"
+                                                className="community-button"
+                                                onClick={startEditPost}
+                                            >수정</button>
+                                        )}
+                                        {canDeletePost && (
+                                            <button type="button" className="community-cancel" onClick={deletePost}>삭제</button>
                                         )}
                                     </div>
                                 </div>
@@ -463,7 +474,7 @@ function NoticeDetailPage({ posts, setPosts, postId }) {
                                                 )}
                                                 <div className="detail-comment-info" style={{ borderBottom: "1px dashed #d5dce3", paddingBottom: "6px", flexWrap: "wrap" }}>
                                                     <strong>{comment.deleted ? "삭제된 댓글" : comment.writer}</strong>
-                                                    {/* 답글은 모든 단계에 표시, 수정·삭제는 작성자에게만 표시 */}
+                                                    {/* 답글은 모두 표시, 수정은 작성자만, 삭제는 작성자와 관리자 */}
                                                     {!comment.deleted && (
                                                         <div style={{ marginLeft: "auto", display: "flex", gap: "12px" }}>
                                                             <button
@@ -476,10 +487,10 @@ function NoticeDetailPage({ posts, setPosts, postId }) {
                                                                 답글
                                                             </button>
                                                             {isBoardAuthor(comment, currentUser) && (
-                                                                <>
-                                                                    <button type="button" style={{ marginLeft: 0 }} onClick={() => startEditComment(comment)}>수정</button>
-                                                                    <button type="button" style={{ marginLeft: 0 }} onClick={() => delComment(comment.id)}>삭제</button>
-                                                                </>
+                                                                <button type="button" style={{ marginLeft: 0 }} onClick={() => startEditComment(comment)}>수정</button>
+                                                            )}
+                                                            {(isAdmin || isBoardAuthor(comment, currentUser)) && (
+                                                                <button type="button" style={{ marginLeft: 0 }} onClick={() => delComment(comment.id)}>삭제</button>
                                                             )}
                                                         </div>
                                                     )}
@@ -617,7 +628,7 @@ function NoticeDetailPage({ posts, setPosts, postId }) {
                 {!post && (
                     <div className="community-actions">
                         <Link to="/?page=notice" className="community-cancel">목록으로</Link>
-                        <Link to="/?page=notice-write" className="community-button">글쓰기</Link>
+                        {canWrite && <Link to="/?page=notice-write" className="community-button">글쓰기</Link>}
                     </div>
                 )}
             </div>
