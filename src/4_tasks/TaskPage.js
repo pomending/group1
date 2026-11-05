@@ -1,7 +1,7 @@
 
 import React, { useState } from "react";
-import { tasks } from "../data/tasks";
 import { useNavigate } from "react-router-dom";
+import { useERP } from "../context/ERPContext";
 
 import "./TaskPage.css";
 
@@ -9,6 +9,8 @@ function TaskPage() {
 
     // 상태 필터
     const [statusFilter, setStatusFilter] = useState("전체");
+
+    const {tasks} = useERP()
 
     const navigate = useNavigate();
 
@@ -185,8 +187,13 @@ function TaskPage() {
                 </table>
 
             </div>
+           
 
         </div>
+        
+        
+
+
     );
 }
 
