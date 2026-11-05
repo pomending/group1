@@ -1,4 +1,8 @@
-/* 상품 데이터의 선택·갱신·표시 규칙입니다. 입력 원본을 변경하거나 Context·저장소에 직접 쓰지 않습니다. */
+/* 상품 입력값 선택·조회 조건·표시 규칙입니다. 등록·수정 처리는 context/useProductData에 있습니다. */
+import { PRODUCT_STATUS } from "../context/useProductData";
+// 검색과 중복 검사는 상태 관리 Hook의 같은 정의를 사용합니다.
+export { normalizeProductName, PRODUCT_STATUS } from "../context/useProductData";
+
 // 폼 저장과 복사에 사용하는 세 필드입니다. ID·날짜·검색 조건·편집 모드는 전달하지 않습니다.
 export function getProductInput(product) {
   return {
@@ -7,18 +11,6 @@ export function getProductInput(product) {
     productStatus: product.productStatus,
   };
 }
-
-// 최신 Context 목록을 받아 해당 상품의 변경 필드와 수정일만 갱신한 배열을 반환합니다.
-// 호출부에서 정한 변경 필드 외의 ID·등록일·추가 정보와 다른 상품은 보존합니다.
-export function updateProduct(products, id, changes, updatedAt) {
-  return products.map(product => product.id === id
-    && Object.keys(changes).some(key => product[key] !== changes[key])
-    ? { ...product, ...changes, productUpdatedAt: updatedAt }
-    : product);
-}
-
-// 검색과 이름 중복 검사는 같은 기준을 사용합니다. 저장된 원래 이름은 변경하지 않습니다.
-export const normalizeProductName = value => value.trim().normalize().toLocaleLowerCase("ko-KR");
 
 // 빈 경계는 제한 없음이며 양 끝 금액도 포함합니다. 잘못된 범위를 임의로 뒤집지 않습니다.
 export function getProductPriceRange(minValue, maxValue) {
@@ -31,11 +23,6 @@ export function getProductPriceRange(minValue, maxValue) {
   if (min > max) return { min, max, error: "최소 단가는 최대 단가 이하여야 합니다." };
   return { min, max, error: "" };
 }
-
-export const PRODUCT_STATUS = {
-  SELLING: "판매 중",
-  STOPPED: "판매중지",
-};
 
 // 저장값은 기존 Context와 호환되도록 유지합니다. 표시 문구의 띄어쓰기는 여기서만 정합니다.
 export const productStatuses = [

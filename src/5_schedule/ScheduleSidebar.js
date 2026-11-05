@@ -99,9 +99,9 @@ export default function ScheduleSidebar({
         </section>
       {/* sm-card는 카드의 공통 모양이고 sm-agenda-card는 선택 날짜 카드만 꾸미기 위한 이름입니다.
           className에 공백으로 여러 이름을 쓰면 두 CSS 규칙이 같은 요소에 함께 적용됩니다. */}
-      <section className="sm-card sm-agenda-card">
+      <section className="sm-card sm-agenda-card" aria-labelledby="sm-agenda-title">
         <div className="sm-panel-title">
-          <h3>선택한 날짜 일정</h3>
+          <h3 id="sm-agenda-title">선택한 날짜 일정</h3>
           <span className="sm-muted">{selectedItems.length}건</span>
         </div>
         {/* replaceAll은 저장 형식을 바꾸지 않고 표시용 점 구분 날짜를 만듭니다.
@@ -137,9 +137,9 @@ export default function ScheduleSidebar({
         )}
       </section>
 
-      <section className="sm-card sm-upcoming-card">
+      <section className="sm-card sm-upcoming-card" aria-labelledby="sm-upcoming-title">
         <div className="sm-panel-title">
-          <h3>다가오는 일정</h3>
+          <h3 id="sm-upcoming-title">다가오는 일정</h3>
           <span className="sm-muted">{upcomingSchedules.length}건</span>
         </div>
         {/* 목록의 기준을 화면에도 적어 둡니다. 부모가 계산해 준 결과의 뜻을 설명할 뿐,

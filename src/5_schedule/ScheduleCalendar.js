@@ -186,6 +186,7 @@ export default function ScheduleCalendar({
                   <div
                     key={`blank-${index}`}
                     className="sm-day"
+                    data-testid="sm-calendar-day"
                     aria-hidden="true"
                   />
                 );
@@ -203,7 +204,10 @@ export default function ScheduleCalendar({
               return (
                 <div
                   key={cell.key}
+                  data-testid="sm-calendar-day"
                   onClick={() => onSelectDate(cell.key)}
+                  aria-label={cell.key}
+                  aria-current={cell.key === todayKey ? "date" : undefined}
                   className={`sm-day ${selectedDate === cell.key ? "selected" : ""} ${cell.key === todayKey ? "today" : ""}`}
                 >
                   <div

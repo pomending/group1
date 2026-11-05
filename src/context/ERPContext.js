@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useState } from "react";
 import {
-    products as initialProducts,
     quotations as initialQuotations,
     consultations as initialConsultations,
     tasks as initialTasks,
@@ -10,6 +9,7 @@ import useEmployeeData from "./useEmployeeData";
 import useCustomerData from "./useCustomerData";
 import useAccountData from "./useAccountData";
 import useAuthData from "./useAuthData";
+import useProductData from "./useProductData";
 
 const ERPContext = createContext(null);
 
@@ -18,10 +18,10 @@ export function ERPProvider({ children }) {
     const projectData = useProjectData();
     const employeeData = useEmployeeData();
     const customerData = useCustomerData();
+    const productData = useProductData();
     const accountData = useAccountData(employeeData.employees);
     const authData = useAuthData(accountData.accounts, employeeData.employees);
 
-    const [products, setProducts] = useState(initialProducts);
     const [quotations, setQuotations] = useState(initialQuotations);
     const [consultations, setConsultations] = useState(initialConsultations);
     const [tasks, setTasks] = useState(initialTasks);
@@ -78,11 +78,11 @@ export function ERPProvider({ children }) {
         projectData.resetProjects();
         employeeData.resetEmployees();
         customerData.resetCustomers();
+        productData.resetProducts();
         accountData.resetAccounts();
         authData.logout();
 
         // 별도 Hook이 아직 없는 모듈의 Context 상태도 초기화
-        setProducts([...initialProducts]);
         setQuotations([...initialQuotations]);
         setConsultations([...initialConsultations]);
         setTasks([...initialTasks]);
@@ -93,13 +93,12 @@ export function ERPProvider({ children }) {
             ...projectData,
             ...employeeData,
             ...customerData,
+            ...productData,
             ...accountData,
             ...authData,
             deleteEmployee, // 기본 삭제 함수를 안전한 통합 함수로 덮어씀
             resetAllData,
 
-            products,
-            setProducts,
             quotations,
             setQuotations,
             consultations,

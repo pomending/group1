@@ -125,14 +125,15 @@ export default function ScheduleManager() {
   // 새 일정은 프로젝트 ID로 연결하고, ID가 없는 기존 일정은 프로젝트명으로 찾습니다.
   // 비교 후 달라진 경우에만 갱신해 Context 변경으로 인한 반복 업데이트를 막습니다.
   useEffect(() => {
-    if (typeof updateProject !== "function") return;
+    // 읽기 실패의 빈 기본값으로 다른 파트의 정상 일정 요약을 지우지 않습니다.
+    if (loadedSchedules.readError || typeof updateProject !== "function") return;
     for (const project of projects) {
       const linkedSchedules = getProjectScheduleSummaries(project, items);
       if (JSON.stringify(project.schedules || []) !== JSON.stringify(linkedSchedules)) {
         updateProject({ id: project.id, schedules: linkedSchedules });
       }
     }
-  }, [items, projects, updateProject]);
+  }, [items, projects, updateProject, loadedSchedules.readError]);
 
   // 선택한 프로젝트의 마지막 일정을 지웠다면 더 이상 없는 프로젝트 필터도 함께 해제합니다.
   useEffect(() => {
