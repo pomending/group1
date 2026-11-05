@@ -1,7 +1,7 @@
 //고객 등록 화면
 import react, { useState } from "react";
 import { useERP } from "../context/ERPContext";
-import { validateCustomer,formatBusinessNumber } from "../utils/customerUtils";
+import { validateCustomer,formatBusinessNumber,validateBusinessNumber, formatPhone, validatePhone } from "../utils/customerUtils";
 import "./03_CustomerForm.css";
 
 
@@ -28,13 +28,21 @@ function CustomerRegister() {
 
     function registerCustomer(e) {
         e.preventDefault();
-        //new date() 현재 날짜와 시간을 가져오는 코드
-        const today = new Date();
+       
         //.toLocaleDateString("sv-SE"); 문자열 형태의 날짜로 변환하는 메서드 ,괄호안에 코드를 쓰면 국가나 언어별 형식으로 가져올수있게 함
         const createdAt = new Date().toLocaleDateString("sv-SE");
         
         //필수입력값 유효성검사
         if(!validateCustomer(customerData)){
+            return;
+        }
+        //사업자등록번호 10자리검사
+        if(!validateBusinessNumber(customerData.businessNumber)){
+            return;
+        }
+        //전화번호 10~11자리 검사
+        if(!validatePhone(customerData.phone)){
+            
             return;
         }
 
@@ -81,7 +89,7 @@ function CustomerRegister() {
                 <label>연락처 <span className="crm-required">*</span></label>
                 <input value={customerData.phone}
                     onChange={(e) =>
-                        setCustomerData({ ...customerData, phone: e.target.value })
+                        setCustomerData({ ...customerData, phone: formatPhone(e.target.value) })
                     } />
             </div>
 

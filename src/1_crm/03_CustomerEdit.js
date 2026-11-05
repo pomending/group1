@@ -3,6 +3,7 @@ import "./03_CustomerForm.css";
 import React, { useState } from "react";
 import { useLocation } from "react-router-dom";
 import { useERP } from "../context/ERPContext";
+import { formatBusinessNumber, formatPhone, validateBusinessNumber, validateCustomer, validatePhone } from "../utils/customerUtils";
 
 function CustomerEdit() {
 
@@ -22,39 +23,24 @@ function CustomerEdit() {
     const [EditingCustomerData, setEditingCustomerData] = useState(CustomerData || {});
 
 
-
     function updateCustomer(e) {
         e.preventDefault();
 
-        if (
-            !EditingCustomerData.companyName?.trim() ||
-            !EditingCustomerData.customerManager?.trim() ||
-            !EditingCustomerData.phone?.trim()
-        ) {
-            alert("필수등록정보(고객사명, 고객사 담당자명, 연락처)를 입력해주세요.");
+        if (!validateBusinessNumber(EditingCustomerData.businessNumber)) {
             return;
         }
-
-        const businessNumbers = (EditingCustomerData.businessNumber || "").replace(/-/g, "");
-
-        if (businessNumbers !== "" && businessNumbers.length !== 10) {
-            alert("사업자등록번호를 확인해 주세요.");
+        if (!validateCustomer(EditingCustomerData)) {
             return;
         }
-
-        const phoneNumbers = EditingCustomerData.phone.replace(/-/g, "");
-
-        if (
-            (phoneNumbers.startsWith("02") &&
-                phoneNumbers.length !== 9 &&
-                phoneNumbers.length !== 10) ||
-            (!phoneNumbers.startsWith("02") &&
-                phoneNumbers.length !== 10 &&
-                phoneNumbers.length !== 11)
-        ) {
-            alert("연락처를 확인해주세요.");
+        if (!validatePhone(EditingCustomerData.phone)) {
             return;
+
         }
+
+
+
+
+
 
 
         window.opener.saveEditedCustomer(EditingCustomerData);
@@ -85,7 +71,7 @@ function CustomerEdit() {
                     <label>사업자등록번호</label>
                     <input value={EditingCustomerData.businessNumber}
                         onChange={(e) => (
-                            setEditingCustomerData({ ...EditingCustomerData, businessNumber: e.target.value })
+                            setEditingCustomerData({ ...EditingCustomerData, businessNumber: formatBusinessNumber(e.target.value) })
                         )} />
                 </div>
 
@@ -101,7 +87,7 @@ function CustomerEdit() {
                     <label>연락처 <span className="crm-required">*</span></label>
                     <input value={EditingCustomerData.phone}
                         onChange={(e) => (
-                            setEditingCustomerData({ ...EditingCustomerData, phone: e.target.value })
+                            setEditingCustomerData({ ...EditingCustomerData, phone: formatPhone(e.target.value) })
                         )} />
                 </div>
 

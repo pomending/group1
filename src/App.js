@@ -19,7 +19,7 @@ import ConsultationPage from "./9_consultation/01_ConsultationPage";
 import ProductPage from "./10_product/ProductPage";
 import AccountManagement from "./8_hr/AccountManagement";
 
-const REQUIRE_LOGIN = true;
+const REQUIRE_LOGIN = false;
 
 function ERPContent() {
 
