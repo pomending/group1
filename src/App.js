@@ -17,6 +17,8 @@ import LoginPage from "./7_login/LoginPage";
 import HrPage from "./8_hr/HrPage";
 import ConsultationPage from "./9_consultation/01_ConsultationPage";
 import ProductPage from "./10_product/ProductPage";
+import AccountManagement from "./8_hr/AccountManagement";
+import ChangePasswordPage from "./7_login/ChangePasswordPage";
 
 const REQUIRE_LOGIN = false;
 
@@ -42,6 +44,10 @@ function ERPContent() {
     // 로그인 필수 모드에서만 접근 제한
     if (REQUIRE_LOGIN && !isAuthenticated) {
         return <Navigate to="/login" replace />;
+    }
+
+    if (isAuthenticated && currentUser?.mustChangePassword) {
+        return <ChangePasswordPage />;
     }
 
     const isPopup =

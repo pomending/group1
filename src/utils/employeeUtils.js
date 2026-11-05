@@ -2,7 +2,7 @@
 export const EMPLOYEE_STATUSES = ["재직", "휴직", "퇴사"];
 export const EMPLOYEE_POSITIONS = ["사원", "주임", "대리", "과장", "차장", "부장", "팀장"];
 
-export const departmentNames = ["생산관리팀", "영업팀", "디자인팀", "품질관리팀", "물류팀", "경영지원팀"];
+export const departmentNames = ["인사팀", "영업팀", "경영지원팀", "물류팀", "생산팀"];
 
 export function statusClass(status) {
     return status === "재직" ? "working" : status === "휴직" ? "leave" : "resigned";

@@ -1,4 +1,3 @@
-
 //고객정보 등록시 필수입력 해야 될값 검사
 export function validateCustomer(customerData) {
 

@@ -23,7 +23,7 @@ function ProjectEdit(props) {
     );
 
     const projectManagers = employees.filter(emp =>
-        emp.department === "생산관리팀" &&
+        emp.department === "경영지원팀" &&
         emp.status === "재직"
     );
 

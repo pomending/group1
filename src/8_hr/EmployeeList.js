@@ -47,11 +47,18 @@ export default function EmployeeList({ employees, projects, onView, onNew }) {
 
     return (
         <section className="hr-panel hr-list-panel">
+
             <div className="hr-section-title hr-list-heading">
-                <div><p className="hr-eyebrow">EMPLOYEE DIRECTORY</p><h2>직원 목록</h2></div>
+
+                <div>
+                    <p className="hr-eyebrow">EMPLOYEE DIRECTORY</p>
+                    <h2>직원 목록</h2>
+                </div>
                 <span className="hr-subtle">검색 결과 {filtered.length}명</span>
+
             </div>
             <div className="hr-filters">
+
                 <input className="hr-input hr-search" aria-label="직원 검색" placeholder="이름, 이메일, 연락처 검색" value={search} onChange={e => changeSearch(e.target.value)} />
                 <select className="hr-input hr-select" aria-label="부서 필터" value={department} onChange={e => changeDepartment(e.target.value)}>
                     <option value="">전체 부서</option>
@@ -68,8 +75,20 @@ export default function EmployeeList({ employees, projects, onView, onNew }) {
             </div>
 
             <div className="hr-table-scroll">
+
                 <table className="hr-table">
-                    <thead><tr><th>사번</th><th>이름</th><th>부서 / 직급</th><th>연락처</th><th>입사일</th><th>상태</th><th>담당 프로젝트</th><th>상세</th></tr></thead>
+                    <thead>
+                        <tr>
+                            <th>사번</th>
+                            <th>이름</th>
+                            <th>부서 / 직급</th>
+                            <th>연락처</th>
+                            <th>입사일</th>
+                            <th>상태</th>
+                            <th>담당 프로젝트</th>
+                            <th>상세</th>
+                        </tr>
+                    </thead>
                     <tbody>
                         {visibleEmployees.map(employee => {
                             const assignedCount = projects.filter(project => Number(project.managerId) === Number(employee.id)).length;

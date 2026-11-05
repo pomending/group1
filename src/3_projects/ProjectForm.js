@@ -19,7 +19,7 @@ function ProjectForm(props) {
     );
 
     const projectManagers = employees.filter(emp =>
-        emp.department === "생산관리팀" &&
+        emp.department === "경영지원팀" &&
         emp.status === "재직"
     );
 
@@ -130,7 +130,7 @@ function ProjectForm(props) {
                                 <option value="">견적을 선택하세요</option>
 
                                 {quotations
-                                    .filter(q => q.status === "승인" &&
+                                    .filter(q => q.status === "승인 완료" &&
                                         !projects.some(p => p.quotationId === q.id)
                                     )
                                     .map(q => (
