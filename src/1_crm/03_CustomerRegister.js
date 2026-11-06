@@ -1,7 +1,7 @@
 //고객 등록 화면
 import react, { useState } from "react";
 import { useERP } from "../context/ERPContext";
-import { validateCustomer,formatBusinessNumber,validateBusinessNumber, formatPhone, validatePhone } from "../utils/customerUtils";
+import { validateCustomer, formatBusinessNumber, validateBusinessNumber, formatPhone, validatePhone } from "../utils/customerUtils";
 import "./03_CustomerForm.css";
 
 
@@ -28,21 +28,25 @@ function CustomerRegister() {
 
     function registerCustomer(e) {
         e.preventDefault();
-       
+
         //.toLocaleDateString("sv-SE"); 문자열 형태의 날짜로 변환하는 메서드 ,괄호안에 코드를 쓰면 국가나 언어별 형식으로 가져올수있게 함
         const createdAt = new Date().toLocaleDateString("sv-SE");
-        
+
         //필수입력값 유효성검사
-        if(!validateCustomer(customerData)){
+        if (!validateCustomer(customerData)) {
+            return;
+        }
+        if (customerData.employeeId == null || customerData.employeeId === "") {
+            alert("필수 등록정보(내부 담당자)를 확인해주세요.");
             return;
         }
         //사업자등록번호 10자리검사
-        if(!validateBusinessNumber(customerData.businessNumber)){
+        if (!validateBusinessNumber(customerData.businessNumber)) {
             return;
         }
         //전화번호 10~11자리 검사
-        if(!validatePhone(customerData.phone)){
-            
+        if (!validatePhone(customerData.phone)) {
+
             return;
         }
 
@@ -52,6 +56,7 @@ function CustomerRegister() {
         });
 
         alert("고객이 등록되었습니다.");
+        window.close();
     }
 
 
@@ -72,8 +77,10 @@ function CustomerRegister() {
                 <label>사업자등록번호</label>
                 <input value={customerData.businessNumber}
                     onChange={(e) => (
-                        setCustomerData({ ...customerData, 
-                            businessNumber: formatBusinessNumber(e.target.value) })
+                        setCustomerData({
+                            ...customerData,
+                            businessNumber: formatBusinessNumber(e.target.value)
+                        })
                     )} />
             </div>
 
@@ -118,7 +125,7 @@ function CustomerRegister() {
             </div>
 
             <div className="crm-form-field">
-                <label>담당자</label>
+                <label>담당자 <span className="crm-required">*</span></label>
                 <select value={(customerData.employeeId) ?? ""}
                     onChange={(e) =>
                         setCustomerData({

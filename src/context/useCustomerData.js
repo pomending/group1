@@ -41,6 +41,7 @@ export function useCustomerData() {
         ];
         // 전체고객목록에 추가
         setCustomers(updatedCustomers);
+        return newId;
 
     }
 

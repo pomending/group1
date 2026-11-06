@@ -12,8 +12,12 @@ import { useERP } from "../context/ERPContext";
 function CustomerManagement() {
     //ERPcontext에 있는 함수 가져오기
     const { customers, addCustomer,
-        saveEditedCustomer, deleteCustomers, employees  } = useERP();
-        
+        saveEditedCustomer, deleteCustomers, employees } = useERP();
+
+    //정렬기능을 위한 usestate ,sortkey 어떤컬럼으로 정렬하지,sortOrder 오름차순,내림차순
+    const [sortkey, setSortkey] = useState("id");
+    const [sortOrder, setSortOrder] = useState("desc");
+
 
     //검색창에 입력한 검색어
     const [search, setSearch] = useState("");
@@ -121,10 +125,10 @@ function CustomerManagement() {
         ];
         //고객정보를 반복하여 엑셀시트에 한 행씩 추가
         data.forEach((customer) => {
-                const employee = employees.find((employee)=>
-                    employee.id===customer.employeeId)
-            
-            worksheet.addRow({...customer,employeeName : employee?.name});
+            const employee = employees.find((employee) =>
+                employee.id === customer.employeeId)
+
+            worksheet.addRow({ ...customer, employeeName: employee?.name });
         });
         // 엑셀 문서를 실제 파일 데이터로 변환
         const buffer = await workbook.xlsx.writeBuffer();
@@ -145,6 +149,9 @@ function CustomerManagement() {
 
         await downloadExcel(selectedCustomers);
     }
+
+   
+
 
     return (
         <div className="crm-page">
@@ -306,7 +313,7 @@ function CustomerManagement() {
                                         <td>{customer.address}</td>
                                         <td>{customer.createdAt}</td>
                                         <td>{customer.memo}</td>
-                                        <td>{employees.find((employee)=>
+                                        <td>{employees.find((employee) =>
                                             employee.id === customer.employeeId)?.name}</td>
                                     </tr>
                                 ))
