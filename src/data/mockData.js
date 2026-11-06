@@ -914,98 +914,98 @@ export const tasks = [
     {
         id: 1,
         projectId: 1,
-        taskName: "제작 관리",
-        status: "완료",
-        managerId: 1,
-        memo: "텀블러 300개 제작 완료"
+        taskStatus: "제작 관리",
+        employeeId: 1,
+        taskDeadline: "",
+        progress: "완료"
     },
     {
         id: 2,
         projectId: 1,
-        taskName: "검수 관리",
-        status: "진행 중",
-        managerId: 7,
-        memo: "텀블러 300개 품질 검사 진행 중"
+        taskStatus: "검수 관리",
+        employeeId: 7,
+        taskDeadline: "",
+        progress: "작업중"
     },
     {
         id: 3,
         projectId: 1,
-        taskName: "포장 관리",
-        status: "대기",
-        managerId: 14,
-        memo: "검수 완료 후 포장 예정"
+        taskStatus: "포장 관리",
+        employeeId: 14,
+        taskDeadline: "",
+        progress: "대기중"
     },
     {
         id: 4,
         projectId: 2,
-        taskName: "제작 관리",
-        status: "대기",
-        managerId: 13,
-        memo: "에코백 원단 준비 및 500개 제작 예정"
+        taskStatus: "제작 관리",
+        employeeId: 13,
+        taskDeadline: "",
+        progress: "대기중"
     },
     {
         id: 5,
         projectId: 2,
-        taskName: "검수 관리",
-        status: "대기",
-        managerId: 6,
-        memo: "에코백 제작 완료 후 품질 검사 예정"
+        taskStatus: "검수 관리",
+        employeeId: 6,
+        taskDeadline: "",
+        progress: "대기중"
     },
     {
         id: 6,
         projectId: 3,
-        taskName: "제작 관리",
-        status: "완료",
-        managerId: 1,
-        memo: "머그컵 400개 제작 완료"
+        taskStatus: "제작 관리",
+        employeeId: 1,
+        taskDeadline: "",
+        progress: "완료"
     },
     {
         id: 7,
         projectId: 3,
-        taskName: "검수 관리",
-        status: "완료",
-        managerId: 14,
-        memo: "머그컵 400개 품질 검사 완료"
+        taskStatus: "검수 관리",
+        employeeId: 14,
+        taskDeadline: "",
+        progress: "완료"
     },
     {
         id: 8,
         projectId: 3,
-        taskName: "배송 관리",
-        status: "완료",
-        managerId: 9,
-        memo: "머그컵 포장 및 출고·배송 완료"
+        taskStatus: "배송 관리",
+        employeeId: 9,
+        taskDeadline: "",
+        progress: "완료"
     },
     {
         id: 9,
         projectId: 4,
-        taskName: "제작 관리",
-        status: "대기",
-        managerId: 6,
-        memo: "아크릴 키링 800개 인쇄 및 가공 예정"
+        taskStatus: "제작 관리",
+        employeeId: 6,
+        taskDeadline: "",
+        progress: "대기중"
     },
     {
         id: 10,
         projectId: 4,
-        taskName: "검수 관리",
-        status: "대기",
-        managerId: 7,
-        memo: "아크릴 키링 가공 완료 후 품질 검사 예정"
+        taskStatus: "검수 관리",
+        employeeId: 7,
+        taskDeadline: "",
+        progress: "대기중"
     },
     {
         id: 11,
         projectId: 5,
-        taskName: "제작 관리",
-        status: "진행 중",
-        managerId: 13,
-        memo: "에코백 200개 제작을 위한 자재 준비 중"
+        taskStatus: "제작 관리",
+        employeeId: 13,
+        taskDeadline: "",
+        progress: "작업중"
     },
     {
         id: 12,
         projectId: 5,
-        taskName: "포장 관리",
-        status: "대기",
-        managerId: 14,
-        memo: "에코백 제작 및 검수 완료 후 포장 예정"
+        taskStatus: "포장 관리",
+        employeeId: 14,
+        taskDeadline: "",
+        progress: "대기중"
     }
 ];
 
