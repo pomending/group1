@@ -10,7 +10,7 @@ function TaskPage() {
     // 상태 필터
     const [statusFilter, setStatusFilter] = useState("전체");
 
-    const {tasks} = useERP()
+    const { tasks, projects, employees } = useERP();
 
     const navigate = useNavigate();
 
@@ -121,13 +121,22 @@ function TaskPage() {
                     <tbody>
                         {filteredTasks.length > 0 ? (
 
-                            filteredTasks.map((task) => (
+                            filteredTasks.map((task) => {
+                                const project = projects.find(
+                                    (p) => p.id === task.projectId
+                                );
+
+                                const employee = employees.find(
+                                    (emp) => emp.id === Number(task.employeeId)
+                                );
+                                
+                                return (
 
                                 <tr key={task.id}>
                                     <td>{task.id}</td>
 
                                     <td>{task.projectId}</td>
-                                    <td>{task.employeeId}</td>
+                                    <td>{project.name}</td>
 
                                     <td>{task.taskStatus}</td>
 
@@ -145,12 +154,13 @@ function TaskPage() {
                                         </span>
                                     </td>
 
-                                    <td>담당자 {task.employeeId}</td>
+                                    <td>{employee.name}</td>
 
                                     
                                 </tr>
 
-                            ))
+);
+})
 
                         ) : (
 
