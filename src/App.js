@@ -20,7 +20,7 @@ import ProductPage from "./10_product/ProductPage";
 import AccountManagement from "./8_hr/AccountManagement";
 import ChangePasswordPage from "./7_login/ChangePasswordPage";
 
-const REQUIRE_LOGIN = false;
+const REQUIRE_LOGIN = true;
 
 function ERPContent() {
 

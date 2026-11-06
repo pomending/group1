@@ -1,86 +1,52 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import "./CommunityWrite.css";
 import { getBoardUser } from "./MyPage";
+import "./CommunityWrite.css";
 
 function CommunityWritePage({ posts, setPosts }) {
-
     const navigate = useNavigate();
-
-    // 입력 상태
     const [title, setTitle] = useState("");
     const [content, setContent] = useState("");
 
-    // 게시글 등록
     const addPost = () => {
-        const currentUser = getBoardUser();
-        if (!currentUser) {
-            alert("직원 정보를 찾을 수 없습니다. 마이페이지에서 이메일을 확인하세요.");
-            return;
-        }
+        const user = getBoardUser();
+        if (!user) return alert("로그인한 직원 정보를 찾을 수 없습니다.");
+        if (!title.trim() || !content.trim()) return alert("제목과 내용을 모두 입력하세요.");
 
-        // 필수 입력 검사
-        if (!title.trim() || !content.trim()) {
-            alert("제목과 내용을 모두 입력하세요.");
-            return;
-        }
-
-        // 신규 게시글
-        const newPost = {
-            id: Date.now(),
-            title: title.trim(),
-            writer: currentUser.name,
-            authorEmail: currentUser.email,
-            authorEmployeeId: currentUser.employeeId,
-            content: content.trim(),
+        // 작성자 정보는 입력받지 않고 로그인 계정에서 가져옵니다.
+        const post = {
+            id: Date.now(), title: title.trim(), content: content.trim(),
+            writer: user.name, authorEmail: user.email, authorEmployeeId: user.employeeId,
             date: new Date().toLocaleDateString("ko-KR")
         };
-
-        // 게시글 목록 갱신
-        const newPosts = [...posts, newPost];
-
-        // 상태·로컬 저장
-        setPosts(newPosts);
-        localStorage.setItem("communityPosts", JSON.stringify(newPosts));
-
-        // 목록 이동
+        const updated = [...posts, post];
+        setPosts(updated);
+        localStorage.setItem("communityPosts", JSON.stringify(updated));
         navigate("/?page=community");
     };
+
     return (
         <div className="community">
-            <Link to="/?page=community" className="community-back">
-                ← 게시글 목록으로
-            </Link>
+            <Link to="/?page=community" className="community-back">← 게시글 목록으로</Link>
             <div className="community-board">
                 <h1>글쓰기</h1>
                 <div className="community-write">
-                    {/* 제목 */}
-                    <label>제목</label>
+                    <label htmlFor="community-title">제목</label>
                     <input
+                        id="community-title"
                         type="text"
                         placeholder="제목을 입력하세요."
                         value={title}
-                        onChange={(e) => setTitle(e.target.value)}
-                    />
-                    {/* 내용 */}
-                    <label>내용</label>
+                        onChange={event => setTitle(event.target.value)}/>
+                    <label htmlFor="community-content">내용</label>
                     <textarea
+                        id="community-content"
                         placeholder="내용을 입력하세요."
                         value={content}
-                        onChange={(e) => setContent(e.target.value)}
-                    />
-                    {/* 취소·등록 버튼 */}
+                        onChange={event => setContent(event.target.value)}/>
                     <div className="community-actions">
-                        <Link
-                            to="/?page=community"
-                            className="community-cancel">
-                            취소
-                        </Link>
-                        <button
-                            className="community-button"
-                            onClick={addPost}>
-                            등록하기
-                        </button>
+                        <Link to="/?page=community" className="community-cancel">취소</Link>
+                        <button type="button" className="community-button" onClick={addPost}>등록하기</button>
                     </div>
                 </div>
             </div>
