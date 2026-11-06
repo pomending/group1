@@ -2,9 +2,9 @@ import { formatPrice, formatQuotationId } from "../utils/formatUtils"
 
 function ProjectQuotationInfo({ quotation, product, customer }) {
 
-    const quotationSupply = quotation
-        ? Number(quotation.quantity) * Number(quotation.unitPrice)
-        : 0;
+    if(!quotation) return null;
+
+    const quotationSupply = Number(quotation.quantity) * Number(quotation.unitPrice);
 
     const quotationVat = quotationSupply * 0.1;
     const quotationTotal = quotationSupply + quotationVat;
@@ -29,13 +29,13 @@ function ProjectQuotationInfo({ quotation, product, customer }) {
                             <th>상품명</th>
                             <th>수량</th>
                             <th>단가</th>
-                            <th>금액</th>
+                            <th>공급가액</th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr>
                             <td>{product?.productName ?? "상품 정보 없음"}</td>
-                            <td>{quotation.quantity.toLocaleString()}개</td>
+                            <td>{Number(quotation.quantity).toLocaleString()}개</td>
                             <td>{formatPrice(quotation.unitPrice)}</td>
                             <td>{formatPrice(quotationSupply)}</td>
                         </tr>
