@@ -20,31 +20,25 @@ function TaskPage() {
     const totalCount = tasks.length;
 
     const waitingCount = tasks.filter(
-        (task) => task.status === "대기"
+        (task) => task.progress === "대기중"
     ).length;
 
     const progressCount = tasks.filter(
-        (task) => task.status === "진행 중"
+        (task) => task.progress === "작업중"
     ).length;
 
     const completeCount = tasks.filter(
-        (task) => task.status === "완료"
+        (task) => task.progress === "완료"
     ).length;
 
-    const packagingCount = tasks.filter(
-      (task) => task.status ==="포장"
-    ).length;
-    const deliveryCount = tasks.filter(
-      (task) => task.status ==="베송"
-    ).length;
-
+   
     // 선택한 상태에 따라 작업 목록 필터링
     const filteredTasks = tasks.filter((task) => {
         if (statusFilter === "전체") {
             return true;
         }
-
-        return task.status === statusFilter;
+    
+        return task.progress === statusFilter;
     });
 
     return (
@@ -56,7 +50,7 @@ function TaskPage() {
                     <h2>작업 관리</h2>
                     <p>프로젝트별 작업 진행 현황을 관리합니다.</p>
                 </div>
-                <div class="pm-heading-actions">
+                <div className="pm-heading-actions">
                   
                 <button className="new-btn"   onClick={() => navigate("/tasks/detail")}>
                  + 세부상세 내용
@@ -75,12 +69,12 @@ function TaskPage() {
                 </div>
 
                 <div className="summary-card">
-                    <span>대기</span>
+                    <span>대기중</span>
                     <strong>{waitingCount}</strong>
                 </div>
 
                 <div className="summary-card">
-                    <span>진행 중</span>
+                    <span>작업중</span>
                     <strong>{progressCount}</strong>
                 </div>
 
@@ -88,15 +82,7 @@ function TaskPage() {
                     <span>완료</span>
                     <strong>{completeCount}</strong>
                 </div>
-                <div className="summary-card">
-                    <span>포장</span>
-                    <strong>{packagingCount}</strong>
-                </div>
-
-                <div className="summary-card">
-                    <span>배송</span>
-                    <strong>{deliveryCount}</strong>
-                </div>
+               
 
             </div>
 
@@ -113,11 +99,9 @@ function TaskPage() {
                         }
                     >
                         <option value="전체">전체 상태</option>
-                        <option value="대기">대기</option>
-                        <option value="진행 중">진행 중</option>
+                        <option value="대기중">대기중</option>
+                        <option value="작업중">작업중</option>
                         <option value="완료">완료</option>
-                        <option value="포장">포장</option>
-                        <option value="배송">배송</option>
                     </select>
                 </div>
 
@@ -128,10 +112,9 @@ function TaskPage() {
                             <th>번호</th>
                             <th>프로젝트 번호</th>
                             <th>프록젝트 명</th>
-                            <th>작업명</th>
+                            <th>작업 단계</th>
                             <th>진행 상태</th>
                             <th>담당자</th>
-                            <th>메모</th>
                         </tr>
                     </thead>
 
@@ -144,29 +127,27 @@ function TaskPage() {
                                     <td>{task.id}</td>
 
                                     <td>{task.projectId}</td>
-                                    <td>{task.productName}</td>
+                                    <td>{task.employeeId}</td>
 
-                                    <td>{task.taskName}</td>
+                                    <td>{task.taskStatus}</td>
 
                                     <td>
                                         <span
-                                            className={`task-status ${
-                                                task.status === "완료"
+                                            className={`taskProgress ${
+                                                task.progress === "완료"
                                                     ? "complete"
-                                                    : task.status === "진행 중"
+                                                    : task.progress === "작업중"
                                                     ? "progress"
                                                     : "waiting"
                                             }`}
                                         >
-                                            {task.status}
+                                            {task.progress}
                                         </span>
                                     </td>
 
-                                    <td>담당자 {task.managerId}</td>
+                                    <td>담당자 {task.employeeId}</td>
 
-                                    <td>
-                                        {task.memo || "-"}
-                                    </td>
+                                    
                                 </tr>
 
                             ))
