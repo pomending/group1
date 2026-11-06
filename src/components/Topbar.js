@@ -147,7 +147,7 @@ function Topbar({ isCollapsed, setIsCollapsed }) {
     // 해당 화면을 직접 방문해도 관련 알림이 사라집니다.
     useEffect(() => {
         dismissNotifications(employeeId, item => isViewed(item, location));
-    }, [employeeId, location.pathname, location.search, notifications]);
+    }, [employeeId, location, notifications]);
 
     // 날짜가 바뀌면 마감 알림을 다시 계산합니다.
     useEffect(() => {
@@ -158,9 +158,13 @@ function Topbar({ isCollapsed, setIsCollapsed }) {
     // 처음 로그인할 때의 배정은 알리지 않고, 이후 새로 배정된 항목만 알립니다.
     useEffect(() => {
         if (employeeId == null) return;
-        const mine = items => items.filter(item => String(item.managerId) === String(employeeId));
-        const myProjects = mine(projects);
-        const myTasks = mine(tasks);
+        const myProjects = projects.filter(
+            project => Number(project.managerId) === Number(employeeId)
+        );
+
+        const myTasks = tasks.filter(
+            task => Number(task.employeeId) === Number(employeeId)
+        );
         const key = `erp_notification_assignments_${employeeId}`;
         const current = {
             projects: myProjects.map(item => String(item.id)),
@@ -172,17 +176,24 @@ function Topbar({ isCollapsed, setIsCollapsed }) {
             if (Array.isArray(old?.projects) && Array.isArray(old?.tasks)) {
                 myProjects.filter(item => !old.projects.includes(String(item.id)) &&
                     item.status !== "완료" && !item.completedDate).forEach(item => {
-                    addNotification(employeeId, {
-                        key: `project-assigned:${item.id}`, title: "프로젝트 배정",
-                        message: `'${item.name}' 프로젝트 담당자로 지정되었습니다.`, link: "/projects"
+                        addNotification(employeeId, {
+                            key: `project-assigned:${item.id}`, title: "프로젝트 배정",
+                            message: `'${item.name}' 프로젝트 담당자로 지정되었습니다.`, link: "/projects"
+                        });
                     });
-                });
-                myTasks.filter(item => !old.tasks.includes(String(item.id)) && item.status !== "완료").forEach(item => {
-                    addNotification(employeeId, {
-                        key: `task-assigned:${item.id}`, title: "업무 배정",
-                        message: `'${item.taskName}' 업무 담당자로 지정되었습니다.`, link: "/tasks"
+                myTasks
+                    .filter(item =>
+                        !old.tasks.includes(String(item.id)) &&
+                        item.progress !== "완료"
+                    )
+                    .forEach(item => {
+                        addNotification(employeeId, {
+                            key: `task-assigned:${item.id}`,
+                            title: "업무 배정",
+                            message: `'${item.taskStatus}' 업무 담당자로 지정되었습니다.`,
+                            link: "/tasks"
+                        });
                     });
-                });
             }
             localStorage.setItem(key, JSON.stringify(current));
         } catch {
@@ -191,17 +202,17 @@ function Topbar({ isCollapsed, setIsCollapsed }) {
 
         // 담당 프로젝트 또는 담당 업무가 속한 프로젝트만 D-3부터 알립니다.
         const related = new Set([...myProjects.map(item => String(item.id)),
-            ...myTasks.map(item => String(item.projectId))]);
+        ...myTasks.map(item => String(item.projectId))]);
         projects.filter(item => related.has(String(item.id)) && item.status !== "완료" &&
             !item.completedDate).forEach(item => {
-            const days = daysUntil(item.dueDate);
-            if (days == null || days < 0 || days > 3) return;
-            addNotification(employeeId, {
-                key: `project-deadline:${item.id}:${item.dueDate}`, title: "마감 임박",
-                message: `'${item.name}' 프로젝트 ${days === 0 ? "오늘 마감" : `D-${days}`}`,
-                link: "/projects"
+                const days = daysUntil(item.dueDate);
+                if (days == null || days < 0 || days > 3) return;
+                addNotification(employeeId, {
+                    key: `project-deadline:${item.id}:${item.dueDate}`, title: "마감 임박",
+                    message: `'${item.name}' 프로젝트 ${days === 0 ? "오늘 마감" : `D-${days}`}`,
+                    link: "/projects"
+                });
             });
-        });
     }, [employeeId, projects, tasks, today]);
 
     useEffect(() => {

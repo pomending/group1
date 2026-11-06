@@ -12,7 +12,7 @@ export default function HrPage() {
     const {
         employees, projects,
         addEmployee, updateEmployee, deleteEmployee,
-        currentUser
+        currentUser, tasks
     } = useERP();
 
     const [page, setPage] = useState("list");
@@ -142,6 +142,7 @@ export default function HrPage() {
                     <EmployeeDetail
                         employee={selectedEmployee}
                         projects={projects}
+                        tasks={tasks}
                         onEdit={() => showEdit(selectedEmployee.id)}
                         onDelete={handleDelete}
                     />
