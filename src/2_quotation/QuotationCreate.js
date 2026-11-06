@@ -70,10 +70,6 @@ function QuotationCreate({ quotations, setQuotations }) {
         ...quotations.map((q) => q.id)
     ) + 1;
 
-
-    //임시저장한 견적을 수정할 때 사용할 ID
-    const [editinId, setEditinId] = useState(null);
-
     //견적서 임시저장
     const handleTempSave = () => {
         saveQuotation("임시 저장");
@@ -124,10 +120,17 @@ function QuotationCreate({ quotations, setQuotations }) {
             //신규 견적서 등록
             setQuotations([...quotations, newQuotation])
         }
-        navi("/quotation")
+        if (editQuotation) {
+            navi(`/quotation/detail/${editQuotation.id}`)
+        } else {
+            navi("/quotation")
+        }
     }
 
-    //
+    //어디서 들어온건지 확인하는 코드
+    const fromDetail = location.state?.fromDetail;
+
+    
     const editId = location.state?.editId
     const editQuotation = quotations.find(
         q => q.id === Number(editId)
@@ -445,15 +448,17 @@ function QuotationCreate({ quotations, setQuotations }) {
 
                     <div className="form-grid">
                         <div className="form-group">
+                            {/* 유효기간이 지나면 원자재 가격이나 제작비 변동 등을 이유로 견적을 다시 산정 가능 */}
                             <label>견적 유효 기간</label>
                             <input
-                                type="text"
+                                type="date"
                                 placeholder="예: 발행일로부터 30일"
                                 value={validUntil}
                                 onChange={(e) => setValidUntil(e.target.value)} />
                         </div>
 
                         <div className="form-group">
+                            {/* 거래처가 주문한 상품을 언제까지 전달할 예정인지 */}
                             <label>납품 예정일</label>
                             <input type="date"
                                 value={deliveryDate}
@@ -490,13 +495,13 @@ function QuotationCreate({ quotations, setQuotations }) {
                     onClick={() => navi("/quotation")}>
                     취소
                 </button>
-
-                <button
-                    className="temp-save-btn"
-                    onClick={handleTempSave}>
-                    임시저장
-                </button>
-
+                {!fromDetail && (
+                    <button
+                        className="temp-save-btn"
+                        onClick={handleTempSave}>
+                        임시저장
+                    </button>
+                )}
                 <button
                     className="save-btn"
                     onClick={handleSave}>
