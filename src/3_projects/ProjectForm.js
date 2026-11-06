@@ -8,8 +8,8 @@ function ProjectForm(props) {
     const { projects, addProject, customers, employees, quotations, products } = useERP()
     const [projectName, setProjectName] = useState('');
     const [managerId, setManagerId] = useState('');
-    const [due, setDue] = useState('');
-    const [selQuotation, setSelQuotation] = useState('')
+    const [selQuotation, setSelQuotation] = useState('');
+    const [description, setDescription] = useState("");
 
     const selectedQuotation = quotations.find(
         q => q.id === Number(selQuotation)
@@ -51,23 +51,18 @@ function ProjectForm(props) {
         // 간단한 날짜 관련 유효성 체크들
         const today = new Date().toLocaleDateString('sv-SE');
 
-        if (!due) {
-            alert('납품 예정일을 선택하세요.');
-            return;
-        }
-
-        if (due < today) {
-            alert('납품 예정일은 오늘 이후로 설정해주세요.');
+        if (!selectedQuotation?.deliveryDate) {
+            alert('견적에 납품 예정일이 없습니다.');
             return;
         }
 
         addProject({
             name: projectName.trim(),
             managerId: managerId,
-            startDate: new Date().toLocaleDateString('sv-SE'),
+            startDate: today,
             completedDate: null,
-            description: "",
-            dueDate: due,
+            description: description.trim(),
+            dueDate: selectedQuotation.deliveryDate,
             quotationId: Number(selQuotation),
             customerId: selectedQuotation.customerId,
             status: '대기'
@@ -172,14 +167,11 @@ function ProjectForm(props) {
                         </div>
 
                         <div className="pf-field pj-field">
-                            <label htmlFor="pf-due">납품 예정일</label>
+                            <label>납품 예정일</label>
                             <input
-                                id="pf-due"
                                 type="date"
-                                // 납품 예정일을 오늘 날짜보다 더 이전 날짜로 할 수 없다
-                                min={new Date().toLocaleDateString('sv-SE')}
-                                value={due}
-                                onChange={(e) => setDue(e.target.value)}
+                                value={selectedQuotation?.deliveryDate ?? ""}
+                                readOnly
                             />
                         </div>
 
@@ -190,6 +182,18 @@ function ProjectForm(props) {
                                 대기
                                 <span className="pf-status-hint">최초 등록 상태</span>
                             </div>
+                        </div>
+
+                        <div className="pf-field pf-full pj-field pj-full">
+                            <label htmlFor="pf-description">프로젝트 메모 (선택)</label>
+                            <textarea
+                                id="pf-description"
+                                value={description}
+                                onChange={(e) => setDescription(e.target.value)}
+                                placeholder="프로젝트 관련 요청사항이나 특이사항을 입력하세요."
+                                rows={4}
+                                maxLength={500}
+                            />
                         </div>
 
                     </div>

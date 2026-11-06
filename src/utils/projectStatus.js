@@ -1,5 +1,3 @@
-
-
 export const isProjectDelayed = (project) => {
 
     if (!project.dueDate || project.status === '완료') {
