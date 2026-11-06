@@ -1,63 +1,34 @@
-
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useERP } from "../context/ERPContext";
-import "./CommunityWrite.css";
 import { getBoardUser } from "./MyPage";
+import "./CommunityWrite.css";
 
-// 공지사항 작성
 function NoticeWritePage({ posts, setPosts }) {
-
     const navigate = useNavigate();
-    const { currentUser: account } = useERP();
-    const isAdmin = account?.status === "활성" && account?.role === "ADMIN";
-    const canWrite = isAdmin || (account?.status === "활성" && account?.role === "MANAGER");
-
-    // 입력 상태
+    const { currentUser } = useERP();
+    const isAdmin = currentUser?.status === "활성" && currentUser.role === "ADMIN";
+    const canWrite = isAdmin || (currentUser?.status === "활성" && currentUser.role === "MANAGER");
     const [type, setType] = useState("normal");
     const [title, setTitle] = useState("");
     const [content, setContent] = useState("");
-    const noticeType = isAdmin ? type : "normal";
 
-    // 공지 등록
     const addPost = () => {
-        if (!canWrite || (noticeType === "important" && !isAdmin)) {
-            alert("공지사항 작성 권한이 없습니다.");
-            return;
-        }
-        const currentUser = getBoardUser();
-        if (!currentUser) {
-            alert("직원 정보를 찾을 수 없습니다. 마이페이지에서 이메일을 확인하세요.");
-            return;
-        }
+        if (!canWrite) return alert("공지사항 작성 권한이 없습니다.");
+        const user = getBoardUser();
+        if (!user) return alert("로그인한 직원 정보를 찾을 수 없습니다.");
+        if (!title.trim() || !content.trim()) return alert("제목과 내용을 모두 입력하세요.");
 
-        // 필수 입력 검사
-        if (!title.trim() || !content.trim()) {
-            alert("제목과 내용을 모두 입력하세요.");
-            return;
-        }
-
-        // 신규 공지사항
-        // 시간 기반 ID
-        const newPost = {
-            id: Date.now(),
-            type: noticeType,
-            title: title.trim(),
-            writer: currentUser.name,
-            authorEmail: currentUser.email,
-            authorEmployeeId: currentUser.employeeId,
-            content: content.trim(),
+        // 중요공지는 관리자만 등록할 수 있습니다.
+        const post = {
+            id: Date.now(), type: isAdmin ? type : "normal",
+            title: title.trim(), content: content.trim(),
+            writer: user.name, authorEmail: user.email, authorEmployeeId: user.employeeId,
             date: new Date().toLocaleDateString("ko-KR")
         };
-
-        // 공지 목록 갱신
-        const newPosts = [...posts, newPost];
-
-        // 상태·로컬 저장
-        setPosts(newPosts);
-        localStorage.setItem("noticePosts", JSON.stringify(newPosts));
-
-        // 목록 이동
+        const updated = [...posts, post];
+        setPosts(updated);
+        localStorage.setItem("noticePosts", JSON.stringify(updated));
         navigate("/?page=notice");
     };
 
@@ -75,41 +46,35 @@ function NoticeWritePage({ posts, setPosts }) {
 
     return (
         <div className="community">
-            <Link to="/?page=notice" className="community-back">
-                ← 공지사항 목록으로
-            </Link>
+            <Link to="/?page=notice" className="community-back">← 공지사항 목록으로</Link>
             <div className="community-board">
                 <h1>공지사항 글쓰기</h1>
                 <div className="community-write">
-                    {/* 공지 유형 선택 */}
-                    <label>공지 유형</label>
+                    <label htmlFor="notice-type">공지 유형</label>
                     <select
+                        id="notice-type"
                         className="notice-type-select"
-                        value={noticeType}
-                        onChange={(e) => setType(e.target.value)}>
+                        value={isAdmin ? type : "normal"}
+                        onChange={event => setType(event.target.value)}>
                         <option value="normal">일반 공지</option>
                         {isAdmin && <option value="important">중요공지</option>}
                     </select>
-                    <label>제목</label>
+                    <label htmlFor="notice-title">제목</label>
                     <input
+                        id="notice-title"
                         type="text"
                         placeholder="제목을 입력하세요."
                         value={title}
-                        onChange={(e) => setTitle(e.target.value)}
-                    />
-                    <label>내용</label>
+                        onChange={event => setTitle(event.target.value)}/>
+                    <label htmlFor="notice-content">내용</label>
                     <textarea
+                        id="notice-content"
                         placeholder="내용을 입력하세요."
                         value={content}
-                        onChange={(e) => setContent(e.target.value)}
-                    />
+                        onChange={event => setContent(event.target.value)}/>
                     <div className="community-actions">
-                        <Link to="/?page=notice" className="community-cancel">
-                            취소
-                        </Link>
-                        <button className="community-button" onClick={addPost}>
-                            등록하기
-                        </button>
+                        <Link to="/?page=notice" className="community-cancel">취소</Link>
+                        <button type="button" className="community-button" onClick={addPost}>등록하기</button>
                     </div>
                 </div>
             </div>

@@ -5,6 +5,17 @@ import { useERP } from "../context/ERPContext";
 import "./CommunityDetail.css";
 import "./CommunityWrite.css";
 import { getBoardUser, isBoardAuthor } from "./MyPage";
+import { addNotification, getNotificationAuthorId } from "../components/Topbar";
+
+// 댓글은 게시글 번호별로 저장합니다.
+function readComments(key) {
+    try {
+        const list = JSON.parse(localStorage.getItem(key) || "[]");
+        return Array.isArray(list) ? list : [];
+    } catch {
+        return [];
+    }
+}
 
 function NoticeDetailPage({ posts, setPosts, postId }) {
 
@@ -15,7 +26,7 @@ function NoticeDetailPage({ posts, setPosts, postId }) {
         (item) => String(item.id) === String(postId)
     );
 
-    const { currentUser: account } = useERP();
+    const { currentUser: account, employees } = useERP();
     const isAdmin = account?.status === "활성" && account?.role === "ADMIN";
     const canWrite = isAdmin || (account?.status === "활성" && account?.role === "MANAGER");
     const currentUser = getBoardUser();
@@ -38,19 +49,15 @@ function NoticeDetailPage({ posts, setPosts, postId }) {
     // 댓글 입력 상태
     const [content, setContent] = useState("");
 
-    // 공지별 댓글 저장
     const commentKey = "noticeComments_" + postId;
 
-    const [comments, setComments] = useState(() => {
-        const saved = localStorage.getItem(commentKey);
-        if (!saved) return [];
-        try {
-            const data = JSON.parse(saved);
-            return Array.isArray(data) ? data : [];
-        } catch {
-            return [];
-        }
-    });
+    const [comments, setComments] = useState(() => readComments(commentKey));
+
+    // 댓글 수정·등록·삭제가 모두 같은 저장 방법을 사용합니다.
+    const saveComments = list => {
+        setComments(list);
+        localStorage.setItem(commentKey, JSON.stringify(list));
+    };
 
     // 공지사항 수정 · 전체 유형
     const [isEditingPost, setIsEditingPost] = useState(false);
@@ -58,7 +65,6 @@ function NoticeDetailPage({ posts, setPosts, postId }) {
     const [editTitle, setEditTitle] = useState("");
     const [editContent, setEditContent] = useState("");
 
-    // 공지 수정 초기값
     const startEditPost = () => {
         if (!canEditPost) return;
         setEditType(post.type);
@@ -67,7 +73,6 @@ function NoticeDetailPage({ posts, setPosts, postId }) {
         setIsEditingPost(true);
     };
 
-    // 공지 수정 저장
     const saveEditPost = (e) => {
         e.preventDefault();
         if (!canEditPost || !isBoardAuthor(post, getBoardUser())) {
@@ -114,25 +119,18 @@ function NoticeDetailPage({ posts, setPosts, postId }) {
 
     // 글을 바꾸면 해당 글의 댓글과 답글을 다시 읽어 잘못 저장되는 문제를 막습니다.
     useEffect(() => {
-        try {
-            const saved = JSON.parse(localStorage.getItem(commentKey) || "[]");
-            setComments(Array.isArray(saved) ? saved : []);
-        } catch (error) {
-            setComments([]);
-        }
+        setComments(readComments(commentKey));
         setReplyToId(null);
         setReplyContent("");
         setEditingCommentId(null);
     }, [commentKey]);
 
-    // 댓글 수정 초기값
     const startEditComment = (comment) => {
         if (!showComments || comment.deleted || !isBoardAuthor(comment, getBoardUser())) return;
         setEditingCommentId(comment.id);
         setEditCommentContent(comment.content);
     };
 
-    // 댓글 수정 저장
     const saveEditComment = (e) => {
         e.preventDefault();
         if (!showComments) return;
@@ -157,102 +155,59 @@ function NoticeDetailPage({ posts, setPosts, postId }) {
                 }
                 : comment
         );
-        setComments(newComments);
-        localStorage.setItem(
-            commentKey,
-            JSON.stringify(newComments)
-        );
+        saveComments(newComments);
         setEditingCommentId(null);
     };
 
-    // 댓글 등록
-    const addComment = (e) => {
-        e.preventDefault();
+    // 일반 댓글과 답글의 저장·알림 처리 방법을 함께 사용합니다.
+    const submitComment = (event, parentComment = null) => {
+        event.preventDefault();
         if (!showComments) return;
+        const parent = parentComment && comments.find(item => String(item.id) === String(parentComment.id));
+        if (parentComment && (!parent || parent.deleted)) return;
 
-        const activeUser = getBoardUser();
-        if (!activeUser) {
-            alert("직원 정보를 찾을 수 없습니다.");
-            return;
-        }
-        if (!content.trim()) {
-            alert("댓글 내용을 입력하세요.");
-            return;
-        }
+        const user = getBoardUser();
+        if (!user) return alert("직원 정보를 찾을 수 없습니다.");
+        const message = parentComment ? replyContent : content;
+        if (!message.trim()) return alert(parentComment ? "답글 내용을 입력하세요." : "댓글 내용을 입력하세요.");
 
-        // 댓글 ID 중복 방지
-        let newId = Date.now();
-        for (let i = 0; i < comments.length; i++) {
-            if (Number(comments[i].id) >= newId) {
-                newId = Number(comments[i].id) + 1;
-            }
-        }
-
-        const newComment = {
-            id: newId,
-            writer: activeUser.name,
-            authorEmail: activeUser.email,
-            authorEmployeeId: activeUser.employeeId,
-            content: content.trim(),
+        // 같은 글 안에서 댓글 ID가 겹치지 않게 정합니다.
+        let id = Date.now();
+        comments.forEach(item => {
+            if (Number(item.id) >= id) id = Number(item.id) + 1;
+        });
+        const item = {
+            id,
+            ...(parent ? { parentId: parent.id } : {}),
+            writer: user.name,
+            authorEmail: user.email,
+            authorEmployeeId: user.employeeId,
+            content: message.trim(),
             date: new Date().toLocaleDateString("ko-KR")
         };
+        saveComments([...comments, item]);
 
-        const newComments = [...comments, newComment];
-        setComments(newComments);
-        localStorage.setItem(
-            commentKey,
-            JSON.stringify(newComments)
-        );
-        setContent("");
+        // 자신이 쓴 글·댓글에 대해서는 알림을 보내지 않습니다.
+        const ownerId = getNotificationAuthorId(parent || post, employees);
+        if (ownerId != null && String(ownerId) !== String(user.employeeId)) {
+            addNotification(ownerId, {
+                key: `notice:${parent ? "reply" : "comment"}:${postId}:${id}`,
+                title: parent ? "새 답글" : "새 댓글",
+                message: `${user.name}님이 내 ${parent ? "댓글에 답글" : "공지사항 글에 댓글"}을 남겼습니다.`,
+                link: `/?page=notice-detail&id=${encodeURIComponent(postId)}`
+            });
+        }
+        if (parent) {
+            setReplyToId(null);
+            setReplyContent("");
+        } else {
+            setContent("");
+        }
     };
 
-    // 답글 등록: 기존 댓글 저장 키에 parentId만 추가해 함께 저장
-    const addReply = (e, parentComment) => {
-        e.preventDefault();
-        if (!showComments) return;
+    const addComment = event => submitComment(event);
+    const addReply = (event, parent) => submitComment(event, parent);
 
-        // 삭제된 댓글에는 답글을 달지 않습니다.
-        const parent = comments.find((item) =>
-            String(item.id) === String(parentComment.id)
-        );
-        if (!parent || parent.deleted) return;
-
-        const activeUser = getBoardUser();
-        if (!activeUser) {
-            alert("직원 정보를 찾을 수 없습니다.");
-            return;
-        }
-        if (!replyContent.trim()) {
-            alert("답글 내용을 입력하세요.");
-            return;
-        }
-
-        // 같은 글의 댓글·답글 ID와 중복되지 않도록 확인
-        let newId = Date.now();
-        for (let i = 0; i < comments.length; i++) {
-            if (Number(comments[i].id) >= newId) {
-                newId = Number(comments[i].id) + 1;
-            }
-        }
-
-        const newReply = {
-            id: newId,
-            parentId: parent.id,
-            writer: activeUser.name,
-            authorEmail: activeUser.email,
-            authorEmployeeId: activeUser.employeeId,
-            content: replyContent.trim(),
-            date: new Date().toLocaleDateString("ko-KR")
-        };
-
-        const newComments = [...comments, newReply];
-        setComments(newComments);
-        localStorage.setItem(commentKey, JSON.stringify(newComments));
-        setReplyToId(null);
-        setReplyContent("");
-    };
-
-    // 댓글 삭제
     const delComment = (commentId) => {
         if (!showComments) return;
         const targetComment = comments.find(
@@ -289,11 +244,9 @@ function NoticeDetailPage({ posts, setPosts, postId }) {
                 )
             );
         } while (cleanedComments.length !== previousLength);
-        setComments(cleanedComments);
-        localStorage.setItem(commentKey, JSON.stringify(cleanedComments));
+        saveComments(cleanedComments);
     };
 
-    // 공지사항 삭제
     const deletePost = () => {
         if (!post || (!isAdmin && !canEditPost)) {
             alert("이 공지사항을 삭제할 권한이 없습니다.");
@@ -381,8 +334,7 @@ function NoticeDetailPage({ posts, setPosts, postId }) {
                                     value={editTitle}
                                     onChange={(e) =>
                                         setEditTitle(e.target.value)
-                                    }
-                                />
+                                    }/>
                                 <label htmlFor="notice-edit-content">
                                     내용
                                 </label>
@@ -391,8 +343,7 @@ function NoticeDetailPage({ posts, setPosts, postId }) {
                                     value={editContent}
                                     onChange={(e) =>
                                         setEditContent(e.target.value)
-                                    }
-                                />
+                                    }/>
                                 <div className="community-actions">
                                     <button
                                         type="button"
@@ -503,8 +454,7 @@ function NoticeDetailPage({ posts, setPosts, postId }) {
                                                         <textarea
                                                             placeholder="댓글 내용을 입력하세요"
                                                             value={editCommentContent}
-                                                            onChange={(e) => setEditCommentContent(e.target.value)}
-                                                        />
+                                                            onChange={(e) => setEditCommentContent(e.target.value)}/>
                                                         <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px" }}>
                                                             <button type="button" onClick={() => setEditingCommentId(null)}>취소</button>
                                                             <button type="submit">수정 완료</button>
@@ -522,8 +472,7 @@ function NoticeDetailPage({ posts, setPosts, postId }) {
                                                     <textarea
                                                         placeholder="답글 내용을 입력하세요"
                                                         value={replyContent}
-                                                        onChange={(e) => setReplyContent(e.target.value)}
-                                                    />
+                                                        onChange={(e) => setReplyContent(e.target.value)}/>
                                                     <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px" }}>
                                                         <button type="button" onClick={() => { setReplyToId(null); setReplyContent(""); }}>취소</button>
                                                         <button type="submit">답글 등록</button>
@@ -543,8 +492,7 @@ function NoticeDetailPage({ posts, setPosts, postId }) {
                                         value={content}
                                         onChange={(e) =>
                                             setContent(e.target.value)
-                                        }
-                                    />
+                                        }/>
                                     <button type="submit">
                                         댓글 등록
                                     </button>

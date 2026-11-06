@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState } from "react";
 import { useERP } from "../context/ERPContext";
 import { initialAccounts } from "../data/mockAccounts";
@@ -6,136 +5,123 @@ import { initialEmployees } from "../data/mockData";
 import { formatEmployeeId } from "../utils/formatUtils";
 import "./MyPage.css";
 
-// 로그인한 직원의 기본 정보와 로컬에 저장한 수정 정보를 합칩니다.
-function loadEmployeeByEmail(loginEmail, basicEmployee) {
-    if (!basicEmployee) return null;
+function readList(key, fallback) {
     try {
-        const saved = localStorage.getItem("erpMyPageInfo_" + loginEmail.trim().toLowerCase());
-        if (saved) {
-            const info = JSON.parse(saved);
-            return {
-                ...basicEmployee,
-                name: info.name || basicEmployee.name,
-                email: info.email || basicEmployee.email,
-                phone: info.phone ?? basicEmployee.phone
-            };
-        }
-    } catch (error) {
-        // 저장된 정보가 없으면 기본 직원 정보를 사용합니다.
+        const list = JSON.parse(localStorage.getItem(key) || "null");
+        return Array.isArray(list) ? list : fallback;
+    } catch {
+        return fallback;
     }
-    return basicEmployee;
 }
 
-// 게시판에서도 로그인한 계정을 확인하도록 기존 로그인 저장 키를 사용합니다.
-// 계정 id와 직원 employeeId는 서로 다른 번호입니다.
+// 마이페이지에서 저장한 이름·이메일·전화번호를 기존 직원 정보에 반영합니다.
+function getEmployeeInfo(employee) {
+    if (!employee) return null;
+    try {
+        const key = `erpMyPageInfo_${String(employee.email).trim().toLowerCase()}`;
+        const saved = JSON.parse(localStorage.getItem(key) || "null");
+        return saved ? {
+            ...employee,
+            name: saved.name || employee.name,
+            email: saved.email || employee.email,
+            phone: saved.phone ?? employee.phone
+        } : employee;
+    } catch {
+        return employee;
+    }
+}
+
+// 게시판의 작성자 확인에 사용합니다. 계정 ID와 직원 ID는 별개입니다.
 export function getBoardUser() {
     let accountId;
     try {
         accountId = sessionStorage.getItem("erp_current_user_id");
-        if (!accountId) return null;
-    } catch (error) {
+    } catch {
         return null;
     }
+    if (!accountId) return null;
 
-    // Context와 동일한 저장소에서 최신 계정·직원 목록을 읽습니다.
-    let accounts = initialAccounts;
-    let employees = initialEmployees;
-    try {
-        const savedAccounts = JSON.parse(localStorage.getItem("erp_accounts") || "null");
-        const savedEmployees = JSON.parse(localStorage.getItem("erp_employees") || "null");
-        if (Array.isArray(savedAccounts)) accounts = savedAccounts;
-        if (Array.isArray(savedEmployees)) employees = savedEmployees;
-    } catch (error) {
-        // 저장되지 않은 경우 최초 데이터 사용
-    }
-
+    const accounts = readList("erp_accounts", initialAccounts);
+    const employees = readList("erp_employees", initialEmployees);
     const account = accounts.find(item => String(item.id) === String(accountId));
     if (!account || account.status !== "활성") return null;
+
     const employee = employees.find(item => String(item.id) === String(account.employeeId));
     if (!employee) return null;
-
-    const displayed = loadEmployeeByEmail(employee.email, employee);
     return {
         employeeId: employee.id,
-        email: employee.email.toLowerCase(),
-        name: displayed.name
+        email: String(employee.email).trim().toLowerCase(),
+        name: getEmployeeInfo(employee).name
     };
 }
 
-// 기존 게시글·댓글의 작성자 권한 확인 기능은 그대로 둡니다.
 export function isBoardAuthor(item, user) {
     if (!item || !user) return false;
     if (item.authorEmployeeId != null) {
         return String(item.authorEmployeeId) === String(user.employeeId);
     }
-    return Boolean(
-        item.authorEmail &&
-        String(item.authorEmail).trim().toLowerCase() === user.email
-    );
+    return Boolean(item.authorEmail &&
+        String(item.authorEmail).trim().toLowerCase() === user.email);
 }
 
-// 직원별로 저장한 프로필 사진을 읽습니다.
-function loadProfilePhoto(employeeId) {
-    if (employeeId == null) return "";
+function getProfilePhoto(employeeId) {
     try {
-        return localStorage.getItem("erpProfilePhoto_" + employeeId) || "";
-    } catch (error) {
+        return employeeId == null ? "" : localStorage.getItem(`erpProfilePhoto_${employeeId}`) || "";
+    } catch {
         return "";
     }
 }
 
 function MyPage() {
-
-    // ERPContext에서 실제 로그인한 계정과 직원 정보를 받아옵니다.
-    const { currentUser: account, currentEmployee: basicEmployee, logout, changePassword } = useERP();
-    const loginEmail = basicEmployee?.email || "";
-    const storageKey = "erpMyPageInfo_" + loginEmail.trim().toLowerCase();
-
-    // 프로필 사진은 로그인한 직원 번호로 구분해 저장합니다.
-    const photoKey = account?.employeeId != null ? "erpProfilePhoto_" + account.employeeId : "";
+    const { currentUser: account, currentEmployee, logout, changePassword } = useERP();
+    const employeeId = account?.employeeId;
+    const infoKey = `erpMyPageInfo_${String(currentEmployee?.email || "").trim().toLowerCase()}`;
     const photoInputRef = useRef(null);
-    const [profilePhoto, setProfilePhoto] = useState(() => loadProfilePhoto(account?.employeeId));
+    const [photo, setPhoto] = useState(() => getProfilePhoto(employeeId));
+    const [savedEmployee, setSavedEmployee] = useState(null);
+    const employee = savedEmployee?.id === currentEmployee?.id
+        ? savedEmployee : getEmployeeInfo(currentEmployee);
 
-    useEffect(() => {
-        setProfilePhoto(loadProfilePhoto(account?.employeeId));
-    }, [account?.employeeId]);
+    const [isEditing, setIsEditing] = useState(false);
+    const [name, setName] = useState(employee?.name || "");
+    const [email, setEmail] = useState(employee?.email || "");
+    const [phone, setPhone] = useState(employee?.phone || "");
+    const [showPasswordForm, setShowPasswordForm] = useState(false);
+    const [currentPassword, setCurrentPassword] = useState("");
+    const [newPassword, setNewPassword] = useState("");
+    const [confirmPassword, setConfirmPassword] = useState("");
 
-    // 사진을 정사각형으로 잘라 저장하면 두 화면에서 동일하게 보입니다.
-    const changeProfilePhoto = (event) => {
+    useEffect(() => setPhoto(getProfilePhoto(employeeId)), [employeeId]);
+
+    // 프로필 사진을 중앙 정사각형으로 자르고 저장합니다.
+    const changeProfilePhoto = event => {
         const file = event.target.files?.[0];
         event.target.value = "";
-        if (!file || !photoKey) return;
+        if (!file || employeeId == null) return;
         if (!["image/jpeg", "image/png", "image/webp", "image/gif"].includes(file.type)) {
-            alert("JPG, PNG, WEBP, GIF 이미지 파일을 선택해 주세요.");
-            return;
+            return alert("JPG, PNG, WEBP, GIF 이미지 파일을 선택해 주세요.");
         }
-        if (file.size > 10 * 1024 * 1024) {
-            alert("10MB 이하의 이미지를 선택해 주세요.");
-            return;
-        }
+        if (file.size > 10 * 1024 * 1024) return alert("10MB 이하의 이미지를 선택해 주세요.");
 
         const reader = new FileReader();
         reader.onload = () => {
             const image = new Image();
             image.onload = () => {
                 const canvas = document.createElement("canvas");
-                canvas.width = 256;
-                canvas.height = 256;
+                canvas.width = canvas.height = 256;
                 const ctx = canvas.getContext("2d");
                 if (!ctx) return;
-
                 const size = Math.min(image.width, image.height);
                 ctx.fillStyle = "#e9e5ff";
                 ctx.fillRect(0, 0, 256, 256);
                 ctx.drawImage(image, (image.width - size) / 2, (image.height - size) / 2,
                     size, size, 0, 0, 256, 256);
-
                 try {
-                    const photo = canvas.toDataURL("image/jpeg", 0.85);
-                    localStorage.setItem(photoKey, photo);
-                    setProfilePhoto(photo);
+                    const value = canvas.toDataURL("image/jpeg", 0.85);
+                    localStorage.setItem(`erpProfilePhoto_${employeeId}`, value);
+                    setPhoto(value);
                     window.dispatchEvent(new Event("erpProfilePhotoChanged"));
-                } catch (error) {
+                } catch {
                     alert("프로필 사진을 저장할 수 없습니다.");
                 }
             };
@@ -146,61 +132,27 @@ function MyPage() {
         reader.readAsDataURL(file);
     };
 
-    // 기존 마이페이지의 정보 수정 기능을 유지합니다.
-    const [updatedEmployee, setUpdatedEmployee] = useState(null);
-    const employee = updatedEmployee?.id === basicEmployee?.id
-        ? updatedEmployee
-        : loadEmployeeByEmail(loginEmail, basicEmployee);
-
-    // 정보 수정 상태
-    const [isEditing, setIsEditing] = useState(false);
-
-    // 수정 입력값
-    const [name, setName] = useState(employee?.name || "");
-    const [email, setEmail] = useState(employee?.email || "");
-    const [phone, setPhone] = useState(employee?.phone || "");
-
-    // 정보 수정 시작
     const startEdit = () => {
         setName(employee.name);
         setEmail(employee.email);
-        setPhone(employee.phone);
+        setPhone(employee.phone || "");
         setIsEditing(true);
     };
 
-    // 수정정보 저장
-    const saveInfo = (event) => {
+    const saveInfo = event => {
         event.preventDefault();
-        if (!name.trim() || !email.trim()) {
-            alert("이름과 이메일을 입력해 주세요.");
-            return;
-        }
-
-        const changedInfo = {
-            name: name.trim(),
-            email: email.trim(),
-            phone: phone.trim()
-        };
+        if (!name.trim() || !email.trim()) return alert("이름과 이메일을 입력해 주세요.");
+        const changed = { name: name.trim(), email: email.trim(), phone: phone.trim() };
         try {
-            localStorage.setItem(
-                storageKey,
-                JSON.stringify(changedInfo)
-            );
-        } catch (error) {
-            alert("정보를 저장할 수 없습니다.");
-            return;
+            localStorage.setItem(infoKey, JSON.stringify(changed));
+        } catch {
+            return alert("정보를 저장할 수 없습니다.");
         }
-        setUpdatedEmployee({ ...employee, ...changedInfo });
+        setSavedEmployee({ ...employee, ...changed });
         setIsEditing(false);
+        window.dispatchEvent(new Event("erpProfilePhotoChanged"));
     };
 
-    // 비밀번호 변경 입력 상태
-    const [showPasswordForm, setShowPasswordForm] = useState(false);
-    const [currentPassword, setCurrentPassword] = useState("");
-    const [newPassword, setNewPassword] = useState("");
-    const [confirmPassword, setConfirmPassword] = useState("");
-
-    // 비밀번호 변경 창 닫기
     const closePasswordForm = () => {
         setShowPasswordForm(false);
         setCurrentPassword("");
@@ -208,31 +160,21 @@ function MyPage() {
         setConfirmPassword("");
     };
 
-    // Context의 changePassword 함수를 호출합니다.
+    // 비밀번호는 로컬에 직접 저장하지 않고 Context에서 변경합니다.
     const handleChangePassword = () => {
         if (!account) return;
         if (!currentPassword || !newPassword || !confirmPassword) {
-            alert("비밀번호를 모두 입력해 주세요.");
-            return;
+            return alert("비밀번호를 모두 입력해 주세요.");
         }
-        if (newPassword !== confirmPassword) {
-            alert("새 비밀번호가 서로 일치하지 않습니다.");
-            return;
-        }
-        if (currentPassword === newPassword) {
-            alert("현재 비밀번호와 다른 비밀번호를 입력해 주세요.");
-            return;
-        }
-        const success = changePassword(account.id, currentPassword, newPassword, confirmPassword);
-        if (!success) {
-            alert("현재 비밀번호가 올바르지 않습니다.");
-            return;
+        if (newPassword !== confirmPassword) return alert("새 비밀번호가 서로 일치하지 않습니다.");
+        if (currentPassword === newPassword) return alert("현재 비밀번호와 다른 비밀번호를 입력해 주세요.");
+        if (!changePassword(account.id, currentPassword, newPassword, confirmPassword)) {
+            return alert("현재 비밀번호가 올바르지 않습니다.");
         }
         closePasswordForm();
         alert("비밀번호가 변경되었습니다.");
     };
 
-    // 기존 Context의 로그아웃 기능을 사용합니다.
     const handleLogout = () => {
         logout();
         alert("로그아웃되었습니다.");
@@ -262,7 +204,7 @@ function MyPage() {
                             aria-label="프로필 사진 등록 또는 변경"
                             title="사진을 누르면 프로필 사진을 변경할 수 있습니다."
                             onClick={() => photoInputRef.current?.click()}>
-                            {profilePhoto ? <img src={profilePhoto} alt="" /> : "👤"}
+                            {photo ? <img src={photo} alt="" /> : "👤"}
                         </button>
                         <input
                             ref={photoInputRef}
@@ -270,8 +212,7 @@ function MyPage() {
                             type="file"
                             accept="image/jpeg,image/png,image/webp,image/gif"
                             onChange={changeProfilePhoto}
-                            aria-label="프로필 사진 파일 선택"
-                        />
+                            aria-label="프로필 사진 파일 선택"/>
                         <div className="mypage-profile-text">
                             {/* 직원 이름 */}
                             {isEditing ? (
@@ -286,8 +227,7 @@ function MyPage() {
                                             maxWidth: "100%"
                                         }}
                                         maxLength={30}
-                                        required
-                                    />
+                                        required/>
                                 </div>
                             ) : (
                                 <h2>{employee.name}</h2>
@@ -324,8 +264,7 @@ function MyPage() {
                                         value={email}
                                         onChange={(e) => setEmail(e.target.value)}
                                         maxLength={100}
-                                        required
-                                    />
+                                        required/>
                                 ) : (
                                     <strong>{employee.email}</strong>
                                 )}
@@ -342,8 +281,7 @@ function MyPage() {
                                         value={phone}
                                         onChange={(e) => setPhone(e.target.value)}
                                         placeholder="010-0000-0000"
-                                        maxLength={20}
-                                    />
+                                        maxLength={20}/>
                                 ) : (
                                     <strong>
                                         {employee.phone || "미등록"}
@@ -450,8 +388,7 @@ function MyPage() {
                                             type="password"
                                             value={currentPassword}
                                             onChange={(e) => setCurrentPassword(e.target.value)}
-                                            autoComplete="current-password"
-                                        />
+                                            autoComplete="current-password"/>
                                     </div>
                                     <div className="mypage-password-field">
                                         <label htmlFor="mypage-new-password">새 비밀번호</label>
@@ -460,8 +397,7 @@ function MyPage() {
                                             type="password"
                                             value={newPassword}
                                             onChange={(e) => setNewPassword(e.target.value)}
-                                            autoComplete="new-password"
-                                        />
+                                            autoComplete="new-password"/>
                                     </div>
                                     <div className="mypage-password-field">
                                         <label htmlFor="mypage-confirm-password">새 비밀번호 확인</label>
@@ -470,8 +406,7 @@ function MyPage() {
                                             type="password"
                                             value={confirmPassword}
                                             onChange={(e) => setConfirmPassword(e.target.value)}
-                                            autoComplete="new-password"
-                                        />
+                                            autoComplete="new-password"/>
                                     </div>
                                 </div>
                                 <div className="mypage-password-actions">
