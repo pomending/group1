@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import "./QuotationList.css";
-import { QUOTATAION_STATUS } from "../utils/quotationUtils";
+import { QUOTATION_STATUS } from "../utils/quotationUtils";
 import { formatCustomerName, formatProductName, formatQuotationId } from "../utils/formatUtils";
 import { useERP } from "../context/ERPContext";
 
@@ -233,7 +233,7 @@ function QuotationList({ quotations }) {
                     <select value={status}
                         onChange={(e) => setStatus(e.target.value)}>
                         <option>전체 상태</option>
-                        {QUOTATAION_STATUS.map(status =>
+                        {QUOTATION_STATUS.map(status =>
                             <option>{status}</option>
                         )
                         }
