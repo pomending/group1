@@ -81,6 +81,7 @@ export function ERPProvider({ children }) {
         customerData.resetCustomers();
         productData.resetProducts();
         accountData.resetAccounts();
+       consultationData.resetConsultations();
        
         authData.logout();
 

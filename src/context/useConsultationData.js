@@ -27,10 +27,12 @@ export default function useConsultationData() {
             ...consultations.map((item) => item.id)) + 1;
 
         const newConsultation = {
-            ...editData, id: newId, status: editData.status || "문의 접수"
-        }
+            ...editData,
+            id: newId,
+            status: editData.status || "문의 접수"
+        };
 
-        setConsultations([...consultations, newConsultation])
+        setConsultations([newConsultation,...consultations])
     }
 
 
@@ -46,7 +48,7 @@ export default function useConsultationData() {
 
 
 
-    function deleteConsultations(checkIds){
+    function deleteConsultations(checkIds) {
 
         setConsultations(consultations.filter((item) =>
             !checkIds.includes(item.id))
@@ -54,11 +56,17 @@ export default function useConsultationData() {
 
     }
 
+    // 전체 초기화 시 고객 목록과 다음 고객 ID도 원래 상태로 되돌린다.
+    function resetConsultations() {
+        setConsultations([...initialConsultations]);
+    }
+
     return {
         consultations,
         setConsultations,
         addConsultation,
         updateConsultation,
-        deleteConsultations
+        deleteConsultations,
+        resetConsultations
     }
 }

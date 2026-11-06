@@ -1,13 +1,12 @@
 import React, { useState } from "react";
 import "./02_ConsultationManagement.css";
-import { Consultations } from "./03_Consultations";
 import { useERP } from "../context/ERPContext";
-import { formatPhone, validatePhone } from "../utils/customerUtils";
+import { formatPhone, validatePhone, validateCustomer } from "../utils/customerUtils";
 function ConsultationManagement() {
     //문의목록을 관리할 usestate
-    const { consultations, addConsultation,updateConsultation,
-            deleteConsultations,employees
-     } = useERP();
+    const { consultations, addConsultation, updateConsultation,
+        deleteConsultations, employees, customers, addCustomer
+    } = useERP();
 
     //체크박스로 선택한 문의 Id를 저장할 usestate
     const [checkIds, setCheckedIds] = useState([]);
@@ -34,20 +33,72 @@ function ConsultationManagement() {
 
     const saveConsultation = () => {
 
-        if ((editData.companyName || "").trim() === ""
-            || (editData.customerManager || "").trim() === ""
-            || (editData.phone || "").trim() === "") {
-            alert("필수등록정보(고객사명, 고객사 담당자명, 연락처)를 입력해주세요.")
+        if (!validateCustomer(editData)) {
             return;
         }
 
-        if (editData.id) {
-            updateConsultation(editData);
-            alert("문의 정보가 수정되었습니다.")
+
+        if (!validatePhone(editData.phone)) {
+            return;
         }
-        else {
-            addConsultation(editData)
-            alert("새로운 문의가 등록되었습니다.")
+
+        if (editData.status === "처리 중"
+            || editData.status === "견적 요청"
+            || editData.status === "문의 종료") {
+            if (editData.employeeId === null
+                || editData.employeeId === ""
+                || editData.employeeId === undefined) {
+                alert("처리중 단계부터는 담당자를 지정해야 됩니다.")
+                return;
+            }
+        }
+
+        let customerId = editData.customerId ?? null
+        let isNewCustomer = false;
+        if (editData.status === "견적 요청") {
+            const existingCustomer = customers.find(
+                (customer) => customer.companyName === editData.companyName)
+
+            if (!existingCustomer) {
+                const newCustomerId = addCustomer({
+                    companyName: editData.companyName,
+                    businessNumber: "",
+                    customerManager: editData.customerManager,
+                    employeeId: editData.employeeId ?? null,
+                    phone: editData.phone,
+                    email: editData.email || "",
+                    address: "",
+                    createdAt: new Date().toLocaleDateString("sv-SE"),
+                    memo: ""
+                }
+                )
+
+                customerId = newCustomerId
+                isNewCustomer = true;
+            } else {
+                customerId = existingCustomer.id
+            }
+        }
+
+
+
+
+
+        if (editData.id) {
+            updateConsultation({ ...editData, customerId });
+        } else {
+            addConsultation({ ...editData, customerId });
+        }
+        if (isNewCustomer) {
+            alert("문의 정보가 저장되고 고객관리에 신규 등록되었습니다.");
+        } else if (editData.status === "견적 요청" && isNewCustomer === false) {
+            alert("문의 정보가 저장되고 기존 고객정보와 연결되었습니다.");
+        } else {
+            if (editData.id) {
+                alert("문의 정보가 수정되었습니다.");
+            } else {
+                alert("새로운 문의가 등록되었습니다.");
+            }
         }
         setEditData({});
         setCheckedIds([]);
@@ -75,7 +126,7 @@ function ConsultationManagement() {
     }
 
     // 업체명 검색어에 일치하는 문의 목록을 필터링
-    const filteredConsultation = consultations.filter((item) => item.companyName.includes(searchResult))
+    const filteredConsultation = consultations.filter((item) => (item.companyName || "").includes(searchResult))
 
     return (
         <div className="consultation-page">
@@ -218,7 +269,7 @@ function ConsultationManagement() {
                                     <td>{item.customerManager}</td>
                                     <td>{item.phone}</td>
                                     <td>{item.email}</td>
-                                    <td>{employees.find((employee)=> employee.id===item.employeeId)?.name}</td>
+                                    <td>{employees.find((employee) => employee.id === item.employeeId)?.name}</td>
                                     <td>{item.status}</td>
 
                                 </tr>

@@ -32,6 +32,11 @@ function CustomerEdit() {
         if (!validateCustomer(EditingCustomerData)) {
             return;
         }
+
+        if (EditingCustomerData.employeeId == null || EditingCustomerData.employeeId === "") {
+            alert("필수 등록정보(내부 담당자)를 확인해주세요.");
+            return;
+        }
         if (!validatePhone(EditingCustomerData.phone)) {
             return;
 
@@ -116,7 +121,7 @@ function CustomerEdit() {
                 </div>
 
                 <div className="crm-form-field">
-                    <label>내부 담당자</label>
+                    <label>담당자<span className="crm-required">*</span></label>
                     <select value={EditingCustomerData.employeeId ?? ""}
                         onChange={(e) => (
                             setEditingCustomerData({
