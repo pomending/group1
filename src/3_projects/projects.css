@@ -1696,3 +1696,23 @@
   font-size: 17px;
   font-weight: 700;
 }
+
+.pf-field textarea {
+  width: 100%;
+  min-height: 110px;
+  padding: 12px 14px;
+  border: 1px solid #dfe2eb;
+  border-radius: 9px;
+  background: #fff;
+  color: #303449;
+  font: inherit;
+  line-height: 1.6;
+  resize: vertical;
+  box-sizing: border-box;
+}
+
+.pf-field textarea:focus {
+  outline: none;
+  border-color: #7565d8;
+  box-shadow: 0 0 0 3px rgba(117, 101, 216, 0.12);
+}
