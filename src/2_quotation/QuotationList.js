@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import "./QuotationList.css";
+import { QUOTATAION_STATUS } from "../utils/quotationUtils";
 import { formatCustomerName, formatProductName, formatQuotationId } from "../utils/formatUtils";
 import { useERP } from "../context/ERPContext";
 
@@ -22,6 +23,8 @@ function QuotationList({ quotations }) {
     const [appliedstartdate, setAppliedStartDate] = useState("");
     const [appliedenddate, setAppliedEndDate] = useState("");
     const [appliedstatus, setAppliedStatus] = useState("전체 상태");
+
+    const [selectedCard, setSelectedCard] = useState("전체 상태")
 
     //현재 페이지
     const [currentPage, setCurrentPage] = useState(1);
@@ -63,8 +66,8 @@ function QuotationList({ quotations }) {
 
         const searchMatch =
             formatQuotationId(quotation.id).toLowerCase().includes(appliedsearch.toLowerCase()) ||
-            String(quotation.customerId).toLowerCase().includes(appliedsearch) ||
-            String(quotation.productId).toLowerCase().includes(appliedsearch);
+            formatCustomerName(customers, quotation.customerId).toLowerCase().includes(appliedsearch.toLowerCase()) ||
+            formatProductName(products, quotation.productId).toLowerCase().includes(appliedsearch.toLowerCase());
 
         const startDateMatch =
             appliedstartdate === "" || quotation.createdAt >= appliedstartdate;
@@ -73,8 +76,10 @@ function QuotationList({ quotations }) {
             appliedenddate === "" || quotation.createdAt <= appliedenddate;
 
         const statusMatch =
-            appliedstatus === "전체 상태" ||
-            quotation.status === appliedstatus;
+            (appliedstatus === "전체 상태" ||
+                quotation.status === appliedstatus) &&
+            (selectedCard === "전체 상태" ||
+                quotation.status === selectedCard);
 
         return searchMatch && startDateMatch && endDateMatch && statusMatch;
     }).sort((a, b) => {
@@ -201,7 +206,7 @@ function QuotationList({ quotations }) {
                     <label>검색어</label>
                     <input
                         type="text"
-                        placeholder="거래처명 또는 상품명으로 검색하세요"
+                        placeholder="견적번호, 거래처명 또는 상품명으로 검색"
                         value={search}
                         onChange={(e) => setSearch(e.target.value)} />
                 </div>
@@ -228,9 +233,10 @@ function QuotationList({ quotations }) {
                     <select value={status}
                         onChange={(e) => setStatus(e.target.value)}>
                         <option>전체 상태</option>
-                        <option>승인 완료</option>
-                        <option>승인 대기</option>
-                        <option>반려</option>
+                        {QUOTATAION_STATUS.map(status =>
+                            <option>{status}</option>
+                        )
+                        }
                     </select>
                 </div>
 
@@ -257,36 +263,58 @@ function QuotationList({ quotations }) {
             <section className="quotation-status">
 
                 <div className="quotation-summary">
-                    <div className="summary-card">
+                    <div
+                        className="summary-card"
+                        onClick={() => {
+                            setSelectedCard("전체 상태")
+                            setCurrentPage(1)
+                        }}>
                         <p>전체 견적 수</p>
-                        <h2 className="total-count">{quotations.length}건</h2>
+                        <h2 className="total-count">
+                            {quotations.filter(q => q.status !== "임시 저장").length}건
+                        </h2>
                     </div>
 
-                    <div className="summary-card">
+                    <div
+                        className="summary-card"
+                        onClick={() => {
+                            setSelectedCard("승인 대기")
+                            setCurrentPage(1)
+                        }}>
                         <p>승인 대기</p>
                         <h2 className="pending-count">
                             {quotations.filter(q => q.status === "승인 대기").length}건
                         </h2>
                     </div>
 
-                    <div className="summary-card">
+                    <div
+                        className="summary-card"
+                        onClick={() => {
+                            setSelectedCard("승인 완료")
+                            setCurrentPage(1)
+                        }}>
                         <p>승인 완료</p>
                         <h2 className="approved-count">
                             {quotations.filter(q => q.status === "승인 완료").length}건
                         </h2>
                     </div>
 
-                    <div className="summary-card">
+                    <div
+                        className="summary-card"
+                        onClick={() => {
+                            setSelectedCard("반려")
+                            setCurrentPage(1)
+                        }}>
                         <p>반려</p>
                         <h2 className="rejected-count">
                             {quotations.filter(q => q.status === "반려").length}건
                         </h2>
                     </div>
                 </div>
-            </section>
+            </section >
 
             {/* 견적 목록 */}
-            <section className="recent-quotation">
+            < section className="recent-quotation" >
 
                 <h2>견적 목록</h2>
                 <div className="sort-select">

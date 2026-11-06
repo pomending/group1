@@ -108,7 +108,7 @@ export const quotations = [
         deliveryDate: "2026-11-25",
         paymentMethod: "계좌이체",
         memo: "개별 포장 요청",
-        status: "승인"
+        status: "승인 완료"
     },
     {
         id: 2,
@@ -122,7 +122,7 @@ export const quotations = [
         deliveryDate: "2026-11-30",
         paymentMethod: "계좌이체",
         memo: "학교 로고 인쇄 요청",
-        status: "승인"
+        status: "승인 완료"
     },
     {
         id: 3,
@@ -136,7 +136,7 @@ export const quotations = [
         deliveryDate: "2026-12-02",
         paymentMethod: "카드결제",
         memo: "머그컵 제작 요청",
-        status: "승인"
+        status: "승인 완료"
     },
     {
         id: 4,
@@ -164,7 +164,7 @@ export const quotations = [
         deliveryDate: "2026-12-05",
         paymentMethod: "계좌이체",
         memo: "견적 조건 협의 실패",
-        status: "거절"
+        status: "반려"
     },
     {
         id: 6,
@@ -178,7 +178,7 @@ export const quotations = [
         deliveryDate: "2026-12-10",
         paymentMethod: "계좌이체",
         memo: "대량 주문 할인 적용",
-        status: "승인"
+        status: "승인 완료"
     },
     {
         id: 7,
@@ -192,7 +192,7 @@ export const quotations = [
         deliveryDate: "2026-12-08",
         paymentMethod: "카드결제",
         memo: "친환경 에코백 추가 주문",
-        status: "승인"
+        status: "승인 완료"
     },
     {
         id: 8,
@@ -234,7 +234,7 @@ export const quotations = [
         deliveryDate: "2026-12-12",
         paymentMethod: "카드결제",
         memo: "재활용 소재 파우치 주문",
-        status: "승인"
+        status: "승인 완료"
     }
 ];
 
