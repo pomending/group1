@@ -108,7 +108,7 @@ export const quotations = [
         deliveryDate: "2026-11-25",
         paymentMethod: "계좌이체",
         memo: "개별 포장 요청",
-        status: "승인"
+        status: "승인 완료"
     },
     {
         id: 2,
@@ -122,7 +122,7 @@ export const quotations = [
         deliveryDate: "2026-11-30",
         paymentMethod: "계좌이체",
         memo: "학교 로고 인쇄 요청",
-        status: "승인"
+        status: "승인 완료"
     },
     {
         id: 3,
@@ -136,7 +136,7 @@ export const quotations = [
         deliveryDate: "2026-12-02",
         paymentMethod: "카드결제",
         memo: "머그컵 제작 요청",
-        status: "승인"
+        status: "승인 완료"
     },
     {
         id: 4,
@@ -164,7 +164,7 @@ export const quotations = [
         deliveryDate: "2026-12-05",
         paymentMethod: "계좌이체",
         memo: "견적 조건 협의 실패",
-        status: "거절"
+        status: "반려"
     },
     {
         id: 6,
@@ -178,7 +178,7 @@ export const quotations = [
         deliveryDate: "2026-12-10",
         paymentMethod: "계좌이체",
         memo: "대량 주문 할인 적용",
-        status: "승인"
+        status: "승인 완료"
     },
     {
         id: 7,
@@ -192,7 +192,7 @@ export const quotations = [
         deliveryDate: "2026-12-08",
         paymentMethod: "카드결제",
         memo: "친환경 에코백 추가 주문",
-        status: "승인"
+        status: "승인 완료"
     },
     {
         id: 8,
@@ -234,7 +234,7 @@ export const quotations = [
         deliveryDate: "2026-12-12",
         paymentMethod: "카드결제",
         memo: "재활용 소재 파우치 주문",
-        status: "승인"
+        status: "승인 완료"
     }
 ];
 
@@ -916,7 +916,7 @@ export const tasks = [
         projectId: 1,
         taskStatus: "제작 관리",
         employeeId: 1,
-        taskDeadline: "",
+        taskDeadline: "2026-11-03",
         progress: "완료"
     },
     {
@@ -924,7 +924,7 @@ export const tasks = [
         projectId: 1,
         taskStatus: "검수 관리",
         employeeId: 7,
-        taskDeadline: "",
+        taskDeadline: "2026-11-09",
         progress: "작업중"
     },
     {
@@ -932,7 +932,7 @@ export const tasks = [
         projectId: 1,
         taskStatus: "포장 관리",
         employeeId: 14,
-        taskDeadline: "",
+        taskDeadline: "2026-11-13",
         progress: "대기중"
     },
     {
@@ -940,7 +940,7 @@ export const tasks = [
         projectId: 2,
         taskStatus: "제작 관리",
         employeeId: 13,
-        taskDeadline: "",
+        taskDeadline: "2026-11-10",
         progress: "대기중"
     },
     {
@@ -948,7 +948,7 @@ export const tasks = [
         projectId: 2,
         taskStatus: "검수 관리",
         employeeId: 6,
-        taskDeadline: "",
+        taskDeadline: "2026-11-13",
         progress: "대기중"
     },
     {
@@ -956,7 +956,7 @@ export const tasks = [
         projectId: 3,
         taskStatus: "제작 관리",
         employeeId: 1,
-        taskDeadline: "",
+        taskDeadline: "2026-10-26",
         progress: "완료"
     },
     {
@@ -964,7 +964,7 @@ export const tasks = [
         projectId: 3,
         taskStatus: "검수 관리",
         employeeId: 14,
-        taskDeadline: "",
+        taskDeadline: "2026-10-28",
         progress: "완료"
     },
     {
@@ -972,7 +972,7 @@ export const tasks = [
         projectId: 3,
         taskStatus: "배송 관리",
         employeeId: 9,
-        taskDeadline: "",
+        taskDeadline: "2026-10-30",
         progress: "완료"
     },
     {
@@ -980,7 +980,7 @@ export const tasks = [
         projectId: 4,
         taskStatus: "제작 관리",
         employeeId: 6,
-        taskDeadline: "",
+        taskDeadline: "2026-11-14",
         progress: "대기중"
     },
     {
@@ -988,7 +988,7 @@ export const tasks = [
         projectId: 4,
         taskStatus: "검수 관리",
         employeeId: 7,
-        taskDeadline: "",
+        taskDeadline: "2026-11-18",
         progress: "대기중"
     },
     {
@@ -996,7 +996,7 @@ export const tasks = [
         projectId: 5,
         taskStatus: "제작 관리",
         employeeId: 13,
-        taskDeadline: "",
+        taskDeadline: "2026-11-10",
         progress: "작업중"
     },
     {
@@ -1004,7 +1004,7 @@ export const tasks = [
         projectId: 5,
         taskStatus: "포장 관리",
         employeeId: 14,
-        taskDeadline: "",
+        taskDeadline: "2026-11-14",
         progress: "대기중"
     }
 ];

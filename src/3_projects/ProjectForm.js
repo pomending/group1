@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useERP } from "../context/ERPContext";
-import { formatPrice, formatQuotationId } from "../utils/formatUtils";
+import { formatQuotationId } from "../utils/formatUtils";
+import ProjectQuotationInfo from "./ProjectQuotationInfo";
 
 function ProjectForm(props) {
 
@@ -32,7 +33,7 @@ function ProjectForm(props) {
             return;
         }
 
-        if (!selectedQuotation || selectedQuotation.status !== "승인") {
+        if (!selectedQuotation || selectedQuotation.status !== "승인 완료") {
             alert("승인된 견적을 선택하세요.");
             return;
         }
@@ -144,66 +145,10 @@ function ProjectForm(props) {
                             </select>
 
                             {selectedQuotation && (
-                                <div className="pf-quotation-preview">
-
-                                    <div className="pf-quotation-title">
-                                        <h4>선택된 견적 정보</h4>
-                                        <span className="pf-approved pj-approved pj-badge">승인 완료</span>
-                                    </div>
-
-                                    <div className="pf-quotation-meta">
-                                        <div>
-                                            <span>견적 번호</span>
-                                            <strong>
-                                                {formatQuotationId(selectedQuotation.id)}
-                                            </strong>
-                                        </div>
-
-                                        <div>
-                                            <span>고객사</span>
-                                            <strong>
-                                                {customers.find(c => c.id === selectedQuotation.customerId)?.companyName
-                                                    ?? `고객 ${selectedQuotation.customerId}`}
-                                            </strong>
-                                        </div>
-                                    </div>
-
-                                    <div className="pf-quotation-table-wrap pj-quote-wrap">
-                                        <table className="pf-quotation-table pj-quote-table">
-                                            <thead>
-                                                <tr>
-                                                    <th>상품명</th>
-                                                    <th>수량</th>
-                                                    <th>단가</th>
-                                                    <th>금액</th>
-                                                </tr>
-                                            </thead>
-
-                                            <tbody>
-                                                <tr>
-                                                    <td>{selectedProduct?.productName ?? "상품 정보 없음"}</td>
-                                                    <td>{selectedQuotation.quantity}개</td>
-                                                    <td>{formatPrice(selectedQuotation.unitPrice)}</td>
-                                                    <td>
-                                                        {formatPrice(
-                                                            selectedQuotation.quantity * selectedQuotation.unitPrice
-                                                        )}
-                                                    </td>
-                                                </tr>
-                                            </tbody>
-                                        </table>
-                                    </div>
-
-                                    <div className="pf-quotation-summary pj-quote-total">
-                                        <span>총 견적 금액</span>
-                                        <strong>
-                                            {formatPrice(
-                                                selectedQuotation.quantity * selectedQuotation.unitPrice
-                                            )}
-                                        </strong>
-                                    </div>
-
-                                </div>
+                                <ProjectQuotationInfo
+                                    quotation={selectedQuotation}
+                                    product={selectedProduct}
+                                    customer={customers.find(c => c.id === selectedQuotation.customerId)} />
                             )}
 
                         </div>
