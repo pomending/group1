@@ -150,6 +150,9 @@ function CustomerManagement() {
         await downloadExcel(selectedCustomers);
     }
 
+   
+
+
     return (
         <div className="crm-page">
             <div className="crm-header">
