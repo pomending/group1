@@ -1,7 +1,6 @@
 import React, { createContext, useContext, useState } from "react";
 import {
     quotations as initialQuotations,
-    consultations as initialConsultations,
     tasks as initialTasks,
 } from "../data/mockData";
 import useProjectData from "./useProjectData";
@@ -48,7 +47,7 @@ export function ERPProvider({ children }) {
         );
 
         const hasTask = tasks.some(
-            task => Number(task.managerId) === Number(id)
+            task => Number(task.employeeId) === Number(id)
         );
 
         const hasAccount = accountData.accounts.some(

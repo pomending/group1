@@ -1548,89 +1548,151 @@
   .pd-delete-btn,
   .pd-status-editor,
   .pd-muted {
-      display: none !important;
+    display: none !important;
   }
 
   /* 보고서만 표시 */
   body * {
-      visibility: hidden;
+    visibility: hidden;
   }
 
   .project-report,
   .project-report * {
-      visibility: visible;
-      -webkit-print-color-adjust: exact;
-      print-color-adjust: exact;
+    visibility: visible;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
   }
 
   /* 보고서 출력 크기 */
   .project-report {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 180mm !important;
-      max-width: none !important;
-      min-width: 0 !important;
-      margin: 0 !important;
-      padding: 0 !important;
-      box-shadow: none !important;
-      overflow: visible !important;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 180mm !important;
+    max-width: none !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    overflow: visible !important;
   }
 
   /* 기본 정보, 고객 정보, 진행률 카드는 분할 방지 */
   .project-report .pd-card {
-      break-inside: avoid;
-      page-break-inside: avoid;
+    break-inside: avoid;
+    page-break-inside: avoid;
   }
 
   /* 변경 이력과 견적·작업 카드는 분할 허용 */
   .project-report .pd-history-card,
   .project-report .pd-quotation-tasks-card {
-      break-inside: auto;
-      page-break-inside: auto;
-      overflow: visible !important;
+    break-inside: auto;
+    page-break-inside: auto;
+    overflow: visible !important;
   }
 
   /* 변경 이력 목록은 페이지 분할이 가능하도록 */
   .project-report .pd-history-list {
-      display: block;
+    display: block;
   }
 
   /* 개별 변경 이력은 중간에서 잘리지 않도록 */
   .project-report .pd-history-item {
-      margin-bottom: 12px;
-      overflow: visible;
-      break-inside: avoid;
-      page-break-inside: avoid;
+    margin-bottom: 12px;
+    overflow: visible;
+    break-inside: avoid;
+    page-break-inside: avoid;
   }
 
   /* 카드 제목이 본문과 분리되지 않도록 */
   .project-report .pd-card-header,
   .project-report .pd-subheading {
-      break-after: avoid;
-      page-break-after: avoid;
+    break-after: avoid;
+    page-break-after: avoid;
   }
 
   /* 짧은 견적 요약과 표 행은 분할 방지 */
   .project-report .pd-quotation,
   .project-report .pd-quotation-table tr,
   .project-report .pd-empty {
-      break-inside: avoid;
-      page-break-inside: avoid;
+    break-inside: avoid;
+    page-break-inside: avoid;
   }
 
   .project-report .pd-table-wrap {
-      overflow: visible !important;
+    overflow: visible !important;
   }
 
   /* 표가 여러 페이지로 넘어가면 헤더 반복 */
   .project-report .pd-quotation-table thead {
-      display: table-header-group;
+    display: table-header-group;
   }
 
   /* 추후 세부작업 목록을 연결했을 때 사용 */
   .project-report .pd-task-item {
-      break-inside: avoid;
-      page-break-inside: avoid;
+    break-inside: avoid;
+    page-break-inside: avoid;
   }
+}
+
+.pd-task-status {
+  display: inline-block;
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.pd-task-status.done {
+  background: #e6f6ed;
+  color: #16804a;
+}
+
+.pd-task-status.working {
+  background: #eeeaff;
+  color: #6857d2;
+}
+
+.pd-task-status.waiting {
+  background: #f0f1f5;
+  color: #777e90;
+}
+
+.pj-quotation-amounts {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.pj-quotation-amount-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 32px;
+  width: 280px;
+  max-width: 100%;
+  font-size: 12px;
+}
+
+.pj-quotation-amount-row span {
+  color: #83869a;
+}
+
+.pj-quotation-amount-row strong {
+  color: #43465b;
+  font-weight: 600;
+}
+
+.pj-quotation-final {
+  border-top: 1px solid #e4e5ee;
+  padding-top: 12px;
+  margin-top: 4px;
+}
+
+.pj-quotation-final strong {
+  color: #6857d2;
+  font-size: 17px;
+  font-weight: 700;
 }

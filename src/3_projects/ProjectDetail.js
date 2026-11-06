@@ -1,7 +1,8 @@
 import React, { useState } from "react";
 import { useERP } from "../context/ERPContext";
-import { formatPrice, formatProjectId, formatQuotationId } from "../utils/formatUtils";
-import { getProjectStatus } from "../utils/projectStatus";
+import { formatProjectId, formatQuotationId } from "../utils/formatUtils";
+import { getProjectStatus, getProjectProgress } from "../utils/projectStatus";
+import ProjectQuotationInfo from "./ProjectQuotationInfo";
 
 function ProjectDetail(props) {
 
@@ -12,7 +13,8 @@ function ProjectDetail(props) {
         projectHistory,
         employees,
         quotations,
-        products
+        products,
+        tasks
     } = useERP()
 
     const selectedProject = projects.find(project => project.id === props.selectedProjectId);
@@ -44,6 +46,10 @@ function ProjectDetail(props) {
     );
     const selectedProduct = products.find(
         product => product.id === selectedQuotation?.productId
+    );
+
+    const projectTasks = tasks.filter(
+        task => task.projectId === selectedProject.id
     );
 
     const histories = projectHistory
@@ -83,9 +89,7 @@ function ProjectDetail(props) {
         return String(value)
     }
 
-    const quotationTotal = selectedQuotation
-        ? selectedQuotation.quantity * selectedQuotation.unitPrice
-        : 0;
+    
 
     const delProject = () => {
         if (window.confirm('정말로 프로젝트를 삭제하시겠습니까?')) {
@@ -266,10 +270,10 @@ function ProjectDetail(props) {
                                 <span className="pd-section-num pj-eyebrow">PROGRESS</span>
                                 <h2>프로젝트 진행 현황</h2>
                             </div>
-                            <strong className="pd-progress-percent">80%</strong>
+                            <strong className="pd-progress-percent">{getProjectProgress(selectedProject, tasks)}%</strong>
                         </div>
                         <div className="pd-progress-track pj-progress-track">
-                            <div className="pd-progress-fill pj-progress-fill" style={{ width: '80%' }} />
+                            <div className="pd-progress-fill pj-progress-fill" style={{ width: `${getProjectProgress(selectedProject, tasks)}%` }} />
                         </div>
 
                         <div className="pd-status-section pd-status-editor">
@@ -304,7 +308,7 @@ function ProjectDetail(props) {
                                 상태 변경
                             </button>
                         </div>
-                        <p className="pd-muted">현재는 임시 진행률입니다. 세부 작업 기능과 연결하면 실제 진행률로 교체할 수 있습니다.</p>
+
                     </section>
 
                     {/* 프로젝트 변경 이력 */}
@@ -356,51 +360,51 @@ function ProjectDetail(props) {
 
                         <h3 className="pd-subheading">연결 견적 정보</h3>
                         {selectedQuotation ? (
-                            <div className="pd-quotation">
-                                <div className="pd-quotation-top">
-                                    <div>
-                                        <span>견적 번호</span>
-                                        <strong>{formatQuotationId(selectedQuotation.id)}</strong>
-                                    </div>
-                                    <div>
-                                        <span>고객사</span>
-                                        <strong>{customer?.companyName ?? `고객 ID ${selectedQuotation.customerId}`}</strong>
-                                    </div>
-                                    <span className="pd-approved pj-approved pj-badge">{selectedQuotation.status}</span>
-                                </div>
-                                <div className="pd-table-wrap pj-quote-wrap">
-                                    <table className="pd-quotation-table pj-quote-table">
-                                        <thead>
-                                            <tr>
-                                                <th>상품명</th>
-                                                <th>수량</th>
-                                                <th>단가</th>
-                                                <th>금액</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <tr>
-                                                <td>{selectedProduct?.productName ?? "상품 정보 없음"}</td>
-                                                <td>{selectedQuotation.quantity.toLocaleString()}개</td>
-                                                <td>{formatPrice(selectedQuotation.unitPrice)}</td>
-                                                <td>{formatPrice(quotationTotal)}</td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
-                                </div>
-                                <div className="pd-quotation-total pj-quote-total">
-                                    <span>총 견적 금액</span>
-                                    <strong>{formatPrice(quotationTotal)}</strong>
-                                </div>
-                            </div>
+                            <ProjectQuotationInfo product={selectedProduct} quotation={selectedQuotation} customer={customer}/>
                         ) : (
                             <p className="pd-empty">연결된 견적 정보를 찾을 수 없습니다.</p>
                         )}
 
                         <h3 className="pd-subheading pd-tasks-heading">세부 작업</h3>
-                        <div className="pd-empty">
-                            세부 작업 관리 담당자의 데이터가 준비되면 이곳에 작업 목록을 표시할 예정입니다.
-                        </div>
+
+                        {projectTasks.length === 0 ? (
+                            <p className="pd-empty">
+                                등록된 세부 작업이 없습니다.
+                            </p>
+                        ) : (
+                            <div className="pd-table-wrap pj-quote-wrap">
+                                <table className="pd-quotation-table pj-quote-table">
+                                    <thead>
+                                        <tr>
+                                            <th>작업 종류</th>
+                                            <th>담당자</th>
+                                            <th>마감일</th>
+                                            <th>진행 상태</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {projectTasks.map(task => (
+                                            <tr key={task.id}>
+                                                <td>{task.taskStatus}</td>
+                                                <td>
+                                                    {employees.find(
+                                                        emp => emp.id === task.employeeId
+                                                    )?.name ?? "미등록"}
+                                                </td>
+                                                <td>{task.taskDeadline || "미정"}</td>
+                                                <td>
+                                                    <span className={`pd-task-status ${task.progress === "완료" ? "done" :
+                                                            task.progress === "작업중" ? "working" : "waiting"
+                                                        }`}>
+                                                        {task.progress}
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
                     </section>
                 </div>
             </div>

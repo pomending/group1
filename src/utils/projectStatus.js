@@ -1,3 +1,5 @@
+
+
 export const isProjectDelayed = (project) => {
 
     if (!project.dueDate || project.status === '완료') {
@@ -43,5 +45,18 @@ export const getDeadlineStatus = (project) => {
     } else {
         return `D + ${Math.abs(daysLeft)} (지연됨)`
     }
+
+}
+
+export const getProjectProgress = (project, tasks) => {
+
+    const taskStatus = ["제작 관리", "검수 관리", "포장 관리", "배송 관리"]
+
+    const completedCount = tasks.filter(t =>
+        t.projectId === project.id &&
+        t.progress === '완료'
+    ).length
+
+    return completedCount / taskStatus.length * 100
 
 }

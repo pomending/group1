@@ -1,10 +1,10 @@
 import React, { useState } from "react";
 import { useERP } from "../context/ERPContext";
-import { getDeadlineStatus, getProjectStatus, isProjectDelayed } from "../utils/projectStatus";
+import { getDeadlineStatus, getProjectProgress, getProjectStatus, isProjectDelayed } from "../utils/projectStatus";
 
 function ProjectList(props) {
 
-    const { projects } = useERP()
+    const { projects, tasks } = useERP()
 
     const [sort, setSort] = useState('dueAsc')
 
@@ -152,9 +152,9 @@ function ProjectList(props) {
                                         <td>
                                             <div className="pm-progress">
                                                 <div className="pm-progress-bar pj-progress-track">
-                                                    <div className="pm-progress-fill pj-progress-fill" style={{ width: '80%' }} />
+                                                    <div className="pm-progress-fill pj-progress-fill" style={{ width: `${getProjectProgress(project, tasks)}%` }} />
                                                 </div>
-                                                <span className="pm-progress-text">80%</span>
+                                                <span className="pm-progress-text">{getProjectProgress(project, tasks)}%</span>
                                             </div>
                                         </td>
                                         <td>
