@@ -1,16 +1,59 @@
+// ============================================================
 // 공통 ERP 더미 데이터
-// ID 참조: quotations.customerId -> customers.id
-//         quotations.productId  -> products.id
-//         quotations.employeeId -> initialEmployees.id (영업팀)
-//         customers.employeeId  -> initialEmployees.id (영업팀)
-//         consultations.customerId -> customers.id (nullable)
-//         consultations.employeeId -> initialEmployees.id (영업팀)
-//         initialProjects.quotationId -> quotations.id (승인된 견적)
-//         initialProjects.customerId  -> customers.id
-//         initialProjects.managerId   -> initialEmployees.id (생산관리팀)
-//         tasks.projectId             -> initialProjects.id
-//         tasks.managerId             -> initialEmployees.id (작업 관련 부서)
-// 주의: employees는 일부 팀원이 사용하는 임시 3명 목록입니다. HR 직원 20명은 initialEmployees를 사용합니다.
+// ============================================================
+
+// [상품 관리]
+// products.id                    : 상품 고유 ID
+// products.productPrice          : 상품 기본 판매 단가
+// products.productStatus         : "판매 중" / "판매중지"
+
+// [고객 및 상담 관리]
+// customers.employeeId           -> initialEmployees.id (영업팀)
+// consultations.customerId       -> customers.id (null 허용)
+// consultations.employeeId       -> initialEmployees.id (영업팀)
+
+// [견적 관리]
+// quotations.customerId          -> customers.id
+// quotations.productId           -> products.id
+// quotations.employeeId          -> initialEmployees.id (영업팀)
+// quotations.unitPrice           : 실제 적용 단가
+// quotations.deliveryDate        : 고객 납품 예정일
+// quotations.status              : "승인 대기" / "승인 완료" / "반려"
+
+// [프로젝트 관리]
+// initialProjects.quotationId    -> quotations.id (승인 완료 견적)
+// initialProjects.customerId     -> customers.id
+// initialProjects.managerId      -> initialEmployees.id (경영지원팀)
+// initialProjects.dueDate        : 견적의 deliveryDate를 초기값으로 사용
+// initialProjects.status         : "대기" / "진행 중" / "완료" / "지연"
+
+// [세부 작업 관리]
+// tasks.projectId                -> initialProjects.id
+// tasks.employeeId               -> initialEmployees.id (생산팀 / 물류팀)
+// tasks.taskStatus               : "제작 관리" / "검수 관리" / "포장 관리" / "배송 관리"
+// tasks.taskDeadline             : 세부 작업별 마감 예정일
+// tasks.progress                 : "대기중" / "작업중" / "완료"
+
+// [직원 관리]
+// initialEmployees.id            : 직원 고유 ID
+// initialEmployees.department    : "인사팀" / "영업팀" / "경영지원팀" / "물류팀" / "생산팀"
+// initialEmployees.status        : "재직" / "휴직" / "퇴사"
+
+// [데이터 참조 및 관리 규칙]
+// 1. 모든 데이터는 id를 고유 식별자로 사용합니다.
+// 2. 다른 데이터와 연결할 때는 해당 데이터의 ID를 참조합니다.
+// 3. 프로젝트는 승인 완료 견적을 기준으로 생성합니다.
+// 4. 하나의 견적은 최대 하나의 프로젝트에 연결할 수 있습니다.
+// 5. 프로젝트 생성 시 견적의 deliveryDate를 dueDate에 저장합니다.
+// 6. 프로젝트별 동일한 taskStatus의 세부 작업은 중복 등록하지 않습니다.
+// 7. 작업 담당 부서: 제작·검수·포장 = 생산팀, 배송 = 물류팀
+// 8. 다른 데이터에서 참조 중인 항목의 삭제 제한은 ERPContext에서 관리합니다.
+//    (모듈별 통합 CRUD 규칙은 단계적으로 적용 예정)
+
+// [참고]
+// 계정 초기 데이터는 mockAccounts.js의 initialAccounts에서 관리합니다.
+// 계정의 employeeId는 initialEmployees.id를 참조합니다.
+// 직원 정보와 로그인 계정 정보는 별도로 관리합니다.
 
 export const products = [
     {
@@ -970,8 +1013,8 @@ export const tasks = [
     {
         id: 8,
         projectId: 3,
-        taskStatus: "배송 관리",
-        employeeId: 9,
+        taskStatus: "포장 관리",
+        employeeId: 13,
         taskDeadline: "2026-10-30",
         progress: "완료"
     },
@@ -1015,9 +1058,9 @@ export const initialProjects = [
         name: "삼성전자 텀블러 제작",
         quotationId: 1,
         customerId: 1,
-        managerId: 1,
+        managerId: 22,
         startDate: "2026-10-21",
-        dueDate: "2026-11-20",
+        dueDate: "2026-11-25",
         completedDate: null,
         status: "진행 중",
         description: "창립기념 텀블러 300개 제작"
@@ -1027,9 +1070,9 @@ export const initialProjects = [
         name: "한국대학교 에코백 제작",
         quotationId: 2,
         customerId: 2,
-        managerId: 13,
+        managerId: 5,
         startDate: "2026-10-25",
-        dueDate: "2026-11-15",
+        dueDate: "2026-11-30",
         completedDate: null,
         status: "대기",
         description: "홍보용 에코백 500개 제작"
@@ -1039,21 +1082,21 @@ export const initialProjects = [
         name: "그린컴퍼니 머그컵 제작",
         quotationId: 3,
         customerId: 3,
-        managerId: 1,
+        managerId: 17,
         startDate: "2026-10-23",
-        dueDate: "2026-11-02",
-        completedDate: "2026-11-01",
-        status: "완료",
-        description: "행사용 세라믹 머그컵 400개 제작 및 출고 완료"
+        dueDate: "2026-12-02",
+        completedDate: null,
+        status: "진행 중",
+        description: "행사용 세라믹 머그컵 400개 제작 및 출고 작업"
     },
     {
         id: 4,
         name: "미래테크 아크릴 키링 제작",
         quotationId: 6,
         customerId: 4,
-        managerId: 13,
+        managerId: 3,
         startDate: "2026-11-02",
-        dueDate: "2026-11-25",
+        dueDate: "2026-12-10",
         completedDate: null,
         status: "대기",
         description: "홍보용 아크릴 키링 800개 제작"
@@ -1063,9 +1106,9 @@ export const initialProjects = [
         name: "그린컴퍼니 에코백 추가 제작",
         quotationId: 7,
         customerId: 3,
-        managerId: 6,
+        managerId: 12,
         startDate: "2026-11-03",
-        dueDate: "2026-12-04",
+        dueDate: "2026-12-08",
         completedDate: null,
         status: "진행 중",
         description: "친환경 에코백 200개 추가 제작"
