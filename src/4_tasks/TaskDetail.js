@@ -14,7 +14,9 @@ function TaskDetail() {
         customers,
         employees,
         quotations,
-        products } = useERP();
+        products,
+        tasks,
+        setTasks } = useERP();
 
 
     // 선택한 프로젝트 번호
@@ -43,58 +45,72 @@ function TaskDetail() {
     );
 
     //작업 진행상태
-    const [taskStatus, setTaskStatus] = useState("대기중");
-    //등록된 작업 목록
-    const [taskList, setTaskList] = useState([]);
+    const [taskStatus, setTaskStatus] = useState("");
+
+
     //담당자
     const [employeeId, setEmployeeId] = useState("");
     //작업마감일
     const [taskDeadline, setTaskDeadline] = useState("");
 
-    const handleSubmit = () => {
 
-        if(!selectedProjectId){
-            alert("프로젝트를 선택하세요");
-            return;
-        }
+    // 작업 등록 및 수정 함수
+const handleSubmit = () => {
 
-        if (!employeeId){
-            alert("담당자를 선택하세요");
-            return;
-        }
-
-        if(!taskDeadline){
-            alert("작업 마감일을 선택하세요.");
-            return;
-        }
-
-        //선택한 담당자 찾기
-        const selectedEmployee = employees.find(
-            (employee) => employee.id === Number(employeeId)
-        );
-
-        //저장할 작업 데이터
-        const newTask = {
-            id: Date.now(),
-            projectId: Number(selectedProjectId),
-            taskStatus: taskStatus,
-            employeeId: Number(employeeId),
-            employeeName: selectedEmployee?.name || "-",
-            taskDeadline: taskDeadline,
-            progress: "대기중"
-        };
-    
-        // 기존 목록에 새로운 작업 추가
-            setTaskList((prev) => [...prev, newTask]);
-
-            alert("작업이 저장되었습니다.");
-
-            // 입력값 초기화
-            setTaskStatus("대기중");
-            setEmployeeId("");
-            setTaskDeadline("");
+    if (!selectedProjectId) {
+        alert("프로젝트를 선택하세요");
+        return;
     }
-   
+
+    if (!employeeId) {
+        alert("담당자를 선택하세요");
+        return;
+    }
+
+    if (!taskDeadline) {
+        alert("작업 마감일을 선택하세요.");
+        return;
+    }
+
+    if (!taskStatus) {
+        alert("작업 단계를 선택하세요.");
+        return;
+    }
+
+    const newTask = {
+        id: Date.now(),
+        projectId: Number(selectedProjectId),
+        taskStatus,
+        employeeId: Number(employeeId),
+        taskDeadline,
+        progress: "대기중"
+    };
+
+    setTasks((prev) => [...prev, newTask]);
+
+    alert("작업이 저장되었습니다.");
+
+    setTaskStatus("");
+    setEmployeeId("");
+    setTaskDeadline("");
+};
+
+
+// 작업 삭제 함수
+const handleDeleteTask = (taskId) => {
+
+    setTasks((prev) =>
+        prev.filter((item) => item.id !== taskId)
+    );
+
+    alert("작업이 삭제되었습니다.");
+};
+
+
+
+    
+
+    
 
     return (
         <div className="task-detail-page">
@@ -222,7 +238,7 @@ function TaskDetail() {
                                 <p>작업 진행상태</p>
                                 <select value={taskStatus}
                                         onChange={(e) => setTaskStatus(e.target.value)}>
-                                    <option value="대기중">대기중</option>            
+                                    <option value="">작업을 선택해주세요.</option>            
                                     <option value="제작 관리">제작 관리</option> 
                                     <option value="검수 관리">검수 관리</option>
                                     <option value="포장 관리">포장 관리</option>
@@ -259,7 +275,7 @@ function TaskDetail() {
 
 
 {/* 작업 목록: 저장 후 표시 */}
-{taskList.some(
+{tasks.some(
     (task) => task.projectId === Number(selectedProjectId)
 ) && (
                       
@@ -269,7 +285,7 @@ function TaskDetail() {
         <h4>등록된 작업 목록</h4>
         <span>
             총 {
-                taskList.filter(
+                tasks.filter(
                     (task) => task.projectId === Number(selectedProjectId)
                 ).length
                 } 건
@@ -290,7 +306,7 @@ function TaskDetail() {
     </thead>
 
     <tbody>
-        {taskList
+        {tasks
             .filter(
                 (task) => task.projectId === Number(selectedProjectId)
             )
@@ -301,7 +317,7 @@ function TaskDetail() {
 
                     <td>{task.taskStatus}</td>
 
-                    <td>{task.employeeName}</td>
+                    <td>{task.employeeId}</td>
 
                     <td>{task.taskDeadline}</td>
 
@@ -312,18 +328,12 @@ function TaskDetail() {
                     </td>
 
                     <td>
-                        <button
-                            className="td-delete-btn"
-                            onClick={() => {
-                                setTaskList((prev) =>
-                                    prev.filter(
-                                        (item) => item.id !== task.id
-                                    )
-                                );
-                            }}
-                        >
-                            삭제
-                        </button>
+                   
+                    <button className="td-delete-btn"
+                             onClick={() => handleDeleteTask(task.id)}
+                    >
+                        삭제
+                    </button>
                     </td>
                 </tr>
 
