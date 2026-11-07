@@ -1,0 +1,355 @@
+
+/* 마이페이지 전체 */
+.mypage {
+    min-height: 100%;
+    padding: 28px;
+    background: #f5f7fb;
+    box-sizing: border-box;
+}
+
+.mypage-title {
+    margin: 0 0 20px;
+    color: #263247;
+    font-size: 24px;
+    font-weight: 700;
+}
+
+/* 마이페이지 카드 */
+.mypage-card {
+    width: 100%;
+    padding: 28px;
+    background: #fff;
+    border: 1px solid #e2e7ef;
+    border-radius: 14px;
+    box-shadow: 0 5px 18px rgba(29, 42, 65, 0.04);
+    box-sizing: border-box;
+}
+
+/* 상단 프로필 */
+.mypage-profile {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    padding: 22px 24px;
+    background: #f7f6ff;
+    border: 1px solid #efedff;
+    border-radius: 12px;
+}
+
+.mypage-avatar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 66px;
+    height: 66px;
+    background: #e9e5ff;
+    border-radius: 50%;
+    font-size: 32px;
+    flex-shrink: 0;
+}
+
+.mypage-profile-text h2 {
+    margin: 0 0 7px;
+    color: #28334a;
+    font-size: 22px;
+}
+
+.mypage-profile-text p {
+    margin: 0;
+    color: #66738a;
+    font-size: 14px;
+}
+
+/* 이름을 수정할 때 프로필에는 카드 배경을 적용하지 않습니다. */
+.mypage-profile-text .mypage-info-item {
+    min-height: 0;
+    padding: 0;
+    background: transparent;
+    border: 0;
+}
+
+/* 사원 정보와 계정 정보 구역 */
+.mypage-section {
+    padding: 28px 0 0;
+}
+
+.mypage-section h3 {
+    margin: 0 0 18px;
+    color: #29364b;
+    font-size: 17px;
+}
+
+.mypage-section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 18px;
+}
+
+.mypage-section-header h3 {
+    margin: 0;
+}
+
+.mypage-account-section {
+    margin-top: 28px;
+    padding-top: 28px;
+    border-top: 1px solid #e8edf4;
+}
+
+/* 개별 박스 없이 정보만 두 열로 정렬 */
+.mypage-info-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 40px;
+    row-gap: 24px;
+    padding: 4px 2px;
+}
+
+.mypage-info-item {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    min-width: 0;
+}
+
+.mypage-info-item span,
+.mypage-info-item label {
+    color: #778397;
+    font-size: 12px;
+}
+
+.mypage-info-item strong {
+    color: #283449;
+    font-size: 14px;
+    overflow-wrap: anywhere;
+}
+
+/* 수정 입력란 */
+.mypage-info-item input {
+    width: 100%;
+    padding: 9px 10px;
+    border: 1px solid #d8dee9;
+    border-radius: 6px;
+    background: white;
+    font-size: 14px;
+    font-family: inherit;
+    box-sizing: border-box;
+}
+
+.mypage-info-item input:focus {
+    outline: 2px solid #d9d0fa;
+    border-color: #7565d8;
+}
+
+/* 정보 수정, 저장, 취소 버튼 */
+.mypage-edit-button,
+.mypage-save-button,
+.mypage-cancel-button {
+    padding: 9px 14px;
+    border: 1px solid #d7dfea;
+    border-radius: 7px;
+    background: white;
+    color: #334155;
+    font-size: 13px;
+    font-family: inherit;
+    cursor: pointer;
+}
+
+.mypage-edit-button:hover,
+.mypage-cancel-button:hover {
+    background: #f2f5fa;
+}
+
+.mypage-edit-buttons {
+    display: flex;
+    gap: 10px;
+    margin-top: 18px;
+}
+
+.mypage-save-button {
+    background: #7565d8;
+    border-color: #7565d8;
+    color: #fff;
+}
+
+.mypage-save-button:hover {
+    background: #6655cc;
+}
+
+/* 하단 계정 관리 버튼 */
+.mypage-account {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 28px;
+    padding-top: 22px;
+    border-top: 1px solid #e8edf4;
+}
+
+.mypage .mypage-password-button,
+.mypage .mypage-logout-button {
+    padding: 10px 16px;
+    border: 1px solid #d6dce6;
+    border-radius: 8px;
+    background: white;
+    font-size: 13px;
+    font-family: inherit;
+    font-weight: 600;
+}
+
+.mypage .mypage-password-button:disabled {
+    color: #929bac;
+    background: #f6f7f9;
+    border-color: #e2e6ed;
+    cursor: not-allowed;
+}
+
+.mypage .mypage-logout-button {
+    color: #bd4651;
+    border-color: #f0cbd0;
+    cursor: pointer;
+}
+
+.mypage .mypage-logout-button:hover {
+    background: #fff4f4;
+}
+
+/* 좁은 화면에서는 한 열로 배치 */
+@media (max-width: 768px) {
+    .mypage { padding: 16px; }
+    .mypage-card { padding: 18px; }
+    .mypage-profile { padding: 18px; }
+    .mypage-info-grid { grid-template-columns: 1fr; row-gap: 20px; }
+    .mypage-section { padding-top: 24px; }
+    .mypage-account-section { margin-top: 24px; padding-top: 24px; }
+}
+
+@media (max-width: 420px) {
+    .mypage-profile { gap: 12px; }
+    .mypage-avatar { width: 54px; height: 54px; font-size: 27px; }
+    .mypage-profile-text h2 { font-size: 19px; }
+    .mypage-account { justify-content: stretch; }
+    .mypage .mypage-password-button,
+    .mypage .mypage-logout-button { flex: 1; }
+}
+
+/* 비밀번호 변경 버튼 활성화 */
+.mypage .mypage-password-button {
+    cursor: pointer;
+}
+
+.mypage .mypage-password-button:hover {
+    background: #f2f5fa;
+}
+
+/* 비밀번호 변경 입력창 */
+.mypage-password-panel {
+    margin-top: 16px;
+    padding: 20px;
+    background: #fafbfe;
+    border: 1px solid #e2e7ef;
+    border-radius: 8px;
+}
+
+.mypage-password-panel h4 {
+    margin: 0 0 16px;
+    color: #29364b;
+    font-size: 15px;
+}
+
+.mypage-password-fields {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14px;
+}
+
+.mypage-password-field {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 0;
+}
+
+.mypage-password-field label {
+    color: #778397;
+    font-size: 12px;
+}
+
+.mypage-password-field input {
+    width: 100%;
+    padding: 9px 10px;
+    border: 1px solid #d8dee9;
+    border-radius: 6px;
+    font-size: 14px;
+    box-sizing: border-box;
+}
+
+.mypage-password-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 16px;
+}
+
+.mypage-password-actions button {
+    padding: 9px 14px;
+    border: 1px solid #d7dfea;
+    border-radius: 7px;
+    background: #fff;
+    color: #334155;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.mypage-password-actions .mypage-password-save {
+    background: #7565d8;
+    border-color: #7565d8;
+    color: #fff;
+}
+
+@media (max-width: 768px) {
+    .mypage-password-fields {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* 프로필 사진: 원 밖으로 보이지 않도록 자릅니다. */
+.mypage-avatar {
+    position: relative;
+    padding: 0;
+    border: 0;
+    overflow: hidden;
+    cursor: pointer;
+}
+
+.mypage-avatar img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+}
+
+.mypage-avatar::after {
+    content: "변경";
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.45);
+    color: white;
+    font-size: 12px;
+    opacity: 0;
+}
+
+.mypage-avatar:hover::after,
+.mypage-avatar:focus-visible::after {
+    opacity: 1;
+}
+
+.mypage-photo-input {
+    display: none;
+}

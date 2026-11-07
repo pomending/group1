@@ -1,0 +1,96 @@
+
+/* 문의 관리 전체 영역 */
+.consultation-page {
+    padding: 24px;
+    background: #f6f7fb;
+    min-height: 100vh;
+}
+
+/* 상단 등록 영역, 하단 목록 영역 */
+.consultation-box {
+    background: white;
+    padding: 20px;
+    margin-top: 20px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+}
+
+/* 제목 */
+.consultation-page h2 {
+    margin-bottom: 8px;
+}
+
+.consultation-page h4 {
+    margin-bottom: 20px;
+}
+
+/* 입력창 이름 */
+.consultation-box label {
+    display: inline-block;
+    width: 110px;
+    margin-bottom: 12px;
+}
+
+/* 입력창 */
+.consultation-box input[type="text"],
+.consultation-box select {
+    width: 180px;
+    padding: 8px;
+    margin-right: 20px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+/* 문의 내용 */
+.consultation-box textarea {
+    width: 70%;
+    height: 70px;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    vertical-align: top;
+}
+
+/* 버튼 */
+.consultation-page button {
+    padding: 8px 14px;
+    margin: 5px;
+    background: #253858;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.consultation-page button:hover {
+    background: #3c5681;
+}
+
+/* 문의 목록 테이블 */
+.consultation-page table {
+    width: 100%;
+    margin-top: 15px;
+    border-collapse: collapse;
+}
+
+.consultation-page th,
+.consultation-page td {
+    padding: 12px;
+    border-bottom: 1px solid #ddd;
+    text-align: center;
+}
+
+.consultation-page th {
+    background: #edf1f7;
+    font-weight: bold;
+}
+
+.consultation-page tbody tr:hover {
+    background: #f5f8fc;
+}
+
+button:disabled {
+    background-color: #ccc;
+    color: #777;
+    cursor: not-allowed;
+}
