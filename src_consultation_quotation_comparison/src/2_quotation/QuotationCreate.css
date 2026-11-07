@@ -1,0 +1,564 @@
+
+/* ========================================
+   전체 페이지
+======================================== */
+
+.quotation-create {
+    width: 100%;
+    min-height: 100vh;
+    padding: 35px 40px 50px;
+    box-sizing: border-box;
+    background: #f5f7fb;
+    color: #263247;
+    font-family: "Pretendard", "Noto Sans KR", sans-serif;
+}
+
+/* ========================================
+   페이지 제목
+======================================== */
+
+.create-header {
+    margin-bottom: 28px;
+}
+
+.create-header h1 {
+    margin: 0 0 9px;
+    font-size: 25px;
+    font-weight: 700;
+    color: #1e293b;
+}
+
+.create-header p {
+    margin: 0;
+    font-size: 14px;
+    color: #8994a6;
+}
+
+/* ========================================
+   메인 콘텐츠
+======================================== */
+
+.create-content {
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+}
+
+/* 모든 섹션 카드 공통 */
+
+.create-content > section {
+    width: 100%;
+    padding: 26px 30px 30px;
+    box-sizing: border-box;
+
+    background: #ffffff;
+    border: 1px solid #e5eaf2;
+    border-radius: 12px;
+
+    box-shadow: 0 2px 8px rgba(30, 50, 80, 0.03);
+}
+
+/* ========================================
+   섹션 제목
+======================================== */
+
+.section-header,
+.form-section {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+
+    padding-bottom: 18px;
+    margin-bottom: 24px;
+
+    border-bottom: 1px solid #edf0f5;
+}
+
+.section-number {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    width: 30px;
+    height: 30px;
+    flex-shrink: 0;
+
+    border-radius: 8px;
+    background: #edf2ff;
+
+    color: #4169e1;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.section-header h2,
+.form-section h2 {
+    margin: 0;
+    font-size: 17px;
+    font-weight: 700;
+    color: #263247;
+}
+
+/* ========================================
+   기본 입력 폼
+======================================== */
+
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 22px 28px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+    min-width: 0;
+}
+
+.form-group label,
+.product-form .form-group p {
+    display: flex;
+    align-items: center;
+
+    height: 16px;
+    min-height: 16px;
+
+    margin: 0;
+    padding: 0;
+
+    color: #465268;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 16px;
+}
+
+/* 입력창 및 선택창 */
+
+.form-group input,
+.form-group select {
+    width: 100%;
+    height: 44px;
+    padding: 0 13px;
+    box-sizing: border-box;
+
+    border: 1px solid #dce2ec;
+    border-radius: 7px;
+
+    background: #ffffff;
+    color: #334155;
+
+    font-size: 13px;
+    outline: none;
+
+    transition: 0.2s;
+}
+
+.form-group input::placeholder {
+    color: #b0b9c8;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+    border-color: #4169e1;
+    box-shadow: 0 0 0 3px rgba(65, 105, 225, 0.1);
+}
+
+/* 읽기 전용 입력창 */
+
+.readonly-input {
+    background: #f5f7fb !important;
+    color: #8994a6 !important;
+}
+
+/* ========================================
+   상품 정보
+======================================== */
+
+.product-form {
+    display: grid;
+
+    /* 상품명 / 수량 / 단가 / 총 금액 */
+    grid-template-columns: 2fr 1fr 1.3fr 1.5fr;
+
+    gap: 15px;
+    align-items: start;
+
+    width: 100%;
+    padding: 20px;
+
+    box-sizing: border-box;
+
+    background: #f8faff;
+    border: 1px solid #e5eaf3;
+    border-radius: 9px;
+}
+
+/* 상품 입력 항목 */
+
+.product-form .form-group {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+
+    width: 100%;
+    min-width: 0;
+
+    gap: 9px;
+    margin: 0;
+    padding: 0;
+}
+
+/* 상품 라벨 */
+
+.product-form .form-group label,
+.product-form .form-group p {
+    display: flex;
+    align-items: center;
+
+    width: 100%;
+    height: 16px;
+    min-height: 16px;
+
+    margin: 0;
+    padding: 0;
+
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 16px;
+    color: #465268;
+
+    white-space: nowrap;
+}
+
+/* 상품 입력창 */
+
+.product-form .form-group input {
+    display: block;
+
+    width: 100%;
+    height: 44px;
+    min-height: 44px;
+
+    margin: 0;
+    padding: 0 12px;
+
+    box-sizing: border-box;
+
+    border: 1px solid #dce2ec;
+    border-radius: 7px;
+
+    background: #ffffff;
+    color: #334155;
+
+    font-size: 13px;
+    outline: none;
+}
+
+.product-form .form-group input::placeholder {
+    color: #b0b9c8;
+}
+
+.product-form .form-group input:focus {
+    border-color: #4169e1;
+    box-shadow: 0 0 0 3px rgba(65, 105, 225, 0.1);
+}
+
+/* 상품 총 금액 */
+
+.product-form .form-group:last-child input {
+    background: #f3f6fb;
+    color: #8994a6;
+}
+
+/* ========================================
+   견적 금액
+======================================== */
+
+.amount-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+}
+
+.amount-item {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 14px;
+
+    min-height: 95px;
+    padding: 21px;
+
+    box-sizing: border-box;
+
+    background: #f8faff;
+    border: 1px solid #e8edf6;
+    border-radius: 9px;
+}
+
+.amount-item span {
+    font-size: 13px;
+    font-weight: 500;
+    color: #7b8799;
+}
+
+.amount-item strong {
+    font-size: 21px;
+    font-weight: 700;
+    color: #263247;
+}
+
+/* 최종 견적 금액 */
+
+.amount-item.total-amount {
+    background: #edf2ff;
+    border-color: #d8e2ff;
+}
+
+.amount-item.total-amount span {
+    color: #4169e1;
+}
+
+.amount-item.total-amount strong {
+    color: #315bd3;
+}
+
+/* ========================================
+   하단 버튼
+======================================== */
+
+.create-footer {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 10px;
+
+    margin-top: 25px;
+}
+
+.create-footer button {
+    height: 46px;
+    padding: 0 27px;
+
+    border-radius: 7px;
+
+    font-size: 14px;
+    font-weight: 600;
+
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+/* 취소 */
+
+.cancel-btn {
+    background: #ffffff;
+    color: #64748b;
+    border: 1px solid #dce2ec;
+}
+
+.cancel-btn:hover {
+    background: #f1f4f8;
+}
+
+/* 저장 */
+
+.save-btn {
+    background: #4169e1;
+    color: #ffffff;
+    border: 1px solid #4169e1;
+}
+
+.save-btn:hover {
+    background: #3154c5;
+}
+
+/* ========================================
+   반응형
+======================================== */
+
+@media (max-width: 1000px) {
+    .product-form {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 650px) {
+    .quotation-create {
+        padding: 22px 16px 35px;
+    }
+
+    .create-content > section {
+        padding: 20px 17px;
+    }
+
+    .form-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .product-form {
+        grid-template-columns: 1fr;
+    }
+
+    .amount-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .create-footer button {
+        flex: 1;
+    }
+}
+
+/* 내부 담당자 입력 영역 */
+.form-group {
+    position: relative;
+}
+
+/* 직원 검색 결과 전체 */
+.employee-list {
+    position: relative;
+    display: block;
+    width: 100%;
+    max-height: 220px;
+    overflow-y: auto;
+    margin-top: 8px;
+    padding: 0;
+    background-color: #ffffff;
+    border: 1px solid #dce3ef;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+    box-sizing: border-box;
+}
+
+/* 직원 검색 결과 한 명 */
+.employee-list .employee-item {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    min-height: 58px;
+    padding: 12px 15px;
+    margin: 0;
+    background-color: #ffffff;
+    border: none;
+    border-bottom: 1px solid #edf0f5;
+    box-sizing: border-box;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+/* 마지막 직원의 아래쪽 테두리 제거 */
+.employee-list .employee-item:last-child {
+    border-bottom: none;
+}
+
+/* 마우스를 올렸을 때 */
+.employee-list .employee-item:hover {
+    background-color: #f5f7fc;
+}
+
+/* 직원 이름 - 왼쪽 */
+.employee-list .employee-item strong {
+    display: block;
+    font-size: 14px;
+    font-weight: 600;
+    color: #303b50;
+}
+
+/* 사원번호와 부서 - 오른쪽 */
+.employee-list .employee-info {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-end;
+    gap: 4px;
+    margin-left: auto;
+}
+
+/* 사원번호 */
+.employee-list .employee-info span:first-child {
+    font-size: 12px;
+    font-weight: 600;
+    color: #65748b;
+}
+
+/* 부서 */
+.employee-list .employee-info span:last-child {
+    font-size: 12px;
+    color: #8a94a6;
+}
+
+/* 검색 결과가 없을 때 */
+.employee-list p {
+    margin: 0;
+    padding: 15px;
+    font-size: 13px;
+    color: #8a94a6;
+    text-align: center;
+}
+
+/* 스크롤바 */
+.employee-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.employee-list::-webkit-scrollbar-thumb {
+    background-color: #d5dce8;
+    border-radius: 10px;
+}
+
+.employee-list::-webkit-scrollbar-track {
+    background-color: transparent;
+}
+
+/* 거래처 검색 영역 */
+.customer-list {
+    position: relative;
+    display: block;
+    width: 100%;
+    max-height: 220px;
+    overflow-y: auto;
+    margin-top: 8px;
+    padding: 0;
+    background-color: #fff;
+    border: 1px solid #dce3ef;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+    box-sizing: border-box;
+}
+
+.customer-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 15px;
+    border-bottom: 1px solid #edf0f5;
+    cursor: pointer;
+}
+
+.customer-item:last-child {
+    border-bottom: none;
+}
+
+.customer-item:hover {
+    background-color: #f5f7fc;
+}
+
+.customer-item strong {
+    font-size: 14px;
+    color: #303b50;
+}
+
+.customer-info {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+}
+
+.customer-info span {
+    font-size: 12px;
+    color: #8a94a6;
+}

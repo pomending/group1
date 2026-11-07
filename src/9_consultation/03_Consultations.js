@@ -1,4 +1,4 @@
-
+/* 원본 비교 · 처음 올린 03_Consultations.js의 상담 샘플 20건
 export const Consultations = [
     {   customerId : null,
         id: 1,
@@ -240,4 +240,4 @@ export const Consultations = [
         memo: "팬미팅 굿즈 키링 1000개"
     }
 ];
-
+*/

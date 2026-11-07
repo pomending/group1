@@ -281,6 +281,7 @@ export const quotations = [
     }
 ];
 
+/* 원본 비교 · 처음 mockData.js에 있던 상담 배열 5건
 // 상담은 고객 등록 여부와 관계없이 생성할 수 있습니다.
 // 고객과 연결한 경우 customerId는 customers.id를 참조합니다.
 // employeeId는 initialEmployees의 영업팀 직원 ID입니다.
@@ -344,6 +345,251 @@ export const consultations = [
         employeeId: 20,
         status: "문의 접수",
         memo: "신규 브랜드 홍보용 텀블러 견적 문의"
+    }
+];
+*/
+
+// 상담 샘플 20건. 고객과 연결된 상담의 customerId는 customers.id를 참조합니다.
+export const consultations = [
+    {
+        id: 1,
+        customerId: null,
+        companyName: "삼성전자",
+        inquiryChannel: "이메일",
+        customerManager: "김민수",
+        phone: "010-1234-5678",
+        email: "minsu@example.com",
+        employeeId: null,
+        status: "문의 접수",
+        memo: "텀블러 500개 제작 문의"
+    },
+    {
+        id: 2,
+        customerId: null,
+        companyName: "한국대학교",
+        inquiryChannel: "전화",
+        customerManager: "박지현",
+        phone: "010-2345-6789",
+        email: "jihyun@example.com",
+        employeeId: 4,
+        status: "처리 중",
+        memo: "학교 축제 기념 티셔츠 제작"
+    },
+    {
+        id: 3,
+        customerId: 3,
+        companyName: "그린컴퍼니",
+        inquiryChannel: "이메일",
+        customerManager: "정우성",
+        phone: "010-3456-7890",
+        email: "woosung@example.com",
+        employeeId: 11,
+        status: "견적 요청",
+        memo: "친환경 에코백 300개 제작 상담"
+    },
+    {
+        id: 4,
+        customerId: 4,
+        companyName: "미래테크",
+        inquiryChannel: "방문",
+        customerManager: "이서연",
+        phone: "010-4567-8901",
+        email: "seoyeon@example.com",
+        employeeId: 4,
+        status: "문의 종료",
+        memo: "신입사원 웰컴키트 200세트"
+    },
+    {
+        id: 5,
+        customerId: null,
+        companyName: "한빛교육",
+        inquiryChannel: "전화",
+        customerManager: "최현우",
+        phone: "010-5678-9012",
+        email: "hyunwoo@example.com",
+        employeeId: null,
+        status: "문의 접수",
+        memo: "교육용 볼펜 1000개 제작"
+    },
+    {
+        id: 6,
+        customerId: null,
+        companyName: "블루디자인",
+        inquiryChannel: "이메일",
+        customerManager: "한지민",
+        phone: "010-6789-0123",
+        email: "jimin@example.com",
+        employeeId: 19,
+        status: "처리 중",
+        memo: "브랜드 로고 머그컵 제작"
+    },
+    {
+        id: 7,
+        customerId: 7,
+        companyName: "대한스포츠",
+        inquiryChannel: "전화",
+        customerManager: "강태훈",
+        phone: "010-7890-1234",
+        email: "taehoon@example.com",
+        employeeId: 11,
+        status: "견적 요청",
+        memo: "마라톤 기념 티셔츠 800벌"
+    },
+    {
+        id: 8,
+        customerId: 8,
+        companyName: "에코라이프",
+        inquiryChannel: "방문",
+        customerManager: "윤하늘",
+        phone: "010-8901-2345",
+        email: "haneul@example.com",
+        employeeId: 4,
+        status: "문의 종료",
+        memo: "재활용 소재 파우치 제작"
+    },
+    {
+        id: 9,
+        customerId: null,
+        companyName: "서울문화재단",
+        inquiryChannel: "이메일",
+        customerManager: "오세진",
+        phone: "010-9012-3456",
+        email: "sejin@example.com",
+        employeeId: null,
+        status: "문의 접수",
+        memo: "문화행사 기념 배지 500개"
+    },
+    {
+        id: 10,
+        customerId: null,
+        companyName: "스타트업허브",
+        inquiryChannel: "전화",
+        customerManager: "송지아",
+        phone: "010-1122-3344",
+        email: "jia@example.com",
+        employeeId: 19,
+        status: "처리 중",
+        memo: "기업 홍보용 노트 300권"
+    },
+    {
+        id: 11,
+        customerId: 11,
+        companyName: "드림푸드",
+        inquiryChannel: "방문",
+        customerManager: "임재혁",
+        phone: "010-2233-4455",
+        email: "jaehyuk@example.com",
+        employeeId: 4,
+        status: "견적 요청",
+        memo: "매장 직원용 앞치마 제작"
+    },
+    {
+        id: 12,
+        customerId: 12,
+        companyName: "아트스튜디오",
+        inquiryChannel: "이메일",
+        customerManager: "배수빈",
+        phone: "010-3344-5566",
+        email: "subin@example.com",
+        employeeId: 2,
+        status: "문의 종료",
+        memo: "전시회 기념 엽서 2000장"
+    },
+    {
+        id: 13,
+        customerId: null,
+        companyName: "스마트솔루션",
+        inquiryChannel: "전화",
+        customerManager: "조민석",
+        phone: "010-4455-6677",
+        email: "minseok@example.com",
+        employeeId: null,
+        status: "문의 접수",
+        memo: "회사 로고 USB 300개 제작"
+    },
+    {
+        id: 14,
+        customerId: null,
+        companyName: "희망복지센터",
+        inquiryChannel: "이메일",
+        customerManager: "신유진",
+        phone: "010-5566-7788",
+        email: "yujin@example.com",
+        employeeId: 4,
+        status: "처리 중",
+        memo: "봉사활동 조끼 150벌"
+    },
+    {
+        id: 15,
+        customerId: 15,
+        companyName: "코리아이벤트",
+        inquiryChannel: "방문",
+        customerManager: "장도현",
+        phone: "010-6677-8899",
+        email: "dohyun@example.com",
+        employeeId: 20,
+        status: "견적 요청",
+        memo: "행사 기념 손목밴드 제작"
+    },
+    {
+        id: 16,
+        customerId: 16,
+        companyName: "네오미디어",
+        inquiryChannel: "전화",
+        customerManager: "문채원",
+        phone: "010-7788-9900",
+        email: "chaewon@example.com",
+        employeeId: 2,
+        status: "문의 종료",
+        memo: "유튜브 채널 홍보 스티커"
+    },
+    {
+        id: 17,
+        customerId: null,
+        companyName: "한강대학교",
+        inquiryChannel: "이메일",
+        customerManager: "백승우",
+        phone: "010-8899-0011",
+        email: "seungwoo@example.com",
+        employeeId: null,
+        status: "문의 접수",
+        memo: "졸업 기념 후드티 400벌"
+    },
+    {
+        id: 18,
+        customerId: null,
+        companyName: "오렌지마케팅",
+        inquiryChannel: "방문",
+        customerManager: "류다은",
+        phone: "010-9900-1122",
+        email: "daeun@example.com",
+        employeeId: 11,
+        status: "처리 중",
+        memo: "광고 캠페인용 에코백 제작"
+    },
+    {
+        id: 19,
+        customerId: 19,
+        companyName: "베스트물류",
+        inquiryChannel: "전화",
+        customerManager: "홍준서",
+        phone: "010-1212-3434",
+        email: "junseo@example.com",
+        employeeId: 19,
+        status: "견적 요청",
+        memo: "직원 단체복 250벌 제작"
+    },
+    {
+        id: 20,
+        customerId: 20,
+        companyName: "라온엔터테인먼트",
+        inquiryChannel: "이메일",
+        customerManager: "고은별",
+        phone: "010-2323-4545",
+        email: "eunbyeol@example.com",
+        employeeId: 4,
+        status: "문의 종료",
+        memo: "팬미팅 굿즈 키링 1000개"
     }
 ];
 

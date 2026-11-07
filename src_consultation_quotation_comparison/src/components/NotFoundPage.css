@@ -1,0 +1,186 @@
+/* 404 페이지 전체 영역 */
+.nf-page {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    width: 100%;
+    min-height: calc(100vh - 74px);
+
+    padding: 40px 24px;
+
+    background: #f6f7fb;
+    box-sizing: border-box;
+}
+
+/* 404 안내 카드 */
+.nf-card {
+    width: 100%;
+    max-width: 520px;
+
+    padding: 52px 40px;
+
+    background: #ffffff;
+    border: 1px solid #e9e9f1;
+    border-radius: 18px;
+
+    text-align: center;
+
+    box-shadow: 0 8px 30px rgba(41, 48, 68, 0.04);
+    box-sizing: border-box;
+}
+
+/* 큰 404 숫자 */
+.nf-error-code {
+    margin-bottom: 14px;
+
+    color: #7565d8;
+    font-size: 76px;
+    font-weight: 800;
+    line-height: 1.1;
+    letter-spacing: -3px;
+}
+
+/* 제목 */
+.nf-title {
+    margin: 0 0 16px;
+
+    color: #293044;
+    font-size: 23px;
+    font-weight: 700;
+    line-height: 1.4;
+}
+
+/* 설명 */
+.nf-description {
+    margin: 0;
+
+    color: #85899a;
+    font-size: 14px;
+    line-height: 1.8;
+    word-break: keep-all;
+}
+
+.nf-description span {
+    display: block;
+    margin-top: 4px;
+}
+
+/* 버튼 영역 */
+.nf-actions {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 12px;
+
+    margin-top: 34px;
+}
+
+/* 두 버튼의 공통 스타일 */
+.nf-back-btn,
+.nf-home-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    min-width: 136px;
+    height: 42px;
+
+    padding: 0 18px;
+
+    border-radius: 9px;
+
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1;
+
+    text-decoration: none;
+    white-space: nowrap;
+
+    cursor: pointer;
+    transition:
+        background 0.2s,
+        border-color 0.2s,
+        transform 0.2s;
+
+    box-sizing: border-box;
+}
+
+/* 이전 페이지 버튼 */
+.nf-back-btn {
+    background: #ffffff;
+    border: 1px solid #dedee9;
+
+    color: #50586a;
+}
+
+.nf-back-btn:hover {
+    background: #f5f5fa;
+    border-color: #c9c9dc;
+}
+
+/* 대시보드 버튼 */
+.nf-home-btn {
+    background: #7565d8;
+    border: 1px solid #7565d8;
+
+    color: #ffffff;
+}
+
+.nf-home-btn:hover {
+    background: #6354c4;
+    border-color: #6354c4;
+
+    color: #ffffff;
+}
+
+/* 키보드 포커스 */
+.nf-back-btn:focus-visible,
+.nf-home-btn:focus-visible {
+    outline: 2px solid #7565d8;
+    outline-offset: 3px;
+}
+
+/* 팝업 모드에서는 상단 헤더가 없으므로 높이 조정 */
+.erp-popup .nf-page {
+    min-height: 100vh;
+}
+
+/* 모바일 */
+@media (max-width: 768px) {
+
+    .nf-page {
+        min-height: calc(100vh - 64px);
+        padding: 24px 16px;
+    }
+
+    .nf-card {
+        padding: 42px 22px;
+        border-radius: 14px;
+    }
+
+    .nf-error-code {
+        font-size: 64px;
+    }
+
+    .nf-title {
+        font-size: 19px;
+    }
+
+    .nf-description {
+        font-size: 13px;
+    }
+
+    .nf-actions {
+        flex-direction: column;
+        gap: 10px;
+        margin-top: 28px;
+    }
+
+    .nf-back-btn,
+    .nf-home-btn {
+        width: 100%;
+        max-width: 260px;
+    }
+}

@@ -1,0 +1,361 @@
+
+/* 대시보드 전체 */
+.dashboard {
+    background-color: #f5f7fa;
+    min-height: 100vh;
+    padding: 30px;
+    box-sizing: border-box;
+    container-type: inline-size;
+}
+
+.dashboard h1 {
+    color: #263a49;
+    font-size: 26px;
+    margin: 0 0 25px;
+}
+
+/* 상단 중요공지 */
+.dashboard-banner {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    background-color: #263a49;
+    color: white;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+.dashboard-banner strong {
+    background-color: #e1ad69;
+    color: #372918;
+    padding: 7px 12px;
+    border-radius: 4px;
+    flex-shrink: 0;
+}
+
+.dashboard .dashboard-banner .notice-banner-link,
+.dashboard .dashboard-banner .notice-banner-link:visited {
+    display: block;
+    flex: 1;
+    min-width: 0;
+    color: #ffffff;
+    font-size: 17px;
+    font-weight: 600;
+    line-height: 1.5;
+    text-decoration: none;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.dashboard .dashboard-banner .notice-banner-link:hover {
+    color: #f5d7a2;
+    text-decoration: none;
+}
+
+/* 대시보드 배치 */
+.dashboard-grid {
+    display: grid;
+
+    /* 일정 영역 · 360px */
+    grid-template-columns: minmax(0, 1fr) 360px;
+    gap: 20px;
+    align-items: start;
+}
+
+/* 게시판 2열 */
+.dashboard-left {
+    display: grid;
+    grid-template-columns: repeat(
+        auto-fit,
+        minmax(min(100%, 320px), 1fr)
+    );
+    gap: 20px;
+    align-items: start;
+    min-width: 0;
+}
+
+.dashboard-right {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    min-width: 0;
+    align-self: start;
+}
+
+/* 공통 카드 */
+.dashboard-card {
+    background: white;
+    border: 1px solid #e2e5e8;
+    border-radius: 8px;
+    padding: 18px;
+    min-width: 0;
+}
+
+.dashboard-card h3 {
+    color: #263a49;
+    font-size: 19px;
+    margin: 0 0 10px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #ddd;
+}
+
+.dashboard-card p {
+    color: #555;
+    font-size: 15px;
+    margin: 0;
+    padding: 6px 0;
+    border-bottom: 1px solid #eee;
+}
+
+/* 프로젝트 관리 카드 */
+.dashboard-project-card {
+    position: relative;
+    margin-bottom: 20px;
+    align-self: start;
+}
+
+/* 프로젝트 목록 클릭 */
+.dashboard-project-cover {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    border-radius: 8px;
+}
+
+.dashboard-project-cover:focus-visible {
+    outline: 2px solid #327aab;
+    outline-offset: 2px;
+}
+
+/* 프로젝트 상세 클릭 */
+.dashboard .dashboard-project-card .dashboard-project-link {
+    position: relative;
+    z-index: 2;
+    padding: 4px 0;
+}
+
+.dashboard .dashboard-project-card .dashboard-project-link:hover {
+    background-color: #f3f7fa;
+    text-decoration: none;
+}
+
+/* 오늘의 일정 */
+.schedule-card {
+    background-color: #ebf1ee;
+    min-height: 200px;
+}
+
+.dashboard .dashboard-right .schedule-card {
+    width: 100%;
+    height: auto;
+    min-height: 0;
+    box-sizing: border-box;
+    align-self: start;
+    display: block;
+}
+
+.dashboard .dashboard-right .today-box {
+    width: 100%;
+    max-width: none;
+    min-width: 0;
+    height: auto;
+    margin: 0;
+}
+
+.dashboard .dashboard-right .today-month {
+    text-align: left;
+    margin: 4px 0 8px;
+}
+
+/* 달력 · 7열 */
+.dashboard .dashboard-right .schedule-card .today-weekdays,
+.dashboard .dashboard-right .schedule-card .today-days {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 3px;
+    width: 100%;
+    min-width: 0;
+    align-content: start;
+}
+
+/* 날짜 높이 · 46px */
+.dashboard .dashboard-right .schedule-card .today-days {
+    grid-template-rows: none;
+    grid-auto-rows: 46px;
+    height: auto;
+}
+
+.dashboard .dashboard-right .schedule-card .today-day,
+.dashboard .dashboard-right .schedule-card .today-blank {
+    width: 100%;
+    min-width: 0;
+    min-height: 0;
+    height: 46px;
+}
+
+.dashboard .dashboard-right .schedule-card .today-day {
+    padding: 3px 2px;
+    gap: 2px;
+    overflow: hidden;
+}
+
+.dashboard .dashboard-right .schedule-card .today-date {
+    line-height: 14px;
+    text-align: left;
+}
+
+.dashboard .dashboard-right .schedule-card .today-project {
+    max-width: 100%;
+    min-width: 0;
+    padding: 1px 2px;
+    font-size: 9px;
+    line-height: 12px;
+    text-align: left;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.dashboard .dashboard-right .schedule-card .today-more {
+    text-align: left;
+    line-height: 10px;
+}
+
+/* 공지사항과 커뮤니티 제목 */
+.dashboard-community-heading {
+    display: block;
+    padding: 8px;
+    margin: -8px -8px 10px;
+    border-radius: 5px;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.dashboard-community-heading h3 {
+    margin: 0;
+    padding-bottom: 10px;
+}
+
+.dashboard-community-heading:hover {
+    background-color: #e9f0f4;
+}
+
+/* 최근 게시글 */
+.dashboard-post {
+    margin: 0;
+    padding: 7px 0;
+    min-height: 0;
+    border-bottom: 1px solid #eee;
+}
+
+.dashboard .dashboard-post > .dashboard-post-link {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    line-height: 1.35;
+    color: #263a49;
+    text-decoration: none;
+}
+
+.dashboard-post-title {
+    flex: 1;
+    min-width: 0;
+    font-size: 16px;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.dashboard-post-writer {
+    margin-left: auto;
+    flex-shrink: 0;
+    font-size: 13px;
+    color: #888;
+    white-space: nowrap;
+}
+
+.dashboard-post-date {
+    flex-shrink: 0;
+    font-size: 13px;
+    color: #888;
+    white-space: nowrap;
+}
+
+.dashboard-post-link:hover .dashboard-post-title {
+    text-decoration: underline;
+}
+
+/* 작은 화면 */
+@media (max-width: 800px) {
+    .dashboard {
+        padding: 15px;
+    }
+}
+
+@container (max-width: 660px) {
+    .dashboard .dashboard-grid {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .dashboard .dashboard-right {
+        width: 360px;
+        max-width: 100%;
+    }
+}
+
+/* 넓은 화면 · 프로젝트/일정 2열 */
+@media (min-width: 1400px) {
+    .dashboard {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 360px;
+        column-gap: 20px;
+        row-gap: 20px;
+        grid-template-rows: auto auto max-content minmax(min-content, 1fr);
+        align-content: start;
+    }
+
+    /* 제목·공지 전체 너비 */
+    .dashboard > h1,
+    .dashboard > .dashboard-banner {
+        grid-column: 1 / -1;
+    }
+
+    .dashboard > h1 {
+        margin-bottom: 5px;
+    }
+
+    .dashboard > .dashboard-banner {
+        margin-bottom: 0;
+    }
+
+    /* 프로젝트 좌측 상단 */
+    .dashboard > .dashboard-project-card {
+        grid-column: 1;
+        grid-row: 3;
+        margin-bottom: 0;
+    }
+
+    /* 그리드 하위 배치 */
+    .dashboard > .dashboard-grid {
+        display: contents;
+    }
+
+    /* 게시판 좌측 하단 */
+    .dashboard > .dashboard-grid > .dashboard-left {
+        grid-column: 1;
+        grid-row: 4;
+    }
+
+    /* 일정 우측 상단 */
+    .dashboard > .dashboard-grid > .dashboard-right {
+        grid-column: 2;
+        grid-row: 3 / span 2;
+    }
+}

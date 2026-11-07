@@ -10,9 +10,14 @@ function QuotationCreate({ quotations, setQuotations }) {
     const location = useLocation();
 
     const [createAt, setCreateAt] = useState("");
+    /* 원본 비교 · 고객 ID를 상태에 저장하던 방식
     const { customers, products, employees } = useERP();
 
     const [customerId, setCustomerId] = useState("")
+    */
+    const { consultations, customers, products, employees } = useERP();
+
+    const [consultationId, setConsultationId] = useState("")
     const [productId, setProductId] = useState("")
     const [employeeId, setEmployeeId] = useState("")
 
@@ -27,6 +32,7 @@ function QuotationCreate({ quotations, setQuotations }) {
     const filteredEmployees = employees.filter((employee) =>
         employee.status === "재직" && employee.name.includes(employeeSearch))
 
+    /* 원본 비교 · 고객 목록에서 회사명을 검색하던 코드
     //거래처 전체 정보 저장하는 변수
     const [selectedCustomer, setSelectedCustomer] = useState(null)
 
@@ -38,6 +44,11 @@ function QuotationCreate({ quotations, setQuotations }) {
     const filteredCustomers = customers.filter((customer) =>
         customer.companyName.includes(customerSearch)
     )
+    */
+    const quotationRequests = consultations.filter(consultation =>
+        consultation.status === "견적 요청" &&
+        customers.some(customer => customer.id === consultation.customerId)
+    );
 
     //판매중인 상품 검색
     const filteredProducts = products.filter((product) =>
@@ -64,6 +75,27 @@ function QuotationCreate({ quotations, setQuotations }) {
     const [paymentMethod, setPaymentMethod] = useState("")
     const [memo, setMemo] = useState("")
 
+    /* 원본 비교 · 수정 견적을 찾아오는 기존 코드의 위치와 형태
+    //어디서 들어온건지 확인하는 코드
+    const fromDetail = location.state?.fromDetail;
+
+
+    const editId = location.state?.editId
+    const editQuotation = quotations.find(
+        q => q.id === Number(editId)
+    )
+    */
+    const fromDetail = location.state?.fromDetail;
+    const editId = location.state?.editId;
+    const editQuotation = quotations.find(q => q.id === Number(editId));
+    const existingCustomer = customers.find(c => c.id === editQuotation?.customerId);
+    const selectedConsultation = quotationRequests.find(
+        consultation => consultation.id === Number(consultationId)
+    );
+    const selectedCustomer = consultationId === "existing"
+        ? existingCustomer
+        : customers.find(customer => customer.id === selectedConsultation?.customerId);
+
     //다음 견적 ID 생성
     const nextId = Math.max(
         0,
@@ -83,6 +115,7 @@ function QuotationCreate({ quotations, setQuotations }) {
     //공통 저장 함수
     const saveQuotation = (status) => {
 
+        /* 원본 비교 · 선택한 고객 ID로 검사하던 코드
         if (status === "승인 대기") {
             if (!customerId || !productId || !employeeId) {
                 alert("거래처, 상품, 내부 담당자를 선택해주세요")
@@ -94,9 +127,29 @@ function QuotationCreate({ quotations, setQuotations }) {
                 return;
             }
         }
+        */
+        if (consultationId && !selectedCustomer) {
+            alert("선택한 거래처를 확인할 수 없습니다. 견적 요청 상담을 다시 선택해주세요.");
+            return;
+        }
+
+        if (status === "승인 대기") {
+            if (!selectedCustomer || !productId || !employeeId) {
+                alert("거래처, 상품, 내부 담당자를 선택해주세요.")
+                return;
+            }
+
+            if (!quantity || !unitPrice || !createAt) {
+                alert("작성일, 수량, 단가를 입력해주세요")
+                return;
+            }
+        }
         const newQuotation = {
             id: editQuotation ? editQuotation.id : nextId,
+            /* 원본 비교 · 고객 ID를 직접 저장하던 코드
             customerId: customerId ? Number(customerId) : null,
+            */
+            customerId: selectedCustomer ? Number(selectedCustomer.id) : null,
             productId: productId ? Number(productId) : null,
             employeeId: employeeId ? Number(employeeId) : null,
             quantity: quantity === "" ? 0 : Number(quantity),
@@ -127,15 +180,7 @@ function QuotationCreate({ quotations, setQuotations }) {
         }
     }
 
-    //어디서 들어온건지 확인하는 코드
-    const fromDetail = location.state?.fromDetail;
-
-    
-    const editId = location.state?.editId
-    const editQuotation = quotations.find(
-        q => q.id === Number(editId)
-    )
-
+    /* 원본 비교 · 수정 화면에서 거래처 정보를 별도 상태로 불러오던 코드
     React.useEffect(() => {
         if (!editQuotation) return;
 
@@ -172,6 +217,33 @@ function QuotationCreate({ quotations, setQuotations }) {
         setPaymentMethod(editQuotation.paymentMethod || "");
         setMemo(editQuotation.memo || "");
     }, [editQuotation]);
+    */
+    React.useEffect(() => {
+        setConsultationId(existingCustomer ? "existing" : "");
+        if (!editQuotation) return;
+
+        setProductId(editQuotation.productId || "");
+        setEmployeeId(editQuotation.employeeId || "");
+
+        setEmployeeSearch(
+            employees.find(e => e.id === editQuotation.employeeId)?.name || ""
+        )
+
+        setProductSearch(
+            products.find(p => p.id === editQuotation.productId)?.productName || ""
+        )
+
+
+        setQuantity(editQuotation.quantity || "");
+        setUnitPrice(editQuotation.unitPrice || "");
+
+        setCreateAt(editQuotation.createdAt || "");
+        setValidUntil(editQuotation.validUntil || "");
+        setDeliveryDate(editQuotation.deliveryDate || "");
+
+        setPaymentMethod(editQuotation.paymentMethod || "");
+        setMemo(editQuotation.memo || "");
+    }, [editQuotation, existingCustomer]);
 
     return (
         <div className="quotation-create">
@@ -267,6 +339,7 @@ function QuotationCreate({ quotations, setQuotations }) {
 
                     <div className="form-grid">
                         <div className="form-group">
+                            {/* 원본 비교 · 거래처명 검색과 검색 결과 목록
                             <label>거래처명</label>
                             <input
                                 type="text"
@@ -309,7 +382,29 @@ function QuotationCreate({ quotations, setQuotations }) {
                                     )}
                                 </div>
                             )}
-
+                            */}
+                            <label htmlFor="quotation-consultation">견적 요청 상담</label>
+                            <select
+                                id="quotation-consultation"
+                                value={consultationId}
+                                onChange={(e) => setConsultationId(e.target.value)}
+                            >
+                                <option value="">
+                                    {quotationRequests.length > 0
+                                        ? "견적 요청 상담을 선택하세요."
+                                        : "선택 가능한 견적 요청 상담이 없습니다."}
+                                </option>
+                                {existingCustomer && (
+                                    <option value="existing">
+                                        {existingCustomer.companyName} (기존 거래처)
+                                    </option>
+                                )}
+                                {quotationRequests.map(consultation => (
+                                    <option key={consultation.id} value={consultation.id}>
+                                        {consultation.companyName} (상담 #{consultation.id})
+                                    </option>
+                                ))}
+                            </select>
                         </div>
 
                         <div className="form-group">
@@ -318,6 +413,7 @@ function QuotationCreate({ quotations, setQuotations }) {
                                 type="text"
                                 placeholder="담당자를 입력하세요."
                                 value={selectedCustomer?.customerManager || ""}
+                                readOnly
                             />
                         </div>
 
@@ -327,6 +423,7 @@ function QuotationCreate({ quotations, setQuotations }) {
                                 type="text"
                                 placeholder="연락처를 입력하세요."
                                 value={selectedCustomer?.phone || ""}
+                                readOnly
                             />
                         </div>
                     </div>
