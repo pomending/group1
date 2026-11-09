@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useERP } from "../context/ERPContext";
 import { formatProjectId, formatQuotationId } from "../utils/formatUtils";
-import { getProjectStatus } from "../utils/projectStatus";
+import { getProjectManagers, getProjectStatus } from "../utils/projectStatus";
 
 function ProjectEdit(props) {
 
@@ -22,10 +22,7 @@ function ProjectEdit(props) {
         c => c.id === selectedProject?.customerId
     );
 
-    const projectManagers = employees.filter(emp =>
-        emp.department === "경영지원팀" &&
-        emp.status === "재직"
-    );
+    const projectManagers = getProjectManagers(employees)
 
     const editProject = (e) => {
         e.preventDefault();

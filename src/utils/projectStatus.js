@@ -1,3 +1,8 @@
+export const getProjectManagers = (employees) => employees.filter(emp =>
+    emp.department === "경영지원팀" &&
+    emp.status === "재직"
+);
+
 export const isProjectDelayed = (project) => {
 
     if (!project.dueDate || project.status === '완료') {

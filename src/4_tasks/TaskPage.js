@@ -31,13 +31,13 @@ function TaskPage() {
         (task) => task.progress === "완료"
     ).length;
 
-   
+
     // 선택한 상태에 따라 작업 목록 필터링
     const filteredTasks = tasks.filter((task) => {
         if (statusFilter === "전체") {
             return true;
         }
-    
+
         return task.progress === statusFilter;
     });
 
@@ -51,14 +51,14 @@ function TaskPage() {
                     <p>프로젝트별 작업 진행 현황을 관리합니다.</p>
                 </div>
                 <div className="pm-heading-actions">
-                  
-                <button className="new-btn"   onClick={() => navigate("/tasks/detail")}>
-                 + 세부상세 내용
-                </button>
+
+                    <button className="new-btn" onClick={() => navigate("/tasks/detail")}>
+                        + 세부상세 내용
+                    </button>
                 </div>
             </div>
 
-           
+
 
             {/* 작업 현황 카드 */}
             <div className="task-summary">
@@ -82,7 +82,7 @@ function TaskPage() {
                     <span>완료</span>
                     <strong>{completeCount}</strong>
                 </div>
-               
+
 
             </div>
 
@@ -111,7 +111,7 @@ function TaskPage() {
                         <tr>
                             <th>번호</th>
                             <th>프로젝트 번호</th>
-                            <th>프록젝트 명</th>
+                            <th>프로젝트 명</th>
                             <th>작업 단계</th>
                             <th>진행 상태</th>
                             <th>담당자</th>
@@ -129,38 +129,37 @@ function TaskPage() {
                                 const employee = employees.find(
                                     (emp) => emp.id === Number(task.employeeId)
                                 );
-                                
+
                                 return (
 
-                                <tr key={task.id}>
-                                    <td>{task.id}</td>
+                                    <tr key={task.id}>
+                                        <td>{task.id}</td>
 
-                                    <td>{task.projectId}</td>
-                                    <td>{project.name}</td>
+                                        <td>{task.projectId}</td>
+                                        <td>{project?.name ?? "삭제된 프로젝트"}</td>
 
-                                    <td>{task.taskStatus}</td>
+                                        <td>{task.taskStatus}</td>
 
-                                    <td>
-                                        <span
-                                            className={`taskProgress ${
-                                                task.progress === "완료"
-                                                    ? "complete"
-                                                    : task.progress === "작업중"
-                                                    ? "progress"
-                                                    : "waiting"
-                                            }`}
-                                        >
-                                            {task.progress}
-                                        </span>
-                                    </td>
+                                        <td>
+                                            <span
+                                                className={`task-status ${task.progress === "완료"
+                                                        ? "complete"
+                                                        : task.progress === "작업중"
+                                                            ? "progress"
+                                                            : "waiting"
+                                                    }`}
+                                            >
+                                                {task.progress}
+                                            </span>
+                                        </td>
 
-                                    <td>{employee.name}</td>
+                                        <td>{employee?.name ?? "담당자 없음"}</td>
 
-                                    
-                                </tr>
 
-);
-})
+                                    </tr>
+
+                                );
+                            })
 
                         ) : (
 
@@ -173,16 +172,16 @@ function TaskPage() {
                         )}
                     </tbody>
 
-                    
+
 
                 </table>
 
             </div>
-           
+
 
         </div>
-        
-        
+
+
 
 
     );

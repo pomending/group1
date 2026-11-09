@@ -7,18 +7,37 @@
 // products.productPrice          : 상품 기본 판매 단가
 // products.productStatus         : "판매 중" / "판매중지"
 
-// [고객 및 상담 관리]
+// [고객 관리]
+// customers.id                   : 고객 고유 ID
 // customers.employeeId           -> initialEmployees.id (영업팀)
-// consultations.customerId       -> customers.id (null 허용)
-// consultations.employeeId       -> initialEmployees.id (영업팀)
+
+// [상담 관리]
+// consultations.id               : 상담 고유 ID
+// consultations.customerId       -> customers.id (null 허용, 고객 미등록 가능)
+// consultations.employeeId       -> initialEmployees.id (영업팀, null 허용)
+// consultations.inquiryChannel   : 상담 접수 경로
+// consultations.status           : "문의 접수" / "처리 중" / "견적 요청" / "문의 종료"
+// 상담은 고객 등록 여부와 관계없이 생성할 수 있습니다.
+// 고객 미등록 또는 담당 직원 미배정 상태에서는 해당 ID를 null로 저장합니다.
 
 // [견적 관리]
 // quotations.customerId          -> customers.id
 // quotations.productId           -> products.id
 // quotations.employeeId          -> initialEmployees.id (영업팀)
-// quotations.unitPrice           : 실제 적용 단가
+// quotations.quantity            : 상품 주문 수량
+// quotations.unitPrice           : 실제 적용 단가 (상품 기본 단가와 별도)
 // quotations.deliveryDate        : 고객 납품 예정일
 // quotations.status              : "승인 대기" / "승인 완료" / "반려"
+// 견적 하나에는 상품 한 종류만 포함합니다.
+// 견적 총액은 quantity * unitPrice로 계산합니다.
+
+// [상담 및 견적 연계]
+// 상담과 견적은 각각 별도의 데이터로 관리합니다.
+// 상담에서 고객 등록 및 연결 시 consultations.customerId를 사용합니다.
+// 견적은 quotations.customerId를 통해 고객 데이터를 참조합니다.
+// 현재 quotations에는 consultationId가 없어 개별 상담과 견적의 직접 참조 관계는 없습니다.
+// 동일 고객의 상담과 견적은 customerId로 연관 조회할 수 있지만,
+// 특정 상담에서 생성된 견적인지 1:1로 식별할 수는 없습니다.
 
 // [프로젝트 관리]
 // initialProjects.quotationId    -> quotations.id (승인 완료 견적)
@@ -42,13 +61,16 @@
 // [데이터 참조 및 관리 규칙]
 // 1. 모든 데이터는 id를 고유 식별자로 사용합니다.
 // 2. 다른 데이터와 연결할 때는 해당 데이터의 ID를 참조합니다.
-// 3. 프로젝트는 승인 완료 견적을 기준으로 생성합니다.
-// 4. 하나의 견적은 최대 하나의 프로젝트에 연결할 수 있습니다.
-// 5. 프로젝트 생성 시 견적의 deliveryDate를 dueDate에 저장합니다.
-// 6. 프로젝트별 동일한 taskStatus의 세부 작업은 중복 등록하지 않습니다.
-// 7. 작업 담당 부서: 제작·검수·포장 = 생산팀, 배송 = 물류팀
-// 8. 다른 데이터에서 참조 중인 항목의 삭제 제한은 ERPContext에서 관리합니다.
-//    (모듈별 통합 CRUD 규칙은 단계적으로 적용 예정)
+// 3. 상담은 고객 등록 전에도 생성할 수 있으며 customerId는 null을 허용합니다.
+// 4. 상담 담당 직원이 배정되지 않은 경우 employeeId는 null을 허용합니다.
+// 5. 상담과 견적은 별도 데이터이며 현재 직접적인 상담 ID 참조는 없습니다.
+// 6. 프로젝트는 승인 완료 견적을 기준으로 생성합니다.
+// 7. 하나의 견적은 최대 하나의 프로젝트에 연결할 수 있습니다.
+// 8. 프로젝트 생성 시 견적의 deliveryDate를 dueDate에 저장합니다.
+// 9. 프로젝트별 동일한 taskStatus의 세부 작업은 중복 등록하지 않습니다.
+// 10. 작업 담당 부서: 제작·검수·포장 = 생산팀, 배송 = 물류팀
+// 11. 다른 데이터에서 참조 중인 항목의 삭제 제한은 ERPContext에서 관리합니다.
+//     (모듈별 통합 CRUD 규칙은 단계적으로 적용 예정)
 
 // [참고]
 // 계정 초기 데이터는 mockAccounts.js의 initialAccounts에서 관리합니다.
