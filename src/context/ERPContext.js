@@ -1,7 +1,6 @@
 import React, { createContext, useContext, useState } from "react";
 import {
     quotations as initialQuotations,
-    tasks as initialTasks,
 } from "../data/mockData";
 import useProjectData from "./useProjectData";
 import useEmployeeData from "./useEmployeeData";
@@ -10,6 +9,7 @@ import useAccountData from "./useAccountData";
 import useAuthData from "./useAuthData";
 import useProductData from "./useProductData";
 import useConsultationData from "./useConsultationData";
+import useTaskData from "./useTaskData";
 
 const ERPContext = createContext(null);
 
@@ -22,9 +22,9 @@ export function ERPProvider({ children }) {
     const accountData = useAccountData(employeeData.employees);
     const authData = useAuthData(accountData.accounts, employeeData.employees);
     const consultationData = useConsultationData();
+    const taskData = useTaskData(projectData.projects, employeeData.employees);
 
     const [quotations, setQuotations] = useState(initialQuotations);
-    const [tasks, setTasks] = useState(initialTasks);
 
     // 담당자로 사용 중인 직원은 삭제하지 않는다.
     const deleteEmployee = (id) => {
@@ -46,7 +46,7 @@ export function ERPProvider({ children }) {
             consultation => Number(consultation.employeeId) === Number(id)
         );
 
-        const hasTask = tasks.some(
+        const hasTask = taskData.tasks.some(
             task => Number(task.employeeId) === Number(id)
         );
 
@@ -80,14 +80,14 @@ export function ERPProvider({ children }) {
         customerData.resetCustomers();
         productData.resetProducts();
         accountData.resetAccounts();
-       consultationData.resetConsultations();
+        consultationData.resetConsultations();
+        taskData.resetTasks();
        
         authData.logout();
 
 
         // 별도 Hook이 아직 없는 모듈의 Context 상태도 초기화
         setQuotations([...initialQuotations]);
-        setTasks([...initialTasks]);
     };
 
     return (
@@ -99,13 +99,12 @@ export function ERPProvider({ children }) {
             ...accountData,
             ...authData,
             ...consultationData,
+            ...taskData,
             deleteEmployee, // 기본 삭제 함수를 안전한 통합 함수로 덮어씀
             resetAllData,
 
             quotations,
             setQuotations,
-            tasks,
-            setTasks,
         }}>
             {children}
         </ERPContext.Provider>

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useERP } from "../context/ERPContext";
 import { formatQuotationId } from "../utils/formatUtils";
 import ProjectQuotationInfo from "./ProjectQuotationInfo";
+import { getProjectManagers } from "../utils/projectStatus";
 
 function ProjectForm(props) {
 
@@ -19,10 +20,7 @@ function ProjectForm(props) {
         product => product.id === selectedQuotation?.productId
     );
 
-    const projectManagers = employees.filter(emp =>
-        emp.department === "경영지원팀" &&
-        emp.status === "재직"
-    );
+    const projectManagers = getProjectManagers(employees)
 
     const handleSubmit = (e) => {
         e.preventDefault();
