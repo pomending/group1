@@ -4,6 +4,8 @@ import { useNavigate } from "react-router-dom";
 import { useERP } from "../context/ERPContext";
 
 import "./TaskPage.css";
+import { TASK_PROGRESS, TASK_TYPES } from "../utils/taskUtils";
+import { formatProjectId } from "../utils/formatUtils";
 
 function TaskPage() {
 
@@ -14,31 +16,13 @@ function TaskPage() {
 
     const navigate = useNavigate();
 
-    // 나머지 기존 코드
-
-    // 작업 상태별 개수
-    const totalCount = tasks.length;
-
-    const waitingCount = tasks.filter(
-        (task) => task.progress === "대기중"
-    ).length;
-
-    const progressCount = tasks.filter(
-        (task) => task.progress === "작업중"
-    ).length;
-
-    const completeCount = tasks.filter(
-        (task) => task.progress === "완료"
-    ).length;
-
-
     // 선택한 상태에 따라 작업 목록 필터링
     const filteredTasks = tasks.filter((task) => {
         if (statusFilter === "전체") {
             return true;
         }
 
-        return task.progress === statusFilter;
+        return task.taskStatus === statusFilter;
     });
 
     return (
@@ -58,31 +42,20 @@ function TaskPage() {
                 </div>
             </div>
 
-
-
             {/* 작업 현황 카드 */}
             <div className="task-summary">
 
                 <div className="summary-card">
                     <span>전체 작업</span>
-                    <strong>{totalCount}</strong>
+                    <strong>{tasks.length}</strong>
                 </div>
 
-                <div className="summary-card">
-                    <span>대기중</span>
-                    <strong>{waitingCount}</strong>
+                {TASK_PROGRESS.map(progress => (
+                    <div className="summary-card">
+                    <span>{progress}</span>
+                    <strong>{tasks.filter(t=>t.progress === progress).length}</strong>
                 </div>
-
-                <div className="summary-card">
-                    <span>작업중</span>
-                    <strong>{progressCount}</strong>
-                </div>
-
-                <div className="summary-card">
-                    <span>완료</span>
-                    <strong>{completeCount}</strong>
-                </div>
-
+                ))}
 
             </div>
 
@@ -99,9 +72,9 @@ function TaskPage() {
                         }
                     >
                         <option value="전체">전체 상태</option>
-                        <option value="대기중">대기중</option>
-                        <option value="작업중">작업중</option>
-                        <option value="완료">완료</option>
+                        {TASK_TYPES.map(status => (
+                            <option key={status} value={status}>{status}</option>
+                        ))}
                     </select>
                 </div>
 
@@ -135,7 +108,7 @@ function TaskPage() {
                                     <tr key={task.id}>
                                         <td>{task.id}</td>
 
-                                        <td>{task.projectId}</td>
+                                        <td>{formatProjectId(task.projectId)}</td>
                                         <td>{project?.name ?? "삭제된 프로젝트"}</td>
 
                                         <td>{task.taskStatus}</td>

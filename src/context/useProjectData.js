@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from "react"
 import { initialProjects } from "../data/mockData"
+import { validateProject } from "../utils/projectUtils"
 
-export function useProjectData() {
+export function useProjectData(employees) {
 
     const STORAGE_KEY = 'erp_projects'
     const NEXT_ID_KEY = 'erp_project_next_id'
@@ -71,6 +72,12 @@ export function useProjectData() {
 
     const addProject = (newProject) => {
 
+        const error = validateProject(newProject, employees)
+
+        if (error) {
+            return { ok: false, message: error };
+        }
+
         const savedNextId = Number(localStorage.getItem(NEXT_ID_KEY))
 
         const maxId = Math.max(
@@ -92,6 +99,8 @@ export function useProjectData() {
             }
         ])
 
+        return { ok: true };
+
     }
 
     const updateProject = (updatedProject) => {
@@ -99,7 +108,19 @@ export function useProjectData() {
         const original = projects.find(p => p.id === updatedProject.id)
 
         if (!original) {
-            return
+            return {
+                ok: false,
+                message: "수정할 프로젝트를 찾을 수 없습니다."
+            };
+        }
+
+        const error = validateProject({
+            ...original,
+            ...updatedProject
+        }, employees, original);
+
+        if (error !== null) {
+            return { ok: false, message: error };
         }
 
         const changes = Object.keys(updatedProject)
@@ -113,7 +134,7 @@ export function useProjectData() {
             }))
 
         if (changes.length === 0) {
-            return
+            return { ok: false, message: "변경사항이 없습니다" };
         }
 
         const nextId = Number(localStorage.getItem(NEXT_PH_ID_KEY)) || 1
@@ -144,6 +165,8 @@ export function useProjectData() {
 
         localStorage.setItem(NEXT_PH_ID_KEY, String(newId + 1))
 
+        return { ok: true };
+
     }
 
     const deleteProject = (id) => {
@@ -153,6 +176,8 @@ export function useProjectData() {
         setProjectHistory(prev =>
             prev.filter(history => history.projectId !== id))
     }
+
+    
 
     const resetProjects = () => {
 

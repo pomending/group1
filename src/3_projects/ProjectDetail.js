@@ -1,7 +1,7 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { useERP } from "../context/ERPContext";
 import { formatProjectId, formatQuotationId } from "../utils/formatUtils";
-import { getProjectStatus, getProjectProgress } from "../utils/projectStatus";
+import { getProjectStatus, getProjectProgress, PROJECT_STATUSES } from "../utils/projectUtils";
 import ProjectQuotationInfo from "./ProjectQuotationInfo";
 
 function ProjectDetail(props) {
@@ -92,14 +92,24 @@ function ProjectDetail(props) {
     
 
     const delProject = () => {
-        if (window.confirm('정말로 프로젝트를 삭제하시겠습니까?')) {
-            deleteProject(selectedProject.id)
-            props.setPage('list')
+
+        if (!window.confirm("정말로 프로젝트를 삭제하시겠습니까?")) {
+            return;
         }
-    }
+    
+        const result = deleteProject(selectedProject.id);
+    
+        if (!result.ok) {
+            alert(result.message);
+            return;
+        }
+    
+        props.setPage("list");
+    };
 
     const saveStatus = () => {
-        updateProject({
+        
+        const result = updateProject({
             id: selectedProject.id,
             status: status,
             // 변경된 상태가 완료이면 오늘 날짜를 (YYYY-MM-DD) 형식으로 저장
@@ -107,6 +117,11 @@ function ProjectDetail(props) {
                 ? (selectedProject.completedDate ?? new Date().toLocaleDateString('sv-SE'))
                 : null
         })
+
+        if (!result.ok) {
+            alert(result.message);
+            return;
+        }
 
         alert('상태 변경이 완료되었습니다')
 
@@ -294,9 +309,9 @@ function ProjectDetail(props) {
                                         value={status}
                                         onChange={(e) => setStatus(e.target.value)}
                                     >
-                                        <option value="대기">대기</option>
-                                        <option value="진행 중">진행 중</option>
-                                        <option value="완료">완료</option>
+                                        {PROJECT_STATUSES.map(status => (
+                                            <option key={status} value={status}>{status}</option>
+                                        ))}
                                     </select>
                                 </div>
                             </div>

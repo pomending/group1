@@ -79,17 +79,6 @@ function ConsultationManagement() {
                 customerId = existingCustomer.id
             }
         }
-        // 문의 종료로 저장할 때 고객 ID가 비어 있으면 같은 회사명의 기존 고객을 연결한다.
-        else if (editData.status === "문의 종료" && customerId === null) {
-            const existingCustomer = customers.find(
-                (customer) => customer.companyName === editData.companyName
-            );
-            customerId = existingCustomer?.id ?? null;
-        }
-
-
-
-
 
         if (editData.id) {
             updateConsultation({ ...editData, customerId });
