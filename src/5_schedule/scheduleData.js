@@ -25,9 +25,6 @@ export const scheduleTypes = [
 ];
 export const scheduleCategories = ["회의", "프로젝트", "업무", "외근", "휴가", "기타"];
 export const scheduleScopes = ["업무용", "개인 일정용"];
-export function getScheduleCategories() {
-  return scheduleCategories;
-}
 export function getScheduleScope(item = {}) {
   return scheduleScopes.includes(item.scope) ? item.scope : "업무용";
 }
@@ -80,6 +77,12 @@ export const typeColors = {
 // 월·일 자릿수가 같아야 날짜 문자열도 시간 순서대로 비교할 수 있습니다.
 const pad = (number) => String(number).padStart(2, "0");
 
+// 날짜를 UTC 일수로 바꾸면 시간대의 하루 길이 차이 없이 날짜 간격을 계산할 수 있습니다.
+// 반복 횟수와 다음 주간 발생일이 같은 계산을 사용합니다. 하루는 86,400,000밀리초입니다.
+function getDayNumber(date) {
+  return Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()) / 86400000;
+}
+
 // 날짜를 일정 검색과 저장에 사용하는 YYYY-MM-DD 문자열로 변환합니다.
 // getMonth()는 0~11을 반환하므로 실제 월을 표시할 때 1을 더합니다.
 // toISOString() 대신 현지 날짜의 각 부분을 읽어 UTC 변환으로 날짜가 바뀌는 것을 피합니다.
@@ -103,15 +106,23 @@ export function isValidScheduleTime(value) {
 // 빠른 시간 버튼은 시작일·시간을 기준으로 종료값만 계산합니다. 폼 변경은 Manager가 한 번에 적용합니다.
 // 일반 일정은 자정을 넘으면 다음 날로 설정하고, 당일 종료만 지원하는 반복 일정은 해당 버튼을 막습니다.
 export function getScheduleDurationFields(form, minutes) {
-  if (!isValidScheduleDate(form.date) || !isValidScheduleTime(form.time) || ![30, 60, 120].includes(minutes)) return null;
+  if (!isValidScheduleDate(form.date)) return null;
+  if (!isValidScheduleTime(form.time)) return null;
+  if (![30, 60, 120].includes(minutes)) return null;
   const [hour, minute] = form.time.split(":").map(Number);
-  const end = hour * 60 + minute + minutes;
-  if (end >= 1440 && form.repeatType !== "none") return null;
+  const endMinutes = hour * 60 + minute + minutes;
+  const minutesPerDay = 24 * 60;
+  const crossesMidnight = endMinutes >= minutesPerDay;
+  if (crossesMidnight && form.repeatType !== "none") return null;
+
+  // 자정을 넘긴 날짜와 시각을 따로 계산합니다.
   const endDate = new Date(`${form.date}T00:00:00`);
-  endDate.setDate(endDate.getDate() + Math.floor(end / 1440));
+  endDate.setDate(endDate.getDate() + Math.floor(endMinutes / minutesPerDay));
+  const endHour = Math.floor(endMinutes / 60) % 24;
+  const endMinute = endMinutes % 60;
   return {
-    endTime: `${String(Math.floor(end / 60) % 24).padStart(2, "0")}:${String(end % 60).padStart(2, "0")}`,
-    endDate: end >= 1440 ? dateKey(endDate) : "",
+    endTime: `${pad(endHour)}:${pad(endMinute)}`,
+    endDate: crossesMidnight ? dateKey(endDate) : "",
   };
 }
 
@@ -136,8 +147,11 @@ export function getScheduleTime(item) {
   if (item.isAllDay) return "종일";
   const startDate = item.originalStartDate || item.date;
   if (item.endDate > startDate) {
-    const start = item.date === startDate ? item.time : "00:00";
-    const end = item.date === item.endDate ? (item.endTime || "17:00") : "24:00";
+    // 여러 날 일정은 첫날에 시작 시각을, 마지막 날에 종료 시각을 표시합니다.
+    let start = "00:00";
+    let end = "24:00";
+    if (item.date === startDate) start = item.time;
+    if (item.date === item.endDate) end = item.endTime || "17:00";
     return start + "~" + end;
   }
   return item.time + "~" + (item.endTime || "17:00");
@@ -407,10 +421,9 @@ export const expandSchedules = (items, fromKey, toKey, holidays = {}) => {
       if (endOptions.repeatEndType === "until" && endOptions.repeatEndDate && key > endOptions.repeatEndDate) return;
       if (endOptions.repeatEndType === "count") {
         const interval = getRepeatInterval(item);
-        const dayNumber = value => Date.UTC(value.getFullYear(), value.getMonth(), value.getDate()) / 86400000;
         const firstMonthSkipped = getMonthlyOccurrence(item, start, start) < start ? 1 : 0;
         const index = item.repeatType === "weekly"
-          ? (dayNumber(date) - dayNumber(start)) / (interval * 7) + 1
+          ? (getDayNumber(date) - getDayNumber(start)) / (interval * 7) + 1
           : ((date.getFullYear() - start.getFullYear()) * 12 + date.getMonth() - start.getMonth()) / interval + 1 - firstMonthSkipped;
         if (index > endOptions.repeatCount) return;
       }
@@ -445,13 +458,7 @@ export const expandSchedules = (items, fromKey, toKey, holidays = {}) => {
       // 조회 시작일과 반복 시작일 중 늦은 쪽에서 탐색합니다. 과거의 모든 주를 순회하지 않습니다.
       // Date를 복사해 아래 setDate가 from이나 start 객체를 변경하지 않도록 합니다.
       const date = new Date(searchFrom > start ? searchFrom : start);
-      // UTC로 날짜 차이만 계산해 계절별 시간 변경에도 시작일 기준 간격을 유지합니다.
-      const dayNumber = (value) =>
-        Date.UTC(value.getFullYear(), value.getMonth(), value.getDate()) /
-        86400000;
-      // 하루의 밀리초 수는 24 * 60 * 60 * 1000 = 86400000입니다.
-      // 날짜를 UTC 일수로 바꿔 뺄셈하면 시간대의 하루 길이 차이를 피할 수 있습니다.
-      const elapsed = dayNumber(date) - dayNumber(start);
+      const elapsed = getDayNumber(date) - getDayNumber(start);
       // elapsed % interval은 시작일부터 몇 일이 남는지 나타냅니다.
       // (interval - 나머지) % interval은 다음 반복일까지 이동할 일수입니다.
       // 예: 14일 주기에서 7일 뒤부터 조회하면 7일 더 이동하고, 이미 반복일이면 0일 이동합니다.
@@ -696,7 +703,7 @@ export function getScheduleFormError(form) {
   if (!scheduleScopes.includes(form.scope)) {
     return { field: "scope", message: "업무용 또는 개인 일정용을 먼저 선택해 주세요." };
   }
-  if (form.scope === "업무용" && !getScheduleCategories(form.scope).includes(form.category)) {
+  if (form.scope === "업무용" && !scheduleCategories.includes(form.category)) {
     return { field: "category", message: "일정 분류를 선택해 주세요." };
   }
   if (form.scope === "업무용" && form.category === "프로젝트" && !project) {

@@ -14,7 +14,14 @@ function QuotationDetail() {
     const { id } = useParams();
     const navi = useNavigate();
 
-    const { quotations, setQuotations, customers, products, employees } = useERP();
+    const { 
+        quotations, 
+        updateQuotation,
+        deleteQuotation,
+        customers, 
+        products, 
+        employees 
+    } = useERP();
 
 
     
@@ -42,13 +49,10 @@ function QuotationDetail() {
     const handleApprove = () => {
         if (!window.confirm("이 견적서를 승인하시겠습니까?")) return;
 
-        setQuotations(
-            quotations.map(q =>
-                q.id === quotation.id
-                    ? { ...q, status: "승인 완료" }
-                    : q
-            )
-        );
+        updateQuotation({
+            id: quotation.id,
+            status: "승인 완료"
+        })
 
         alert("견적서가 승인 완료되었습니다.");
     };
@@ -57,13 +61,10 @@ function QuotationDetail() {
     const handleReject = () => {
         if (!window.confirm("이 견적서를 반려하시겠습니까?")) return;
 
-        setQuotations(
-            quotations.map(q =>
-                q.id === quotation.id
-                    ? { ...q, status: "반려" }
-                    : q
-            )
-        );
+        updateQuotation({
+            id: quotation.id,
+            status: "반려"
+        })
 
         alert("견적서가 반려되었습니다.");
     };
@@ -74,13 +75,10 @@ function QuotationDetail() {
             return;
         }
 
-        setQuotations(
-            quotations.map(q =>
-                q.id === quotation.id
-                    ? { ...q, status: "승인 대기" }
-                    : q
-            )
-        )
+        updateQuotation({
+            id: quotation.id,
+            status: "승인 대기"
+        })
         alert("재검토 요청이 완료되었습니다.")
     }
 
@@ -101,9 +99,7 @@ function QuotationDetail() {
             return;
         }
 
-        setQuotations(
-            quotations.filter(q => q.id !== quotation.id)
-        )
+        deleteQuotation(quotation.id)
 
         alert("견적서가 삭제되었습니다.")
         navi("/quotation")

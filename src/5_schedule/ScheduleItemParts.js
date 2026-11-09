@@ -17,10 +17,7 @@ import {
 // 상태 코드로 표시 문구를 찾습니다. 없는 코드면 첫 항목인 '예정'을 사용합니다.
 // 이 파일의 배지·툴팁·상태 선택은 이 함수를 사용합니다. 폼의 선택지는 같은 scheduleStatuses 정의를 직접 사용합니다.
 function getStatusOption(status) {
-  for (const option of scheduleStatuses) {
-    if (option.value === status) return option;
-  }
-  return scheduleStatuses[0];
+  return scheduleStatuses.find(option => option.value === status) || scheduleStatuses[0];
 }
 
 // 공통 상태 정의로 배지와 선택창의 문구를 맞춥니다. 색상만으로 구분하지 않고 텍스트도 표시합니다.
