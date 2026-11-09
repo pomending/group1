@@ -327,10 +327,10 @@ export function ERPProvider({ children }) {
             ...authData,
             ...consultationData,
             ...taskData,
+            ...quotationData,
 
             updateEmployee,
-            ...quotationData,
-            deleteEmployee, // 기본 삭제 함수를 안전한 통합 함수로 덮어씀
+            deleteEmployee,
 
             addProject,
             deleteProject,
