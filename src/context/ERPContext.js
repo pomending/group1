@@ -10,6 +10,7 @@ import useAuthData from "./useAuthData";
 import useProductData from "./useProductData";
 import useConsultationData from "./useConsultationData";
 import useTaskData from "./useTaskData";
+import useQuotationData from "./useQuotationData";
 
 const ERPContext = createContext(null);
 
@@ -23,8 +24,8 @@ export function ERPProvider({ children }) {
     const authData = useAuthData(accountData.accounts, employeeData.employees);
     const consultationData = useConsultationData();
     const taskData = useTaskData(projectData.projects, employeeData.employees);
+    const quotationData = useQuotationData();
 
-    const [quotations, setQuotations] = useState(initialQuotations);
 
     // 담당자로 사용 중인 직원은 삭제하지 않는다.
     const deleteEmployee = (id) => {
@@ -33,7 +34,7 @@ export function ERPProvider({ children }) {
             project => Number(project.managerId) === Number(id)
         );
 
-        const hasQuotation = quotations.some(
+        const hasQuotation = quotationData.quotations.some(
             quotation => quotation.employeeId != null &&
                 Number(quotation.employeeId) === Number(id)
         );
@@ -82,12 +83,11 @@ export function ERPProvider({ children }) {
         accountData.resetAccounts();
         consultationData.resetConsultations();
         taskData.resetTasks();
-       
+        quotationData.resetQuotations();
+
         authData.logout();
 
 
-        // 별도 Hook이 아직 없는 모듈의 Context 상태도 초기화
-        setQuotations([...initialQuotations]);
     };
 
     return (
@@ -100,11 +100,10 @@ export function ERPProvider({ children }) {
             ...authData,
             ...consultationData,
             ...taskData,
+            ...quotationData,
             deleteEmployee, // 기본 삭제 함수를 안전한 통합 함수로 덮어씀
             resetAllData,
 
-            quotations,
-            setQuotations,
         }}>
             {children}
         </ERPContext.Provider>
