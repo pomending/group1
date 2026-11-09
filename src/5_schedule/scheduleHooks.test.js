@@ -1,7 +1,57 @@
 import { act, renderHook, waitFor } from "@testing-library/react";
-import { useScheduleHolidays, useScheduleStorage } from "./scheduleHooks";
+import { useScheduleHolidays, useScheduleStorage, useScheduleTeam } from "./scheduleHooks";
 
 afterEach(() => jest.restoreAllMocks());
+beforeEach(() => localStorage.clear());
+
+test("팀원은 두 탭에서 서로 다른 이름을 추가해도 기존 등록을 유지한다", () => {
+  const first = renderHook(() => useScheduleTeam());
+  const second = renderHook(() => useScheduleTeam());
+  act(() => first.result.current.addTeamMember("가 팀원"));
+  act(() => second.result.current.addTeamMember("나 팀원"));
+  expect(JSON.parse(localStorage.getItem("made-mate-schedule-team"))).toEqual(["가 팀원", "나 팀원"]);
+  act(() => window.dispatchEvent(new StorageEvent("storage", { key: "made-mate-schedule-team" })));
+  expect(first.result.current.teamMembers).toEqual(["가 팀원", "나 팀원"]);
+});
+
+test("다른 탭에서 제외한 팀원을 오래된 목록으로 되살리지 않고 명시적으로 재등록한다", () => {
+  localStorage.setItem("made-mate-schedule-team", JSON.stringify(["가 팀원"]));
+  const first = renderHook(() => useScheduleTeam());
+  const second = renderHook(() => useScheduleTeam());
+  jest.spyOn(window, "confirm").mockReturnValue(true);
+  act(() => first.result.current.removeTeamMember("가 팀원"));
+  act(() => second.result.current.addTeamMember("나 팀원"));
+  expect(second.result.current.teamMembers).toEqual(["나 팀원"]);
+  act(() => second.result.current.addTeamMember("가 팀원"));
+  expect(JSON.parse(localStorage.getItem("made-mate-schedule-team"))).toEqual(["가 팀원", "나 팀원"]);
+  expect(JSON.parse(localStorage.getItem("made-mate-excluded-team"))).toEqual([]);
+});
+
+test("일정 저장 실패 시 프로젝트 전달용 마지막 저장 목록을 변경하지 않는다", () => {
+  localStorage.setItem(storageKey, JSON.stringify([schedule]));
+  const { result } = renderHook(() => useScheduleStorage());
+  const before = result.current.savedItems;
+  const originalSet = Storage.prototype.setItem;
+  jest.spyOn(Storage.prototype, "setItem").mockImplementation(function(key, value) {
+    if (key === storageKey) throw new Error("quota");
+    return originalSet.call(this, key, value);
+  });
+  act(() => result.current.setItems(items => items.map(item => ({ ...item, title: "미저장" }))));
+  expect(result.current.saveStatus).toBe("error");
+  expect(result.current.savedItems).toBe(before);
+  expect(result.current.savedItems[0].title).toBe(schedule.title);
+});
+
+test("같은 일정의 탭 간 편집 충돌 시 저장 성공 목록을 유지한다", () => {
+  localStorage.setItem(storageKey, JSON.stringify([schedule]));
+  const { result } = renderHook(() => useScheduleStorage());
+  const before = result.current.savedItems;
+  localStorage.setItem(storageKey, JSON.stringify([{ ...before[0], title: "다른 탭 수정" }]));
+  act(() => result.current.setItems(items => items.map(item => ({ ...item, title: "현재 탭 수정" }))));
+  expect(result.current.saveStatus).toBe("blocked");
+  expect(result.current.savedItems).toBe(before);
+  expect(JSON.parse(localStorage.getItem(storageKey))[0].title).toBe("다른 탭 수정");
+});
 
 test.each([2025, 2026, 2027])("공휴일 %s년 조회 실패를 알리고 성공한 연도 자료는 유지한다", async failedYear => {
   jest.spyOn(global, "fetch").mockImplementation(async url => {

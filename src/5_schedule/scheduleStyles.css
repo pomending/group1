@@ -1291,7 +1291,8 @@
 .sm-modal-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 10;
+  /* ERP 상단바(z-index: 20)보다 위에 표시해 제목과 닫기 버튼이 가려지지 않게 합니다. */
+  z-index: 10000;
   display: grid;
   place-items: center;
   padding: 16px;

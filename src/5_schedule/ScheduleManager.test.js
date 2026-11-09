@@ -46,7 +46,44 @@ test("일정 읽기 오류 중에는 프로젝트 요약을 유지하고 정상 
   localStorage.setItem(storageKey, "[]");
   fireEvent.click(screen.getByRole("button", { name: "현재 변경을 버리고 저장된 일정 불러오기" }));
   expect(updateProject).toHaveBeenCalledWith({ id: 1, schedules: [] });
-  await waitFor(() => expect(fetch).toHaveBeenCalled());
+  await act(async () => { expect(fetch).toHaveBeenCalled(); });
+});
+
+test("최초 일정 저장에 실패하면 프로젝트 요약과 변경 이력을 갱신하지 않는다", async () => {
+  const updateProject = jest.fn();
+  useERP.mockReturnValue({ projects: [{ id: 1, name: "연결 프로젝트", schedules: [{ id: "유지" }] }], employees: [], updateProject });
+  saveSchedules([makeStoredSchedule({ project: "연결 프로젝트", projectId: 1 })]);
+  const originalSet = Storage.prototype.setItem;
+  jest.spyOn(Storage.prototype, "setItem").mockImplementation(function(key, value) {
+    if (key === storageKey) throw new Error("quota");
+    return originalSet.call(this, key, value);
+  });
+  render(<ScheduleManager />);
+  await act(async () => { expect(fetch).toHaveBeenCalled(); });
+  expect(updateProject).not.toHaveBeenCalled();
+  expect(screen.getByRole("status", { name: "일정 저장 상태" })).toHaveTextContent("저장 실패");
+});
+
+test("프로젝트 요약은 일정 쓰기 잠금이 풀려 실제 저장에 성공한 뒤에만 전달한다", async () => {
+  const updateProject = jest.fn();
+  useERP.mockReturnValue({ projects: [{ id: 1, name: "연결 프로젝트", schedules: [] }], employees: [], updateProject });
+  saveSchedules([makeStoredSchedule({ project: "연결 프로젝트", projectId: 1 })]);
+  const originalLocks = Object.getOwnPropertyDescriptor(navigator, "locks");
+  const jobs = [];
+  Object.defineProperty(navigator, "locks", { configurable: true, value: {
+    request: jest.fn((name, callback) => { jobs.push({ name, callback }); return Promise.resolve(); }),
+  } });
+  let view;
+  try {
+    view = render(<ScheduleManager />);
+    expect(updateProject).not.toHaveBeenCalled();
+    await act(async () => { jobs.find(job => job.name === "made-mate-schedules-write").callback(); });
+    expect(updateProject).toHaveBeenCalledWith({ id: 1, schedules: [expect.objectContaining({ title: expect.any(String) })] });
+  } finally {
+    view?.unmount();
+    if (originalLocks) Object.defineProperty(navigator, "locks", originalLocks);
+    else delete navigator.locks;
+  }
 });
 
 test("과거 반복 중복 정리 전 원본을 보존하고 원본 보존 실패 시 자동 저장을 막는다", () => {
@@ -109,7 +146,7 @@ test("팀원이 등록돼 있어도 검색으로 행이 사라지면 조건 안�
   fireEvent.change(screen.getByLabelText("일정 검색"), { target: { value: "" } });
   expect(screen.getByRole("region", { name: "담당자별 주간 일정표" })).toBeInTheDocument();
   expect(localStorage.getItem("made-mate-schedule-team")).toBe(roster);
-  await waitFor(() => expect(fetch).toHaveBeenCalled());
+  await act(async () => { expect(fetch).toHaveBeenCalled(); });
 });
 
 test("입력 오류를 해당 칸에 연결하고 값을 고치면 안내를 해제한다", async () => {
@@ -127,7 +164,7 @@ test("입력 오류를 해당 칸에 연결하고 값을 고치면 안내를 해
   expect(screen.getByLabelText("종료 시간")).toHaveAttribute("aria-invalid", "true");
   expect(screen.getByLabelText("종료 시간")).toHaveAccessibleDescription("종료 시간은 시작 시간보다 늦게 입력해 주세요.");
   expect(JSON.parse(localStorage.getItem(storageKey))).toEqual([]);
-  await waitFor(() => expect(fetch).toHaveBeenCalled());
+  await act(async () => { expect(fetch).toHaveBeenCalled(); });
 });
 
 test("접힌 반복 설정의 잘못된 횟수는 오류 안내와 함께 펼친다", async () => {
@@ -143,7 +180,7 @@ test("접힌 반복 설정의 잘못된 횟수는 오류 안내와 함께 펼친
   expect(screen.getByRole("group", { name: "일정 추가 설정" })).toHaveAttribute("open");
   expect(count).toHaveAttribute("aria-invalid", "true");
   expect(count).toHaveAccessibleDescription("반복 횟수는 1~1000 사이의 정수로 입력해 주세요.");
-  await waitFor(() => expect(fetch).toHaveBeenCalled());
+  await act(async () => { expect(fetch).toHaveBeenCalled(); });
 });
 
 test("새 일정은 새로고침 후 임시 내용을 복구하며 실제 저장 뒤에는 임시 보관을 제거한다", async () => {
@@ -169,7 +206,7 @@ test("새 일정은 새로고침 후 임시 내용을 복구하며 실제 저장
   fireEvent.submit(screen.getByRole("form"));
   expect(sessionStorage.getItem("made-mate-schedule-draft")).toBeNull();
   expect(JSON.parse(localStorage.getItem(storageKey))).toHaveLength(1);
-  await waitFor(() => expect(fetch).toHaveBeenCalled());
+  await act(async () => { expect(fetch).toHaveBeenCalled(); });
 });
 
 test("닫기 확인을 취소하면 임시 보관을 유지하고 닫기를 승인하면 제거한다", async () => {
@@ -182,7 +219,7 @@ test("닫기 확인을 취소하면 임시 보관을 유지하고 닫기를 승�
   confirm.mockReturnValue(true);
   fireEvent.click(screen.getByRole("button", { name: "취소", exact: true }));
   expect(sessionStorage.getItem("made-mate-schedule-draft")).toBeNull();
-  await waitFor(() => expect(fetch).toHaveBeenCalled());
+  await act(async () => { expect(fetch).toHaveBeenCalled(); });
 });
 
 test("손상된 임시 보관은 자동 덮어쓰기 없이 안내하고 기존 일정 수정은 임시 저장하지 않는다", async () => {
@@ -197,7 +234,7 @@ test("손상된 임시 보관은 자동 덮어쓰기 없이 안내하고 기존 
   fireEvent.change(screen.getByLabelText("일정 이름"), { target: { value: "[테스트] 수정 중" } });
   expect(sessionStorage.getItem("made-mate-schedule-draft")).toBeNull();
   expect(JSON.parse(localStorage.getItem(storageKey))[0].title).toBe("[테스트] 기존 원본");
-  await waitFor(() => expect(fetch).toHaveBeenCalled());
+  await act(async () => { expect(fetch).toHaveBeenCalled(); });
 });
 
 test("목록 상태 필터는 개인 일정을 제외하고 페이지·건수를 다시 계산하며 원본을 유지한다", () => {
@@ -235,7 +272,7 @@ test("선택 날짜로 새 일정을 열고 빠른 설정·공백 정리 결과�
   expect(screen.getByLabelText("종료 날짜 (여러 날 일정)")).toHaveValue(dateKey(nextDay));
   fireEvent.submit(screen.getByRole("form"));
   expect(JSON.parse(localStorage.getItem(storageKey))[0]).toMatchObject({ date: dateKey(expected), endDate: dateKey(nextDay), endTime: "00:30", title: "[테스트] 빠른 시간", description: "첫째 줄\n  둘째 줄" });
-  await waitFor(() => expect(fetch).toHaveBeenCalled());
+  await act(async () => { expect(fetch).toHaveBeenCalled(); });
 });
 
 test("빠른 시간은 월말·연말을 넘기고 반복의 다음 날 종료를 막으며 종일에서는 숨긴다", () => {
@@ -269,7 +306,7 @@ test.each(["none", "weekly"])("%s 일정 삭제를 되돌려 원본을 복구하
   expect(saved.find(item => item.id === before.id)).toEqual(before);
   expect(saved.find(item => item.id === "other").title).toBe("[테스트] 다른 탭 수정");
   expect(screen.queryByRole("button", { name: "삭제 되돌리기" })).not.toBeInTheDocument();
-  await waitFor(() => expect(fetch).toHaveBeenCalled());
+  await act(async () => { expect(fetch).toHaveBeenCalled(); });
 });
 
 test("반복 전체 삭제는 제외일·즐겨찾기까지 복구하며 새로고침 후에도 유지된다", async () => {
@@ -286,7 +323,7 @@ test("반복 전체 삭제는 제외일·즐겨찾기까지 복구하며 새로�
   view.unmount();
   render(<ScheduleManager />);
   expect(JSON.parse(localStorage.getItem(storageKey))).toEqual(before);
-  await waitFor(() => expect(fetch).toHaveBeenCalled());
+  await act(async () => { expect(fetch).toHaveBeenCalled(); });
 });
 
 test("되돌리기는 같은 ID의 재등록과 변경된 원본 반복을 덮어쓰지 않는다", () => {
@@ -316,7 +353,7 @@ test("삭제 취소는 기록을 만들지 않고 연속 삭제는 최근 한 �
   act(() => { jest.advanceTimersByTime(15000); });
   expect(screen.queryByRole("status", { name: "일정 삭제 안내" })).not.toBeInTheDocument();
   expect(JSON.parse(localStorage.getItem(storageKey))).toEqual([]);
-  await waitFor(() => expect(fetch).toHaveBeenCalled());
+  await act(async () => { expect(fetch).toHaveBeenCalled(); });
 });
 
 test("검색·필터 초기화는 조건을 지우고 선택한 보기와 저장 데이터를 유지한다", async () => {
@@ -333,7 +370,7 @@ test("검색·필터 초기화는 조건을 지우고 선택한 보기와 저장
   expect(screen.getByRole("tab", { name: "주별" })).toHaveAttribute("aria-selected", "true");
   expect(screen.queryByRole("button", { name: "검색·필터 초기화" })).not.toBeInTheDocument();
   expect(localStorage.getItem(storageKey)).toBe(before);
-  await waitFor(() => expect(fetch).toHaveBeenCalled());
+  await act(async () => { expect(fetch).toHaveBeenCalled(); });
 });
 
 test("목록은 20건씩 표시하고 페이지 이동 후에도 원래 일정으로 수정·즐겨찾기를 전달한다", () => {
@@ -457,7 +494,7 @@ test("수정창에서 복사하면 저장 전까지 원본을 유지하고 저�
   expect(saved).toHaveLength(2);
   expect(saved.find(item => item.id === before[0].id)).toEqual(before[0]);
   expect(saved.find(item => item.title.endsWith("(복사)")).id).not.toBe(before[0].id);
-  await waitFor(() => expect(fetch).toHaveBeenCalled());
+  await act(async () => { expect(fetch).toHaveBeenCalled(); });
 });
 test.each(["until", "count"])("등록 폼에서 반복 종료 %s를 설정해 저장하고 수정 창에서 복원한다", async mode => {
   render(<ScheduleManager />);
@@ -476,7 +513,7 @@ test.each(["until", "count"])("등록 폼에서 반복 종료 %s를 설정해 �
   fireEvent.click(screen.getByRole("button", { name: "전체 일정 (1)" }));
   fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "[테스트] 종료 조건 저장 일정 수정" }));
   expect(screen.getByLabelText("반복 종료", { exact: true })).toHaveValue(mode);
-  await waitFor(() => expect(fetch).toHaveBeenCalled());
+  await act(async () => { expect(fetch).toHaveBeenCalled(); });
 });
 test("저장 잠금을 기다리는 동안에는 완료가 아닌 저장 중으로 표시한다", async () => {
   const original = Object.getOwnPropertyDescriptor(navigator, "locks");
@@ -505,14 +542,14 @@ test("일정 저장 실패를 완료로 표시하지 않는다", async () => {
   render(<ScheduleManager />);
   expect(screen.getByRole("status", { name: "일정 저장 상태" })).toHaveTextContent("저장 실패");
   expect(screen.getByRole("alert")).toHaveTextContent("저장하지 못했습니다");
-  await waitFor(() => expect(fetch).toHaveBeenCalled());
+  await act(async () => { expect(fetch).toHaveBeenCalled(); });
 });
 test("손상된 저장 자료는 저장 중지 상태로 표시하고 원본을 유지한다", async () => {
   localStorage.setItem(storageKey, "{invalid-json");
   render(<ScheduleManager />);
   expect(screen.getByRole("status", { name: "일정 저장 상태" })).toHaveTextContent("저장 중지");
   expect(localStorage.getItem(storageKey)).toBe("{invalid-json");
-  await waitFor(() => expect(fetch).toHaveBeenCalled());
+  await act(async () => { expect(fetch).toHaveBeenCalled(); });
 });
 test("읽기 실패 안내에서 정상 자료를 다시 불러오면 저장 중지와 경고를 해제한다", async () => {
   localStorage.setItem(storageKey, "{invalid-json");
@@ -527,7 +564,7 @@ test("읽기 실패 안내에서 정상 자료를 다시 불러오면 저장 중
   expect(screen.getByRole("status", { name: "일정 저장 상태" })).toHaveTextContent("브라우저에 저장 완료");
   expect(screen.getByRole("button", { name: "전체 일정 (1)" })).toBeInTheDocument();
   expect(screen.queryByRole("button", { name: "현재 변경을 버리고 저장된 일정 불러오기" })).not.toBeInTheDocument();
-  await waitFor(() => expect(fetch).toHaveBeenCalled());
+  await act(async () => { expect(fetch).toHaveBeenCalled(); });
 });
 test.each(["취소", "닫기", "배경", "Escape"])("작성 중 %s로 닫기를 시도하면 취소 시 입력을 유지하고 확인 시에만 닫는다", async action => {
   render(<ScheduleManager />);
@@ -551,7 +588,7 @@ test.each(["취소", "닫기", "배경", "Escape"])("작성 중 %s로 닫기를 
   expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   expect(opener).toHaveFocus();
   expect(JSON.parse(localStorage.getItem(storageKey))).toEqual([]);
-  await waitFor(() => expect(fetch).toHaveBeenCalled());
+  await act(async () => { expect(fetch).toHaveBeenCalled(); });
 });
 test("입력을 원래 값으로 돌리면 닫기 확인을 표시하지 않는다", async () => {
   render(<ScheduleManager />);
@@ -563,7 +600,7 @@ test("입력을 원래 값으로 돌리면 닫기 확인을 표시하지 않는�
   fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "취소" }));
   expect(confirm).not.toHaveBeenCalled();
   expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
-  await waitFor(() => expect(fetch).toHaveBeenCalled());
+  await act(async () => { expect(fetch).toHaveBeenCalled(); });
 });
 test("등록 팝업은 Tab을 순환하고 Escape로 닫은 뒤 등록 버튼에 초점을 돌려준다", async () => {
   render(<ScheduleManager />);
@@ -582,7 +619,7 @@ test("등록 팝업은 Tab을 순환하고 Escape로 닫은 뒤 등록 버튼에
   fireEvent.keyDown(last, { key: "Escape" });
   expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   expect(opener).toHaveFocus();
-  await waitFor(() => expect(fetch).toHaveBeenCalled());
+  await act(async () => { expect(fetch).toHaveBeenCalled(); });
 });
 test("전체 목록 팝업도 처음 초점을 받고 닫기 버튼으로 원래 위치에 복귀한다", async () => {
   render(<ScheduleManager />);
@@ -593,7 +630,7 @@ test("전체 목록 팝업도 처음 초점을 받고 닫기 버튼으로 원래
   expect(close).toHaveFocus();
   fireEvent.click(close);
   expect(opener).toHaveFocus();
-  await waitFor(() => expect(fetch).toHaveBeenCalled());
+  await act(async () => { expect(fetch).toHaveBeenCalled(); });
 });
 const overnightSchedule = {
   id: "overnight-test", title: "[테스트] 다음 날 오전 종료", date: "2026-11-04", endDate: "2026-11-05",
@@ -660,7 +697,7 @@ test("종료 시간의 최소값은 같은 날짜에만 적용하고 다음 날 
   expect(JSON.parse(localStorage.getItem(storageKey))).toEqual(expect.arrayContaining([
     expect.objectContaining({ title: "[테스트] 다음 날 종료", date: "2026-11-04", endDate: "2026-11-05", time: "18:00", endTime: "09:00" }),
   ]));
-  await waitFor(() => expect(fetch).toHaveBeenCalled());
+  await act(async () => { expect(fetch).toHaveBeenCalled(); });
 });
 test.each([
   [{ scope: "개인 일정용", project: "예전 프로젝트", projectId: 1 }, null],
@@ -699,7 +736,7 @@ test.each([
   expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   expect(JSON.parse(localStorage.getItem(storageKey))[0]).toMatchObject({ project: expectedName, projectId: expectedId });
   expect(JSON.stringify(projects)).toBe(originalProjects);
-  await waitFor(() => expect(fetch).toHaveBeenCalled());
+  await act(async () => { expect(fetch).toHaveBeenCalled(); });
 });
 
 test("편집창을 연 뒤 프로젝트 이름이 변경돼도 저장 시 ID와 최신 이름을 유지한다", async () => {
@@ -712,7 +749,7 @@ test("편집창을 연 뒤 프로젝트 이름이 변경돼도 저장 시 ID와 
   rerender(<ScheduleManager />);
   fireEvent.click(screen.getByRole("button", { name: "수정 저장" }));
   expect(JSON.parse(localStorage.getItem(storageKey))[0]).toMatchObject({ project: "편집 중 변경", projectId: 1 });
-  await waitFor(() => expect(fetch).toHaveBeenCalled());
+  await act(async () => { expect(fetch).toHaveBeenCalled(); });
 });
 
 test("프로젝트 이름 변경 후 반복 한 회차를 수정해도 원본과 분리 회차의 연결을 유지한다", async () => {
@@ -730,7 +767,7 @@ test("프로젝트 이름 변경 후 반복 한 회차를 수정해도 원본과
   expect(saved.find(item => item.title === "[테스트] 분리 회차")).toMatchObject({
     project: "새 이름", projectId: 1, repeatType: "none", replacesScheduleId: "test-schedule",
   });
-  await waitFor(() => expect(fetch).toHaveBeenCalled());
+  await act(async () => { expect(fetch).toHaveBeenCalled(); });
 });
 
 test.each(["input", "change"])("날짜·시간 %s 이벤트 후 포커스를 옮기지 않고 제출해도 입력값을 저장한다", async eventType => {
@@ -750,7 +787,7 @@ test.each(["input", "change"])("날짜·시간 %s 이벤트 후 포커스를 옮
   expect(JSON.parse(localStorage.getItem(storageKey))).toEqual(expect.arrayContaining([
     expect.objectContaining({ title: "[테스트] 즉시 저장", date: "2026-11-04", time: "10:00", endTime: "11:00" }),
   ]));
-  await waitFor(() => expect(fetch).toHaveBeenCalled());
+  await act(async () => { expect(fetch).toHaveBeenCalled(); });
 });
 // 테스트 준비에서 일정의 담당자·참석자를 팀원 목록에도 미리 등록합니다.
 // 실제 앱은 기존 일정 불러오기만으로 팀원을 만들지는 않으며, 새 업무일정 저장 시 새 이름을 등록합니다.
@@ -846,7 +883,7 @@ test("일반 일정 수정은 기존 ID를 유지하고 삭제는 선택한 일�
   saved = JSON.parse(localStorage.getItem(storageKey));
   expect(saved).toHaveLength(1);
   expect(saved[0].id).toBe("keep");
-  await waitFor(() => expect(fetch).toHaveBeenCalled());
+  await act(async () => { expect(fetch).toHaveBeenCalled(); });
 });
 
 // 날짜별 더보기와 전체 목록이 같은 열기 함수를 사용해도 날짜 조건이 남지 않는지 확인합니다.
@@ -872,7 +909,7 @@ test("달력 더보기는 해당 날짜만 열고 전체 보기와 다시 열기
   dialog = screen.getByRole("dialog");
   expect(within(dialog).getAllByRole("article")).toHaveLength(4);
   expect(within(dialog).queryByRole("button", { name: "전체 일정 보기" })).not.toBeInTheDocument();
-  await waitFor(() => expect(fetch).toHaveBeenCalled());
+  await act(async () => { expect(fetch).toHaveBeenCalled(); });
 });
 
 test("월말 반복은 짧은 달의 말일에 표시하고 다음 달에는 원래 일자로 돌아온다", () => {
@@ -967,7 +1004,7 @@ test.each(["프로젝트"])("%s 목록에서 프로젝트를 누르면 가까운
   fireEvent.click(within(calendar).getByRole("button", { name: "전체 프로젝트 보기" }));
   expect(within(selected).getByText("다른 프로젝트 작업")).toBeInTheDocument();
   expect(within(calendar).getByRole("button", { name: /다른 프로젝트 작업 선택한 날짜 일정에서 보기/ })).toBeInTheDocument();
-  await waitFor(() => expect(fetch).toHaveBeenCalled());
+  await act(async () => { expect(fetch).toHaveBeenCalled(); });
 });
 
 test("프로젝트 이동 날짜는 반복 제외일을 건너뛰고 미래 일정이 없으면 최근 과거로 정한다", () => {
@@ -993,7 +1030,7 @@ test("프로젝트 아이콘은 검색·기간과 무관하게 중복 없는 프
   expect(icon).toHaveAttribute("aria-expanded", "true");
   fireEvent.click(within(directory).getByRole("button", { name: "목록 닫기" }));
   expect(screen.queryByRole("region", { name: "프로젝트 목록" })).not.toBeInTheDocument();
-  await waitFor(() => expect(fetch).toHaveBeenCalled());
+  await act(async () => { expect(fetch).toHaveBeenCalled(); });
 });
 
 test.each([
@@ -1010,7 +1047,7 @@ test.each([
   expect(screen.getByRole("textbox", { name: "일정 검색" })).toHaveValue("");
   expect(screen.getByRole("combobox", { name: "공유 구분 필터" })).toHaveValue("all");
   expect(screen.queryByRole("combobox", { name: "업무 상태 필터" })).not.toBeInTheDocument();
-  await waitFor(() => expect(fetch).toHaveBeenCalled());
+  await act(async () => { expect(fetch).toHaveBeenCalled(); });
 });
 
 test("팀원 목록 진입점은 숨기고 담당자별 일정에는 일정에 등록된 사람을 표시한다", async () => {
@@ -1020,7 +1057,7 @@ test("팀원 목록 진입점은 숨기고 담당자별 일정에는 일정에 �
   fireEvent.click(screen.getByRole("tab", { name: "담당자별 주간" }));
   expect(screen.getByRole("button", { name: "김담당 일정 펼치기" })).toBeInTheDocument();
   expect(screen.getByRole("button", { name: "이참석 일정 펼치기" })).toBeInTheDocument();
-  await waitFor(() => expect(fetch).toHaveBeenCalled());
+  await act(async () => { expect(fetch).toHaveBeenCalled(); });
 });
 
 test("프로젝트 목록의 빈 상태를 표시하고 팀원 목록 진입점은 숨긴다", async () => {
@@ -1028,7 +1065,7 @@ test("프로젝트 목록의 빈 상태를 표시하고 팀원 목록 진입점�
   fireEvent.click(screen.getByRole("button", { name: "일정 등록 프로젝트 목록 보기" }));
   expect(screen.getByText("일정에 등록된 프로젝트가 없습니다. 업무 일정의 프로젝트 분류에서 추가해 주세요.")).toBeInTheDocument();
   expect(screen.queryByRole("button", { name: "등록된 팀원 목록 보기" })).not.toBeInTheDocument();
-  await waitFor(() => expect(fetch).toHaveBeenCalled());
+  await act(async () => { expect(fetch).toHaveBeenCalled(); });
 });
 
 test("프로젝트·담당자·참석자 검색은 달력에 반영하고 별도 검색 목록은 만들지 않는다", async () => {
@@ -1056,7 +1093,7 @@ test("프로젝트·담당자·참석자 검색은 달력에 반영하고 별도
   fireEvent.click(screen.getByRole("button", { name: "검색 초기화" }));
   expect(screen.getByRole("textbox", { name: "일정 검색" })).toHaveValue("");
   expect(screen.queryByRole("region", { name: "검색한 일정" })).not.toBeInTheDocument();
-  await waitFor(() => expect(fetch).toHaveBeenCalled());
+  await act(async () => { expect(fetch).toHaveBeenCalled(); });
 });
 
 test("달력 검색은 보기 기간과 공개 필터를 따르고 결과 건수를 표시한다", async () => {
@@ -1080,7 +1117,7 @@ test("달력 검색은 보기 기간과 공개 필터를 따르고 결과 건수
   fireEvent.click(screen.getByRole("tab", { name: "주별" }));
   expect(count()).toHaveTextContent("1건");
   expect(screen.queryByRole("combobox", { name: "업무 상태 필터" })).not.toBeInTheDocument();
-  await waitFor(() => expect(fetch).toHaveBeenCalled());
+  await act(async () => { expect(fetch).toHaveBeenCalled(); });
 });
 
 test("검색한 반복 일정도 선택 날짜에서 상태 변경·수정·삭제하면 해당 발생일에 적용된다", async () => {
@@ -1107,7 +1144,7 @@ test("검색한 반복 일정도 선택 날짜에서 상태 변경·수정·삭�
   fireEvent.click(within(results).getByRole("button", { name: "검증용 마감 일정 수정" }));
   expect(screen.getByLabelText("날짜")).toHaveValue("2026-10-15");
   expect(screen.getByText("선택한 날짜의 일정만 수정합니다. 다른 반복 일정은 유지됩니다.")).toBeInTheDocument();
-  await waitFor(() => expect(fetch).toHaveBeenCalled());
+  await act(async () => { expect(fetch).toHaveBeenCalled(); });
 });
 
 // 월을 넘는 한 주도 달력에서 양쪽 달을 함께 검색해야 합니다.
@@ -1130,7 +1167,7 @@ test.each(["주별", "담당자별 주간"])("%s는 월 경계 양쪽 일정을 
     expect(screen.getByRole("button", { name: `${date} 09:00~17:00 ${title} 선택한 날짜 일정에서 보기` })).toBeInTheDocument();
     expect(within(results).getByText(title)).toBeInTheDocument();
   }
-  await waitFor(() => expect(fetch).toHaveBeenCalled());
+  await act(async () => { expect(fetch).toHaveBeenCalled(); });
 });
 
 // test.each는 같은 검사에 입력값만 바꿔 월말·연말 사례를 각각 실행합니다.
@@ -1277,7 +1314,7 @@ test("프로젝트를 선택한 상태에서도 다른 프로젝트의 다가오
   const calendar = screen.getByRole("region", { name: "일정 달력" });
   expect(within(calendar).getByRole("button", { name: "2026-10-23 14:00~17:00 나 작업 선택한 날짜 일정에서 보기" })).toBeInTheDocument();
   expect(within(calendar).queryByRole("button", { name: "전체 프로젝트 보기" })).not.toBeInTheDocument();
-  await waitFor(() => expect(fetch).toHaveBeenCalled());
+  await act(async () => { expect(fetch).toHaveBeenCalled(); });
 });
 
 test("등록 폼은 고유명사 맞춤법 검사를 끄고 이름 입력값은 그대로 유지한다", async () => {
@@ -1290,7 +1327,7 @@ test("등록 폼은 고유명사 맞춤법 검사를 끄고 이름 입력값은 
   expect(screen.getByRole("form")).toHaveAttribute("autocorrect", "off");
   chooseAssignee("이언우");
   expect(name).toHaveValue("이언우");
-  await waitFor(() => expect(fetch).toHaveBeenCalled());
+  await act(async () => { expect(fetch).toHaveBeenCalled(); });
 });
 
 test("기존 일정은 17시 종료로 보완하고 수정한 종료 시간을 저장·표시한다", async () => {
@@ -1306,7 +1343,7 @@ test("기존 일정은 17시 종료로 보완하고 수정한 종료 시간을 �
   fireEvent.click(screen.getByRole("button", { name: "수정 저장" }));
   expect(JSON.parse(localStorage.getItem(storageKey))[0].endTime).toBe("15:30");
   expect(within(selected).getByText("09:00~15:30")).toBeInTheDocument();
-  await waitFor(() => expect(fetch).toHaveBeenCalled());
+  await act(async () => { expect(fetch).toHaveBeenCalled(); });
 });
 
 test("새 일정은 종료 시간이 시작 시간보다 늦어야 저장한다", async () => {
@@ -1331,7 +1368,7 @@ test("새 일정은 종료 시간이 시작 시간보다 늦어야 저장한다"
   expect(saved.time).toBe("10:00");
   expect(saved.endTime).toBe("18:00");
   expect(screen.getByRole("button", { name: /10:00~18:00 시간 범위 작업 선택한 날짜 일정에서 보기/ })).toBeInTheDocument();
-  await waitFor(() => expect(fetch).toHaveBeenCalled());
+  await act(async () => { expect(fetch).toHaveBeenCalled(); });
 });
 
 test("월을 넘는 주간 제목은 월과 일을 두 자리씩 표시한다", async () => {
@@ -1343,7 +1380,7 @@ test("월을 넘는 주간 제목은 월과 일을 두 자리씩 표시한다", 
   expect(screen.getByRole("heading", { name: "10/26 – 11/01" })).toBeInTheDocument();
   fireEvent.click(screen.getByRole("tab", { name: "담당자별 주간" }));
   expect(screen.getByRole("heading", { name: "10/26 – 11/01" })).toBeInTheDocument();
-  await waitFor(() => expect(fetch).toHaveBeenCalled());
+  await act(async () => { expect(fetch).toHaveBeenCalled(); });
 });
 
 test("담당자별 주간에서 이름 검색은 해당 사람의 행과 담당·참석 일정을 보여준다", async () => {
@@ -1369,7 +1406,7 @@ test("담당자별 주간에서 이름 검색은 해당 사람의 행과 담당�
   fireEvent.change(screen.getByRole("textbox", { name: "일정 검색" }), { target: { value: "테스트 프로젝트" } });
   const projectTable = screen.getByRole("region", { name: "담당자별 주간 일정표" });
   expect(within(projectTable).getAllByRole("rowheader")).toHaveLength(3);
-  await waitFor(() => expect(fetch).toHaveBeenCalled());
+  await act(async () => { expect(fetch).toHaveBeenCalled(); });
 });
 
 test("이름 부분 검색에서는 이름 전체가 일치하는 사람을 먼저 표시한다", async () => {
@@ -1386,7 +1423,7 @@ test("이름 부분 검색에서는 이름 전체가 일치하는 사람을 먼�
   expect(headers).toHaveLength(2);
   expect(headers[0]).toHaveTextContent(/^복어/);
   expect(headers[1]).toHaveTextContent(/^가복어/);
-  await waitFor(() => expect(fetch).toHaveBeenCalled());
+  await act(async () => { expect(fetch).toHaveBeenCalled(); });
 });
 
 test("즐겨찾기는 검색·월 이동과 무관하게 유지하고 새로고침 후에도 복원한다", async () => {
@@ -1408,7 +1445,7 @@ test("즐겨찾기는 검색·월 이동과 무관하게 유지하고 새로고�
   fireEvent.click(within(favorites).getByRole("button", { name: "검증용 마감 즐겨찾기 해제" }));
   expect(within(favorites).getByRole("status")).toHaveTextContent("0건");
   expect(JSON.parse(localStorage.getItem(storageKey))[0].isFavorite).toBe(false);
-  await waitFor(() => expect(fetch).toHaveBeenCalled());
+  await act(async () => { expect(fetch).toHaveBeenCalled(); });
 });
 
 test("전체 목록에서 즐겨찾기에 추가하고 수정·삭제한 내용은 고정 목록에 즉시 반영한다", async () => {
@@ -1430,7 +1467,7 @@ test("전체 목록에서 즐겨찾기에 추가하고 수정·삭제한 내용�
   fireEvent.click(within(favorites).getByRole("button", { name: "새 제목 일정 수정" }));
   fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "일정 삭제" }));
   expect(within(favorites).getByRole("status")).toHaveTextContent("0건");
-  await waitFor(() => expect(fetch).toHaveBeenCalled());
+  await act(async () => { expect(fetch).toHaveBeenCalled(); });
 });
 
 test("반복 일정의 즐겨찾기는 원본 한 건만 고정하고 한 번의 상태 변경으로 복제되지 않는다", async () => {
@@ -1445,7 +1482,7 @@ test("반복 일정의 즐겨찾기는 원본 한 건만 고정하고 한 번의
   fireEvent.change(within(selected).getByRole("combobox"), { target: { value: "completed" } });
   expect(within(favorites).getAllByRole("article")).toHaveLength(1);
   expect(JSON.parse(localStorage.getItem(storageKey)).filter((item) => item.isFavorite)).toHaveLength(1);
-  await waitFor(() => expect(fetch).toHaveBeenCalled());
+  await act(async () => { expect(fetch).toHaveBeenCalled(); });
 });
 
 test("담당자별 주간은 접힌 건수로 시작하고 한 사람씩 펼치거나 다시 접는다", async () => {
@@ -1469,7 +1506,7 @@ test("담당자별 주간은 접힌 건수로 시작하고 한 사람씩 펼치�
   expect(within(table).queryAllByRole("button", { name: /선택한 날짜 일정에서 보기$/ })).toHaveLength(0);
   fireEvent.click(within(table).getByRole("button", { name: `김담당 ${getTodayKey()} 일정 1건 펼치기` }));
   expect(within(table).getByRole("button", { name: /김 작업 선택한 날짜 일정에서 보기/ })).toBeInTheDocument();
-  await waitFor(() => expect(fetch).toHaveBeenCalled());
+  await act(async () => { expect(fetch).toHaveBeenCalled(); });
 });
 
 test("이름 검색은 자동으로 펼치고 검색 초기화 시 전체를 접은 목록으로 돌아온다", async () => {
@@ -1487,7 +1524,7 @@ test("이름 검색은 자동으로 펼치고 검색 초기화 시 전체를 접
   const resetTable = screen.getByRole("region", { name: "담당자별 주간 일정표" });
   expect(within(resetTable).getAllByRole("rowheader")).toHaveLength(2);
   expect(within(resetTable).queryAllByRole("button", { name: /선택한 날짜 일정에서 보기$/ })).toHaveLength(0);
-  await waitFor(() => expect(fetch).toHaveBeenCalled());
+  await act(async () => { expect(fetch).toHaveBeenCalled(); });
 });
 
 test("기존 일정의 임의 담당자와 참석자 이름을 편집해도 자동 팀원 등록하지 않는다", async () => {
@@ -1501,7 +1538,7 @@ test("기존 일정의 임의 담당자와 참석자 이름을 편집해도 자�
   expect(JSON.parse(localStorage.getItem(storageKey))[0].person).toBe("임의 이름");
   expect(JSON.parse(localStorage.getItem(storageKey))[0].attendees).toEqual(["외부 참석자"]);
   expect(JSON.parse(localStorage.getItem("made-mate-schedule-team"))).toEqual([]);
-  await waitFor(() => expect(fetch).toHaveBeenCalled());
+  await act(async () => { expect(fetch).toHaveBeenCalled(); });
 });
 
 test("회의 분류에서 담당자와 참석자를 일정에 저장한다", async () => {
@@ -1516,7 +1553,7 @@ test("회의 분류에서 담당자와 참석자를 일정에 저장한다", asy
   const saved = JSON.parse(localStorage.getItem(storageKey))[0];
   expect(saved.person).toBe("김담당");
   expect(saved.attendees).toEqual(["이참석"]);
-  await waitFor(() => expect(fetch).toHaveBeenCalled());
+  await act(async () => { expect(fetch).toHaveBeenCalled(); });
 });
 
 test("담당자별 주간은 등록된 일정 사람을 표시한다", async () => {
@@ -1525,7 +1562,7 @@ test("담당자별 주간은 등록된 일정 사람을 표시한다", async () 
   expect(screen.queryByRole("button", { name: "등록된 팀원 목록 보기" })).not.toBeInTheDocument();
   fireEvent.click(screen.getByRole("tab", { name: "담당자별 주간" }));
   expect(screen.getByRole("button", { name: "김담당 일정 펼치기" })).toBeInTheDocument();
-  await waitFor(() => expect(fetch).toHaveBeenCalled());
+  await act(async () => { expect(fetch).toHaveBeenCalled(); });
 });
 
 test("팀원 관리 진입점은 숨겨도 담당자별 주간 일정 보기는 유지한다", async () => {
@@ -1535,7 +1572,7 @@ test("팀원 관리 진입점은 숨겨도 담당자별 주간 일정 보기는 
   fireEvent.click(screen.getByRole("tab", { name: "담당자별 주간" }));
   expect(screen.getByRole("button", { name: "김담당 일정 펼치기" })).toBeInTheDocument();
   expect(JSON.parse(localStorage.getItem(storageKey))[0].person).toBe("김담당");
-  await waitFor(() => expect(fetch).toHaveBeenCalled());
+  await act(async () => { expect(fetch).toHaveBeenCalled(); });
 });
 
 test("월간 일정 박스의 별은 상세창이나 선택 날짜를 바꾸지 않고 즐겨찾기를 전환한다", async () => {
@@ -1561,7 +1598,7 @@ test("월간 일정 박스의 별은 상세창이나 선택 날짜를 바꾸지 
   expect(selected).toHaveTextContent("2026.10.23");
   fireEvent.click(within(selected).getByRole("button", { name: "검증용 마감 일정 수정" }));
   expect(screen.getByRole("dialog")).toBeInTheDocument();
-  await waitFor(() => expect(fetch).toHaveBeenCalled());
+  await act(async () => { expect(fetch).toHaveBeenCalled(); });
 });
 
 test("프로젝트·공개 필터가 적용된 일정도 수정 저장 후 바로 확인할 수 있다", async () => {
@@ -1580,7 +1617,7 @@ test("프로젝트·공개 필터가 적용된 일정도 수정 저장 후 바�
   expect(screen.getByRole("combobox", { name: "공유 구분 필터" })).toHaveValue("all");
   expect(screen.queryByRole("combobox", { name: "업무 상태 필터" })).not.toBeInTheDocument();
   expect(within(selected).getByText("검증용 마감")).toBeInTheDocument();
-  await waitFor(() => expect(fetch).toHaveBeenCalled());
+  await act(async () => { expect(fetch).toHaveBeenCalled(); });
 });
 
 test("공백 이름은 막고 프로젝트는 비워 저장할 수 있다", async () => {
@@ -1600,7 +1637,7 @@ test("공백 이름은 막고 프로젝트는 비워 저장할 수 있다", asyn
   fireEvent.change(screen.getByLabelText("프로젝트"), { target: { value: "  새 프로젝트  " } });
   fireEvent.click(screen.getByRole("button", { name: "수정 저장" }));
   expect(JSON.parse(localStorage.getItem(storageKey))[0]).toMatchObject({ title: "새 이름", project: "새 프로젝트", category: "프로젝트" });
-  await waitFor(() => expect(fetch).toHaveBeenCalled());
+  await act(async () => { expect(fetch).toHaveBeenCalled(); });
 });
 
 test.each(["프로젝트", "즐겨찾기"])("%s 이동은 이미 끝난 오늘 일정 대신 다음 유효 일정 날짜를 연다", async (source) => {
@@ -1615,7 +1652,7 @@ test.each(["프로젝트", "즐겨찾기"])("%s 이동은 이미 끝난 오늘 �
     fireEvent.click(screen.getByRole("button", { name: "검증용 마감 즐겨찾기 일정으로 이동" }));
   }
   expect(screen.getByRole("region", { name: "선택한 날짜 일정" })).toHaveTextContent("2026.10.29");
-  await waitFor(() => expect(fetch).toHaveBeenCalled());
+  await act(async () => { expect(fetch).toHaveBeenCalled(); });
 });
 
 test("잘못된 날짜·시간은 백업 후 제외하고 손상된 반복 제외일·종료 시간은 안전하게 보완한다", async () => {
@@ -1632,7 +1669,7 @@ test("잘못된 날짜·시간은 백업 후 제외하고 손상된 반복 제�
   const backup = Object.keys(localStorage).find((key) => key.startsWith(storageKey + "-backup-"));
   expect(localStorage.getItem(backup)).toBe(raw);
   expect(screen.getByRole("region", { name: "일정 달력" })).toBeInTheDocument();
-  await waitFor(() => expect(fetch).toHaveBeenCalled());
+  await act(async () => { expect(fetch).toHaveBeenCalled(); });
 });
 
 test("프로젝트의 마지막 일정을 삭제하면 없어진 프로젝트 선택을 자동 해제한다", async () => {
@@ -1646,7 +1683,7 @@ test("프로젝트의 마지막 일정을 삭제하면 없어진 프로젝트 �
   expect(screen.queryByRole("button", { name: "전체 프로젝트 보기" })).not.toBeInTheDocument();
   expect(screen.queryByRole("button", { name: "프로젝트 선택 해제" })).not.toBeInTheDocument();
   expect(JSON.parse(localStorage.getItem(storageKey))).toEqual([]);
-  await waitFor(() => expect(fetch).toHaveBeenCalled());
+  await act(async () => { expect(fetch).toHaveBeenCalled(); });
 });
 
 // 기능을 줄인 뒤에도 과거 상태를 읽고 상세 창에서 삭제를 취소·확정할 수 있어야 합니다.
@@ -1673,7 +1710,7 @@ test("단순화한 화면은 기존 상태를 예정으로 읽고 관리 기능�
   fireEvent.click(within(dialog).getByRole("button", { name: "일정 삭제" }));
   expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   expect(JSON.parse(localStorage.getItem(storageKey))).toHaveLength(0);
-  await waitFor(() => expect(fetch).toHaveBeenCalled());
+  await act(async () => { expect(fetch).toHaveBeenCalled(); });
 });
 
 test("담당자 새 이름은 입력만으로 등록되지 않고 일정 저장 시 함께 등록된다", async () => {
@@ -1688,7 +1725,7 @@ test("담당자 새 이름은 입력만으로 등록되지 않고 일정 저장 
   fireEvent.click(screen.getByRole("button", { name: "일정 저장" }));
   expect(JSON.parse(localStorage.getItem("made-mate-schedule-team"))).toEqual(["김신규"]);
   expect(JSON.parse(localStorage.getItem(storageKey))[0].person).toBe("김신규");
-  await waitFor(() => expect(fetch).toHaveBeenCalled());
+  await act(async () => { expect(fetch).toHaveBeenCalled(); });
 });
 
 test.each(["shared", "private"])("수정 창의 추가 설정은 접힌 채 기존 값 %s를 보존하고 펼쳐서 수정할 수 있다", async (visibility) => {
@@ -1704,7 +1741,7 @@ test.each(["shared", "private"])("수정 창의 추가 설정은 접힌 채 기�
   fireEvent.change(within(dialog).getByLabelText("일정 이름"), { target: { value: "간단히 수정" } });
   fireEvent.click(within(dialog).getByRole("button", { name: "수정 저장" }));
   expect(JSON.parse(localStorage.getItem(storageKey))[0]).toMatchObject({ title: "간단히 수정", type: "검수", visibility, repeatType: "none" });
-  await waitFor(() => expect(fetch).toHaveBeenCalled());
+  await act(async () => { expect(fetch).toHaveBeenCalled(); });
 });
 
 test.each(["2026-10-15T12:00:00", "2026-11-15T12:00:00", "2026-08-15T12:00:00"])("월간 달력은 일요일 시작이며 월 첫날의 위치와 주말 색상이 맞는다: %s", async (now) => {
@@ -1720,7 +1757,7 @@ test.each(["2026-10-15T12:00:00", "2026-11-15T12:00:00", "2026-08-15T12:00:00"])
   const offset = new Date(new Date(now).getFullYear(), new Date(now).getMonth(), 1).getDay();
   expect(cells.findIndex(cell => within(cell).queryByText(/^\d+$/, { selector: ".sm-day-num" }))).toBe(offset);
   expect(within(cells[offset]).getByText("1", { selector: ".sm-day-num" })).toBeInTheDocument();
-  await waitFor(() => expect(fetch).toHaveBeenCalled());
+  await act(async () => { expect(fetch).toHaveBeenCalled(); });
 });
 
 test("다가오는 일정 7일 제한은 오늘을 포함한 7일만 보이고 이동용 조회는 먼 미래도 유지한다", () => {
@@ -1747,7 +1784,7 @@ test("기존 사용자 지정 반복은 보존하며 간단한 반복 선택으�
   fireEvent.change(screen.getByLabelText("반복 설정"), { target: { value: "weekly:2" } });
   fireEvent.click(screen.getByRole("button", { name: "수정 저장" }));
   expect(JSON.parse(localStorage.getItem(storageKey))[0]).toMatchObject({ repeatType: "weekly", repeatInterval: 2 });
-  await waitFor(() => expect(fetch).toHaveBeenCalled());
+  await act(async () => { expect(fetch).toHaveBeenCalled(); });
 });
 
 test("팀원 관리 진입 버튼은 일정 화면에 표시하지 않는다", async () => {
@@ -1755,7 +1792,7 @@ test("팀원 관리 진입 버튼은 일정 화면에 표시하지 않는다", a
   render(<ScheduleManager />);
   expect(screen.queryByRole("button", { name: "등록된 팀원 목록 보기" })).not.toBeInTheDocument();
   expect(screen.queryByRole("region", { name: "팀원 목록" })).not.toBeInTheDocument();
-  await waitFor(() => expect(fetch).toHaveBeenCalled());
+  await act(async () => { expect(fetch).toHaveBeenCalled(); });
 });
 
 test("다른 탭에서 추가한 일정을 기존 탭의 저장이 덮어쓰지 않는다", async () => {
@@ -1767,7 +1804,7 @@ test("다른 탭에서 추가한 일정을 기존 탭의 저장이 덮어쓰지 
   fireEvent.click(screen.getAllByRole("button", { name: "검증용 마감 즐겨찾기 추가" })[0]);
   expect(JSON.parse(localStorage.getItem(storageKey)).map(item => item.id)).toContain("remote");
   expect(JSON.parse(localStorage.getItem(storageKey)).find(item => item.id === "test-schedule").isFavorite).toBe(true);
-  await waitFor(() => expect(fetch).toHaveBeenCalled());
+  await act(async () => { expect(fetch).toHaveBeenCalled(); });
 });
 
 test("다른 탭에서 편집 중인 일정을 변경하면 덮어쓰기를 중지한다", async () => {
@@ -1782,7 +1819,7 @@ test("다른 탭에서 편집 중인 일정을 변경하면 덮어쓰기를 중�
   expect(JSON.parse(localStorage.getItem(storageKey))[0].title).toBe("다른 탭 변경");
   expect(screen.getByLabelText("일정 이름")).toHaveValue("내 변경");
   expect(screen.getByText(/편집 중인 일정이 다른 탭에서/)).toBeInTheDocument();
-  await waitFor(() => expect(fetch).toHaveBeenCalled());
+  await act(async () => { expect(fetch).toHaveBeenCalled(); });
 });
 
 test("같은 일정의 동시 변경과 삭제 충돌을 감지하고 다른 일정 변경은 병합한다", () => {
@@ -1804,7 +1841,7 @@ test("다른 탭 저장 이벤트를 받으면 화면에 최신 일정을 반영
   localStorage.setItem(storageKey, JSON.stringify(remote));
   fireEvent(window, new StorageEvent("storage", { key: storageKey }));
   expect(screen.getByRole("button", { name: "외부에서 갱신한 일정 일정 수정" })).toBeInTheDocument();
-  await waitFor(() => expect(fetch).toHaveBeenCalled());
+  await act(async () => { expect(fetch).toHaveBeenCalled(); });
 });
 
 test("업무에서 개인으로 전환하면 숨겨진 담당자와 상태를 초기화한다", async () => {
@@ -1816,7 +1853,7 @@ test("업무에서 개인으로 전환하면 숨겨진 담당자와 상태를 �
   fireEvent.click(screen.getByRole("button", { name: "업무용", exact: true }));
   expect(screen.getByRole("combobox", { name: "담당자", exact: true })).toHaveValue("");
   expect(screen.getByLabelText("일정 상태")).toHaveValue("pending");
-  await waitFor(() => expect(fetch).toHaveBeenCalled());
+  await act(async () => { expect(fetch).toHaveBeenCalled(); });
 });
 
 test("다음 근무일 탐색 범위를 넘는 연속 휴일은 휴일에 일정을 표시하지 않는다", () => {

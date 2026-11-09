@@ -27,8 +27,10 @@ export default function ProductForm({ product, onSave, onCancel, mode = "create"
   const [status, setStatus] = useState(initial.status);
   // 입력 문자열은 유지하고 유효한 정수만 읽기 쉬운 금액으로 미리 보여줍니다.
   const amount = Number(price);
-  const pricePreview = price !== "" && Number.isSafeInteger(amount) && amount >= 0
-    ? `${amount.toLocaleString("ko-KR")}원` : null;
+  let pricePreview = null;
+  if (price !== "" && Number.isSafeInteger(amount) && amount >= 0) {
+    pricePreview = `${amount.toLocaleString("ko-KR")}원`;
+  }
   const [error, setError] = useState(null);
   const nameRef = useRef(null);
   const priceRef = useRef(null);
@@ -45,11 +47,18 @@ export default function ProductForm({ product, onSave, onCancel, mode = "create"
     setError({ field, message });
     inputs[field]?.current?.focus();
   }
-  const errorProps = field => ({
-    "aria-invalid": error?.field === field || undefined,
-    "aria-describedby": [field !== "status" && `pd-${field}-hint`,
-      error?.field === field && `pd-${field}-error`].filter(Boolean).join(" ") || undefined,
-  });
+  // 입력칸을 설명하는 안내문과 오류 문구의 ID를 모읍니다.
+  // aria 속성은 화면 읽기 프로그램이 해당 설명을 읽을 때 사용합니다.
+  function errorProps(field) {
+    const descriptionIds = [];
+    const hasError = error?.field === field;
+    if (field !== "status") descriptionIds.push(`pd-${field}-hint`);
+    if (hasError) descriptionIds.push(`pd-${field}-error`);
+    return {
+      "aria-invalid": hasError || undefined,
+      "aria-describedby": descriptionIds.join(" ") || undefined,
+    };
+  }
   function fieldError(field) {
     if (error?.field !== field) return null;
     return <p id={`pd-${field}-error`} className="pd-error" role="alert">{error.message}</p>;

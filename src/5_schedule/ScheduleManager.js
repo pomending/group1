@@ -79,6 +79,7 @@ export default function ScheduleManager() {
 
   const {
     loadedSchedules,
+    savedItems,
     items,
     setItems,
     editingVersion,
@@ -121,19 +122,19 @@ export default function ScheduleManager() {
   // 변경 대상은 프로젝트의 schedules 배열이며, Context가 erp_projects 저장 및 프로젝트 변경 이력을 처리합니다.
   // 일정 수정·삭제뿐 아니라 5번 화면을 열었을 때 요약이 달라도 실행됩니다. 3번 담당자와 공유할 변경 지점입니다.
   // 프로젝트의 이름·담당자·시작일·마감일은 여기서 수정하지 않습니다. 아래 갱신 범위를 바꿀 때는 사전 확인이 필요합니다.
-  // 저장 일정 중 해당 프로젝트에 연결된 항목을 projects[].schedules 요약으로 함께 보관합니다.
+  // 마지막 저장 성공 목록 중 연결된 항목만 projects[].schedules 요약으로 보관합니다.
   // 새 일정은 프로젝트 ID로 연결하고, ID가 없는 기존 일정은 프로젝트명으로 찾습니다.
   // 비교 후 달라진 경우에만 갱신해 Context 변경으로 인한 반복 업데이트를 막습니다.
   useEffect(() => {
-    // 읽기 실패의 빈 기본값으로 다른 파트의 정상 일정 요약을 지우지 않습니다.
-    if (loadedSchedules.readError || typeof updateProject !== "function") return;
+    // 최초 읽기·저장 실패의 기본값이나 미저장 편집 내용은 프로젝트로 전달하지 않습니다.
+    if (loadedSchedules.readError || !savedItems || typeof updateProject !== "function") return;
     for (const project of projects) {
-      const linkedSchedules = getProjectScheduleSummaries(project, items);
+      const linkedSchedules = getProjectScheduleSummaries(project, savedItems);
       if (JSON.stringify(project.schedules || []) !== JSON.stringify(linkedSchedules)) {
         updateProject({ id: project.id, schedules: linkedSchedules });
       }
     }
-  }, [items, projects, updateProject, loadedSchedules.readError]);
+  }, [savedItems, projects, updateProject, loadedSchedules.readError]);
 
   // 선택한 프로젝트의 마지막 일정을 지웠다면 더 이상 없는 프로젝트 필터도 함께 해제합니다.
   useEffect(() => {
