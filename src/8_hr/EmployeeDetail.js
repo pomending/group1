@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { statusClass } from "../utils/employeeUtils";
 import { formatEmployeeId, formatProjectId } from "../utils/formatUtils";
 

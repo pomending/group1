@@ -1,7 +1,7 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { useERP } from "../context/ERPContext";
 import { formatProjectId, formatQuotationId } from "../utils/formatUtils";
-import { getProjectManagers, getProjectStatus } from "../utils/projectStatus";
+import { getProjectManagers, getProjectStatus } from "../utils/projectUtils";
 
 function ProjectEdit(props) {
 
@@ -25,32 +25,12 @@ function ProjectEdit(props) {
     const projectManagers = getProjectManagers(employees)
 
     const editProject = (e) => {
+
         e.preventDefault();
 
-        // 유효성 체크
         if (!selectedProject) return;
 
-        if (projectName.trim() === "") {
-            alert("프로젝트명을 입력하세요.");
-            return;
-        }
-
-        if (!startDate || !dueDate) {
-            alert('시작일과 납품 예정일을 모두 입력하세요.');
-            return;
-        }
-
-        if (dueDate < startDate) {
-            alert("납품 예정일은 시작일보다 빠를 수 없습니다.");
-            return;
-        }
-
-        if (!projectManagers.some(emp => emp.id === managerId)) {
-            alert('프로젝트 담당자를 선택하세요.');
-            return;
-        }
-
-        updateProject({
+        const result = updateProject({
             id: selectedProject.id,
             name: projectName.trim(),
             managerId,
@@ -58,6 +38,11 @@ function ProjectEdit(props) {
             dueDate,
             description
         })
+
+        if (!result.ok) {
+            alert(result.message);
+            return;
+        }
 
         props.setPage("detail");
     };

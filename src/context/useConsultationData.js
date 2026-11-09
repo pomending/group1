@@ -5,20 +5,30 @@ import { consultations as initialConsultations } from "../data/mockData";
 
 export default function useConsultationData() {
 
+    const [consultations, setConsultations] = useState(() => {
+        try {
+            const saved = localStorage.getItem("erp_consultations");
 
-    const savedConsultations = localStorage.getItem("erp_consultations")
+            if (saved !== null) {
+                const parsed = JSON.parse(saved);
 
-    const parsedConsultations = JSON.parse(savedConsultations)
+                if (Array.isArray(parsed)) {
+                    return parsed;
+                }
+            }
+        } catch (error) {
+            console.error("상담 데이터 불러오기 실패", error);
+        }
 
-    const [consultations, setConsultations] = useState(
-
-        parsedConsultations === null ? initialConsultations : parsedConsultations)
+        return initialConsultations;
+    });
 
     useEffect(() => {
-        localStorage.setItem("erp_consultations", JSON.stringify(consultations))
+        localStorage.setItem(
+            "erp_consultations",
+            JSON.stringify(consultations)
+        );
     }, [consultations]);
-
-
 
     function addConsultation(editData) {
 
@@ -32,7 +42,10 @@ export default function useConsultationData() {
             status: editData.status || "문의 접수"
         };
 
-        setConsultations([newConsultation,...consultations])
+        setConsultations(prev => [
+            newConsultation,
+            ...prev
+        ]);
     }
 
 
@@ -46,13 +59,13 @@ export default function useConsultationData() {
         )
     }
 
-
-
     function deleteConsultations(checkIds) {
 
-        setConsultations(consultations.filter((item) =>
-            !checkIds.includes(item.id))
-        )
+        setConsultations(prev =>
+            prev.filter(item =>
+                !checkIds.includes(item.id)
+            )
+        );
 
     }
 

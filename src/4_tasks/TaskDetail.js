@@ -150,10 +150,6 @@ function TaskDetail() {
         setIsEditModalOpen(true);
     };
 
-
-
-
-
     return (
         <div className="task-detail-page">
 

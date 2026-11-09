@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 function useAuthData(accounts, employees) {
 
@@ -15,6 +15,18 @@ function useAuthData(accounts, employees) {
         return Number.isSafeInteger(id) && id > 0 ? id : null;
 
     });
+
+    useEffect(() => {
+        if (currentUserId === null) return;
+    
+        const account = accounts.find(
+            a => a.id === currentUserId
+        );
+    
+        if (!account || account.status !== "활성") {
+            logout();
+        }
+    }, [accounts, currentUserId]);
 
     const login = (email, pwd) => {
 
@@ -35,7 +47,6 @@ function useAuthData(accounts, employees) {
         }
 
         if (
-            !["재직", "휴직"].includes(user.status) ||
             account.status !== "활성"
         ) {
             return false;
@@ -56,7 +67,7 @@ function useAuthData(accounts, employees) {
     }
 
     const currentUser = accounts.find(
-        a => a.id === currentUserId
+        a => a.id === currentUserId && a.status === '활성'
     ) ?? null;
     
     const currentEmployee = employees.find(

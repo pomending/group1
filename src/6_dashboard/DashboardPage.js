@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useERP } from "../context/ERPContext";
-import { getProjectStatus } from "../utils/projectStatus";
+import { getProjectStatus } from "../utils/projectUtils";
 import DashboardToday from "./DashboardToday";
 import CommunityPage from "./CommunityPage";
 import CommunityWritePage from "./CommunityWritePage";

@@ -13,13 +13,13 @@ function ChangePasswordPage() {
     const handleChangePassword = (e) => {
         e.preventDefault();
 
-        const success = changePassword(currentUser.id, prevPwd, nextPwd1, nextPwd2);
+        const result = changePassword(currentUser.id, prevPwd, nextPwd1, nextPwd2);
 
-        if (success) {
-            alert("비밀번호 변경에 성공했습니다");
+        if (result.ok) {
+            alert("비밀번호 변경에 성공했습니다.");
             navi("/", { replace: true });
         } else {
-            alert("비밀번호 변경에 실패했습니다");
+            alert(result.message);
         }
     };
 

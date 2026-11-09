@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { BrowserRouter, Routes, Route, useLocation, Navigate } from "react-router-dom";
 import "./ERPLayout.css";
 
@@ -9,16 +9,16 @@ import TaskPage from "./4_tasks/TaskPage";
 import TaskDetail from "./4_tasks/TaskDetail";
 import SchedulePage from "./5_schedule/SchedulePage";
 import DashboardPage from "./6_dashboard/DashboardPage";
+import LoginPage from "./7_login/LoginPage";
+import ChangePasswordPage from "./7_login/ChangePasswordPage";
+import HrPage from "./8_hr/HrPage";
+import AccountManagement from "./8_hr/AccountManagement";
+import ConsultationPage from "./9_consultation/01_ConsultationPage";
+import ProductPage from "./10_product/ProductPage";
 import NotFoundPage from "./components/NotFoundPage";
 import Topbar from "./components/Topbar";
 import Sidebar from "./components/Sidebar";
 import { ERPProvider, useERP } from "./context/ERPContext";
-import LoginPage from "./7_login/LoginPage";
-import HrPage from "./8_hr/HrPage";
-import ConsultationPage from "./9_consultation/01_ConsultationPage";
-import ProductPage from "./10_product/ProductPage";
-import AccountManagement from "./8_hr/AccountManagement";
-import ChangePasswordPage from "./7_login/ChangePasswordPage";
 
 const REQUIRE_LOGIN = false;
 
@@ -28,11 +28,9 @@ function ERPContent() {
 
     const [isCollapsed, setIsCollapsed] = useState(false);
 
-    const { currentUser, currentEmployee } = useERP();
+    const { currentUser } = useERP();
 
-    const isAuthenticated =
-        currentUser?.status === "활성" &&
-        ["재직", "휴직"].includes(currentEmployee?.status);
+    const isAuthenticated = Boolean(currentUser);
 
     // 로그인 화면은 직접 접근 가능
     if (location.pathname === "/login") {
