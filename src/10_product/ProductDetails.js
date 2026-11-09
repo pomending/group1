@@ -2,6 +2,7 @@
  * focusRef로 복귀할 제목·버튼을 등록합니다. 목록의 검색·정렬·페이지 상태는 Page가 유지합니다.
  */
 import React from "react";
+import ProductImage from "./ProductImage";
 import { formatProductDate, getProductStatus } from "./productData";
 
 export default function ProductDetails({ product, onBack, onEdit, onCopy, onStatusChange, focusRef }) {
@@ -12,6 +13,7 @@ export default function ProductDetails({ product, onBack, onEdit, onCopy, onStat
         <button type="button" className="pd-button" onClick={onBack}>목록으로</button>
       </div>
       {product ? <>
+        <ProductImage key={product.id} product={product} />
         <dl className="pd-details pd-detail-summary" aria-label="주요 상품 정보">
           <div className="pd-detail-name"><dt>상품명</dt><dd>{product.productName}</dd></div>
           <div><dt>기본 단가</dt><dd className="pd-detail-price">{product.productPrice.toLocaleString("ko-KR")}원</dd></div>
