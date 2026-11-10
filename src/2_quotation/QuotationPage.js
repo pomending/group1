@@ -4,6 +4,7 @@ import { Routes, Route } from "react-router-dom";
 import QuotationList from "./QuotationList";
 import QuotationCreate from "./QuotationCreate";
 import QuotationDetail from "./QuotationDetail";
+import NotFoundPage from "../components/NotFoundPage";
 
 import "./QuotationPage.css"
 
