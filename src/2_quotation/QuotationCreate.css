@@ -562,3 +562,16 @@
     font-size: 12px;
     color: #8a94a6;
 }
+
+/* Chrome, Edge, Safari 숫자 조절 버튼 제거 */
+.quantity-input::-webkit-inner-spin-button,
+.quantity-input::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+/* Firefox 숫자 조절 버튼 제거 */
+.quantity-input {
+    appearance: textfield;
+    -moz-appearance: textfield;
+}
