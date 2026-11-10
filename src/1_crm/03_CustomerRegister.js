@@ -1,13 +1,20 @@
 //고객 등록 화면
 import react, { useState } from "react";
 import { useERP } from "../context/ERPContext";
-import { validateCustomer, formatBusinessNumber, validateBusinessNumber, formatPhone, validatePhone } from "../utils/customerUtils";
+import {
+    validateCustomer, formatBusinessNumber,
+    validateBusinessNumber, validateDuplicateBusinessNumber,
+} from "../utils/customerUtils";
+import {
+    validatePhone, formatPhone, validateEmail,
+    validateCompanyName, validateCustomerManager, validateMemo
+} from "../utils/consultationUtils";
 import "./03_CustomerForm.css";
 
 
 function CustomerRegister() {
 
-    const { employees, addCustomer } = useERP();
+    const { employees, addCustomer, customers } = useERP();
 
 
     //고객정보를 저장할 state
@@ -40,13 +47,38 @@ function CustomerRegister() {
             alert("필수 등록정보(내부 담당자)를 확인해주세요.");
             return;
         }
+
+        if (!validateDuplicateBusinessNumber(
+            customerData.businessNumber,
+            customers,
+            null
+        )) {
+            return;
+        }
+
         //사업자등록번호 10자리검사
-        if (!validateBusinessNumber(customerData.businessNumber)) {
+        if (!validateBusinessNumber(customerData.businessNumber, customers, null)) {
             return;
         }
         //전화번호 10~11자리 검사
         if (!validatePhone(customerData.phone)) {
 
+            return;
+        }
+
+        //이메일 유효성 검사
+        if (!validateEmail(customerData.email)) {
+            return;
+        }
+
+        //고객사명 제한 20자 검사
+
+        if (!validateCompanyName(customerData.companyName)) {
+            return;
+        }
+
+        //메모 1000자 제한 검사
+        if (!validateMemo(customerData.memo)) {
             return;
         }
 
@@ -64,7 +96,7 @@ function CustomerRegister() {
     return (
         <div className="crm-form-page">
             <div className="crm-form-header">
-            <h2>고객정보 등록</h2>
+                <h2>고객정보 등록</h2>
             </div>
             <div className="crm-form-field">
                 <label>고객사명 <span className="crm-required">*</span></label>

@@ -3,11 +3,19 @@ import "./03_CustomerForm.css";
 import React, { useState } from "react";
 import { useLocation } from "react-router-dom";
 import { useERP } from "../context/ERPContext";
-import { formatBusinessNumber, formatPhone, validateBusinessNumber, validateCustomer, validatePhone } from "../utils/customerUtils";
+import {
+    formatBusinessNumber, validateBusinessNumber,
+    validateCustomer, validateDuplicateBusinessNumber
+} from "../utils/customerUtils";
+import {
+    validatePhone, formatPhone,
+    validateEmail, validateCompanyName,
+    validateCustomerManager, validateMemo
+} from "../utils/consultationUtils";
 
 function CustomerEdit() {
 
-    const { employees } = useERP();
+    const { employees, customers } = useERP();
 
     //현재 페이지의 URL 주소정보
     const location = useLocation();
@@ -29,6 +37,10 @@ function CustomerEdit() {
         if (!validateBusinessNumber(EditingCustomerData.businessNumber)) {
             return;
         }
+        if (!validateDuplicateBusinessNumber(EditingCustomerData.businessNumber, customers, EditingCustomerData.id)) {
+            return;
+        }
+
         if (!validateCustomer(EditingCustomerData)) {
             return;
         }
@@ -40,6 +52,19 @@ function CustomerEdit() {
         if (!validatePhone(EditingCustomerData.phone)) {
             return;
 
+        }
+
+        if (!validateEmail(EditingCustomerData.email)) {
+            return;
+        }
+        if (!validateCompanyName(EditingCustomerData.companyName)) {
+            return;
+        }
+        if (!validateCustomerManager(EditingCustomerData.customerManager)) {
+            return;
+        }
+        if (!validateMemo(EditingCustomerData.memo)) {
+            return;
         }
 
         window.opener.saveEditedCustomer(EditingCustomerData);
