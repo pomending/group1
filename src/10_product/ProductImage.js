@@ -52,19 +52,17 @@ export default function ProductImage({ product }) {
   function applyImage() {
     if (!pending) return;
     const value = "catalog:" + pending;
+    try {
+      // 저장에 실패하면 기존 이미지와 선택창을 유지해 같은 선택으로 재시도할 수 있습니다.
+      if (product.id != null) localStorage.setItem(storageKey, value);
+    } catch {
+      setMessage("이미지를 저장하지 못했습니다. 기존 이미지를 유지했습니다. 다시 적용해 주세요.");
+      return;
+    }
     setImage(value);
     setFailedAddress(null);
     setOpen(false);
-    if (product.id == null) {
-      setMessage("이미지를 적용했습니다. 상품 번호가 없어 이 화면에서만 유지됩니다.");
-      return;
-    }
-    try {
-      localStorage.setItem(storageKey, value);
-      setMessage("이미지를 적용했습니다.");
-    } catch {
-      setMessage("이미지는 표시했지만 저장하지 못했습니다. 화면을 다시 열면 유지되지 않을 수 있습니다.");
-    }
+    setMessage(product.id == null ? "이미지를 적용했습니다. 상품 번호가 없어 이 화면에서만 유지됩니다." : "이미지를 적용했습니다.");
   }
 
   function removeImage() {
@@ -100,6 +98,7 @@ export default function ProductImage({ product }) {
   }
 
   function openImagePicker() {
+    setMessage("");
     setPending(selectedCatalogImage?.id || null);
     setOpen(true);
   }
@@ -117,7 +116,7 @@ export default function ProductImage({ product }) {
       </button>
       {imageValue && <button type="button" className="pd-button" onClick={removeImage}>이미지 제거</button>}
       {image && !visible && <p className="pd-error" role="alert">이미지를 불러오지 못했습니다. 다른 이미지를 선택해 주세요.</p>}
-      {message && <p className="pd-field-hint" role="status">{message}</p>}
+      {message && !open && <p className="pd-field-hint" role="status">{message}</p>}
       {open && createPortal(
         <div className="pd-app pd-image-overlay">
           <button type="button" className="pd-image-backdrop" aria-label="이미지 선택창 닫기" tabIndex={-1} onClick={() => setOpen(false)} />
@@ -128,6 +127,7 @@ export default function ProductImage({ product }) {
               <button type="button" className="pd-button" onClick={() => setOpen(false)}>닫기</button>
             </div>
             <p className="pd-muted">이미지를 고른 뒤 적용을 눌러 주세요.</p>
+            {message && <p className="pd-field-hint" role="status">{message}</p>}
             <div className="pd-image-grid">
               {productImages.map(item => <button key={item.id} type="button" className="pd-image-option"
                 aria-pressed={pending === item.id} onClick={() => setPending(item.id)}>

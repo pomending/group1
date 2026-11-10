@@ -1,10 +1,55 @@
-import { createProjectMilestones, resolveScheduleProject, getProjectScheduleSummaries } from "./ScheduleProjectBridge";
+import { createProjectMilestones, resolveScheduleProject, getProjectScheduleSummaries, getScheduleProjectWarning } from "./ScheduleProjectBridge";
 import { createScheduleForm } from "./scheduleData";
 
 const projects = [{
   id: 1, name: "표시 확인", managerId: 20,
   startDate: "2026-11-04", dueDate: "2026-11-06",
 }];
+
+test("끊긴 ID·재사용된 ID·동명 연결만 안내하고 원본은 바꾸지 않는다", () => {
+  const project = { id: 1, name: "연결", quotationId: 10, customerId: 20 };
+  const item = { scope: "업무용", project: "연결", projectId: 1, projectReference: "10:20" };
+  const raw = JSON.stringify(item);
+  expect(getScheduleProjectWarning(item, [])).toContain("프로젝트가 없습니다");
+  expect(getScheduleProjectWarning(item, [{ ...project, quotationId: 11 }])).toContain("견적·고객");
+  expect(getScheduleProjectWarning({ ...item, projectId: null }, [project, { ...project, id: 2 }])).toContain("같은 이름");
+  expect(getScheduleProjectWarning(item, [{ ...project, name: "이름 변경" }])).toBe("");
+  expect(getScheduleProjectWarning({ ...item, scope: "개인 일정용" }, [])).toBe("");
+  expect(getScheduleProjectWarning({ project: "자유 입력" }, [])).toBe("");
+  expect(JSON.stringify(item)).toBe(raw);
+});
+
+test("이름만 있는 일정은 동명 프로젝트 중 하나를 임의로 연결하거나 양쪽에 전달하지 않는다", () => {
+  const duplicates = [{ id: 1, name: "동명" }, { id: 2, name: "동명" }];
+  const schedule = { id: "s", scope: "업무용", project: "동명" };
+  expect(resolveScheduleProject(schedule, duplicates)).toEqual({ project: "동명", projectId: null });
+  for (const project of duplicates) {
+    expect(getProjectScheduleSummaries(project, [schedule], duplicates)).toEqual([]);
+  }
+  expect(getProjectScheduleSummaries(duplicates[0], [{ ...schedule, projectId: 1 }], duplicates)).toHaveLength(1);
+});
+
+test("개인 일정에 과거 프로젝트 연결이 남아 있어도 프로젝트 요약에서 제외한다", () => {
+  expect(getProjectScheduleSummaries(projects[0], [{ project: projects[0].name, projectId: 1, scope: "개인 일정용" }])).toEqual([]);
+});
+
+test("새 연결은 견적·고객 번호를 기억하고 같은 ID의 다른 프로젝트에는 요약을 보내지 않는다", () => {
+  const original = { id: 1, name: "원래 프로젝트", quotationId: 10, customerId: 20 };
+  const saved = { id: "s1", scope: "업무용", ...resolveScheduleProject({ project: original.name }, [original]) };
+  expect(saved.projectReference).toBe("10:20");
+  const replacement = { ...original, name: "새 프로젝트", quotationId: 11 };
+  expect(getProjectScheduleSummaries(replacement, [saved])).toEqual([]);
+  expect(resolveScheduleProject(createScheduleForm(saved), [replacement])).toMatchObject({
+    project: "원래 프로젝트", projectReference: "10:20",
+  });
+  expect(getProjectScheduleSummaries({ ...original, name: "이름 수정" }, [saved])).toHaveLength(1);
+});
+
+test("사용자가 연결 ID를 비우고 다른 프로젝트를 선택하면 새 연결 기준을 저장한다", () => {
+  const next = { id: 2, name: "새 선택", quotationId: 30, customerId: 40 };
+  expect(resolveScheduleProject({ project: next.name, projectId: null, projectReference: "10:20" }, [next]))
+    .toEqual({ project: next.name, projectId: 2, projectReference: "30:40" });
+});
 
 test("전달받은 Context 직원 목록에서 프로젝트 담당자를 찾는다", () => {
   const employees = [{ id: "20", name: "현재 담당자" }];

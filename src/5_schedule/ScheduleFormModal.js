@@ -32,6 +32,7 @@ export default function ScheduleFormModal({
   form,
   teamMembers,
   projectSuggestions = [],
+  projectWarning = "",
   onToggleAttendee,
   error,
   onChange,
@@ -145,6 +146,11 @@ export default function ScheduleFormModal({
           </div>
         )}
         <ScheduleFieldError error={fieldError} fields={["project"]} />
+        {projectWarning && <div className="sm-storage-warning sm-form-wide" role="status" aria-label="프로젝트 연결 안내">
+          {projectWarning}
+          <button type="button" className="sm-secondary-btn" onClick={() => onChange({ target: { name: "project", value: "" } })}>프로젝트 다시 선택</button>
+          <p>버튼을 누르면 입력창의 연결을 비웁니다. 새 프로젝트를 선택하고 저장해야 반영됩니다.</p>
+        </div>}
         {form.scope === "업무용" && <div className="sm-assignee-field sm-form-wide">
           <label htmlFor="sm-assignee">담당자</label>
           {/* 기존 이름은 자동완성으로 선택하고, 새 이름은 일정 저장 시 함께 등록합니다. */}
@@ -170,10 +176,11 @@ export default function ScheduleFormModal({
           </fieldset>
         )}
         {form.scope === "업무용" && <label className="sm-form-wide">일정 상태
-          <select name="status" className={`sm-status-select ${form.status}`} value={form.status} onChange={onChange}>
+          <select name="status" className={`sm-status-select ${form.status}`} value={form.status} onChange={onChange} {...fieldErrorProps(fieldError, "status")}>
             {scheduleStatuses.map(({ value, label }) => <option key={value} value={value}>{label}</option>)}
           </select>
         </label>}
+        <ScheduleFieldError error={fieldError} fields={["status", "attendees"]} />
         {/* 상세 내용은 최대 3,000자이며 줄바꿈을 저장합니다. 표시 시 CSS로 줄바꿈을 유지합니다. */}
         <label className="sm-form-wide">
           상세 내용
@@ -183,12 +190,14 @@ export default function ScheduleFormModal({
             onChange={onChange}
             rows={5}
             maxLength={3000}
+            {...fieldErrorProps(fieldError, "description")}
             placeholder="작업 내용, 준비 사항, 전달할 메모 등을 입력하세요."
           />
           <span className="sm-form-note">
             {form.description.length} / 3,000자
           </span>
         </label>
+        <ScheduleFieldError error={fieldError} fields={["description"]} />
         {/* 기본 입력 뒤에 선택 설정을 둡니다. 공유 구분·종일·알림은 신규와 수정에서 변경할 수 있습니다. */}
         <ScheduleExtraSettings form={form} onChange={onChange} isOccurrence={isOccurrence} fieldError={fieldError} />
         {!isOccurrence && form.repeatType !== "none" && <p className="sm-repeat-summary sm-form-wide" aria-label="반복 설정 요약">{getRepeatSummary(form)}</p>}
@@ -255,7 +264,7 @@ function ScheduleExtraSettings({ form, onChange, isOccurrence, fieldError }) {
     <div className="sm-extra-fields">
       {/* 종일 선택 시 위의 시작·종료 시간 입력란은 숨기지만 기존 값은 저장용으로 유지합니다. */}
       <label className="sm-form-check">종일 일정
-        <span className="sm-form-check-control"><input type="checkbox" name="isAllDay" checked={Boolean(form.isAllDay)} onChange={onChange} /></span>
+        <span className="sm-form-check-control"><input type="checkbox" name="isAllDay" checked={Boolean(form.isAllDay)} onChange={onChange} {...fieldErrorProps(fieldError, "isAllDay")} /></span>
       </label>
       {/* 종료 날짜는 반복 없는 일정에서만 열어 여러 날 범위를 지정할 수 있습니다. */}
       {form.repeatType === "none" && <label>종료 날짜 (여러 날 일정)
@@ -263,12 +272,12 @@ function ScheduleExtraSettings({ form, onChange, isOccurrence, fieldError }) {
       </label>}
       {/* 선택한 분 단위는 일정 시작 전에 화면 알림을 표시하는 데 사용합니다. */}
       <label>알림
-        <select name="reminderMinutes" value={form.reminderMinutes || 0} onChange={onChange}>
+        <select name="reminderMinutes" value={form.reminderMinutes || 0} onChange={onChange} {...fieldErrorProps(fieldError, "reminderMinutes")}>
           <option value={0}>알림 없음</option><option value={10}>10분 전</option><option value={30}>30분 전</option><option value={1440}>하루 전</option>
         </select>
       </label>
       <label>공유 구분
-        <select name="visibility" value={form.visibility} onChange={onChange}>
+        <select name="visibility" value={form.visibility} onChange={onChange} {...fieldErrorProps(fieldError, "visibility")}>
           <option value="shared">회사 공유</option><option value="private">개인 표시</option>
         </select>
       </label>
@@ -282,7 +291,7 @@ function ScheduleExtraSettings({ form, onChange, isOccurrence, fieldError }) {
       {/* 휴일 처리 규칙은 반복 일정에서만 선택할 수 있습니다. */}
       {!isOccurrence && form.repeatType !== "none" && <>
         <label>반복 종료
-          <select name="repeatEndType" value={form.repeatEndType || "none"} onChange={onChange}>
+          <select name="repeatEndType" value={form.repeatEndType || "none"} onChange={onChange} {...fieldErrorProps(fieldError, "repeatEndType")}>
             <option value="none">종료일 없음</option>
             <option value="until">날짜 지정</option>
             <option value="count">횟수 지정</option>
@@ -296,14 +305,14 @@ function ScheduleExtraSettings({ form, onChange, isOccurrence, fieldError }) {
         </label>}
       </>}
       {form.repeatType !== "none" && <label>주말·공휴일 처리
-        <select name="holidayRule" value={form.holidayRule || "keep"} onChange={onChange}>
+        <select name="holidayRule" value={form.holidayRule || "keep"} onChange={onChange} {...fieldErrorProps(fieldError, "holidayRule")}>
           <option value="keep">기준일에 진행</option><option value="skip">건너뛰기</option><option value="nextWorkday">다음 근무일로 이동</option>
         </select>
       </label>}
       {form.repeatType === "monthly" && (
         <>
           <label>매월 기준
-            <select name="monthlyRule" value={form.monthlyRule} onChange={onChange}>
+            <select name="monthlyRule" value={form.monthlyRule} onChange={onChange} {...fieldErrorProps(fieldError, "monthlyRule")}>
               <option value="date">같은 날짜</option>
               <option value="weekday">몇째 주 요일</option>
             </select>
@@ -311,7 +320,7 @@ function ScheduleExtraSettings({ form, onChange, isOccurrence, fieldError }) {
           {form.monthlyRule === "weekday" && (
             <>
               <label>주차
-                <select name="monthlyOrdinal" value={form.monthlyOrdinal} onChange={onChange}>
+                <select name="monthlyOrdinal" value={form.monthlyOrdinal} onChange={onChange} {...fieldErrorProps(fieldError, "monthlyOrdinal")}>
                   <option value={1}>첫째 주</option>
                   <option value={2}>둘째 주</option>
                   <option value={3}>셋째 주</option>
@@ -320,7 +329,7 @@ function ScheduleExtraSettings({ form, onChange, isOccurrence, fieldError }) {
                 </select>
               </label>
               <label>요일
-                <select name="monthlyWeekday" value={form.monthlyWeekday} onChange={onChange}>
+                <select name="monthlyWeekday" value={form.monthlyWeekday} onChange={onChange} {...fieldErrorProps(fieldError, "monthlyWeekday")}>
                   <option value={1}>월요일</option>
                   <option value={2}>화요일</option>
                   <option value={3}>수요일</option>
@@ -333,7 +342,7 @@ function ScheduleExtraSettings({ form, onChange, isOccurrence, fieldError }) {
         </>
       )}
     </div>
-    <ScheduleFieldError error={fieldError} fields={["endDate", "repeatInterval", "repeatEndDate", "repeatCount"]} />
+    <ScheduleFieldError error={fieldError} fields={["endDate", "repeatInterval", "repeatEndDate", "repeatCount", "isAllDay", "reminderMinutes", "visibility", "repeatEndType", "holidayRule", "monthlyRule", "monthlyOrdinal", "monthlyWeekday"]} />
     <p className="sm-form-note">일정 종류와 공유 구분은 별개입니다. 공유 구분은 표시·필터 용도이며 현재 열람 권한을 제한하지 않습니다.</p>
     {form.repeatType !== "none" && form.repeatEndType === "count" && <p className="sm-form-note">횟수는 규칙상 발생 횟수입니다. 휴일로 건너뛰거나 삭제한 회차도 포함합니다.</p>}
     {form.repeatType !== "none" && form.repeatEndType === "until" && <p className="sm-form-note">이동 전 규칙 날짜가 종료일 이내인 회차까지 포함합니다. 휴일 이동 결과는 종료일을 넘을 수 있습니다.</p>}

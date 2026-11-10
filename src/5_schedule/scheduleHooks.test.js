@@ -4,6 +4,66 @@ import { useScheduleHolidays, useScheduleStorage, useScheduleTeam } from "./sche
 afterEach(() => jest.restoreAllMocks());
 beforeEach(() => localStorage.clear());
 
+test("두 탭에서 서로 다른 일정을 수정하면 양쪽 변경을 함께 보존한다", () => {
+  localStorage.setItem(storageKey, JSON.stringify([{ ...schedule, id: "a" }, { ...schedule, id: "b" }]));
+  const first = renderHook(() => useScheduleStorage());
+  const second = renderHook(() => useScheduleStorage());
+  act(() => first.result.current.setItems(items => items.map(item => item.id === "a" ? { ...item, title: "첫 탭 수정" } : item)));
+  act(() => second.result.current.setItems(items => items.map(item => item.id === "b" ? { ...item, title: "둘째 탭 수정" } : item)));
+  const saved = JSON.parse(localStorage.getItem(storageKey));
+  expect(saved.find(item => item.id === "a").title).toBe("첫 탭 수정");
+  expect(saved.find(item => item.id === "b").title).toBe("둘째 탭 수정");
+  expect(second.result.current.storageConflict).toBe(false);
+});
+
+test("다른 탭의 삭제와 현재 탭의 같은 일정 수정이 충돌하면 삭제를 덮어쓰지 않는다", () => {
+  localStorage.setItem(storageKey, JSON.stringify([schedule]));
+  const first = renderHook(() => useScheduleStorage());
+  const second = renderHook(() => useScheduleStorage());
+  act(() => first.result.current.setItems([]));
+  act(() => second.result.current.setItems(items => items.map(item => ({ ...item, title: "늦은 수정" }))));
+  expect(second.result.current.saveStatus).toBe("blocked");
+  expect(localStorage.getItem(storageKey)).toBe("[]");
+});
+
+test("팀원과 제외 목록 중 두 번째 쓰기가 실패하면 첫 번째 쓰기도 복원하고 재시도한다", () => {
+  localStorage.setItem("made-mate-schedule-team", JSON.stringify(["가 팀원"]));
+  const { result } = renderHook(() => useScheduleTeam());
+  jest.spyOn(window, "confirm").mockReturnValue(true);
+  const originalSet = Storage.prototype.setItem;
+  const write = jest.spyOn(Storage.prototype, "setItem").mockImplementation(function(key, value) {
+    if (key === "made-mate-excluded-team") throw new Error("quota");
+    return originalSet.call(this, key, value);
+  });
+  act(() => result.current.removeTeamMember("가 팀원"));
+  expect(result.current.teamStorageUnavailable).toBe(true);
+  expect(JSON.parse(localStorage.getItem("made-mate-schedule-team"))).toEqual(["가 팀원"]);
+  expect(JSON.parse(localStorage.getItem("made-mate-excluded-team"))).toEqual([]);
+  write.mockRestore();
+  act(() => result.current.addTeamMember("나 팀원"));
+  expect(result.current.teamStorageUnavailable).toBe(false);
+  expect(JSON.parse(localStorage.getItem("made-mate-schedule-team"))).toEqual(["나 팀원"]);
+  expect(JSON.parse(localStorage.getItem("made-mate-excluded-team"))).toEqual(["가 팀원"]);
+});
+
+test("쓰기 잠금 대기 중 화면을 떠나면 늦은 콜백이 저장값을 덮어쓰지 않는다", async () => {
+  const descriptor = Object.getOwnPropertyDescriptor(navigator, "locks");
+  const jobs = [];
+  Object.defineProperty(navigator, "locks", { configurable: true, value: {
+    request: jest.fn((name, callback) => { jobs.push(callback); return Promise.resolve(); }),
+  } });
+  try {
+    const view = renderHook(() => useScheduleStorage());
+    view.unmount();
+    localStorage.setItem(storageKey, JSON.stringify([schedule]));
+    await act(async () => { for (const job of jobs) job(); });
+    expect(JSON.parse(localStorage.getItem(storageKey))).toEqual([schedule]);
+  } finally {
+    if (descriptor) Object.defineProperty(navigator, "locks", descriptor);
+    else delete navigator.locks;
+  }
+});
+
 test("팀원은 두 탭에서 서로 다른 이름을 추가해도 기존 등록을 유지한다", () => {
   const first = renderHook(() => useScheduleTeam());
   const second = renderHook(() => useScheduleTeam());

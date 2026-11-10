@@ -10,7 +10,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useScheduleClock, useScheduleHolidays, useScheduleStorage, useScheduleTeam, useScheduleDraft } from "./scheduleHooks";
 import { loadSchedules } from "./scheduleStorage";
-import { createProjectMilestones, getProjectScheduleSummaries, resolveScheduleProject } from "./ScheduleProjectBridge";
+import { createProjectMilestones, getProjectScheduleSummaries, resolveScheduleProject, getScheduleProjectWarning } from "./ScheduleProjectBridge";
 import ScheduleCalendar from "./ScheduleCalendar";
 import ScheduleFormModal, { ScheduleListModal } from "./ScheduleFormModal";
 import ScheduleSidebar from "./ScheduleSidebar";
@@ -117,6 +117,10 @@ export default function ScheduleManager() {
 
   const calendarYear = month.getFullYear();
   const holidayInfo = useScheduleHolidays(calendarYear);
+  const [projectSyncError, setProjectSyncError] = useState("");
+  const [projectSyncRetry, setProjectSyncRetry] = useState(0);
+  const projectWarnings = items.map(item => ({ item, message: getScheduleProjectWarning(item, projects) }))
+    .filter(entry => entry.message);
 
   // [다른 파트 데이터 변경: 기존 동작] 5번의 일정 요약을 ERPContext.updateProject로 전달합니다.
   // 변경 대상은 프로젝트의 schedules 배열이며, Context가 erp_projects 저장 및 프로젝트 변경 이력을 처리합니다.
@@ -128,13 +132,21 @@ export default function ScheduleManager() {
   useEffect(() => {
     // 최초 읽기·저장 실패의 기본값이나 미저장 편집 내용은 프로젝트로 전달하지 않습니다.
     if (loadedSchedules.readError || !savedItems || typeof updateProject !== "function") return;
+    const failures = [];
     for (const project of projects) {
-      const linkedSchedules = getProjectScheduleSummaries(project, savedItems);
+      const linkedSchedules = getProjectScheduleSummaries(project, savedItems, projects);
       if (JSON.stringify(project.schedules || []) !== JSON.stringify(linkedSchedules)) {
-        updateProject({ id: project.id, schedules: linkedSchedules });
+        // 공통 Context의 검증 실패나 저장소 예외가 일정 화면까지 중단시키지 않게 합니다.
+        try {
+          const result = updateProject({ id: project.id, schedules: linkedSchedules });
+          if (result?.ok === false) failures.push(project.name + ": " + (result.message || "갱신을 거절했습니다."));
+        } catch {
+          failures.push(project.name + ": 저장 처리 중 오류가 발생했습니다.");
+        }
       }
     }
-  }, [savedItems, projects, updateProject, loadedSchedules.readError]);
+    setProjectSyncError(failures.length ? "일정은 저장됐지만 프로젝트 연동에 실패했습니다. " + failures.join(" / ") : "");
+  }, [savedItems, projects, updateProject, loadedSchedules.readError, projectSyncRetry]);
 
   // 선택한 프로젝트의 마지막 일정을 지웠다면 더 이상 없는 프로젝트 필터도 함께 해제합니다.
   useEffect(() => {
@@ -290,7 +302,7 @@ export default function ScheduleManager() {
       if (name === "durationMinutes") return { ...current, ...getScheduleDurationFields(current, Number(value)) };
       // 입력 화면은 선택값만 보내고, 숨겨질 연관 필드는 이곳에서 한 번에 초기화합니다.
       if (name === "scope") {
-        return { ...current, scope: value, category: "", project: "", projectId: null, attendees: "", person: "", status: "pending" };
+        return { ...current, scope: value, category: "", project: "", projectId: null, projectReference: "", attendees: "", person: "", status: "pending" };
       }
       if (name === "category") {
         return {
@@ -298,12 +310,14 @@ export default function ScheduleManager() {
           category: value,
           project: current.category === "프로젝트" && value !== "프로젝트" ? "" : current.project,
           projectId: current.category === "프로젝트" && value !== "프로젝트" ? null : current.projectId,
+          projectReference: current.category === "프로젝트" && value !== "프로젝트" ? "" : current.projectReference,
           attendees: current.category === "회의" && value !== "회의" ? "" : current.attendees,
         };
       }
       // 사용자가 프로젝트명을 바꾸면 기존 ID를 해제하고 저장할 때 새 이름으로 연결합니다.
       if (name === "project") {
-        return { ...current, project: value, projectId: value.trim() === current.project.trim() ? current.projectId : null };
+        const unchanged = value.trim() === current.project.trim();
+        return { ...current, project: value, projectId: unchanged ? current.projectId : null, projectReference: unchanged ? current.projectReference : "" };
       }
       // state 객체를 직접 바꾸지 않고 복사한 뒤, 입력한 항목 하나만 바꿉니다.
       const nextForm = { ...current };
@@ -380,24 +394,20 @@ export default function ScheduleManager() {
       }
     }
     // 수정 끝
-    const title = form.title.trim();
-    // 이름 변경 후에도 기존 ID를 유지합니다. 직접 입력 변경은 updateForm에서 이전 ID를 해제합니다.
-    const projectFields = resolveScheduleProject(form, projects);
     const validationError = validateScheduleForm(form);
     if (validationError) {
       setFormError(validationError);
       return;
     }
+    const title = form.title.trim();
+    // 검증을 통과한 문자열만 정리하고 프로젝트 연결을 계산합니다.
+    const projectFields = resolveScheduleProject(form, projects);
     const person = form.scope === "업무용" ? form.person.trim() : "";
     const attendees = form.scope === "업무용" && form.category === "회의"
       ? normalizeAttendees(form.attendees)
       : [];
     const previousAttendees = normalizeAttendees(editing && editing.attendees);
     for (const name of attendees) {
-      if (name.length > 30) {
-        setFormError("참석자 이름은 30자 이내로 입력해 주세요.");
-        return;
-      }
       if (excludedTeamMembers.includes(name) && !previousAttendees.includes(name)) {
         setFormError("팀원 목록에서 제외된 이름은 참석자로 추가할 수 없습니다.");
         return;
@@ -733,6 +743,17 @@ export default function ScheduleManager() {
         <p className="sm-muted" role="status" aria-label="일정 저장 상태" aria-live="polite">
           {saveStatusLabels[saveStatus]}
         </p>
+        {projectWarnings.length > 0 && <details className="sm-storage-warning">
+          <summary>프로젝트 연결 확인 필요 · {projectWarnings.length}건</summary>
+          {projectWarnings.map(({ item, message }) => <p key={item.id}>
+            <button type="button" className="sm-secondary-btn" onClick={() => openScheduleForm(item)}>{item.title} 연결 확인</button>
+            {message}
+          </p>)}
+        </details>}
+        {projectSyncError && <div className="sm-storage-warning" role="alert">
+          {projectSyncError}
+          <button type="button" className="sm-secondary-btn" onClick={() => setProjectSyncRetry(count => count + 1)}>프로젝트 연동 다시 시도</button>
+        </div>}
         {storageConflict && <div className="sm-storage-warning" role="alert">
           다른 탭에서 같은 일정을 변경했거나 저장 자료를 읽지 못해 자동 저장을 중지했습니다. 현재 화면의 변경은 아직 저장되지 않았습니다.
           <button type="button" className="sm-secondary-btn" onClick={reloadConflictingSchedules}>현재 변경을 버리고 저장된 일정 불러오기</button>
@@ -837,6 +858,7 @@ export default function ScheduleManager() {
         <ScheduleFormModal
           key={editing ? `${editing.id}:${editing.occurrenceDate || "series"}` : "new"}
           form={form}
+          projectWarning={getScheduleProjectWarning(form, projects)}
           isRestoredDraft={restoringDraftRef.current}
           projectSuggestions={projectSuggestions}
           teamMembers={teamMembers}
