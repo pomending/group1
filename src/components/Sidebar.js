@@ -23,7 +23,8 @@ function Sidebar() {
         { name: "프로젝트 관리", path: "/projects", icon: "▣" },
         { name: "세부 작업 관리", path: "/tasks", icon: "☑" },
         { name: "일정 관리", path: "/schedule", icon: "▦" },
-        { name: "인적 자원 관리", path: "/hr", icon: "♧" }
+        { name: "인적 자원 관리", path: "/hr", icon: "♧" },
+        { name: "홈페이지", path: "/homepage", icon: "⌂" },
     ];
 
     return (

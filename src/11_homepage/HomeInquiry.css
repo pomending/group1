@@ -1,0 +1,109 @@
+
+/* 클레임 문의: 고객 홈페이지와 같은 색상 */
+.inq {
+    min-height: 100vh;
+    padding: 44px 24px 90px;
+    background: #faf5eb;
+    color: #29231e;
+    font-family: "Pretendard", "Noto Sans KR", Arial, sans-serif;
+}
+.inq * { box-sizing: border-box; }
+.inq-inner { max-width: 1160px; margin: 0 auto; }
+
+/* 페이지 제목 */
+.inq-head {
+    padding-bottom: 28px;
+    margin-bottom: 26px;
+    border-bottom: 2px solid #29231e;
+}
+.inq-head > p {
+    margin: 0 0 12px;
+    color: #e55e37;
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 2px;
+}
+.inq-head h1 { margin: 0 0 12px; font-size: 40px; font-weight: 900; }
+.inq-head > span { color: #786d63; font-size: 15px; }
+
+/* 문의 목록과 작성 버튼 */
+.inq-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+}
+.inq-bar h2 { margin: 0; font-size: 24px; }
+.inq button { font-family: inherit; cursor: pointer; }
+.inq-bar button, .inq-actions button {
+    padding: 12px 19px;
+    border: 1px solid #29231e;
+    background: #29231e;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 700;
+}
+.inq-bar button:hover, .inq-actions button:hover { background: #e55e37; border-color: #e55e37; }
+
+/* 제목 · 처리 상태 · 등록일 목록 */
+.inq-table {
+    width: 100%;
+    border-collapse: collapse;
+    border-top: 2px solid #29231e;
+    background: #fffdf9;
+    font-size: 14px;
+}
+.inq-table th, .inq-table td {
+    padding: 18px 20px;
+    border-bottom: 1px solid #e4d7c6;
+}
+.inq-table th { background: #f4eee5; text-align: left; }
+.inq-table th:nth-child(2), .inq-table td:nth-child(2) { width: 130px; text-align: center; }
+.inq-table th:nth-child(3), .inq-table td:nth-child(3) { width: 150px; text-align: center; }
+.inq-table td button {
+    padding: 0;
+    border: 0;
+    background: none;
+    color: #29231e;
+    font-size: 14px;
+    font-weight: 700;
+    text-align: left;
+}
+.inq-table td button:hover { color: #e55e37; }
+.inq-status {
+    display: inline-block;
+    padding: 6px 11px;
+    background: #fff0df;
+    color: #a84e30;
+    font-size: 12px;
+    font-weight: 700;
+}
+.inq-table .inq-empty { padding: 65px 20px; color: #786d63; text-align: center; }
+
+/* 문의 작성과 상세 확인 */
+.inq-box {
+    padding: 30px;
+    border: 1px solid #e4d7c6;
+    background: #fffdf9;
+}
+.inq-box h2 { margin: 0 0 24px; font-size: 25px; }
+.inq-box label { display: block; margin-bottom: 20px; font-size: 14px; font-weight: 700; }
+.inq-box input, .inq-box textarea {
+    display: block;
+    width: 100%;
+    margin-top: 8px;
+    padding: 13px;
+    border: 1px solid #cbb8a4;
+    background: #fff;
+    color: #29231e;
+    font: inherit;
+}
+.inq-box textarea { min-height: 160px; resize: vertical; }
+.inq-box input:focus, .inq-box textarea:focus { outline: 2px solid #e55e37; }
+.inq-box form > p { margin: 0 0 20px; color: #786d63; font-size: 14px; }
+.inq-box .inq-error { margin: 0 0 16px; color: #b43225; }
+.inq-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
+.inq-actions button[type="button"] { background: #fffdf9; color: #29231e; }
+.inq-actions button[type="button"]:hover { background: #f4eee5; border-color: #29231e; }
+.inq-detail p { margin: 0 0 13px; font-size: 14px; }
+.inq-content { padding-top: 18px; border-top: 1px solid #e4d7c6; white-space: pre-wrap; }
