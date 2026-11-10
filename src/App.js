@@ -24,7 +24,7 @@ import Sidebar from "./components/Sidebar";
 import { ERPProvider, useERP } from "./context/ERPContext";
 
 
-const REQUIRE_LOGIN = true;
+const REQUIRE_LOGIN = false;
 
 function ERPContent() {
 
