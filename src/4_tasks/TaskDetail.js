@@ -496,9 +496,6 @@ function TaskDetail() {
 
         </div>
 
-
-
-
     );
 }
 

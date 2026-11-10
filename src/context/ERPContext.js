@@ -1,7 +1,4 @@
-import React, { createContext, useContext, useState } from "react";
-import {
-    quotations as initialQuotations,
-} from "../data/mockData";
+import React, { createContext, useContext } from "react";
 import useProjectData from "./useProjectData";
 import useEmployeeData from "./useEmployeeData";
 import useCustomerData from "./useCustomerData";
