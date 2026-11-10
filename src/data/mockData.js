@@ -49,7 +49,7 @@
 // [세부 작업 관리]
 // tasks.projectId                -> initialProjects.id
 // tasks.employeeId               -> initialEmployees.id (생산팀 / 물류팀)
-// tasks.taskStatus               : "제작 관리" / "검수 관리" / "포장 관리" / "배송 관리"
+// tasks.taskType               : "제작 관리" / "검수 관리" / "포장 관리" / "배송 관리"
 // tasks.taskDeadline             : 세부 작업별 마감 예정일
 // tasks.progress                 : "대기중" / "작업중" / "완료"
 
@@ -67,7 +67,7 @@
 // 6. 프로젝트는 승인 완료 견적을 기준으로 생성합니다.
 // 7. 하나의 견적은 최대 하나의 프로젝트에 연결할 수 있습니다.
 // 8. 프로젝트 생성 시 견적의 deliveryDate를 dueDate에 저장합니다.
-// 9. 프로젝트별 동일한 taskStatus의 세부 작업은 중복 등록하지 않습니다.
+// 9. 프로젝트별 동일한 taskType의 세부 작업은 중복 등록하지 않습니다.
 // 10. 작업 담당 부서: 제작·검수·포장 = 생산팀, 배송 = 물류팀
 // 11. 다른 데이터에서 참조 중인 항목의 삭제 제한은 ERPContext에서 관리합니다.
 //     (모듈별 통합 CRUD 규칙은 단계적으로 적용 예정)
@@ -1167,7 +1167,7 @@ export const tasks = [
     {
         id: 1,
         projectId: 1,
-        taskStatus: "제작 관리",
+        taskType: "제작 관리",
         employeeId: 1,
         taskDeadline: "2026-11-03",
         progress: "완료"
@@ -1175,7 +1175,7 @@ export const tasks = [
     {
         id: 2,
         projectId: 1,
-        taskStatus: "검수 관리",
+        taskType: "검수 관리",
         employeeId: 7,
         taskDeadline: "2026-11-09",
         progress: "작업중"
@@ -1183,7 +1183,7 @@ export const tasks = [
     {
         id: 3,
         projectId: 1,
-        taskStatus: "포장 관리",
+        taskType: "포장 관리",
         employeeId: 14,
         taskDeadline: "2026-11-13",
         progress: "대기중"
@@ -1191,7 +1191,7 @@ export const tasks = [
     {
         id: 4,
         projectId: 2,
-        taskStatus: "제작 관리",
+        taskType: "제작 관리",
         employeeId: 13,
         taskDeadline: "2026-11-10",
         progress: "대기중"
@@ -1199,7 +1199,7 @@ export const tasks = [
     {
         id: 5,
         projectId: 2,
-        taskStatus: "검수 관리",
+        taskType: "검수 관리",
         employeeId: 6,
         taskDeadline: "2026-11-13",
         progress: "대기중"
@@ -1207,7 +1207,7 @@ export const tasks = [
     {
         id: 6,
         projectId: 3,
-        taskStatus: "제작 관리",
+        taskType: "제작 관리",
         employeeId: 1,
         taskDeadline: "2026-10-26",
         progress: "완료"
@@ -1215,7 +1215,7 @@ export const tasks = [
     {
         id: 7,
         projectId: 3,
-        taskStatus: "검수 관리",
+        taskType: "검수 관리",
         employeeId: 14,
         taskDeadline: "2026-10-28",
         progress: "완료"
@@ -1223,7 +1223,7 @@ export const tasks = [
     {
         id: 8,
         projectId: 3,
-        taskStatus: "포장 관리",
+        taskType: "포장 관리",
         employeeId: 13,
         taskDeadline: "2026-10-30",
         progress: "완료"
@@ -1231,7 +1231,7 @@ export const tasks = [
     {
         id: 9,
         projectId: 4,
-        taskStatus: "제작 관리",
+        taskType: "제작 관리",
         employeeId: 6,
         taskDeadline: "2026-11-14",
         progress: "대기중"
@@ -1239,7 +1239,7 @@ export const tasks = [
     {
         id: 10,
         projectId: 4,
-        taskStatus: "검수 관리",
+        taskType: "검수 관리",
         employeeId: 7,
         taskDeadline: "2026-11-18",
         progress: "대기중"
@@ -1247,7 +1247,7 @@ export const tasks = [
     {
         id: 11,
         projectId: 5,
-        taskStatus: "제작 관리",
+        taskType: "제작 관리",
         employeeId: 13,
         taskDeadline: "2026-11-10",
         progress: "작업중"
@@ -1255,7 +1255,7 @@ export const tasks = [
     {
         id: 12,
         projectId: 5,
-        taskStatus: "포장 관리",
+        taskType: "포장 관리",
         employeeId: 14,
         taskDeadline: "2026-11-14",
         progress: "대기중"

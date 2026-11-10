@@ -201,7 +201,7 @@ export function excludeOccurrence(item, date) {
  * 프로젝트: project는 표시 이름, projectId는 선택값(null 허용)입니다.
  * 기본 정보: title·description·scope·category·status·visibility
  * 기간: date·endDate(YYYY-MM-DD), time·endTime(HH:mm), isAllDay
- * 참여자: person은 담당자 이름, attendees는 이름 배열입니다. 직원 FK가 아닙니다.
+ * 참여자: person은 담당자 표시 이름, employeeId는 HR 직원 ID(null은 과거 일정), attendees는 이름 배열입니다.
  * 반복: repeatType·repeatInterval·monthlyRule·monthlyOrdinal·monthlyWeekday·holidayRule
  * 반복 종료: repeatEndType(none/until/count)·repeatEndDate·repeatCount로 종료 조건을 저장합니다.
  * 알림: reminderMinutes는 시작 전 화면 알림의 분 단위이며 0이면 알림을 사용하지 않습니다.
@@ -222,6 +222,7 @@ export const createEmptyForm = () => ({
   scope: "",
   category: "",
   person: "",
+  employeeId: null, // 담당자 검색 결과를 클릭한 뒤에만 HR 직원 ID를 설정합니다.
   // 입력 중에는 문자열로 둡니다. 저장 시 normalizeAttendees가 배열로 바꿉니다.
   // 예: 입력 "민수, 지수" → 저장 ["민수", "지수"] → 수정 입력 "민수, 지수".
   attendees: "",

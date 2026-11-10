@@ -9,6 +9,7 @@
 ```mermaid
 erDiagram
     EMPLOYEES ||--o{ PROJECTS : "프로젝트 책임"
+    EMPLOYEES o|--o{ SCHEDULES : "업무 담당자 선택"
     PROJECTS o|--o{ SCHEDULES : "선택적 프로젝트 연결"
     SCHEDULES o|--o{ SCHEDULES : "반복 회차 분리"
 
@@ -35,6 +36,7 @@ erDiagram
         string project
         identifier projectId "nullable"
         string person
+        int employeeId "nullable"
         string_array attendees
         string date
         string endDate
@@ -66,7 +68,7 @@ erDiagram
 | `replacesScheduleId` | 분리 회차가 원본 반복 일정을 가리킴. 원본 ID와 같은 자료형을 가질 수 있음 |
 | `replacesOccurrenceDate` | 휴일 이동 전의 규칙상 발생일. 실제 표시일과 다를 수 있음 |
 | `excludedDates` | 삭제하거나 분리한 원래 회차 날짜 배열. 휴일 이동 후 날짜를 저장하는 항목이 아님 |
-| `person`, `attendees` | 현재는 이름 기반. 직원 테이블과 직접 연결하는 FK가 아님 |
+| `person`, `attendees` | 담당자 표시는 person 문자열, 담당 HR 직원은 nullable employeeId로 연결. 참석자 배열은 이름 기반 |
 | `project`, `projectId` | 수정·저장 시 ID를 우선해 연결을 유지하고 현재 이름을 반영. ID 없는 이전 일정은 이름으로 연결. 직접 입력 변경 시 이전 ID를 해제 |
 | 프로젝트 시작·마감일 카드 | `createProjectMilestones`가 계산한 읽기 전용 항목. `SCHEDULES`에 중복 등록하지 않음 |
 
@@ -80,7 +82,7 @@ erDiagram
 |---|---|---|
 | 일정 기본키 | 기존 ID를 보존하거나 서버 ID와 기존 ID의 대응표 사용 | 정수로 일괄 변환하면 문자열 ID와 회차 연결이 깨질 수 있음 |
 | 프로젝트 | `SCHEDULES.projectId`를 선택적 FK로 사용 | 현재는 브라우저 저장값이며 FK 검증 없음 |
-| 업무 담당자 | `SCHEDULES.employeeId`로 `EMPLOYEES.id` 참조, 개인 일정은 비워 두는 방향 | 현재 `person` 이름을 직원 ID로 변환해야 함 |
+| 업무 담당자 | `SCHEDULES.employeeId`로 `EMPLOYEES.id` 참조, 개인 일정은 비워 둠 | 신규 일정은 재직 직원 이름 정확히 일치 검색 후 결과 클릭, 과거 일정은 연결 없이 유지 가능 |
 | 회의 참석자 | `SCHEDULE_ATTENDEES(scheduleId, employeeId)` 관계 테이블. 두 값 조합 중복 금지 | 현재 이름 배열 `attendees` 사용 |
 | 반복 제외일 | `SCHEDULE_EXCLUSIONS(scheduleId, occurrenceDate)` 관계 테이블. 두 값 조합 중복 금지 | 현재 `excludedDates` 배열 사용 |
 | 분리 회차 | `replacesScheduleId`와 `replacesOccurrenceDate`로 원본·기준 회차 추적. 같은 원본·회차의 대체 일정 중복 방지 | 현재 원본 제외일과 별도 일정으로 관리 |

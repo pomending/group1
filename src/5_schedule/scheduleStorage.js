@@ -108,6 +108,8 @@ export function loadSchedules() {
         scope,
         category: getScheduleCategory(item),
         person: typeof item.person === "string" ? item.person : "",
+        employeeId: scope === "업무용" && Number.isSafeInteger(item.employeeId) && item.employeeId > 0
+          ? item.employeeId : null,
         // 이전 일정에는 attendees가 없을 수 있습니다. []로 보완하면 새 표에서도 안전하게 읽습니다.
         // 저장 배열에 중복/공백이 있더라도 불러오는 시점에 같은 정리 규칙을 다시 적용합니다.
         attendees: normalizeAttendees(item.attendees),
@@ -177,3 +179,104 @@ export function loadTeamMembers() {
   }
 }
 
+export function deleteSchedulesByProject(projectId) {
+
+  const loaded = loadSchedules();
+
+  if (loaded.readError) {
+      return {
+          ok: false,
+          message: "일정 데이터를 불러올 수 없어 프로젝트를 삭제할 수 없습니다."
+      };
+  }
+
+  const nextItems = loaded.items.filter(
+      item => String(item.projectId) !== String(projectId)
+  );
+
+  try {
+      localStorage.setItem(
+          "made-mate-schedules",
+          JSON.stringify(nextItems)
+      );
+
+      window.dispatchEvent(new Event("made-mate-schedules-updated"));
+
+      return { ok: true };
+
+  } catch (error) {
+      console.error("프로젝트 연결 일정 삭제 실패", error);
+
+      return {
+          ok: false,
+          message: "연결된 일정을 삭제하지 못했습니다."
+      };
+  }
+}
+
+export function resetStoredSchedules() {
+  try {
+      localStorage.setItem(
+          "made-mate-schedules",
+          JSON.stringify([])
+      );
+
+      window.dispatchEvent(
+          new Event("made-mate-schedules-updated")
+      );
+
+      return { ok: true };
+
+  } catch (error) {
+      console.error("일정 초기화 실패", error);
+
+      return {
+          ok: false,
+          message: "일정 데이터를 초기화하지 못했습니다."
+      };
+  }
+}
+
+export function deleteSchedulesByEmployee(employeeId) {
+
+  if (!Number.isSafeInteger(employeeId) || employeeId <= 0) {
+      return {
+          ok: false,
+          message: "올바르지 않은 직원 ID입니다."
+      };
+  }
+
+  const loaded = loadSchedules();
+
+  if (loaded.readError) {
+      return {
+          ok: false,
+          message: "일정 데이터를 불러올 수 없어 직원을 삭제할 수 없습니다."
+      };
+  }
+
+  const nextItems = loaded.items.filter(
+      item => item.employeeId !== employeeId
+  );
+
+  try {
+      localStorage.setItem(
+          "made-mate-schedules",
+          JSON.stringify(nextItems)
+      );
+
+      window.dispatchEvent(
+          new Event("made-mate-schedules-updated")
+      );
+
+      return { ok: true };
+
+  } catch (error) {
+      console.error("직원 연결 일정 삭제 실패", error);
+
+      return {
+          ok: false,
+          message: "직원이 담당하는 일정을 삭제하지 못했습니다."
+      };
+  }
+}

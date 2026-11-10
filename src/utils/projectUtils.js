@@ -1,3 +1,4 @@
+import { isValidDate } from "./dateUtils";
 import { TASK_TYPES } from "./taskUtils";
 
 export const PROJECT_STATUSES = [
@@ -66,9 +67,9 @@ export const getProjectProgress = (project, tasks) => {
             .filter(t =>
                 t.projectId === project.id &&
                 t.progress === "완료" &&
-                TASK_TYPES.includes(t.taskStatus)
+                TASK_TYPES.includes(t.taskType)
             )
-            .map(t => t.taskStatus)
+            .map(t => t.taskType)
     );
 
     return completedTypes.size / TASK_TYPES.length * 100;
@@ -87,6 +88,20 @@ export const validateProject = (projectData, employees, original = null) => {
 
     if (!projectData.startDate || !projectData.dueDate) {
         return "프로젝트 기간을 입력하세요.";
+    }
+
+    if (
+        !isValidDate(projectData.startDate) ||
+        !isValidDate(projectData.dueDate)
+    ) {
+        return "올바른 프로젝트 날짜를 입력하세요.";
+    }
+    
+    if (
+        projectData.completedDate &&
+        !isValidDate(projectData.completedDate)
+    ) {
+        return "올바른 프로젝트 완료일을 입력하세요.";
     }
 
     if (projectData.startDate > projectData.dueDate) {
@@ -126,4 +141,16 @@ export const validateProject = (projectData, employees, original = null) => {
 
     return null;
 
+};
+
+export const breaksCompletedProject = (projectId, projects, nextTasks) => {
+
+    const project = projects.find(
+        p => Number(p.id) === Number(projectId)
+    );
+
+    return (
+        project?.status === "완료" &&
+        getProjectProgress(project, nextTasks) !== 100
+    );
 };

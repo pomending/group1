@@ -48,7 +48,7 @@ function TaskDetail() {
     )
 
     //작업 진행상태
-    const [taskStatus, setTaskStatus] = useState("");
+    const [taskType, setTaskType] = useState("");
 
     //담당자
     const [employeeId, setEmployeeId] = useState("");
@@ -65,7 +65,7 @@ function TaskDetail() {
     // 수정 팝업 열림/닫힘
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
-    const availableEmployees = getAvailableEmployees(employees, taskStatus)
+    const availableEmployees = getAvailableEmployees(employees, taskType)
 
     const closeModal = () => {
         setIsEditModalOpen(false)
@@ -74,7 +74,7 @@ function TaskDetail() {
 
     const resetTaskForm = () => {
         setEditingTaskId(null);
-        setTaskStatus("");
+        setTaskType("");
         setEmployeeId("");
         setTaskDeadline("");
         setProgress("대기중");
@@ -88,7 +88,7 @@ function TaskDetail() {
         editingTask?.progress === "완료" &&
         progress === "완료" &&
         pastEmployee &&
-        editingTask.taskStatus === taskStatus &&
+        editingTask.taskType === taskType &&
         Number(editingTask.projectId) === Number(selectedProjectId) &&
         !availableEmployees.some(e => e.id === pastEmployee.id);
 
@@ -97,7 +97,7 @@ function TaskDetail() {
 
         const taskData = {
             projectId: Number(selectedProjectId),
-            taskStatus,
+            taskType,
             employeeId: Number(employeeId),
             taskDeadline,
             progress
@@ -149,7 +149,7 @@ function TaskDetail() {
         if (!targetTask) return;
 
         // 기존 작업 정보 불러오기
-        setTaskStatus(targetTask.taskStatus);
+        setTaskType(targetTask.taskType);
         setEmployeeId(String(targetTask.employeeId));
         setTaskDeadline(targetTask.taskDeadline);
         setProgress(targetTask.progress || "대기중");
@@ -288,9 +288,9 @@ function TaskDetail() {
                             {/* 작업 진행상태 */}
                             <div>
                                 <p>작업 진행상태</p>
-                                <select value={taskStatus}
+                                <select value={taskType}
                                     onChange={(e) => {
-                                        setTaskStatus(e.target.value)
+                                        setTaskType(e.target.value)
                                         setEmployeeId("");
                                     }}>
                                     <option value="">작업을 선택해주세요.</option>
@@ -372,7 +372,7 @@ function TaskDetail() {
                                                     <tr key={task.id}>
                                                         <td>{task.id}</td>
 
-                                                        <td>{task.taskStatus}</td>
+                                                        <td>{task.taskType}</td>
 
                                                         {/* 담당자 이름만 표시 */}
                                                         <td>{employee?.name || "-"}</td>

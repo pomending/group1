@@ -31,6 +31,9 @@ import {
 export default function ScheduleFormModal({
   form,
   teamMembers,
+  employees = [],
+  originalAssignee = null,
+  onSelectAssignee,
   projectSuggestions = [],
   onToggleAttendee,
   error,
@@ -71,6 +74,19 @@ export default function ScheduleFormModal({
 
   const selectedAttendees = normalizeAttendees(form.attendees);
   const attendeeOptions = [...new Set([...teamMembers, form.person.trim(), ...selectedAttendees].filter(Boolean))];
+  const assigneeName = form.person.trim();
+  const selectedEmployee = employees.find(employee =>
+    employee.id === form.employeeId && employee.name.trim() === assigneeName
+  );
+  // 성만 입력했을 때는 결과를 표시하지 않습니다. 동명이인은 모두 보여 ID로 구분합니다.
+  const matchingEmployees = assigneeName && !selectedEmployee
+    ? employees.filter(employee => employee.status === "재직" && employee.name.trim() === assigneeName)
+    : [];
+  const isUnlinkedExistingAssignee = Boolean(
+    isEditing && !selectedEmployee && originalAssignee &&
+    originalAssignee.person?.trim() === assigneeName &&
+    (originalAssignee.employeeId ?? null) === (form.employeeId ?? null)
+  );
   // 선택값 하나만 전달합니다. Manager.updateForm이 관련 업무 입력값도 한 번의 상태 갱신으로 비웁니다.
   function selectScope(scope) {
     if (form.scope === scope) return;
@@ -136,7 +152,7 @@ export default function ScheduleFormModal({
         {form.scope === "업무용" && form.category === "프로젝트" && (
           <div className="sm-project-fields sm-form-wide">
             <label>프로젝트
-              <input list="sm-project-suggestions" name="project" value={form.project} onChange={onChange}
+              <input list="sm-project-suggestions" name="project" value={form.project} onChange={onChange} autoComplete="off"
                 placeholder="프로젝트명 입력" maxLength={60} required {...fieldErrorProps(fieldError, "project")} />
             </label>
             <datalist id="sm-project-suggestions">
@@ -147,12 +163,32 @@ export default function ScheduleFormModal({
         <ScheduleFieldError error={fieldError} fields={["project"]} />
         {form.scope === "업무용" && <div className="sm-assignee-field sm-form-wide">
           <label htmlFor="sm-assignee">담당자</label>
-          {/* 기존 이름은 자동완성으로 선택하고, 새 이름은 일정 저장 시 함께 등록합니다. */}
-          <input id="sm-assignee" name="person" list="sm-team-suggestions" value={form.person}
-            onChange={onChange} placeholder="담당자 이름 입력" maxLength={30} required {...fieldErrorProps(fieldError, "person")} />
-          <datalist id="sm-team-suggestions">
-            {[...new Set(teamMembers)].map((name) => <option key={name} value={name} />)}
-          </datalist>
+          <input id="sm-assignee" name="person" value={form.person} autoComplete="off"
+            onChange={onChange} placeholder="직원 이름을 정확히 입력하세요" maxLength={30} required {...fieldErrorProps(fieldError, "person")} />
+          {selectedEmployee ? (
+            <div className="sm-assignee-selected">
+              <strong>{selectedEmployee.name} · 선택됨</strong>
+              <span>{selectedEmployee.department} · {selectedEmployee.position} · {selectedEmployee.status}</span>
+              {selectedEmployee.status !== "재직" && <small>기존 일정 담당자입니다. 새 담당자로는 선택할 수 없습니다.</small>}
+            </div>
+          ) : matchingEmployees.length > 0 ? (
+            <div className="sm-assignee-matches" role="group" aria-label="담당자 검색 결과">
+              <p className="sm-form-note">일치하는 직원입니다. 아래 정보를 눌러 선택하세요.</p>
+              {matchingEmployees.map(employee => (
+                <button type="button" key={employee.id} className="sm-assignee-match"
+                  onClick={() => onSelectAssignee(employee)}>
+                  <strong>{employee.name}</strong>
+                  <span>{employee.department} · {employee.position} · {employee.status}</span>
+                </button>
+              ))}
+            </div>
+          ) : isUnlinkedExistingAssignee ? (
+            <p className="sm-form-note">이전 일정의 담당자 이름을 유지합니다. 새 담당자로 바꾸려면 재직 직원을 검색해 선택하세요.</p>
+          ) : assigneeName ? (
+            <p className="sm-form-note">정확히 일치하는 재직 직원이 없습니다. HR 직원 이름을 확인해 주세요.</p>
+          ) : (
+            <p className="sm-form-note">부서에 관계없이 재직 중인 직원만 선택할 수 있습니다.</p>
+          )}
         </div>}
         <ScheduleFieldError error={fieldError} fields={["person"]} />
         {/* 회의 분류를 선택하면 참석자 선택을 표시합니다. */}

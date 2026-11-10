@@ -146,16 +146,26 @@ export function useScheduleStorage() {
   }, [items, loadedSchedules.readError, storageConflict]);
 
   useEffect(() => {
-    // 다른 탭에서 일정 저장소가 변경되면 저장 effect를 다시 실행해 병합 여부를 판단합니다.
-    // 이 이벤트에서 받은 값을 그대로 덮어쓰지 않아 현재 탭의 편집 내용을 보호합니다.
-    function checkOtherTab(event) {
-      if (event.key === "made-mate-schedules" || event.key === null) {
+
+    const refreshSchedules = () => {
         setItems(current => [...current]);
-      }
+    };
+
+    function checkOtherTab(event) {
+        if (event.key === "made-mate-schedules" || event.key === null) {
+            refreshSchedules();
+        }
     }
+
     window.addEventListener("storage", checkOtherTab);
-    return () => window.removeEventListener("storage", checkOtherTab);
-  }, []);
+    window.addEventListener("made-mate-schedules-updated", refreshSchedules);
+
+    return () => {
+        window.removeEventListener("storage", checkOtherTab);
+        window.removeEventListener("made-mate-schedules-updated", refreshSchedules);
+    };
+
+}, []);
 
   // 사이트의 저장 충돌 경고에서 불러오기 버튼을 누르면 실행됩니다.
   // 사용자가 선택한 복구 동작이며, 저장된 목록을 다시 읽어 화면 상태와 기준 버전을 맞춥니다.
@@ -314,11 +324,14 @@ export function useScheduleDraft(form, isEditing) {
       for (const name of Object.keys(defaults)) {
         const value = saved.form[name];
         let valid = typeof value === typeof defaults[name];
-        if (typeof defaults[name] === "number") {
+        if (name === "employeeId") {
+          // 이전 버전의 임시 폼에는 직원 ID가 없었습니다.
+          valid = value == null || (Number.isSafeInteger(value) && value > 0);
+        } else if (typeof defaults[name] === "number") {
           valid = value === "" || (typeof value === "number" && Number.isFinite(value));
         }
         if (!valid) throw new Error("Invalid draft field");
-        draft[name] = value;
+        draft[name] = name === "employeeId" ? (value ?? null) : value;
       }
       return { draft, error: "" };
     } catch { return { draft: null, error: "임시 작성 내용을 읽지 못했습니다. 임시 보관 삭제 후 다시 작성할 수 있습니다." }; }

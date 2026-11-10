@@ -70,8 +70,17 @@ function useTaskData(projects, employees){
 
     const updateTask = (updatedTask) => {
         
-        const original = tasks.find(t => t.id === updatedTask.id)
-
+        if (!Number.isSafeInteger(updatedTask.id) || updatedTask.id <= 0) {
+            return {
+                ok: false,
+                message: "올바르지 않은 작업 ID입니다."
+            };
+        }
+    
+        const original = tasks.find(
+            t => t.id === updatedTask.id
+        );
+    
         if (!original) {
             return {
                 ok: false,
@@ -79,8 +88,20 @@ function useTaskData(projects, employees){
             };
         }
 
+        const mergedTask = {
+            ...original,
+            ...updatedTask
+        };
+
+        if (Number(original.projectId) !== Number(mergedTask.projectId)) {
+            return {
+                ok: false,
+                message: "세부 작업의 소속 프로젝트는 변경할 수 없습니다."
+            };
+        }
+
         const error = validateTask(
-            { ...original, ...updatedTask }, 
+            mergedTask, 
             projects, 
             employees, 
             tasks,
@@ -102,6 +123,13 @@ function useTaskData(projects, employees){
     }
 
     const deleteTask = (id) => {
+
+        if (!Number.isSafeInteger(id) || id <= 0) {
+            return {
+                ok: false,
+                message: "올바르지 않은 작업 ID입니다."
+            };
+        }
 
         if (!tasks.some(t => t.id === id)) {
             return {

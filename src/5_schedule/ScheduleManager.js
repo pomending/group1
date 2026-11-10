@@ -10,7 +10,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useScheduleClock, useScheduleHolidays, useScheduleStorage, useScheduleTeam, useScheduleDraft } from "./scheduleHooks";
 import { loadSchedules } from "./scheduleStorage";
-import { createProjectMilestones, getProjectScheduleSummaries, resolveScheduleProject } from "./ScheduleProjectBridge";
+import { createProjectMilestones, resolveScheduleProject } from "./ScheduleProjectBridge";
 import ScheduleCalendar from "./ScheduleCalendar";
 import ScheduleFormModal, { ScheduleListModal } from "./ScheduleFormModal";
 import ScheduleSidebar from "./ScheduleSidebar";
@@ -56,10 +56,9 @@ export default function ScheduleManager() {
   const erp = useERP();
   const projects = erp?.projects || EMPTY_PROJECTS;
   // Context의 useEmployeeData가 erp_employees 저장값을 먼저 읽고, 없거나 읽지 못하면 mockData의 initialEmployees를 사용합니다.
-  // 5번은 원본 데이터를 직접 import하지 않고 제공된 직원 목록으로 프로젝트 담당자 이름만 표시합니다.
-  // 일정 자체의 담당자·참석자는 별도 팀원 목록의 이름이며, 직원 ID로 연결하거나 직원 정보를 수정하지 않습니다.
-  const employees = erp.employees;
-  const updateProject = erp?.updateProject;
+  // HR 직원 목록으로 일정 담당자를 선택합니다. 부서 제한 없이 재직 직원만 새로 선택할 수 있습니다.
+  // 참석자·담당자별 일정표의 이름 기반 팀원 목록은 기존대로 유지합니다.
+  const employees = erp.employees || [];
 
   // 월간 달력의 기준 월과 현재 선택 날짜입니다.
   const [month, setMonth] = useState(() => {
@@ -79,7 +78,6 @@ export default function ScheduleManager() {
 
   const {
     loadedSchedules,
-    savedItems,
     items,
     setItems,
     editingVersion,
@@ -117,24 +115,6 @@ export default function ScheduleManager() {
 
   const calendarYear = month.getFullYear();
   const holidayInfo = useScheduleHolidays(calendarYear);
-
-  // [다른 파트 데이터 변경: 기존 동작] 5번의 일정 요약을 ERPContext.updateProject로 전달합니다.
-  // 변경 대상은 프로젝트의 schedules 배열이며, Context가 erp_projects 저장 및 프로젝트 변경 이력을 처리합니다.
-  // 일정 수정·삭제뿐 아니라 5번 화면을 열었을 때 요약이 달라도 실행됩니다. 3번 담당자와 공유할 변경 지점입니다.
-  // 프로젝트의 이름·담당자·시작일·마감일은 여기서 수정하지 않습니다. 아래 갱신 범위를 바꿀 때는 사전 확인이 필요합니다.
-  // 마지막 저장 성공 목록 중 연결된 항목만 projects[].schedules 요약으로 보관합니다.
-  // 새 일정은 프로젝트 ID로 연결하고, ID가 없는 기존 일정은 프로젝트명으로 찾습니다.
-  // 비교 후 달라진 경우에만 갱신해 Context 변경으로 인한 반복 업데이트를 막습니다.
-  useEffect(() => {
-    // 최초 읽기·저장 실패의 기본값이나 미저장 편집 내용은 프로젝트로 전달하지 않습니다.
-    if (loadedSchedules.readError || !savedItems || typeof updateProject !== "function") return;
-    for (const project of projects) {
-      const linkedSchedules = getProjectScheduleSummaries(project, savedItems);
-      if (JSON.stringify(project.schedules || []) !== JSON.stringify(linkedSchedules)) {
-        updateProject({ id: project.id, schedules: linkedSchedules });
-      }
-    }
-  }, [savedItems, projects, updateProject, loadedSchedules.readError]);
 
   // 선택한 프로젝트의 마지막 일정을 지웠다면 더 이상 없는 프로젝트 필터도 함께 해제합니다.
   useEffect(() => {
@@ -290,7 +270,7 @@ export default function ScheduleManager() {
       if (name === "durationMinutes") return { ...current, ...getScheduleDurationFields(current, Number(value)) };
       // 입력 화면은 선택값만 보내고, 숨겨질 연관 필드는 이곳에서 한 번에 초기화합니다.
       if (name === "scope") {
-        return { ...current, scope: value, category: "", project: "", projectId: null, attendees: "", person: "", status: "pending" };
+        return { ...current, scope: value, category: "", project: "", projectId: null, attendees: "", person: "", employeeId: null, status: "pending" };
       }
       if (name === "category") {
         return {
@@ -304,6 +284,10 @@ export default function ScheduleManager() {
       // 사용자가 프로젝트명을 바꾸면 기존 ID를 해제하고 저장할 때 새 이름으로 연결합니다.
       if (name === "project") {
         return { ...current, project: value, projectId: value.trim() === current.project.trim() ? current.projectId : null };
+      }
+      // 담당자 검색어가 바뀌면 이전 직원 선택은 반드시 해제합니다.
+      if (name === "person") {
+        return { ...current, person: value, employeeId: null };
       }
       // state 객체를 직접 바꾸지 않고 복사한 뒤, 입력한 항목 하나만 바꿉니다.
       const nextForm = { ...current };
@@ -319,6 +303,13 @@ export default function ScheduleManager() {
       return nextForm;
     });
   };
+  // 실제 HR 검색 결과를 클릭한 때만 담당자 ID와 이름을 함께 선택합니다.
+  const selectAssignee = (employee) => {
+    if (employee.status !== "재직" || !Number.isSafeInteger(employee.id)) return;
+    setFormError("");
+    setForm(current => current ? { ...current, person: employee.name, employeeId: employee.id } : current);
+  };
+
   // item이 있으면 수정 폼을 만듭니다. 없으면 임시 보관을 복구하고, 임시 내용도 없으면 빈 등록 폼을 만듭니다.
   // 상단 일정 등록은 인자 없이, 상세 패널의 수정은 item을 전달해 이 함수를 호출합니다.
   // 새 등록과 수정이 같은 폼을 사용하되 수정 대상과 최초 저장 버전을 별도로 기억합니다.
@@ -389,6 +380,19 @@ export default function ScheduleManager() {
       return;
     }
     const person = form.scope === "업무용" ? form.person.trim() : "";
+    if (form.scope === "업무용") {
+      const selectedEmployee = employees.find(employee =>
+        employee.id === form.employeeId && employee.name.trim() === person
+      );
+      // 과거 일정은 HR ID가 없을 수 있습니다. 담당자를 바꾸지 않는 수정만 예외로 허용합니다.
+      const keepPreviousAssignee = Boolean(editing &&
+        editing.person?.trim() === person &&
+        (editing.employeeId ?? null) === (form.employeeId ?? null));
+      if ((!selectedEmployee || selectedEmployee.status !== "재직") && !keepPreviousAssignee) {
+        setFormError("담당자 이름을 정확히 입력한 뒤 재직 직원 검색 결과에서 선택해 주세요.");
+        return;
+      }
+    }
     const attendees = form.scope === "업무용" && form.category === "회의"
       ? normalizeAttendees(form.attendees)
       : [];
@@ -418,6 +422,7 @@ export default function ScheduleManager() {
       title,
       description: form.description.trim(),
       person,
+      employeeId: form.scope === "업무용" ? form.employeeId : null,
       attendees,
       ...projectFields,
     };
@@ -452,7 +457,8 @@ export default function ScheduleManager() {
       const wasExisting = teamMembers.includes(name)
         || (editing && (editing.person === name || previousAttendees.includes(name)));
       if (wasExisting) continue;
-      if (excludedTeamMembers.includes(name)) {
+      // HR에서 선택한 담당자는 과거 팀원 목록에서 제외됐어도 재등록할 수 있습니다.
+      if (excludedTeamMembers.includes(name) && name !== person) {
         setFormError("팀원 목록에서 제외된 이름입니다. 다시 등록한 뒤 선택해 주세요.");
         return;
       }
@@ -628,10 +634,9 @@ export default function ScheduleManager() {
   // 상태별 진행 수가 아니라 일정에 입력된 서로 다른 프로젝트명 개수입니다.
   // 이름을 처음 만났을 때만 배열에 넣습니다. 배열 길이가 중복을 뺀 프로젝트 수입니다.
   const projectNames = [...new Set(items.map((item) => item.project).filter(Boolean))];
-  const projectSuggestions = [...new Set([
-    ...projects.map((project) => project.name),
-    ...projectNames,
-  ].filter((name) => typeof name === "string" && name.trim()).map((name) => name.trim()))];
+  const projectSuggestions = projects.map(
+    project => project.name
+);
   // staff도 weekly와 같은 첫날~마지막 날 제목을 사용합니다. 보기만 바뀌고 날짜 기준은 같습니다.
   let periodLabel = `${calendarYear}년 ${month.getMonth() + 1}월`;
   if (view === "weekly" || view === "staff") {
@@ -840,6 +845,9 @@ export default function ScheduleManager() {
           isRestoredDraft={restoringDraftRef.current}
           projectSuggestions={projectSuggestions}
           teamMembers={teamMembers}
+          employees={employees}
+          originalAssignee={editing ? { person: editing.person, employeeId: editing.employeeId ?? null } : null}
+          onSelectAssignee={selectAssignee}
           onDelete={() => { if (deleteSchedule(editing)) closeScheduleForm(); }}
           onCopy={copySchedule}
           onToggleAttendee={toggleAttendee}
