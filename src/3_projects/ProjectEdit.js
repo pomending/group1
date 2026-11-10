@@ -24,6 +24,15 @@ function ProjectEdit(props) {
 
     const projectManagers = getProjectManagers(employees)
 
+    const pastManager = employees.find(
+        e => Number(e.id) === Number(selectedProject.managerId)
+    );
+
+    const keepPastManager =
+        selectedProject.status === "완료" &&
+        pastManager &&
+        !projectManagers.some(e => e.id === pastManager.id);
+
     const editProject = (e) => {
 
         e.preventDefault();
@@ -124,6 +133,9 @@ function ProjectEdit(props) {
                                 onChange={(e) => setManagerId(Number(e.target.value))}
                             >
                                 <option value="" disabled>담당자를 선택하세요</option>
+                                {keepPastManager && (
+                                    <option key={pastManager.id} value={pastManager.id}>{pastManager.name} ({pastManager.status} · 기존 담당자)</option>
+                                )}
                                 {projectManagers.map(emp => (
                                     <option key={emp.id} value={emp.id}>{emp.name}</option>
                                 ))}

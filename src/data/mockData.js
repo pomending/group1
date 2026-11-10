@@ -84,7 +84,8 @@ export const products = [
         productPrice: 8000,
         productStatus: "판매 중",
         productCreatedAt: "2026-09-01",
-        productUpdatedAt: ""
+        productUpdatedAt: "",
+        productImageUrl: "01-stainless-tumbler.jpg"
     },
     {
         id: 2,
@@ -92,7 +93,8 @@ export const products = [
         productPrice: 5000,
         productStatus: "판매 중",
         productCreatedAt: "2026-09-02",
-        productUpdatedAt: ""
+        productUpdatedAt: "",
+        productImageUrl: "02-canvas-ecobag.jpg"
     },
     {
         id: 3,
@@ -100,7 +102,8 @@ export const products = [
         productPrice: 6000,
         productStatus: "판매 중",
         productCreatedAt: "2026-09-03",
-        productUpdatedAt: ""
+        productUpdatedAt: "",
+        productImageUrl: "03-ceramic-mug.jpg"
     },
     {
         id: 4,
@@ -108,7 +111,8 @@ export const products = [
         productPrice: 2500,
         productStatus: "판매 중",
         productCreatedAt: "2026-09-04",
-        productUpdatedAt: ""
+        productUpdatedAt: "",
+        productImageUrl: "04-acrylic-keyring.jpg"
     },
     {
         id: 5,
@@ -116,7 +120,8 @@ export const products = [
         productPrice: 12000,
         productStatus: "판매 중",
         productCreatedAt: "2026-09-05",
-        productUpdatedAt: ""
+        productUpdatedAt: "",
+        productImageUrl: "05-group-tshirt.jpg"
     },
     {
         id: 6,
@@ -124,7 +129,8 @@ export const products = [
         productPrice: 1300,
         productStatus: "판매 중",
         productCreatedAt: "2026-09-06",
-        productUpdatedAt: ""
+        productUpdatedAt: "",
+        productImageUrl: "06-logo-pen.jpg"
     },
     {
         id: 7,
@@ -132,7 +138,8 @@ export const products = [
         productPrice: 7000,
         productStatus: "판매 중",
         productCreatedAt: "2026-09-07",
-        productUpdatedAt: ""
+        productUpdatedAt: "",
+        productImageUrl: "07-fabric-pouch.jpg"
     },
     {
         id: 8,
@@ -140,7 +147,8 @@ export const products = [
         productPrice: 3500,
         productStatus: "판매 중",
         productCreatedAt: "2026-09-08",
-        productUpdatedAt: ""
+        productUpdatedAt: "",
+        productImageUrl: "08-metal-badge.jpg"
     },
     {
         id: 9,
@@ -148,7 +156,8 @@ export const products = [
         productPrice: 4500,
         productStatus: "판매 중",
         productCreatedAt: "2026-09-09",
-        productUpdatedAt: ""
+        productUpdatedAt: "",
+        productImageUrl: "09-promotional-notebook.jpg"
     },
     {
         id: 10,
@@ -156,7 +165,8 @@ export const products = [
         productPrice: 900,
         productStatus: "판매중지",
         productCreatedAt: "2026-09-10",
-        productUpdatedAt: "2026-10-29"
+        productUpdatedAt: "2026-10-29",
+        productImageUrl: "10-logo-sticker.jpg"
     }
 ];
 

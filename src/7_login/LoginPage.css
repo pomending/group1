@@ -178,3 +178,76 @@
   .login-page .login-intro { display: none; }
   .login-page .login-panel { padding: 40px 24px; }
 }
+
+
+/* ================================================
+   MODU GOODS ERP — Mist Lavender login theme
+   Original structure and responsive rules preserved
+================================================ */
+.login-page {
+  background: #F5F4FA;
+  color: #39354F;
+}
+
+/* Left brand panel: muted lavender instead of navy */
+.login-page .login-intro {
+  background: radial-gradient(ellipse at 92% 12%, rgba(196, 182, 230, .28), transparent 64%), #625B88;
+  color: #FFFFFF;
+}
+.login-intro .login-brand div > span,
+.login-page .login-intro-copy > p:not(.login-eyebrow) {
+  color: #E8E2F2;
+}
+.login-page .login-eyebrow { color: #F0DDB8; }
+.login-page .login-overview > div {
+  border-color: rgba(255,255,255,.20);
+  background: rgba(255,255,255,.08);
+}
+.login-page .login-overview-dot { background: #D6CBEF; }
+.login-page .login-overview-line { background: rgba(255,255,255,.20); }
+.login-page .login-intro-footer { color: #E1DBEC; }
+
+/* Form side */
+.login-page .login-panel { background: #FBFAFE; }
+.login-page .login-mark {
+  background: #BBB3DC;
+  color: #39354F;
+}
+.login-page .login-brand div > span,
+.login-page .login-heading p,
+.login-page .login-hint,
+.login-page .login-message,
+.login-page .login-footer {
+  color: #827A98;
+}
+.login-page .login-heading h1 { color: #39354F; }
+.login-page .login-form label { color: #55516C; }
+.login-page .login-form input {
+  border-color: #DDD8EA;
+  background: #FFFFFF;
+  color: #39354F;
+}
+.login-page .login-form input::placeholder { color: #938BA4; }
+.login-page .login-form input:focus {
+  border-color: #9C91C8;
+  outline: 3px solid rgba(156,145,200,.16);
+}
+.login-page .login-form button[type="submit"] {
+  background: #68619A;
+  color: #FFFFFF;
+}
+.login-page .login-form button[type="submit"]:hover { background: #575084; }
+.login-page .login-form .login-password-toggle {
+  background: transparent;
+  color: #625B78;
+}
+.login-page .login-form .login-password-toggle:hover { background: #F0EDFA; }
+.login-page .login-mode { background: #F0EDFA; }
+.login-page .login-mode button[aria-pressed="true"] { color: #524B80; }
+.login-page .login-footer { border-top-color: #E6E1F0; }
+.login-page .login-error { color: #A34E64; }
+.login-page button:focus-visible { outline-color: #9286C1; }
+
+@media (max-width: 800px) {
+  .login-page { background: #F5F4FA; }
+}

@@ -801,3 +801,114 @@
     align-self: flex-end;
   }
 }
+/* =========================================
+   MODU GOODS ERP - Account Management
+   Mist Lavender theme (original layout preserved)
+   ========================================= */
+.am-page {
+  --am-purple: #68619A;
+  --am-purple-deep: #575084;
+  --am-ink: #39354F;
+  --am-muted: #827A98;
+  --am-border: #E6E1F0;
+  --am-bg: #F5F4FA;
+}
+
+/* Cards and readable typography */
+.am-page .am-header h1,
+.am-page .am-section-heading h2,
+.am-page .am-modal-header h2 {
+  color: #39354F;
+}
+.am-page .am-stat-card,
+.am-page .am-panel {
+  border-color: #E6E1F0;
+  box-shadow: 0 3px 12px rgba(65,55,95,.035);
+}
+.am-page .am-stat-value { color: #524B80; }
+.am-page .am-result-count {
+  background: #F0EDFA;
+  color: #524B80;
+}
+
+/* Inputs and searches */
+.am-page .am-control {
+  background: #FBFAFE;
+  border-color: #DDD8EA;
+  color: #39354F;
+}
+.am-page .am-control:focus {
+  border-color: #9C91C8;
+  box-shadow: 0 0 0 3px rgba(156,145,200,.14);
+}
+.am-page :is(button,input,select):focus-visible {
+  outline-color: #9286C1;
+}
+
+/* Buttons: only restyle existing am- classes */
+.am-page .am-btn-secondary {
+  background: #F0EDFA;
+  color: #524B80;
+  border-color: #C8C0E5;
+}
+.am-page .am-btn-secondary:hover:not(:disabled) {
+  background: #E3DCF5;
+  color: #524B80;
+  border-color: #ADA2D3;
+}
+.am-page .am-btn-danger {
+  background: #F8EDEF;
+  border-color: #E8C7CF;
+  color: #A34E64;
+}
+.am-page .am-btn-danger:hover:not(:disabled) {
+  background: #F2DDE3;
+  border-color: #DCA6B5;
+}
+.am-page .am-btn-manage {
+  background: #F0EDFA;
+  color: #524B80;
+  border-color: #C8C0E5;
+}
+.am-page .am-btn-manage:hover:not(:disabled) {
+  background: #E3DCF5;
+  border-color: #ADA2D3;
+}
+
+/* Directory and role chips */
+.am-page .am-table th {
+  background: #F1EFF8;
+  border-color: #E6E1F0;
+  color: #5D557A;
+}
+.am-page .am-table td {
+  border-bottom-color: #EEEAF4;
+  color: #49445F;
+}
+.am-page .am-table tbody tr:hover { background: #F8F6FD; }
+.am-page .am-employee-name { color: #39354F; }
+.am-page .am-employee-email { color: #827A98; }
+.am-page .am-role-admin { color: #76538F; background: #F2EAF9; }
+.am-page .am-role-manager { color: #566B90; background: #EAF0F9; }
+.am-page .am-role-employee { color: #666379; background: #F0EFF5; }
+/* Keep green for enabled and gray for disabled accounts. */
+
+/* Modals, without changing dimensions or behavior */
+.am-page .am-modal { border-color: #E6E1F0; }
+.am-page .am-modal-header { border-bottom-color: #E6E1F0; }
+.am-page .am-modal-footer {
+  background: #FBFAFE;
+  border-top-color: #E6E1F0;
+}
+.am-page .am-close:hover {
+  background: #F0EDFA;
+  border-color: #C8C0E5;
+  color: #524B80;
+}
+.am-page .am-radio-item:has(input:checked) {
+  background: #F0EDFA;
+  border-color: #C8C0E5;
+  color: #524B80;
+}
+.am-page .am-form-note { background: #FBFAFE; border-color: #E6E1F0; }
+.am-page .am-account-summary { background: #F8F6FC; }

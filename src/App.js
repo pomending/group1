@@ -15,12 +15,17 @@ import HrPage from "./8_hr/HrPage";
 import AccountManagement from "./8_hr/AccountManagement";
 import ConsultationPage from "./9_consultation/01_ConsultationPage";
 import ProductPage from "./10_product/ProductPage";
+import HomeMain from "./11_homepage/HomeMain";
+import HomeTopbar from "./11_homepage/HomeTopbar";
+import HomeProduct from "./11_homepage/HomeProduct";
+import HomeInquiry from "./11_homepage/HomeInquiry";
 import NotFoundPage from "./components/NotFoundPage";
 import Topbar from "./components/Topbar";
 import Sidebar from "./components/Sidebar";
 import { ERPProvider, useERP } from "./context/ERPContext";
 
-const REQUIRE_LOGIN = false;
+
+const REQUIRE_LOGIN = true;
 
 function ERPContent() {
 
@@ -31,6 +36,29 @@ function ERPContent() {
     const { currentUser } = useERP();
 
     const isAuthenticated = Boolean(currentUser);
+
+    // 홈페이지는 ERP 레이아웃 없이 단독으로 표시
+    if (location.pathname === "/homepage") {
+        const page = new URLSearchParams(location.search).get("page");
+    
+        // 선택된 메뉴에 따라 화면을 변경합니다.
+        let content = <HomeMain />;
+    
+        if (page === "products") {
+            content = <HomeProduct />;
+        }
+    
+        if (page === "claim") {
+            content = <HomeInquiry />;
+        }
+    
+        return (
+            <>
+                <HomeTopbar />
+                {content}
+            </>
+        );
+    }
 
     // 로그인 화면은 직접 접근 가능
     if (location.pathname === "/login") {

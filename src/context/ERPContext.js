@@ -1,7 +1,4 @@
-import React, { createContext, useContext, useState } from "react";
-import {
-    quotations as initialQuotations,
-} from "../data/mockData";
+import React, { createContext, useContext } from "react";
 import useProjectData from "./useProjectData";
 import useEmployeeData from "./useEmployeeData";
 import useCustomerData from "./useCustomerData";
@@ -10,7 +7,7 @@ import useAuthData from "./useAuthData";
 import useProductData from "./useProductData";
 import useConsultationData from "./useConsultationData";
 import useTaskData from "./useTaskData";
-import { getProjectManagers } from "../utils/projectUtils";
+import { getProjectManagers, getProjectProgress } from "../utils/projectUtils";
 import { getAvailableEmployees } from "../utils/taskUtils";
 import { validateEmployee } from "../utils/employeeUtils";
 import useQuotationData from "./useQuotationData";
@@ -224,38 +221,7 @@ export function ERPProvider({ children }) {
         });
 
     }
-
-    const deleteProject = (id) => {
-
-        const projectId = Number(id);
-
-        const hasProject = projectData.projects.some(
-            project => Number(project.id) === projectId
-        );
-
-        if (!hasProject) {
-            return {
-                ok: false,
-                message: "삭제할 프로젝트를 찾을 수 없습니다."
-            };
-        }
-
-        const hasTask = taskData.tasks.some(
-            task => Number(task.projectId) === projectId
-        );
-
-        if (hasTask) {
-            return {
-                ok: false,
-                message: "세부 작업이 등록된 프로젝트는 삭제할 수 없습니다."
-            };
-        }
-
-        projectData.deleteProject(projectId);
-
-        return { ok: true };
-    };
-
+    
     const updateProject = (updatedProject) => {
 
         const original = projectData.projects.find(
@@ -296,8 +262,59 @@ export function ERPProvider({ children }) {
             };
         }
 
+        if (
+            original.status !== "완료" &&
+            mergedProject.status === "완료"
+        ) {
+            const progress = getProjectProgress(
+                mergedProject,
+                taskData.tasks
+            );
+        
+            if (progress !== 100) {
+                return {
+                    ok: false,
+                    message: "모든 세부 작업을 완료해야 프로젝트를 완료할 수 있습니다."
+                };
+            }
+        }
+
         return projectData.updateProject(updatedProject);
+
     };
+
+    const deleteProject = (id) => {
+
+        const projectId = Number(id);
+
+        const hasProject = projectData.projects.some(
+            project => Number(project.id) === projectId
+        );
+
+        if (!hasProject) {
+            return {
+                ok: false,
+                message: "삭제할 프로젝트를 찾을 수 없습니다."
+            };
+        }
+
+        const hasTask = taskData.tasks.some(
+            task => Number(task.projectId) === projectId
+        );
+
+        if (hasTask) {
+            return {
+                ok: false,
+                message: "세부 작업이 등록된 프로젝트는 삭제할 수 없습니다."
+            };
+        }
+
+        projectData.deleteProject(projectId);
+
+        return { ok: true };
+    };
+
+    
 
     // 개발/시연용: 모듈별 참조 관계를 함께 원래 상태로 되돌린다.
     // 개별 resetEmployees의 참조 제한을 거치면 전체 초기화가 막힐 수 있어
@@ -333,8 +350,8 @@ export function ERPProvider({ children }) {
             deleteEmployee,
 
             addProject,
-            deleteProject,
             updateProject,
+            deleteProject,
 
             resetAllData,
 

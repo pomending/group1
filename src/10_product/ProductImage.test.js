@@ -10,6 +10,23 @@ beforeAll(() => productImages.push(
 ));
 afterAll(() => { productImages.length = 0; });
 
+test("이미지 적용 저장에 실패하면 기존 이미지와 선택창을 유지하고 재시도할 수 있다", () => {
+  const product = { id: 7103, productName: "적용 실패", productImageUrl: "/keep.jpg" };
+  render(<ProductImage product={product} />);
+  fireEvent.click(screen.getByRole("button", { name: "이미지 변경" }));
+  fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "10-logo-sticker" }));
+  const write = jest.spyOn(Storage.prototype, "setItem").mockImplementation(() => { throw new Error("quota"); });
+  try {
+    fireEvent.click(screen.getByRole("button", { name: "적용", exact: true }));
+    expect(screen.getByRole("img", { name: "적용 실패 상품 이미지" })).toHaveAttribute("src", "/keep.jpg");
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    write.mockRestore();
+    fireEvent.click(screen.getByRole("button", { name: "적용", exact: true }));
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(localStorage.getItem("erp_product_image:7103")).toBe("catalog:10-logo-sticker.jpg");
+  } finally { write.mockRestore(); localStorage.removeItem("erp_product_image:7103"); }
+});
+
 test("이미지를 제거하면 기본 주소도 숨기고 재진입 후에도 제거 상태를 유지한다", () => {
   const product = { id: 7100, productName: "제거 상품", productImageUrl: "/default.jpg" };
   const view = render(<ProductImage product={product} />);

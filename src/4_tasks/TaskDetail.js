@@ -80,6 +80,17 @@ function TaskDetail() {
         setProgress("대기중");
     };
 
+    const editingTask = tasks.find(t => t.id === editingTaskId)
+
+    const pastEmployee = employees.find(e => e.id === editingTask?.employeeId)
+
+    const keepPastEmployee =
+        editingTask?.progress === "완료" &&
+        progress === "완료" &&
+        pastEmployee &&
+        editingTask.taskStatus === taskStatus &&
+        Number(editingTask.projectId) === Number(selectedProjectId) &&
+        !availableEmployees.some(e => e.id === pastEmployee.id);
 
     // 작업 등록 및 수정 함수
     const handleSubmit = () => {
@@ -124,7 +135,7 @@ function TaskDetail() {
         }
 
         alert("작업이 삭제되었습니다.");
-        
+
     };
 
     // 작업 수정 팝업 열기
@@ -299,7 +310,9 @@ function TaskDetail() {
                                     }}
                                 >
                                     <option value="">담당자를 선택하세요</option>
-
+                                    {keepPastEmployee && (
+                                        <option key={pastEmployee.id} value={pastEmployee.id}>{pastEmployee.name} ({pastEmployee.status} · 기존 담당자)</option>
+                                    )}
                                     {availableEmployees.map((employee) => (
                                         <option key={employee.id} value={employee.id}>
                                             {employee.name}
@@ -495,9 +508,6 @@ function TaskDetail() {
             )}
 
         </div>
-
-
-
 
     );
 }

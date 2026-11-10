@@ -359,3 +359,94 @@
         grid-row: 3 / span 2;
     }
 }
+
+/* =====================================================
+   MODU GOODS ERP — Dashboard Mist Lavender theme
+   기존 그리드·달력·반응형 기능을 덮어쓰지 않는 색상 오버라이드
+   ===================================================== */
+.dashboard {
+    background-color: #F5F4FA;
+    color: #39354F;
+}
+.dashboard h1,
+.dashboard .dashboard-card h3 {
+    color: #39354F;
+}
+.dashboard .dashboard-banner {
+    background: #57517F;
+    color: #FFFFFF;
+    border: 1px solid #7770A4;
+    border-radius: 12px;
+}
+.dashboard .dashboard-banner strong {
+    background: #F6E9C7;
+    color: #725220;
+    border-radius: 6px;
+}
+.dashboard .dashboard-banner .notice-banner-link:hover {
+    color: #F6E9C7;
+}
+.dashboard .dashboard-card {
+    background: #FFFFFF;
+    border-color: #E6E1F0;
+    border-radius: 14px;
+    box-shadow: 0 3px 12px rgba(65, 55, 95, 0.035);
+}
+.dashboard .dashboard-card h3 {
+    border-bottom-color: #E6E1F0;
+}
+.dashboard .dashboard-card p {
+    color: #625B78;
+    border-bottom-color: #EEEAF4;
+}
+.dashboard .dashboard-project-cover:focus-visible {
+    outline-color: #68619A;
+}
+.dashboard .dashboard-project-card .dashboard-project-link:hover,
+.dashboard .dashboard-community-heading:hover,
+.dashboard .dashboard-post:hover,
+.dashboard .dashboard-right .today-item:hover {
+    background: #F8F6FD;
+}
+.dashboard .dashboard-post {
+    border-bottom-color: #EEEAF4;
+}
+.dashboard .dashboard-post > .dashboard-post-link,
+.dashboard .dashboard-post-title {
+    color: #39354F;
+}
+.dashboard .dashboard-post-writer,
+.dashboard .dashboard-post-date {
+    color: #827A98;
+}
+.dashboard .dashboard-right .schedule-card {
+    background: #FBFAFE;
+    border-color: #E6E1F0;
+}
+.dashboard .dashboard-right .today-weekdays span,
+.dashboard .dashboard-right .today-more,
+.dashboard .dashboard-right .today-time {
+    color: #827A98;
+}
+.dashboard .dashboard-right .today-day {
+    background: #FFFFFF;
+    border-color: #E6E1F0;
+}
+.dashboard .dashboard-right .today-date {
+    color: #39354F;
+}
+.dashboard .dashboard-right .today-day.today-current {
+    background: #F0EDFA;
+    border-color: #BDB3DD;
+}
+.dashboard .dashboard-right .today-project {
+    background: #E9E4F8;
+    color: #524B80;
+}
+.dashboard .dashboard-right .today-title,
+.dashboard .dashboard-right .today-item {
+    border-color: #E6E1F0;
+}
+.dashboard .dashboard-right .today-empty {
+    color: #827A98;
+}

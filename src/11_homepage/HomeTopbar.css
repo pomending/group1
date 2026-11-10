@@ -1,0 +1,128 @@
+
+/* 고객 홈페이지 상단바 */
+.home-topbar {
+    background: #faf5eb;
+    color: #29231e;
+    border-bottom: 2px solid #29231e;
+    font-family: "Pretendard", "Noto Sans KR", Arial, sans-serif;
+}
+.home-topbar * { box-sizing: border-box; }
+
+/* 로고와 마스터 버튼 */
+.home-topbar-inner {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 20px;
+    max-width: 1160px;
+    min-height: 94px;
+    margin: 0 auto;
+    padding: 18px 24px;
+}
+.home-topbar-brand { display: flex; align-items: center; gap: 14px; }
+.home-topbar-logo {
+    width: 56px;
+    height: 56px;
+    border: 2px solid #29231e;
+    background: #ff8258;
+    font-size: 27px;
+    cursor: pointer;
+}
+.home-topbar-name { display: flex; flex-direction: column; gap: 4px; }
+.home-topbar-name strong { font-size: 25px; font-weight: 900; }
+.home-topbar-name span {
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 1.5px;
+}
+.home-topbar-right { display: flex; align-items: center; gap: 10px; }
+.home-customer-label { color: #655c54; font-size: 13px; }
+.home-master-dashboard, .home-master-exit {
+    padding: 11px 16px;
+    border: 2px solid #29231e;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+}
+.home-master-dashboard { background: #29231e; color: #fff; }
+.home-master-exit { background: transparent; color: #29231e; }
+
+/* 상단 메뉴 */
+.home-topbar-nav { border-top: 1px solid #e0d2be; }
+.home-topbar-menu {
+    display: flex;
+    gap: 8px;
+    max-width: 1160px;
+    margin: 0 auto;
+    padding: 0 24px;
+}
+.home-menu-button {
+    padding: 17px 22px;
+    border: 0;
+    border-bottom: 3px solid transparent;
+    background: transparent;
+    color: #655c54;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+}
+.home-menu-button.active {
+    color: #e55e37;
+    border-bottom-color: #e55e37;
+}
+
+/* 마스터 번호 입력창 */
+.home-master-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(39, 35, 31, 0.55);
+}
+.home-master-dialog {
+    width: 400px;
+    padding: 30px;
+    border: 2px solid #29231e;
+    background: #fffaf1;
+    box-shadow: 10px 10px 0 #e55e37;
+}
+.home-master-dialog h2 { margin: 0 0 12px; font-size: 23px; }
+.home-master-dialog p {
+    margin: 0 0 20px;
+    color: #655c54;
+    font-size: 14px;
+    line-height: 1.7;
+}
+.home-master-dialog input {
+    width: 100%;
+    padding: 14px;
+    border: 2px solid #cfbfae;
+    background: #fff;
+    color: #29231e;
+    font-size: 15px;
+}
+.home-master-dialog input:focus { outline: none; border-color: #e55e37; }
+.home-master-dialog .home-master-error {
+    margin: 10px 0 0;
+    color: #c43724;
+    font-size: 13px;
+}
+.home-master-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 24px;
+}
+.home-master-actions button {
+    padding: 11px 22px;
+    border: 2px solid #29231e;
+    background: transparent;
+    color: #29231e;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+}
+.home-master-actions button[type="submit"] { background: #29231e; color: #fff; }
+.home-master-actions button:disabled { opacity: 0.5; cursor: not-allowed; }

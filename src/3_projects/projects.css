@@ -1716,3 +1716,124 @@
   border-color: #7565d8;
   box-shadow: 0 0 0 3px rgba(117, 101, 216, 0.12);
 }
+
+/* ===========================================================
+   MODU GOODS ERP — Project Management / Mist Lavender
+   기존 projects.css 모든 기능과 반응형/인쇄 규칙을 유지하는 테마 덮어쓰기
+   =========================================================== */
+
+/* 색상 토큰: 목록·등록·상세·수정 공통 */
+.pj-page {
+  --pj-accent: #68619A;
+  --pj-accent-hover: #575084;
+  --pj-line: #E6E1F0;
+  --pj-muted: #827A98;
+  background: #F5F4FA;
+  color: #39354F;
+}
+
+/* 공통 카드/글자 */
+.pj-page .pj-card {
+  background: #FFFFFF;
+  border-color: #E6E1F0;
+  box-shadow: 0 3px 12px rgba(65, 55, 95, 0.035);
+}
+.pj-page :is(.pm-heading h2, .pm-card-header h3, .pf-heading h2, .pf-card-header h3,
+  .pd-heading h1, .pd-card-header h2, .pe-heading h1, .pe-card-heading h2) {
+  color: #39354F;
+}
+.pj-page .pj-eyebrow { color: #68619A; }
+.pj-page :is(.pj-subtitle, .pm-heading p, .pm-project-date) { color: #827A98; }
+
+/* 입력·검색: 공통 톤과 초점 대비 */
+.pj-page :is(.pj-field input, .pj-field select, .pj-field textarea,
+  .pm-search, .pm-select, .pd-status-field select) {
+  border-color: #DDD8EA;
+  background: #FBFAFE;
+  color: #39354F;
+}
+.pj-page :is(.pj-field input, .pj-field select, .pj-field textarea,
+  .pm-search, .pm-select, .pd-status-field select):focus {
+  border-color: #9C91C8;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(156, 145, 200, 0.14);
+}
+
+/* 프로젝트 목록 */
+.pj-page .pm-stats { gap: 14px; }
+.pj-page .pm-stat {
+  background: #FFFFFF;
+  border: 1px solid #E6E1F0;
+  border-radius: 12px;
+  padding: 17px 19px;
+}
+.pj-page .pm-stat-value { color: #524B80; }
+.pj-page .pm-card {
+  background: #FFFFFF;
+  border: 1px solid #E6E1F0;
+  box-shadow: 0 3px 12px rgba(65, 55, 95, 0.035);
+}
+.pj-page .project-list th {
+  background: #F1EFF8;
+  color: #5D557A;
+  border-color: #E6E1F0;
+}
+.pj-page .project-list td { border-color: #EEEAF4; color: #49445F; }
+.pj-page .project-list tbody tr:hover { background: #F8F6FD; }
+.pj-page .pm-view-btn {
+  background: #F0EDFA;
+  border-color: #C8C0E5;
+  color: #524B80;
+}
+.pj-page .pm-view-btn:hover { background: #E3DCF5; }
+.pj-page .pm-status-진행중,
+.pj-page .pd-status-진행중 { background: #F0EDFA; color: #524B80; }
+.pj-page .pm-status-대기,
+.pj-page .pd-status-대기 { background: #F0EFF4; color: #716C80; }
+.pj-page .pm-status-완료,
+.pj-page .pd-status-완료 { background: #E8F4ED; color: #28734E; }
+.pj-page .pm-status-지연,
+.pj-page .pd-status-지연 { background: #F9EBEE; color: #AA4D60; }
+
+/* 등록 화면 및 견적 요약 */
+.pj-page .pf-heading-tag,
+.pj-page .pe-project-number { background: #F0EDFA; color: #524B80; }
+.pj-page :is(.pf-quotation-preview, .pd-quotation, .pd-history-item) {
+  background: #FBFAFE;
+  border-color: #E6E1F0;
+}
+.pj-page :is(.pj-quote-table th, .pf-quotation-table th, .pd-quotation-table th) {
+  background: #F1EFF8;
+  color: #5D557A;
+}
+.pj-page :is(.pj-quote-total strong, .pd-quotation-total strong, .pj-quotation-final strong) {
+  color: #524B80;
+}
+.pj-page .pd-history-item > strong { color: #524B80; }
+.pj-page .pd-current-status { background: #F0EDFA; color: #524B80; }
+.pj-page .pd-description p { background: #FBFAFE; color: #625B78; }
+
+/* 버튼: 의미별 색상 유지 */
+.pj-page .pj-primary { background: #68619A; border-color: #68619A; color: #FFFFFF; }
+.pj-page .pj-primary:hover { background: #575084; border-color: #575084; }
+.pj-page :is(.pf-btn-cancel, .pe-cancel, .pm-reset-btn) {
+  background: #F0EDFA;
+  border-color: #C8C0E5;
+  color: #524B80;
+}
+.pj-page :is(.pf-btn-cancel, .pe-cancel, .pm-reset-btn):hover {
+  background: #E3DCF5;
+  border-color: #ADA2D3;
+  color: #524B80;
+}
+.pj-page .pd-delete-btn { background: #F8EDEF; color: #A34E64; border-color: #E8C7CF; }
+.pj-page .pd-delete-btn:hover { background: #F2DDE3; border-color: #DCA6B5; }
+.pj-page .pd-print-btn { color: #524B80; border-color: #C8C0E5; background: #FFFFFF; }
+.pj-page .pd-print-btn:hover { background: #F0EDFA; }
+
+/* 인쇄는 원본 규칙을 유지하고, 아래에서 화면 테마만 인쇄 중 제외 */
+@media print {
+  .pj-page { background: #FFFFFF; }
+  .pj-page .pj-card,
+  .pj-page .pm-card { box-shadow: none; }
+}

@@ -9,20 +9,54 @@
 
 import { getScheduleProjectId, isValidScheduleDate, normalizeAttendees, typeColors } from "./scheduleData";
 
+// 프로젝트에서 변경을 금지한 견적·고객 번호로 같은 ID의 다른 프로젝트를 구분합니다.
+// 과거 자료에 두 번호가 없으면 기존 연결 방식을 유지합니다.
+function getProjectReference(project) {
+  if (project.quotationId == null || project.customerId == null) return "";
+  return String(project.quotationId) + ":" + String(project.customerId);
+}
+
+// 저장 자료는 고치지 않고, 사용자가 확인해야 할 연결만 안내합니다.
+// ID 없는 자유 입력 프로젝트명은 허용하되 동명 후보가 여러 개면 구분이 필요합니다.
+export function getScheduleProjectWarning(item, projects) {
+  if (item.scope === "개인 일정용" || !item.project) return "";
+  const id = getScheduleProjectId(item);
+  if (id === null) {
+    if (projects.filter(project => project.name === item.project.trim()).length > 1) {
+      return "같은 이름의 프로젝트가 여러 개여서 연결할 수 없습니다. 프로젝트명을 구분한 뒤 다시 선택해 주세요.";
+    }
+    return "";
+  }
+  const linked = projects.find(project => String(project.id) === String(id));
+  if (!linked) return "연결했던 프로젝트가 없습니다. 프로젝트를 다시 선택하거나 연결을 해제해 주세요.";
+  if (item.projectReference && item.projectReference !== getProjectReference(linked)) {
+    return "프로젝트 번호는 같지만 견적·고객 정보가 달라 연결하지 않았습니다. 프로젝트를 다시 확인해 주세요.";
+  }
+  return "";
+}
+
 // 기존 ID를 이름보다 우선합니다. 사용자가 연결을 바꾸면 Manager가 ID를 비워 구분합니다.
 export function resolveScheduleProject(form, projects) {
   const project = form.project.trim();
   const projectId = getScheduleProjectId(form);
+  const projectReference = typeof form.projectReference === "string" ? form.projectReference : "";
   if (!project || form.scope === "개인 일정용") return { project: "", projectId: null };
   let linked;
   if (projectId !== null) {
     linked = projects.find(entry => String(entry.id) === String(projectId));
   } else {
-    linked = projects.find(entry => entry.name === project);
+    // 동명 프로젝트가 여러 개면 첫 항목을 임의로 선택하지 않습니다.
+    const candidates = projects.filter(entry => entry.name === project);
+    if (candidates.length === 1) linked = candidates[0];
   }
   // 삭제된 프로젝트의 ID를 동명 프로젝트로 자동 재연결하지 않고 기존 정보를 보존합니다.
   if (!linked) return { project, projectId };
-  return { project: linked.name, projectId: projectId ?? linked.id };
+  // 초기화 뒤 ID가 재사용되었어도 이전 일정의 연결 정보를 새 값으로 바꾸지 않습니다.
+  if (projectId !== null && projectReference && projectReference !== getProjectReference(linked)) {
+    return { project, projectId, projectReference };
+  }
+  const reference = getProjectReference(linked);
+  return { project: linked.name, projectId: projectId ?? linked.id, ...(reference ? { projectReference: reference } : {}) };
 }
 
 // 프로젝트의 시작일과 마감일을 저장 일정과 분리한 읽기 전용 달력 항목으로 만듭니다.
@@ -65,14 +99,19 @@ export function createProjectMilestones(projects, employees = []) {
 }
 
 // 일정의 프로젝트 ID를 우선 사용하고, ID가 없는 기존 일정은 이름으로 연결합니다.
-export function getProjectScheduleSummaries(project, items) {
+export function getProjectScheduleSummaries(project, items, projects = [project]) {
   const summaries = [];
   for (const item of items) {
+    // 과거 저장값에 연결 정보가 남아 있어도 개인 일정은 프로젝트에 전달하지 않습니다.
+    if (item.scope === "개인 일정용") continue;
     // ID가 있으면 ID로 비교합니다. 예전 일정처럼 ID가 없을 때만 이름을 비교합니다.
     let matchesProject = item.project === project.name;
     if (item.projectId != null) {
       matchesProject = String(item.projectId) === String(project.id);
+    } else if (projects.filter(entry => entry.name === item.project).length !== 1) {
+      continue;
     }
+    if (item.projectReference && item.projectReference !== getProjectReference(project)) continue;
     if (!item.project || !matchesProject) continue;
     summaries.push({
       id: item.id,

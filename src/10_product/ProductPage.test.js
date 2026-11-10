@@ -28,7 +28,7 @@ test("전달 필드는 입력 세 개로 제한하고 원본 메타데이터와 
 test("공통 갱신은 대상 상품의 변경 필드·수정일만 바꾸고 다른 정보와 원본을 유지한다", () => {
   const source = [
     { id: 1, productName: "원본", productPrice: 8000, productStatus: "판매 중", productCreatedAt: "2026-11-01", extra: "유지" },
-    { id: 2, productName: "다른 상품", productPrice: 900 },
+    { id: 2, productName: "다른 상품", productPrice: 900, productStatus: "판매 중" },
   ];
   const before = JSON.stringify(source);
   initialProducts = source;

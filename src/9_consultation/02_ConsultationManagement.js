@@ -1,7 +1,13 @@
 import React, { useState } from "react";
 import "./02_ConsultationManagement.css";
 import { useERP } from "../context/ERPContext";
-import { formatPhone, validatePhone, validateCustomer } from "../utils/customerUtils";
+import { validateCustomer } from "../utils/customerUtils";
+import {
+    validateCompanyName, validateConsultation, validateCustomerManager, validateDuplicateConsultation,
+    validateEmail, validateMemo, validatePhone, formatPhone
+} from "../utils/consultationUtils";
+
+
 function ConsultationManagement() {
     //문의목록을 관리할 usestate
     const { consultations, addConsultation, updateConsultation,
@@ -20,6 +26,11 @@ function ConsultationManagement() {
     //버튼을눌러 확정된 검색어를 저장하는 usestate
     const [searchResult, setSearchResult] = useState("");
 
+    //선택창에서 고른 검색기준 
+    const [searchType, setSearchType] = useState("companyName")
+
+    //버튼을 눌러 확정한 검색기준
+    const [searchTypeResult, setSearchTypeResult] = useState("companyName")
 
     const editConsultation = () => {
 
@@ -33,12 +44,28 @@ function ConsultationManagement() {
 
     const saveConsultation = () => {
 
-        if (!validateCustomer(editData)) {
+        if (!validateConsultation(editData)) {
             return;
         }
 
 
         if (!validatePhone(editData.phone)) {
+            return;
+        }
+
+        if (!validateEmail(editData.email)) {
+            return;
+        }
+        if (!validateCompanyName(editData.companyName)) {
+            return;
+        }
+        if (!validateCustomerManager(editData.customerManager)) {
+            return;
+        }
+        if (!validateMemo(editData.memo)) {
+            return;
+        }
+        if(!validateDuplicateConsultation(editData,consultations)){
             return;
         }
 
@@ -119,14 +146,31 @@ function ConsultationManagement() {
     const searchConsultation = () => {
 
         setSearchResult(search)
+        setSearchTypeResult(searchType)
+    }
+
+    const resetConsultationSearch = () => {
+        setSearch("");
+        setSearchResult("");
     }
 
     // 업체명 검색어에 일치하는 문의 목록을 필터링
-    const filteredConsultation = consultations.filter((item) => (item.companyName || "").includes(searchResult))
+    const filteredConsultation = consultations.filter((item) => {
+        if (searchTypeResult === "companyName") {
+            return (item.companyName || "").includes(searchResult)
+        } else {
+            const employeeName = employees.find(
+                (employee) => employee.id === item.employeeId
+            )?.name || "";
+            return employeeName.includes(searchResult);
+        }
+    })
+
+
 
     return (
         <div className="consultation-page">
-            <h2>문의 관리</h2>
+            <h2>상담 관리</h2>
             <div className="consultation-box">
                 <h6>고객 문의 접수 및 처리 현황 관리</h6>
 
@@ -219,15 +263,31 @@ function ConsultationManagement() {
 
             <div className="consultation-box">
                 <h4>문의 목록</h4>
+                <select
+                    value={searchType}
+                    onChange={((e) => setSearchType(e.target.value))}>
+                    <option value="companyName">고객사명</option>
+                    <option value="employeeName">담당자명</option>
+                </select>
                 <input type="text"
-                    placeholder="업체명 검색"
                     value={search}
                     onChange={(e) => setSearch(e.target.value)} />
                 <button
                     onClick={searchConsultation}>검색</button>
+                <button
+                    onClick={resetConsultationSearch}>전체목록으로</button>
             </div>
 
             <div>
+                <div className="consultation-table-actions">
+                    <button
+                        disabled={checkIds.length !== 1}
+                        onClick={editConsultation}>상세보기</button>
+                    <button
+                        disabled={checkIds.length === 0}
+                        onClick={deleteConsultation}>삭제</button>
+
+                </div>
                 <table>
                     <thead>
                         <tr>
@@ -265,7 +325,9 @@ function ConsultationManagement() {
                                     <td>{item.customerManager}</td>
                                     <td>{item.phone}</td>
                                     <td>{item.email}</td>
-                                    <td>{employees.find((employee) => employee.id === item.employeeId)?.name}</td>
+                                    <td>
+                                        {employees.find((employee) => employee.id === item.employeeId)?.name || "미배정"}
+                                    </td>
                                     <td>{item.status}</td>
 
                                 </tr>
@@ -276,16 +338,10 @@ function ConsultationManagement() {
                             </tr>
                         )}
                     </tbody>
+
+
                 </table>
-                <div>
-                    <button
-                        disabled={checkIds.length !== 1}
-                        onClick={editConsultation}>상세보기</button>
-                    <button
-                        disabled={checkIds.length === 0}
-                        onClick={deleteConsultation}>삭제</button>
-                    <button>견적 관리 이관</button>
-                </div>
+
             </div>
         </div>
     )

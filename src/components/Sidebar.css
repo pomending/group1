@@ -1,11 +1,10 @@
-
 /* Sidebar.css */
 
 .erp-sidebar {
-    --erp-sidebar-bg: #293044;
-    --erp-sidebar-text: #c6ccda;
-    --erp-sidebar-active: #46506a;
-    --erp-sidebar-accent: #a99bf7;
+    --erp-sidebar-bg: var(--erp-lavender);
+    --erp-sidebar-text: #565371;
+    --erp-sidebar-active: var(--erp-lavender-light);
+    --erp-sidebar-accent: #68619A;
 
     display: flex;
     flex-direction: column;
@@ -38,13 +37,13 @@
     width: 36px;
     height: 36px;
     border-radius: 10px;
-    background: #7565d8;
-    color: white;
+    background: #BBB3DC;
+    color: #393B59;
     font-size: 18px;
     font-weight: 700;
 }
 
-.erp-sidebar-brand > div:last-child {
+.erp-sidebar-brand>div:last-child {
     display: flex;
     flex-direction: column;
     gap: 2px;
@@ -52,13 +51,13 @@
 }
 
 .erp-sidebar-brand strong {
-    color: white;
+    color: #393B59;
     font-size: 15px;
     white-space: nowrap;
 }
 
 .erp-sidebar-brand span {
-    color: #9ca5ba;
+    color: #686A86;
     font-size: 10px;
     white-space: nowrap;
 }
@@ -96,18 +95,18 @@
 }
 
 .erp-sidebar-link:hover {
-    background: #394258;
-    color: white;
+    background: #EAE6F6;
+    color: #474460;
 }
 
 .erp-sidebar-link.active {
-    background: var(--erp-sidebar-active);
-    color: white;
+    background: #F0EDFA;
+    color: #524B80;
     font-weight: 600;
 }
 
 .erp-sidebar-link.active .erp-sidebar-icon {
-    color: var(--erp-sidebar-accent);
+    color: #68619A;
 }
 
 .erp-sidebar-icon {
@@ -116,7 +115,7 @@
     justify-content: center;
     flex-shrink: 0;
     width: 19px;
-    color: #aeb7ca;
+    color: #68619A;
     font-size: 18px;
 }
 
@@ -130,17 +129,19 @@
 .erp-sidebar-reset {
     width: 100%;
     padding: 10px 12px;
-    border: 1px solid #5b647a;
-    border-radius: 8px;
-    background: transparent;
-    color: var(--erp-sidebar-text);
+    border: 1px solid #B9B3D5;
+    border-radius: 9px;
+    background: #F0EDFA;
+    color: #524B80;
     font: inherit;
+    font-weight: 600;
     cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
 }
 
 .erp-sidebar-reset:hover {
-    background: #394258;
-    color: white;
+    background: #E6E0F5;
+    border-color: #9388C3;
 }
 
 .erp-sidebar-reset:focus-visible {
@@ -173,7 +174,9 @@
     .erp-sidebar-section,
     .erp-sidebar-footer {
         display: none;
+
     }
+
 
     .erp-sidebar-actions {
         margin-top: 12px;
