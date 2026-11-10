@@ -60,6 +60,7 @@ export default function ScheduleManager() {
   // HR 직원 목록으로 일정 담당자를 선택합니다. 부서 제한 없이 재직 직원만 새로 선택할 수 있습니다.
   // 참석자·담당자별 일정표의 이름 기반 팀원 목록은 기존대로 유지합니다.
   const employees = erp.employees || [];
+  const updateProject = erp.updateProject;
 
   // 월간 달력의 기준 월과 현재 선택 날짜입니다.
   const [month, setMonth] = useState(() => {
@@ -79,6 +80,7 @@ export default function ScheduleManager() {
 
   const {
     loadedSchedules,
+    savedItems,
     items,
     setItems,
     editingVersion,
