@@ -19,6 +19,7 @@ function CrmPage() {
 
             <Route path="edit" element={<CustomerEdit/>}/>
             {/* /crm/edit 주소로 접속하면 고객정보를 수정하는 화면 표시 */}
+            <Route path="*" element={<NotFoundPage />} />
         </Routes>
     )
 }

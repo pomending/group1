@@ -15,6 +15,7 @@ function QuotationPage() {
                 <Route index element={<QuotationList/>} /> {/* index는 해당 메뉴의 첫화면을 보여준다 */}
                 <Route path="create" element={<QuotationCreate/>} />
                 <Route path="detail/:id" element={<QuotationDetail/>} />
+                <Route path="*" element={<NotFoundPage />} />
             </Routes>
         
     )
