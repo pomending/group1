@@ -14,26 +14,26 @@ function QuotationDetail() {
     const { id } = useParams();
     const navi = useNavigate();
 
-    const { 
-        quotations, 
+    const {
+        quotations,
         updateQuotation,
         deleteQuotation,
-        customers, 
-        products, 
-        employees 
+        customers,
+        products,
+        employees
     } = useERP();
 
 
-    
+
     // URL의 견적 ID와 일치하는 견적서 찾기
     const quotation = quotations.find(
         q => q.id === Number(id)
     );
-    
+
     if (!quotation) {
         return <div>견적서를 찾을 수 없습니다.</div>;
     }
-    
+
     //견적 금액 계산
     const supplyAmount = Number(quotation.quantity || 0)
         * Number(quotation.unitPrice || 0);
@@ -45,45 +45,66 @@ function QuotationDetail() {
         e => e.id === quotation.employeeId
     );
 
+    //거래처 찾는 코드
+    const customer = customers.find(
+        c => c.id === quotation.customerId
+    )
+
     // 승인 완료 처리
     const handleApprove = () => {
-        if (!window.confirm("이 견적서를 승인하시겠습니까?")) return;
-
-        updateQuotation({
+        const result = updateQuotation({
             id: quotation.id,
             status: "승인 완료"
         })
+
+        if (!result.ok) {
+            alert(result.message)
+            return;
+        }
 
         alert("견적서가 승인 완료되었습니다.");
     };
 
     // 반려 처리
     const handleReject = () => {
-        if (!window.confirm("이 견적서를 반려하시겠습니까?")) return;
-
-        updateQuotation({
+        const result = updateQuotation({
             id: quotation.id,
             status: "반려"
         })
+
+        if (!result.ok) {
+            alert(result.message)
+            return;
+        }
 
         alert("견적서가 반려되었습니다.");
     };
 
     //재검토 요청 처리
     const handleReview = () => {
-        if (!window.confirm("이 견적서를 다시 승인 대기 상태로 변경하시겠습니까?")) {
-            return;
-        }
 
-        updateQuotation({
+        const result = updateQuotation({
             id: quotation.id,
             status: "승인 대기"
         })
+
+        if (!result.ok) {
+            alert(result.message)
+            return
+        }
+
         alert("재검토 요청이 완료되었습니다.")
     }
 
     //견적서 수정
     const handleEdit = () => {
+
+        if (quotation.status === "승인 완료" ||
+            quotation.status === "반려"
+        ) {
+            alert("수정할 수 없는 견적서입니다.")
+            return;
+        }
 
         navi("/quotation/create", {
             state: {
@@ -95,7 +116,13 @@ function QuotationDetail() {
 
     //견적서 삭제
     const handleDelete = () => {
-        if (!window.confirm("이 견적서를 삭제하시겠습니까?")) {
+
+        if(quotation.status === "승인 완료"){
+            alert("승인 완료된 견적서는 삭제할 수 없습니다.")
+            return;
+        }
+
+        if (!window.confirm("이 견적서를 삭제하시겠습니까?\n삭제한 견적서는 복구할 수 없습니다.")) {
             return;
         }
 
@@ -129,20 +156,12 @@ function QuotationDetail() {
 
                         <div className="detail-item">
                             <span>거래처 담당자</span>
-                            <strong>
-                                {customers.find(
-                                    c => c.id === quotation.customerId
-                                )?.customerManager || "-"}
-                            </strong>
+                            <strong>{customer?.customerManager || "-"}</strong>
                         </div>
 
                         <div className="detail-item">
                             <span>거래처 연락처</span>
-                            <strong>
-                                {customers.find(
-                                    c => c.id === quotation.customerId
-                                )?.phone || "-"}
-                            </strong>
+                            <strong>{customer?.phone || "-"}</strong>
                         </div>
 
                         <div className="detail-item">
@@ -208,8 +227,8 @@ function QuotationDetail() {
                 <section className="detail-status">
                     <h2>진행 상태</h2>
                     <span className={`detail-status-badge ${quotation.status === "승인 완료" ? "approved" :
-                            quotation.status === "승인 대기" ? "pending" :
-                                quotation.status === "반려" ? "rejected" : "temporary"
+                        quotation.status === "승인 대기" ? "pending" :
+                            quotation.status === "반려" ? "rejected" : "temporary"
                         }`}>
                         {quotation.status}
                     </span>
@@ -251,14 +270,18 @@ function QuotationDetail() {
                 </div>
 
                 <div className="detail-manage">
-                    <button className="edit-btn" onClick={handleEdit}>
-                        수정
-                    </button>
+                    {(quotation.status !== "승인 완료" &&
+                        quotation.status !== "반려") && (
+                            <button className="edit-btn" onClick={handleEdit}>
+                                수정
+                            </button>
+                        )}
 
-                    <button className="delete-btn" onClick={handleDelete}>
-                        삭제
-                    </button>
-
+                    {quotation.status !== "승인 완료" && (
+                        <button className="delete-btn" onClick={handleDelete}>
+                            삭제
+                        </button>
+                    )}
                     <button className="back-btn" onClick={() => navi("/quotation")}>
                         목록으로
                     </button>

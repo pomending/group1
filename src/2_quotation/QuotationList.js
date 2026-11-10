@@ -5,9 +5,14 @@ import { QUOTATION_STATUS } from "../utils/quotationUtils";
 import { formatCustomerName, formatProductName, formatQuotationId } from "../utils/formatUtils";
 import { useERP } from "../context/ERPContext";
 
-function QuotationList({ quotations }) {
+function QuotationList() {
 
-    const { customers, products, setQuotations } = useERP()
+    const { 
+        quotations,
+        customers, 
+        products, 
+        deleteQuotation
+    } = useERP()
 
     const navi = useNavigate();
     const location = useLocation();
@@ -160,9 +165,7 @@ function QuotationList({ quotations }) {
 
                                             <button onClick={() => {
                                                 if (window.confirm("이 임시 저장 견적서를 삭제하시겠습니까?")) {
-                                                    setQuotations(
-                                                        quotations.filter(item => item.id !== q.id)
-                                                    )
+                                                    deleteQuotation(q.id);
                                                 }
                                             }}>
                                                 삭제
