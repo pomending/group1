@@ -1,28 +1,30 @@
 
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Routes, Route, useNavigate } from "react-router-dom";
+import TaskDetail from "./TaskDetail";
 import { useERP } from "../context/ERPContext";
 
 import "./TaskPage.css";
 import { TASK_PROGRESS, TASK_TYPES } from "../utils/taskUtils";
 import { formatProjectId } from "../utils/formatUtils";
+import NotFoundPage from "../components/NotFoundPage";
 
-function TaskPage() {
+function TaskList() {
 
-    // 상태 필터
-    const [statusFilter, setStatusFilter] = useState("전체");
+    // 작업 단계 필터
+    const [ taskTypeFilter, setTaskTypeFilter ] = useState("전체");
 
     const { tasks, projects, employees } = useERP();
 
     const navigate = useNavigate();
 
-    // 선택한 상태에 따라 작업 목록 필터링
+    // 선택한 작업 단계에 따라 작업 목록 필터링
     const filteredTasks = tasks.filter((task) => {
-        if (statusFilter === "전체") {
+        if (taskTypeFilter === "전체") {
             return true;
         }
 
-        return task.taskStatus === statusFilter;
+        return task.taskType === taskTypeFilter;
     });
 
     return (
@@ -51,7 +53,7 @@ function TaskPage() {
                 </div>
 
                 {TASK_PROGRESS.map(progress => (
-                    <div className="summary-card">
+                    <div className="summary-card" key={progress}>
                     <span>{progress}</span>
                     <strong>{tasks.filter(t=>t.progress === progress).length}</strong>
                 </div>
@@ -66,12 +68,12 @@ function TaskPage() {
                     <h3>작업 목록</h3>
 
                     <select
-                        value={statusFilter}
+                        value={taskTypeFilter}
                         onChange={(e) =>
-                            setStatusFilter(e.target.value)
+                            setTaskTypeFilter(e.target.value)
                         }
                     >
-                        <option value="전체">전체 상태</option>
+                        <option value="전체">전체 단계</option>
                         {TASK_TYPES.map(status => (
                             <option key={status} value={status}>{status}</option>
                         ))}
@@ -100,7 +102,7 @@ function TaskPage() {
                                 );
 
                                 const employee = employees.find(
-                                    (emp) => emp.id === Number(task.employeeId)
+                                    (emp) => emp.id === task.employeeId
                                 );
 
                                 return (
@@ -111,7 +113,7 @@ function TaskPage() {
                                         <td>{formatProjectId(task.projectId)}</td>
                                         <td>{project?.name ?? "삭제된 프로젝트"}</td>
 
-                                        <td>{task.taskStatus}</td>
+                                        <td>{task.taskType}</td>
 
                                         <td>
                                             <span
@@ -127,7 +129,6 @@ function TaskPage() {
                                         </td>
 
                                         <td>{employee?.name ?? "담당자 없음"}</td>
-
 
                                     </tr>
 
@@ -145,18 +146,22 @@ function TaskPage() {
                         )}
                     </tbody>
 
-
-
                 </table>
 
             </div>
 
-
         </div>
 
+    );
+}
 
-
-
+function TaskPage() {
+    return (
+        <Routes>
+            <Route index element={<TaskList />} />
+            <Route path="detail" element={<TaskDetail />} />
+            <Route path="*" element={<NotFoundPage />} />
+        </Routes>
     );
 }
 

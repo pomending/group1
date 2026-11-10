@@ -105,6 +105,13 @@ export function useProjectData(employees) {
 
     const updateProject = (updatedProject) => {
 
+        if (!Number.isSafeInteger(updatedProject.id) || updatedProject.id <= 0) {
+            return {
+                ok: false,
+                message: "올바르지 않은 프로젝트 ID입니다."
+            };
+        }
+
         const original = projects.find(p => p.id === updatedProject.id)
 
         if (!original) {
@@ -170,11 +177,29 @@ export function useProjectData(employees) {
     }
 
     const deleteProject = (id) => {
+
+        if (!Number.isSafeInteger(id) || id <= 0) {
+            return {
+                ok: false,
+                message: "올바르지 않은 프로젝트 ID입니다."
+            };
+        }
+
+        if (!projects.some(project => project.id === id)) {
+            return {
+                ok: false,
+                message: "삭제할 프로젝트를 찾을 수 없습니다."
+            };
+        }
+
         setProjects(prev =>
             prev.filter(project => project.id !== id))
 
         setProjectHistory(prev =>
             prev.filter(history => history.projectId !== id))
+
+        return { ok: true };
+
     }
 
     

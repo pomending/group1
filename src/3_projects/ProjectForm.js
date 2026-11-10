@@ -28,7 +28,7 @@ function ProjectForm(props) {
 
         const result = addProject({
             name: projectName.trim(),
-            managerId: managerId,
+            managerId: Number(managerId),
             startDate: new Date().toLocaleDateString('sv-SE'),
             completedDate: null,
             description: description.trim(),

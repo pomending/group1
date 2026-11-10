@@ -42,7 +42,7 @@ function ProjectEdit(props) {
         const result = updateProject({
             id: selectedProject.id,
             name: projectName.trim(),
-            managerId,
+            managerId: Number(managerId),
             startDate,
             dueDate,
             description

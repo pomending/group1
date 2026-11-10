@@ -400,7 +400,7 @@ function ProjectDetail(props) {
                                     <tbody>
                                         {projectTasks.map(task => (
                                             <tr key={task.id}>
-                                                <td>{task.taskStatus}</td>
+                                                <td>{task.taskType}</td>
                                                 <td>
                                                     {employees.find(
                                                         emp => emp.id === task.employeeId

@@ -1885,6 +1885,47 @@
   gap: 6px;
   min-width: 0;
 }
+/* 정확한 이름에 일치하는 HR 직원만 입력 아래에서 선택합니다. */
+.sm-assignee-matches {
+  display: grid;
+  gap: 6px;
+  padding: 8px;
+  border: 1px solid var(--sm-border);
+  border-radius: 9px;
+  background: #f8faf9;
+}
+.sm-assignee-match {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  width: 100%;
+  padding: 9px 11px;
+  border: 1px solid var(--sm-border);
+  border-radius: 7px;
+  background: white;
+  color: var(--sm-ink);
+  text-align: left;
+  cursor: pointer;
+}
+.sm-assignee-match:hover,
+.sm-assignee-match:focus-visible {
+  border-color: #8066e8;
+  background: #f4f1ff;
+}
+.sm-assignee-match strong,
+.sm-assignee-selected strong { font-size: 13px; }
+.sm-assignee-match span,
+.sm-assignee-selected span,
+.sm-assignee-selected small { font-size: 11px; color: var(--sm-muted); }
+.sm-assignee-selected {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 9px 11px;
+  border: 1px solid #b7d5c1;
+  border-radius: 8px;
+  background: #f2f8f3;
+}
 /* 배지는 색에만 의존하지 않고 문구와 테두리를 함께 보여 줍니다. */
 .sm-visibility, .sm-status-badge {
   font-size: 11px;

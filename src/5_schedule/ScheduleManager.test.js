@@ -837,8 +837,11 @@ function saveSchedules(schedules) {
 }
 
 function chooseAssignee(name) {
-  const input = screen.getByRole("combobox", { name: "담당자", exact: true });
+  const input = screen.getByRole("textbox", { name: "담당자", exact: true });
   fireEvent.change(input, { target: { value: name } });
+  // 입력만으로는 담당자가 선택되지 않습니다. 같은 이름이 있다면 직원 정보에서 선택합니다.
+  const results = screen.queryByRole("group", { name: "담당자 검색 결과" });
+  if (results) fireEvent.click(within(results).getAllByRole("button")[0]);
 }
 
 function chooseWorkSchedule(category = "업무") {
@@ -982,7 +985,12 @@ test("monthly weekday rules repeat on the chosen ordinal weekday", () => {
 });
 
 beforeEach(() => {
-  useERP.mockReturnValue({ projects: [], employees: [] });
+  useERP.mockReturnValue({ projects: [], employees: [
+    { id: 801, name: "담당자", department: "생산관리팀", position: "사원", status: "재직" },
+    { id: 802, name: "김담당", department: "영업팀", position: "대리", status: "재직" },
+    { id: 803, name: "이언우", department: "경영지원팀", position: "과장", status: "재직" },
+    { id: 804, name: "김신규", department: "물류팀", position: "사원", status: "재직" },
+  ] });
   // 테스트끼리 저장 데이터를 공유하지 않도록 비웁니다.
   // 실제 공휴일 서버 대신 빈 정상 응답을 사용해 인터넷 상태가 결과에 영향을 주지 않게 합니다.
   localStorage.clear();
@@ -1356,7 +1364,7 @@ test("등록 폼은 고유명사 맞춤법 검사를 끄고 이름 입력값은 
   render(<ScheduleManager />);
   fireEvent.click(screen.getByRole("button", { name: "일정 등록", exact: true }));
   chooseWorkSchedule();
-  const name = screen.getByRole("combobox", { name: "담당자" });
+  const name = screen.getByRole("textbox", { name: "담당자" });
   expect(screen.getByRole("form")).toHaveAttribute("spellcheck", "false");
   expect(screen.getByRole("form")).toHaveAttribute("autocorrect", "off");
   chooseAssignee("이언우");
@@ -1566,7 +1574,7 @@ test("기존 일정의 임의 담당자와 참석자 이름을 편집해도 자�
   render(<ScheduleManager />);
   const selected = screen.getByRole("region", { name: "선택한 날짜 일정" });
   fireEvent.click(within(selected).getByRole("button", { name: "검증용 마감 일정 수정" }));
-  expect(screen.getByRole("combobox", { name: "담당자", exact: true })).toHaveValue("임의 이름");
+  expect(screen.getByRole("textbox", { name: "담당자", exact: true })).toHaveValue("임의 이름");
   expect(screen.getByRole("checkbox", { name: "외부 참석자" })).toBeChecked();
   fireEvent.click(screen.getByRole("button", { name: "수정 저장" }));
   expect(JSON.parse(localStorage.getItem(storageKey))[0].person).toBe("임의 이름");
@@ -1752,13 +1760,15 @@ test("담당자 새 이름은 입력만으로 등록되지 않고 일정 저장 
   fireEvent.click(screen.getByRole("button", { name: "일정 등록", exact: true }));
   chooseWorkSchedule();
   fireEvent.change(screen.getByLabelText("일정 이름"), { target: { value: "새 담당자 작업" } });
-  const assignee = screen.getByRole("combobox", { name: "담당자", exact: true });
+  const assignee = screen.getByRole("textbox", { name: "담당자", exact: true });
   fireEvent.change(assignee, { target: { value: "  김신규  " } });
   expect(JSON.parse(localStorage.getItem("made-mate-schedule-team"))).toEqual([]);
   expect(screen.queryByRole("button", { name: "팀원 추가" })).not.toBeInTheDocument();
+  // 실제 HR 직원 검색 결과를 눌러야 저장됩니다.
+  fireEvent.click(within(screen.getByRole("group", { name: "담당자 검색 결과" })).getByRole("button", { name: /김신규/ }));
   fireEvent.click(screen.getByRole("button", { name: "일정 저장" }));
   expect(JSON.parse(localStorage.getItem("made-mate-schedule-team"))).toEqual(["김신규"]);
-  expect(JSON.parse(localStorage.getItem(storageKey))[0].person).toBe("김신규");
+  expect(JSON.parse(localStorage.getItem(storageKey))[0]).toMatchObject({ person: "김신규", employeeId: 804 });
   await act(async () => { expect(fetch).toHaveBeenCalled(); });
 });
 
@@ -1885,7 +1895,7 @@ test("업무에서 개인으로 전환하면 숨겨진 담당자와 상태를 �
   fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "검증용 마감 일정 수정" }));
   fireEvent.click(screen.getByRole("button", { name: "개인 일정용", exact: true }));
   fireEvent.click(screen.getByRole("button", { name: "업무용", exact: true }));
-  expect(screen.getByRole("combobox", { name: "담당자", exact: true })).toHaveValue("");
+  expect(screen.getByRole("textbox", { name: "담당자", exact: true })).toHaveValue("");
   expect(screen.getByLabelText("일정 상태")).toHaveValue("pending");
   await act(async () => { expect(fetch).toHaveBeenCalled(); });
 });
@@ -1895,4 +1905,47 @@ test("다음 근무일 탐색 범위를 넘는 연속 휴일은 휴일에 일정
   for (let day = 1; day <= 20; day += 1) holidays[`2026-11-${String(day).padStart(2, "0")}`] = "휴일";
   const items = [makeSchedule({ date: "2026-11-01", repeatType: "monthly", holidayRule: "nextWorkday" })];
   expect(expandSchedules(items, "2026-11-01", "2026-11-30", holidays)).toEqual([]);
+});
+
+
+test("HR 직원 이름이 정확히 일치해야 검색 결과가 나오고 클릭 전에는 저장되지 않는다", async () => {
+  useERP.mockReturnValue({ projects: [], employees: [
+    { id: 101, name: "김민수", department: "생산관리팀", position: "사원", status: "재직" },
+    { id: 102, name: "김민수", department: "영업팀", position: "과장", status: "재직" },
+    { id: 103, name: "김민지", department: "물류팀", position: "사원", status: "휴직" },
+  ] });
+  render(<ScheduleManager />);
+  fireEvent.click(screen.getByRole("button", { name: "일정 등록", exact: true }));
+  chooseWorkSchedule();
+  fireEvent.change(screen.getByLabelText("일정 이름"), { target: { value: "직원 검색 검사" } });
+  const input = screen.getByRole("textbox", { name: "담당자", exact: true });
+  fireEvent.change(input, { target: { value: "김" } });
+  expect(screen.queryByRole("group", { name: "담당자 검색 결과" })).not.toBeInTheDocument();
+  fireEvent.change(input, { target: { value: "김민지" } });
+  expect(screen.queryByRole("group", { name: "담당자 검색 결과" })).not.toBeInTheDocument();
+  fireEvent.change(input, { target: { value: "김민수" } });
+  const choices = within(screen.getByRole("group", { name: "담당자 검색 결과" })).getAllByRole("button");
+  expect(choices).toHaveLength(2);
+  fireEvent.submit(screen.getByRole("form"));
+  expect(screen.getByText(/검색 결과에서 선택해 주세요/)).toBeInTheDocument();
+  expect(JSON.parse(localStorage.getItem(storageKey))).toHaveLength(0);
+  fireEvent.click(choices[1]);
+  fireEvent.click(screen.getByRole("button", { name: "일정 저장" }));
+  expect(JSON.parse(localStorage.getItem(storageKey))[0]).toMatchObject({ person: "김민수", employeeId: 102 });
+  await act(async () => { expect(fetch).toHaveBeenCalled(); });
+});
+
+test("기존 퇴사 담당자의 일정은 이름·ID를 유지한 채 다른 항목 수정 가능", async () => {
+  useERP.mockReturnValue({ projects: [], employees: [
+    { id: 20, name: "김기존", department: "영업팀", position: "과장", status: "퇴사" },
+  ] });
+  saveSchedules([makeSchedule({ person: "김기존", employeeId: 20 })]);
+  render(<ScheduleManager />);
+  const selected = screen.getByRole("region", { name: "선택한 날짜 일정" });
+  fireEvent.click(within(selected).getByRole("button", { name: "검증용 마감 일정 수정" }));
+  expect(screen.getByText(/기존 일정 담당자입니다/)).toBeInTheDocument();
+  fireEvent.change(screen.getByLabelText("일정 이름"), { target: { value: "예전 일정 수정" } });
+  fireEvent.click(screen.getByRole("button", { name: "수정 저장" }));
+  expect(JSON.parse(localStorage.getItem(storageKey))[0]).toMatchObject({ person: "김기존", employeeId: 20, title: "예전 일정 수정" });
+  await act(async () => { expect(fetch).toHaveBeenCalled(); });
 });
