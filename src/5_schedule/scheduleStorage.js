@@ -15,6 +15,7 @@ import {
   getRepeatEndOptions,
   isValidScheduleDate,
   isValidScheduleTime,
+  isNumericInput,
   normalizeAttendees,
   normalizeStatus,
   scheduleTypes,
@@ -53,17 +54,24 @@ export function loadSchedules() {
   // 전체 읽기가 실패하면 자동 저장을 막아 원본을 보호합니다.
   try {
     const raw = localStorage.getItem("made-mate-schedules");
-    const savedItems = JSON.parse(raw || "[]");
+    const savedItems = JSON.parse(raw ?? "[]");
     if (!Array.isArray(savedItems)) throw new Error("Invalid schedule data");
 
     // 일정 필수값과 날짜별 반복 제외값을 확인하고 이전 형식의 누락값을 보완합니다.
     const normalized = [];
+    const seenIds = new Set();
     let needsBackup = false;
     for (const item of savedItems) {
       if (!item || typeof item !== "object") continue;
       if (typeof item.id !== "string" && typeof item.id !== "number") continue;
+      if (typeof item.id === "string" && !item.id.trim()) continue;
+      if (typeof item.id === "number" && (!Number.isSafeInteger(item.id) || item.id < 1)) continue;
       if (!isValidScheduleDate(item.date)) continue;
       if (!isValidScheduleTime(item.time) || typeof item.title !== "string") continue;
+      // 같은 ID의 두 일정을 합치면 하나가 덮이거나 함께 수정·삭제될 수 있습니다.
+      // 어느 쪽이 원본인지 판단하지 않고 전체 읽기를 중지해 저장값을 보존합니다.
+      if (seenIds.has(String(item.id))) throw new Error("Duplicate schedule id");
+      seenIds.add(String(item.id));
       const excludedDates = [];
       if (Array.isArray(item.excludedDates)) {
         for (const date of item.excludedDates) {
@@ -79,7 +87,7 @@ export function loadSchedules() {
       // 새 필드는 값 목록을 확인해 잘못된 자료는 백업 대상으로 표시하고 기본값으로 읽습니다.
       const scope = getScheduleScope(item);
       const repeatType = ["weekly", "monthly"].includes(item.repeatType) ? item.repeatType : "none";
-      const validReminder = [0, 10, 30, 1440].includes(Number(item.reminderMinutes));
+      const validReminder = isNumericInput(item.reminderMinutes) && [0, 10, 30, 1440].includes(Number(item.reminderMinutes));
       const validHolidayRule = ["keep", "skip", "nextWorkday"].includes(item.holidayRule);
       const validEndDate = isValidScheduleDate(item.endDate)
         && item.endDate >= item.date
@@ -88,6 +96,8 @@ export function loadSchedules() {
       if (item.holidayRule !== undefined && !validHolidayRule) needsBackup = true;
       if (item.endDate && !validEndDate) needsBackup = true;
       if (item.isAllDay !== undefined && typeof item.isAllDay !== "boolean") needsBackup = true;
+      const type = scheduleTypes.includes(item.type) ? item.type : "기획";
+      if (item.type !== undefined && item.type !== type) needsBackup = true;
       const schedule = { ...item };
       // 고객관리 연동을 제거했으므로 과거 일정에 남은 고객 사본도 제외합니다.
       delete schedule.connections;
@@ -115,7 +125,7 @@ export function loadSchedules() {
         attendees: normalizeAttendees(item.attendees),
         description:
           typeof item.description === "string" ? item.description : "",
-        type: scheduleTypes.includes(item.type) ? item.type : "기획",
+        type,
         // 과거 저장 데이터의 상태가 없거나 업무 중이면 예정으로 보완하고, 완료는 유지합니다.
         status: scope === "개인 일정용" ? "pending" : normalizeStatus(item.status),
         visibility: item.visibility === "private" ? "private" : "shared",
@@ -123,8 +133,13 @@ export function loadSchedules() {
         repeatType,
         ...getRepeatEndOptions(item),
         ...getMonthlyOptions(item),
-        color: typeColors[item.type] || typeColors["기획"],
+        color: typeColors[type],
       });
+      // 저장된 숫자 선택값을 보완할 때도 정리 전 값을 먼저 백업합니다.
+      const restored = normalized[normalized.length - 1];
+      for (const field of ["repeatInterval", "repeatCount", "monthlyOrdinal", "monthlyWeekday"]) {
+        if (item[field] !== undefined && item[field] !== restored[field]) needsBackup = true;
+      }
     }
     // 이전 버전의 같은 seriesId 반복 항목은 날짜순 정렬 후 가장 이른 항목 하나만 남깁니다.
     // 여러 항목의 제목·상태·제외일 등을 합치는 병합은 하지 않습니다.
@@ -160,10 +175,10 @@ export function loadTeamMembers() {
   // 등록 목록과 제외 목록은 별도 저장소입니다. 제외 목록은 과거 일정의 이름이
   // 새 일정 저장 과정에서 의도치 않게 팀원으로 다시 등록되는 것을 막는 데 사용합니다.
   try {
-    const saved = JSON.parse(localStorage.getItem("made-mate-schedule-team") || "[]");
+    const saved = JSON.parse(localStorage.getItem("made-mate-schedule-team") ?? "[]");
     if (!Array.isArray(saved)) throw new Error("Invalid team data");
-    const excluded = JSON.parse(localStorage.getItem("made-mate-excluded-team") || "[]");
-    if (!Array.isArray(excluded) || excluded.some(name => typeof name !== "string")) {
+    const excluded = JSON.parse(localStorage.getItem("made-mate-excluded-team") ?? "[]");
+    if (!Array.isArray(excluded) || excluded.some(name => typeof name !== "string" || !name.trim() || name.trim().length > 30)) {
       throw new Error("Invalid excluded team");
     }
     if (saved.some(name => typeof name !== "string" || !name.trim() || name.trim().length > 30)) {
@@ -171,7 +186,7 @@ export function loadTeamMembers() {
     }
     const members = [...new Set(saved.map(name => name.trim()))]
       .sort((a, b) => a.localeCompare(b, "ko"));
-    return { members, excluded, readError: false };
+    return { members, excluded: [...new Set(excluded.map(name => name.trim()))], readError: false };
   } catch {
     // 빈 배열은 화면의 안전한 기본값이며, 저장 자료가 실제로 비어 있다는 뜻은 아닙니다.
     // useScheduleTeam은 readError가 true이면 자동 저장을 중지해 손상된 원본을 보호합니다.

@@ -1,7 +1,13 @@
 import React, { useState } from "react";
 import "./02_ConsultationManagement.css";
 import { useERP } from "../context/ERPContext";
-import { formatPhone, validatePhone, validateCustomer } from "../utils/customerUtils";
+import { validateCustomer } from "../utils/customerUtils";
+import {
+    validateCompanyName, validateConsultation, validateCustomerManager, validateDuplicateConsultation,
+    validateEmail, validateMemo, validatePhone, formatPhone
+} from "../utils/consultationUtils";
+
+
 function ConsultationManagement() {
     //문의목록을 관리할 usestate
     const { consultations, addConsultation, updateConsultation,
@@ -38,12 +44,28 @@ function ConsultationManagement() {
 
     const saveConsultation = () => {
 
-        if (!validateCustomer(editData)) {
+        if (!validateConsultation(editData)) {
             return;
         }
 
 
         if (!validatePhone(editData.phone)) {
+            return;
+        }
+
+        if (!validateEmail(editData.email)) {
+            return;
+        }
+        if (!validateCompanyName(editData.companyName)) {
+            return;
+        }
+        if (!validateCustomerManager(editData.customerManager)) {
+            return;
+        }
+        if (!validateMemo(editData.memo)) {
+            return;
+        }
+        if(!validateDuplicateConsultation(editData,consultations)){
             return;
         }
 

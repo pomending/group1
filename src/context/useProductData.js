@@ -40,6 +40,8 @@ function isStoredProductList(value) {
     const ids = new Set();
     return value.every(product => {
         if (!product || !["number", "string"].includes(typeof product.id)
+            || (typeof product.id === "number" && (!Number.isSafeInteger(product.id) || product.id < 1))
+            || (typeof product.id === "string" && !product.id.trim())
             || ids.has(String(product.id)) || typeof product.productName !== "string"
             || !product.productName.trim() || product.productName.length > 100
             || !Number.isSafeInteger(product.productPrice) || product.productPrice < 0
@@ -76,6 +78,10 @@ export function useProductData(seedProducts = initialProducts) {
     // 저장 성공 뒤에만 공통 상태와 성공 결과를 갱신해 즉시 새로고침과 저장 실패에도 대응합니다.
     // 초기 읽기 실패는 명시적인 상품 초기화 외에는 손상된 저장값을 덮어쓰지 않습니다.
     function commitProducts(next, reset = false) {
+        // 공통 Context의 setProducts를 직접 호출해도 손상된 목록은 저장하지 않습니다.
+        if (!isStoredProductList(next)) {
+            return failure(null, "상품 목록 형식이 올바르지 않아 저장하지 않았습니다.");
+        }
         if (readFailed.current && !reset) {
             return failure(null, "저장된 상품을 읽지 못해 변경을 저장할 수 없습니다. 기존 저장 자료를 확인해 주세요.");
         }
@@ -125,10 +131,14 @@ export function useProductData(seedProducts = initialProducts) {
         const current = latestProducts.current;
         const result = validateProduct(getChanges(newProduct), current);
         if (!result.ok) return result;
+        const nextId = Math.max(0, ...current.map(product => Number(product.id) || 0)) + 1;
+        if (!Number.isSafeInteger(nextId)) {
+            return failure(null, "상품 번호를 더 이상 발급할 수 없습니다. 기존 상품 번호를 확인해 주세요.");
+        }
         const now = new Date().toISOString();
         const product = {
             ...result.values,
-            id: Math.max(0, ...current.map(product => Number(product.id) || 0)) + 1,
+            id: nextId,
             productCreatedAt: now,
             productUpdatedAt: "",
         };

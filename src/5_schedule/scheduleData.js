@@ -43,7 +43,7 @@ export const getRepeatInterval = (item) => {
     interval = 1;
     if (item.repeatType === "weekly" && item.biweekly) interval = 2;
   }
-  const value = Number(interval);
+  const value = isNumericInput(interval) ? Number(interval) : NaN;
   if (!Number.isInteger(value) || value < 1 || value > MAX_REPEAT_INTERVAL) return 1;
   return value;
 };
@@ -262,8 +262,8 @@ export function createScheduleCopyForm(item) {
 
 // 월간 반복 옵션을 폼과 저장 자료에서 같은 기준으로 보완합니다.
 export function getMonthlyOptions(item) {
-  const ordinal = Number(item.monthlyOrdinal);
-  const weekday = Number(item.monthlyWeekday);
+  const ordinal = isNumericInput(item.monthlyOrdinal) ? Number(item.monthlyOrdinal) : NaN;
+  const weekday = isNumericInput(item.monthlyWeekday) ? Number(item.monthlyWeekday) : NaN;
   return {
     monthlyRule: item.monthlyRule === "weekday" ? "weekday" : "date",
     monthlyOrdinal: [-1, 1, 2, 3, 4].includes(ordinal) ? ordinal : 2,
@@ -277,7 +277,7 @@ export function getRepeatEndOptions(item) {
   return {
     repeatEndType,
     repeatEndDate: repeatEndType === "until" && isValidScheduleDate(item.repeatEndDate) ? item.repeatEndDate : "",
-    repeatCount: repeatEndType === "count" && Number.isInteger(Number(item.repeatCount)) && Number(item.repeatCount) >= 1 && Number(item.repeatCount) <= 1000 ? Number(item.repeatCount) : 1,
+    repeatCount: repeatEndType === "count" && isNumericInput(item.repeatCount) && Number.isInteger(Number(item.repeatCount)) && Number(item.repeatCount) >= 1 && Number(item.repeatCount) <= 1000 ? Number(item.repeatCount) : 1,
   };
 }
 
@@ -316,6 +316,7 @@ export const createScheduleForm = (item) => {
   form.category = getScheduleCategory(item);
   // 프로젝트 ID는 입력창에 표시하지 않는 연결 정보입니다. 원본 일정의 id와 구분합니다.
   form.projectId = getScheduleProjectId(item);
+  if (typeof item.projectReference === "string") form.projectReference = item.projectReference;
   form.attendees = normalizeAttendees(item.attendees).join(", ");
   form.repeatType = item.repeatType || "none";
   form.repeatInterval = getRepeatInterval(item);
@@ -698,9 +699,17 @@ export function findScheduleConflicts(
 
 // 첫 입력 오류를 { field, message }로 반환하고, 오류가 없으면 null을 반환합니다.
 // 상태 변경·확인창·저장은 Manager가 담당하며, 브라우저의 required/min/max 검사는 폼에서 별도로 동작합니다.
+// Number(false)와 Number([])는 0이므로, 먼저 실제 숫자·비어 있지 않은 숫자 문자열인지 확인합니다.
+export function isNumericInput(value) {
+  if (typeof value === "number") return Number.isFinite(value);
+  if (typeof value === "string" && value.trim()) return Number.isFinite(Number(value));
+  return false;
+}
+
 export function getScheduleFormError(form) {
-  const title = form.title.trim();
-  const project = form.project.trim();
+  if (!form || typeof form !== "object") return { field: "scope", message: "일정 입력 내용을 확인해 주세요." };
+  const title = typeof form.title === "string" ? form.title.trim() : "";
+  const project = typeof form.project === "string" ? form.project.trim() : "";
   if (!scheduleScopes.includes(form.scope)) {
     return { field: "scope", message: "업무용 또는 개인 일정용을 먼저 선택해 주세요." };
   }
@@ -710,9 +719,25 @@ export function getScheduleFormError(form) {
   if (form.scope === "업무용" && form.category === "프로젝트" && !project) {
     return { field: "project", message: "프로젝트 분류에는 프로젝트명을 입력해 주세요." };
   }
+  if (typeof form.project !== "string") return { field: "project", message: "프로젝트명은 글자로 입력해 주세요." };
   if (!title) {
     return { field: "title", message: "일정 이름을 입력해 주세요. 공백만 사용할 수 없습니다." };
   }
+  // 입력창의 maxLength와 같은 제한을 저장 전에도 검사합니다.
+  // 임시 보관 복구나 직접 제출로 브라우저 제한을 건너뛰어도 잘못된 값을 저장하지 않습니다.
+  if (form.title.length > 80) return { field: "title", message: "일정 이름은 80자 이내로 입력해 주세요." };
+  if (form.scope === "업무용" && form.category === "프로젝트" && form.project.length > 60) {
+    return { field: "project", message: "프로젝트명은 60자 이내로 입력해 주세요." };
+  }
+  if (typeof form.description !== "string" || form.description.length > 3000) {
+    return { field: "description", message: "상세 내용은 3,000자 이내의 글자로 입력해 주세요." };
+  }
+  if (!["none", "weekly", "monthly"].includes(form.repeatType)) {
+    return { field: "repeatInterval", message: "올바른 반복 설정을 선택해 주세요." };
+  }
+  if (!["shared", "private"].includes(form.visibility)) return { field: "visibility", message: "공유 구분을 선택해 주세요." };
+  if (!isNumericInput(form.reminderMinutes) || ![0, 10, 30, 1440].includes(Number(form.reminderMinutes))) return { field: "reminderMinutes", message: "알림 시간을 선택해 주세요." };
+  if (typeof form.isAllDay !== "boolean") return { field: "isAllDay", message: "종일 일정 여부를 확인해 주세요." };
 
   if (!isValidScheduleDate(form.date) || !isValidScheduleTime(form.time) || !isValidScheduleTime(form.endTime)) {
     return { field: !isValidScheduleDate(form.date) ? "date" : !isValidScheduleTime(form.time) ? "time" : "endTime", message: "올바른 날짜와 시작·종료 시간을 입력해 주세요." };
@@ -721,15 +746,27 @@ export function getScheduleFormError(form) {
     return { field: "endDate", message: "여러 날 일정의 종료 날짜는 시작일 이후여야 하며 반복 일정에는 지정할 수 없습니다." };
   }
   if (form.repeatType !== "none") {
-    const interval = Number(form.repeatInterval);
+    if (!["none", "until", "count"].includes(form.repeatEndType)) return { field: "repeatEndType", message: "반복 종료 방식을 선택해 주세요." };
+    if (!["keep", "skip", "nextWorkday"].includes(form.holidayRule)) return { field: "holidayRule", message: "주말·공휴일 처리 방식을 선택해 주세요." };
+    let interval = NaN;
+    if (isNumericInput(form.repeatInterval)) interval = Number(form.repeatInterval);
     if (!Number.isInteger(interval) || interval < 1 || interval > MAX_REPEAT_INTERVAL) {
       return { field: "repeatInterval", message: `반복 간격은 1~${MAX_REPEAT_INTERVAL} 사이의 정수로 입력해 주세요.` };
+    }
+  }
+  if (form.repeatType === "monthly") {
+    if (!["date", "weekday"].includes(form.monthlyRule)) return { field: "monthlyRule", message: "매월 반복 기준을 선택해 주세요." };
+    if (form.monthlyRule === "weekday") {
+      if (!isNumericInput(form.monthlyOrdinal) || ![-1, 1, 2, 3, 4].includes(Number(form.monthlyOrdinal))) return { field: "monthlyOrdinal", message: "월간 반복의 주차를 선택해 주세요." };
+      let weekday = NaN;
+      if (isNumericInput(form.monthlyWeekday)) weekday = Number(form.monthlyWeekday);
+      if (!Number.isInteger(weekday) || weekday < 0 || weekday > 6) return { field: "monthlyWeekday", message: "월간 반복의 요일을 선택해 주세요." };
     }
   }
   if (form.repeatType !== "none" && form.repeatEndType === "until" && (!isValidScheduleDate(form.repeatEndDate) || form.repeatEndDate < form.date)) {
     return { field: "repeatEndDate", message: "반복 종료 날짜는 시작일 이상으로 입력해 주세요." };
   }
-  if (form.repeatType !== "none" && form.repeatEndType === "count" && (!Number.isInteger(Number(form.repeatCount)) || Number(form.repeatCount) < 1 || Number(form.repeatCount) > 1000)) {
+  if (form.repeatType !== "none" && form.repeatEndType === "count" && (!isNumericInput(form.repeatCount) || !Number.isInteger(Number(form.repeatCount)) || Number(form.repeatCount) < 1 || Number(form.repeatCount) > 1000)) {
     return { field: "repeatCount", message: "반복 횟수는 1~1000 사이의 정수로 입력해 주세요." };
   }
   // HH:mm은 자릿수가 같아 문자열 비교로도 시간 순서를 확인할 수 있습니다.
@@ -737,9 +774,15 @@ export function getScheduleFormError(form) {
   if (!form.isAllDay && (!form.endDate || form.endDate === form.date) && form.endTime <= form.time) {
     return { field: "endTime", message: "종료 시간은 시작 시간보다 늦게 입력해 주세요." };
   }
-  const person = form.scope === "업무용" ? form.person.trim() : "";
+  const person = typeof form.person === "string" ? form.person.trim() : "";
   if (form.scope === "업무용" && (!person || person.length > 30)) {
     return { field: "person", message: "담당자 이름을 1~30자로 입력해 주세요." };
+  }
+  if (form.scope === "업무용") {
+    if (!scheduleStatuses.some(status => status.value === form.status)) return { field: "status", message: "일정 상태를 선택해 주세요." };
+    if (form.category === "회의" && normalizeAttendees(form.attendees).some(name => name.length > 30)) {
+      return { field: "attendees", message: "참석자 이름은 30자 이내로 입력해 주세요." };
+    }
   }
   return null;
 }

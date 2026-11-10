@@ -9,12 +9,15 @@ function QuotationCreate() {
     const navi = useNavigate();
     const location = useLocation();
 
-    const [createAt, setCreateAt] = useState("");
-    /* 원본 비교 · 고객 ID를 상태에 저장하던 방식
-    const { customers, products, employees } = useERP();
+    const [createdAt, setCreatedAt] = useState(() => {
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = String(today.getMonth() +1).padStart(2,"0");
+        const day = String(today.getDate()).padStart(2,"0");
 
-    const [customerId, setCustomerId] = useState("")
-    */
+        return `${year}-${month}-${day}`;
+    });
+
     const {
         consultations,
         customers,
@@ -41,19 +44,7 @@ function QuotationCreate() {
     const filteredEmployees = employees.filter((employee) =>
         employee.status === "재직" && employee.name.includes(employeeSearch))
 
-    /* 원본 비교 · 고객 목록에서 회사명을 검색하던 코드
-    //거래처 전체 정보 저장하는 변수
-    const [selectedCustomer, setSelectedCustomer] = useState(null)
 
-    //거래처 담을 변수
-    const [customerSearch, setCustomerSearch] = useState("")
-    const [showCustomerList, setShowCustomerList] = useState(false)
-
-    //거래처 검색 결과 필터링
-    const filteredCustomers = customers.filter((customer) =>
-        customer.companyName.includes(customerSearch)
-    )
-    */
     const quotationRequests = consultations.filter(consultation =>
         consultation.status === "견적 요청" &&
         customers.some(customer => customer.id === consultation.customerId)
@@ -84,16 +75,7 @@ function QuotationCreate() {
     const [paymentMethod, setPaymentMethod] = useState("")
     const [memo, setMemo] = useState("")
 
-    /* 원본 비교 · 수정 견적을 찾아오는 기존 코드의 위치와 형태
-    //어디서 들어온건지 확인하는 코드
-    const fromDetail = location.state?.fromDetail;
-
-
-    const editId = location.state?.editId
-    const editQuotation = quotations.find(
-        q => q.id === Number(editId)
-    )
-    */
+    
     const fromDetail = location.state?.fromDetail;
     const editId = location.state?.editId;
     const editQuotation = quotations.find(q => q.id === Number(editId));
@@ -121,35 +103,6 @@ function QuotationCreate() {
     //공통 저장 함수
     const saveQuotation = (status) => {
 
-        /* 원본 비교 · 선택한 고객 ID로 검사하던 코드
-        if (status === "승인 대기") {
-            if (!customerId || !productId || !employeeId) {
-                alert("거래처, 상품, 내부 담당자를 선택해주세요")
-                return;
-            }
-
-            if (!quantity || !unitPrice || !createAt) {
-                alert("작성일, 수량, 단가를 입력해주세요")
-                return;
-            }
-        }
-        */
-        if (consultationId && !selectedCustomer) {
-            alert("선택한 거래처를 확인할 수 없습니다. 견적 요청 상담을 다시 선택해주세요.");
-            return;
-        }
-
-        if (status === "승인 대기") {
-            if (!selectedCustomer || !productId || !employeeId) {
-                alert("거래처, 상품, 내부 담당자를 선택해주세요.")
-                return;
-            }
-
-            if (!quantity || !unitPrice || !createAt) {
-                alert("작성일, 수량, 단가를 입력해주세요")
-                return;
-            }
-        }
         const newQuotation = {
             ...(editQuotation ? {id: editQuotation.id} : {}),
             customerId: selectedCustomer ? Number(selectedCustomer.id) : null,
@@ -157,7 +110,7 @@ function QuotationCreate() {
             employeeId: employeeId ? Number(employeeId) : null,
             quantity: quantity === "" ? 0 : Number(quantity),
             unitPrice: unitPrice === "" ? 0 : Number(unitPrice),
-            createdAt: createAt,
+            createdAt: createdAt,
             validUntil,
             deliveryDate,
             paymentMethod,
@@ -165,14 +118,20 @@ function QuotationCreate() {
             status
         }
 
+        let result;
+
         if (editQuotation) {
             //기존 견적서 수정
-            updateQuotation(newQuotation)
+            result = updateQuotation(newQuotation)
         } else {
             //신규 견적서 등록
-            addQuotation(newQuotation)
+           result = addQuotation(newQuotation)
         }
 
+        if(!result.ok){
+            alert(result.message)
+            return;
+        }
 
         if (editQuotation) {
             navi(`/quotation/detail/${editQuotation.id}`)
@@ -181,23 +140,17 @@ function QuotationCreate() {
         }
     }
 
-    /* 원본 비교 · 수정 화면에서 거래처 정보를 별도 상태로 불러오던 코드
+    
     React.useEffect(() => {
+        
         if (!editQuotation) return;
 
-        setCustomerId(editQuotation.customerId || "");
+        setConsultationId(
+            editQuotation.customerId ? "existing" : ""
+        )
+
         setProductId(editQuotation.productId || "");
         setEmployeeId(editQuotation.employeeId || "");
-
-        //거래처 정보를 찾아서 화면에 다시 연결하는 과정
-        setCustomerId(editQuotation.customerId || "");
-
-        const customer = customers.find(
-            c => c.id === editQuotation.customerId
-        );
-
-        setSelectedCustomer(customer || null);
-        setCustomerSearch(customer?.companyName || "");
 
         setEmployeeSearch(
             employees.find(e => e.id === editQuotation.employeeId)?.name || ""
@@ -211,46 +164,19 @@ function QuotationCreate() {
         setQuantity(editQuotation.quantity || "");
         setUnitPrice(editQuotation.unitPrice || "");
 
-        setCreateAt(editQuotation.createdAt || "");
+        setCreatedAt(editQuotation.createdAt || "");
         setValidUntil(editQuotation.validUntil || "");
         setDeliveryDate(editQuotation.deliveryDate || "");
 
         setPaymentMethod(editQuotation.paymentMethod || "");
         setMemo(editQuotation.memo || "");
     }, [editQuotation]);
-    */
-    React.useEffect(() => {
-        setConsultationId(existingCustomer ? "existing" : "");
-        if (!editQuotation) return;
-
-        setProductId(editQuotation.productId || "");
-        setEmployeeId(editQuotation.employeeId || "");
-
-        setEmployeeSearch(
-            employees.find(e => e.id === editQuotation.employeeId)?.name || ""
-        )
-
-        setProductSearch(
-            products.find(p => p.id === editQuotation.productId)?.productName || ""
-        )
-
-
-        setQuantity(editQuotation.quantity || "");
-        setUnitPrice(editQuotation.unitPrice || "");
-
-        setCreateAt(editQuotation.createdAt || "");
-        setValidUntil(editQuotation.validUntil || "");
-        setDeliveryDate(editQuotation.deliveryDate || "");
-
-        setPaymentMethod(editQuotation.paymentMethod || "");
-        setMemo(editQuotation.memo || "");
-    }, [editQuotation, existingCustomer]);
 
     return (
         <div className="quotation-create">
             <header className="create-header">
 
-                <h1>새 견적서 작성</h1>
+                <h1>{editQuotation ? "견적서 수정" : "새 견적서 작성"}</h1>
                 <p>거래처에 전달할 견적 정보를 입력합니다.</p>
 
             </header>
@@ -279,8 +205,8 @@ function QuotationCreate() {
                             <label>작성일</label>
                             <input
                                 type="date"
-                                value={createAt}
-                                onChange={(e) => setCreateAt(e.target.value)}
+                                value={createdAt}
+                                onChange={(e) => setCreatedAt(e.target.value)}
                             />
                         </div>
 
@@ -340,50 +266,7 @@ function QuotationCreate() {
 
                     <div className="form-grid">
                         <div className="form-group">
-                            {/* 원본 비교 · 거래처명 검색과 검색 결과 목록
-                            <label>거래처명</label>
-                            <input
-                                type="text"
-                                placeholder="거래처명을 검색하세요."
-                                value={customerSearch}
-                                onChange={(e) => {
-                                    setCustomerSearch(e.target.value)
-                                    setCustomerId("")
-                                    setSelectedCustomer(null)
-                                    setShowCustomerList(true)
-                                }}
-                                onFocus={() => setShowCustomerList(true)}
-                                onBlur={() => setShowCustomerList(false)}
-                            />
-
-                            {showCustomerList && (
-                                <div className="customer-list">
-                                    {filteredCustomers.length > 0 ? (
-                                        filteredCustomers.map((customer) => (
-                                            <div
-                                                key={customer.id}
-                                                className="customer-item"
-                                                onMouseDown={(e) => e.preventDefault()}
-                                                onClick={() => {
-                                                    setCustomerId(customer.id)
-                                                    setCustomerSearch(customer.companyName)
-                                                    setSelectedCustomer(customer)
-                                                    setShowCustomerList(false)
-                                                }}>
-                                                <strong>{customer.companyName}</strong>
-
-                                                <div className="customer-info">
-                                                    <span>{customer.businessNumber}</span>
-                                                </div>
-
-                                            </div>
-                                        ))
-                                    ) : (
-                                        <p>검색 결과가 없습니다.</p>
-                                    )}
-                                </div>
-                            )}
-                            */}
+                            
                             <label htmlFor="quotation-consultation">견적 요청 상담</label>
                             <select
                                 id="quotation-consultation"
@@ -487,6 +370,8 @@ function QuotationCreate() {
                             <label>수량</label>
                             <input
                                 type="number"
+                                className="quantity-input"
+                                min={1}
                                 placeholder="수량을 입력하세요."
                                 value={quantity}
                                 onChange={(e) => setQuantity(e.target.value)} />
@@ -496,6 +381,7 @@ function QuotationCreate() {
                             <label>단가 (원)</label>
                             <input
                                 type="number"
+                                className="quantity-input"
                                 placeholder="단가를 입력하세요."
                                 value={unitPrice}
                                 onChange={(e) => setUnitPrice(e.target.value)} />
