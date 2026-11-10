@@ -42,12 +42,6 @@ function CustomerEdit() {
 
         }
 
-
-
-
-
-
-
         window.opener.saveEditedCustomer(EditingCustomerData);
         alert("고객의 정보가 수정되었습니다.")
         window.close();
