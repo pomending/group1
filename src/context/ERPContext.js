@@ -187,7 +187,7 @@ export function ERPProvider({ children }) {
 
     const addProject = (newProject) => {
 
-        const selectedQuotation = quotations.find(
+        const selectedQuotation = quotationData.quotations.find(
             q => q.id === Number(newProject.quotationId)
         );
 
