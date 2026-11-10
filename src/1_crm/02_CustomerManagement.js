@@ -14,9 +14,7 @@ function CustomerManagement() {
     const { customers, addCustomer,
         saveEditedCustomer, deleteCustomers, employees } = useERP();
 
-    //정렬기능을 위한 usestate ,sortkey 어떤컬럼으로 정렬하지,sortOrder 오름차순,내림차순
-    const [sortkey, setSortkey] = useState("id");
-    const [sortOrder, setSortOrder] = useState("desc");
+    
 
 
     //검색창에 입력한 검색어
@@ -72,7 +70,7 @@ function CustomerManagement() {
         window.open(
             "/crm/edit?id=" + selectedCustomer.id + "&popup=1",
             "customerEdit",
-            "width=600,height=700"
+            "width=520,height=540"
         );
     }
 
@@ -214,7 +212,7 @@ function CustomerManagement() {
                                 window.open(
                                     "/crm/register?popup=1",
                                     "customerRegister",
-                                    "width=600,height=700"
+                                    "width=520,height=540"
                                 )
                             }
                         >
@@ -268,7 +266,7 @@ function CustomerManagement() {
                                 <th>주소</th>
                                 <th>등록일</th>
                                 <th>메모</th>
-                                <th>내부 담당자</th>
+                                <th>담당자</th>
                             </tr>
                         </thead>
 

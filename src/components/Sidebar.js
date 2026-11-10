@@ -16,8 +16,8 @@ function Sidebar() {
 
     const menus = [
         { name: "대시보드", path: "/", icon: "▦" },
-        { name: "고객 관리", path: "/crm", icon: "♙" },
         { name: "상담 관리", path: "/consultation", icon: "☏" },
+        { name: "고객 관리", path: "/crm", icon: "♙" },
         { name: "견적 관리", path: "/quotation", icon: "▤" },
         { name: "상품 관리", path: "/product", icon: "▧" },
         { name: "프로젝트 관리", path: "/projects", icon: "▣" },

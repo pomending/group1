@@ -627,3 +627,112 @@
 
 
 
+/* ==============================================
+   MODU GOODS ERP · Tasks Mist Lavender theme
+   Append-only overrides. Original structure intact.
+   ============================================== */
+.task-page, .task-detail-page {
+  --task-bg: #F5F4FA;
+  --task-surface: #FFFFFF;
+  --task-line: #E6E1F0;
+  --task-accent: #68619A;
+  --task-accent-hover: #575084;
+  --task-text: #39354F;
+  --task-muted: #827A98;
+  background: var(--task-bg);
+  color: var(--task-text);
+}
+.task-page .task-header h2, .task-detail-page .td-header h2,
+.task-page .task-list-header h3, .task-detail-page .td-board-header h3,
+.task-detail-page .td-board-content h4, .task-detail-page .td-task-list-header h4 {
+  color: #39354F;
+}
+.task-page .task-header p, .task-detail-page .td-header p:last-child,
+.task-detail-page .td-eyebrow, .task-detail-page .td-board-header span:first-child {
+  color: #827A98;
+}
+/* Cards: preserve original sizes and grid layout */
+.task-page .summary-card, .task-page .task-list-container,
+.task-detail-page .td-select-box, .task-detail-page .td-empty,
+.task-detail-page .td-board {
+  background: #FFFFFF;
+  border-color: #E6E1F0;
+  border-radius: 12px;
+  box-shadow: 0 3px 12px rgba(65,55,95,.035);
+}
+.task-page .summary-card span { color: #827A98; }
+.task-page .summary-card strong { color: #524B80; }
+.task-page .task-list-header select,
+.task-detail-page .td-select-box select,
+.task-detail-page .project-detail select,
+.task-detail-page .project-detail input,
+.task-detail-page .td-modal-field :is(input,select) {
+  background: #FBFAFE;
+  border-color: #DDD8EA;
+  color: #39354F;
+}
+.task-page .task-list-header select:focus,
+.task-detail-page .td-select-box select:focus,
+.task-detail-page .project-detail :is(select,input):focus,
+.task-detail-page .td-modal-field :is(input,select):focus {
+  outline: none;
+  border-color: #9C91C8;
+  box-shadow: 0 0 0 3px rgba(156,145,200,.14);
+}
+.task-page .task-table th, .task-detail-page .td-table th,
+.task-detail-page .td-task-table th {
+  background: #F1EFF8;
+  color: #5D557A;
+  border-color: #E6E1F0;
+}
+.task-page .task-table td, .task-detail-page .td-table td,
+.task-detail-page .td-task-table td { border-color: #EEEAF4; color: #49445F; }
+.task-page .task-table tbody tr:hover,
+.task-detail-page .td-task-table tbody tr:hover { background: #F8F6FD; }
+.task-page .new-btn,
+.task-detail-page .save-btn,
+.task-detail-page .td-modal-save {
+  background: #68619A;
+  border-color: #68619A;
+  color: #FFFFFF;
+  cursor: pointer;
+}
+.task-page .new-btn:hover,
+.task-detail-page .save-btn:hover,
+.task-detail-page .td-modal-save:hover { background: #575084; border-color: #575084; }
+.task-detail-page .td-back-btn,
+.task-detail-page .td-modify-btn {
+  border-color: #C8C0E5;
+  background: #F0EDFA;
+  color: #524B80;
+}
+.task-detail-page .td-back-btn:hover,
+.task-detail-page .td-modify-btn:hover { background: #E3DCF5; }
+.task-detail-page .td-delete-btn {
+  background: #F8EDEF;
+  border-color: #E8C7CF;
+  color: #A34E64;
+}
+.task-detail-page .td-delete-btn:hover { background: #F2DDE3; }
+/* Status colors keep their distinct business meanings */
+.task-page .task-status.progress,
+.task-detail-page .td-status.status-progress,
+.task-detail-page .td-task-status {
+  background: #F0EDFA;
+  color: #524B80;
+}
+.task-page .task-status.complete { background: #E8F4ED; color: #28734E; }
+.task-page .task-status.waiting,
+.task-detail-page .td-status.status-waiting { background: #FFF1E5; color: #A95C22; }
+/* Detail view and task-edit modal */
+.task-detail-page .td-board-header,
+.task-detail-page .td-task-list,
+.task-detail-page .td-modal-header,
+.task-detail-page .td-modal-footer { border-color: #E6E1F0; }
+.task-detail-page .td-modal-overlay { background: rgba(39,34,59,.38); }
+.task-detail-page .td-edit-modal { border: 1px solid #E6E1F0; background: #FFFFFF; }
+.task-detail-page .td-modal-header { background: #F5F4FA; }
+.task-detail-page .td-modal-header h3 { color: #39354F; }
+.task-detail-page .td-modal-field label { color: #55516C; }
+.task-detail-page .td-modal-cancel { background: #F0EDFA; border-color: #C8C0E5; color: #524B80; }
+.task-detail-page .td-modal-cancel:hover { background: #E3DCF5; }

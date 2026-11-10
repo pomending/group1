@@ -1,4 +1,9 @@
 
+/* =========================================
+   MODU GOODS ERP - Topbar
+   Mist Lavender + Powder Blue
+========================================= */
+
 /* 상단 헤더 전체 */
 .erp-layout .erp-topbar {
     position: sticky;
@@ -21,9 +26,9 @@
     margin: 0;
     padding: 0 28px;
 
-    background: #ffffff;
+    background: #F5F3FA;
     border: none;
-    border-bottom: 1px solid #e8eaf0;
+    border-bottom: 1px solid #E7E2F0;
     border-radius: 0;
     box-shadow: none;
 
@@ -62,24 +67,25 @@
     margin: 0;
     padding: 0;
 
-    background: #ffffff;
-    border: 1px solid #e3e5eb;
+    background: #F0EDFA;
+    border: 1px solid #C8C0E5;
     border-radius: 9px;
 
-    color: #50586a;
+    color: #524B80;
     font-size: 20px;
     line-height: 1;
 
     cursor: pointer;
-    transition: background 0.2s;
+    transition: background 0.2s, border-color 0.2s;
 }
 
 .erp-layout .erp-topbar-toggle:hover {
-    background: #f2f3f8;
+    background: #E3DCF5;
+    border-color: #ADA2D3;
 }
 
 .erp-layout .erp-topbar-toggle:focus-visible {
-    outline: 2px solid #7565d8;
+    outline: 2px solid #68619A;
     outline-offset: 2px;
 }
 
@@ -101,7 +107,7 @@
     padding: 0;
 }
 
-/* 홈 / 프로젝트 관리 */
+/* 홈 / 현재 페이지 경로 */
 .erp-layout .erp-topbar-breadcrumb {
     display: flex;
     flex-direction: row;
@@ -117,7 +123,7 @@
     margin: 0;
     padding: 0;
 
-    color: #8991a1;
+    color: #827A98;
     font-size: 12px;
     font-weight: 400;
     line-height: 1.4;
@@ -127,12 +133,13 @@
 }
 
 .erp-layout .erp-topbar-breadcrumb a {
-    color: #8991a1;
+    color: #718099;
     text-decoration: none;
+    transition: color 0.2s;
 }
 
 .erp-layout .erp-topbar-breadcrumb a:hover {
-    color: #7565d8;
+    color: #68619A;
 }
 
 .erp-layout .erp-topbar-breadcrumb span {
@@ -150,7 +157,7 @@
     margin: 0;
     padding: 0;
 
-    color: #293044;
+    color: #39354F;
     font-size: 16px;
     font-weight: 700;
     line-height: 1.35;
@@ -190,7 +197,7 @@
 }
 
 .erp-layout .erp-topbar-user-info strong {
-    color: #293044;
+    color: #37465E;
     font-size: 13px;
     font-weight: 700;
     line-height: 1.3;
@@ -198,13 +205,13 @@
 }
 
 .erp-layout .erp-topbar-user-info span {
-    color: #8991a1;
+    color: #718099;
     font-size: 11px;
     line-height: 1.3;
     white-space: nowrap;
 }
 
-/* 원형 아바타 */
+/* 원형 프로필 아바타 */
 .erp-layout .erp-topbar-avatar {
     display: flex;
     align-items: center;
@@ -218,16 +225,214 @@
     margin: 0;
     padding: 0;
 
-    background: #eeeafd;
+    background: #DDD8EE;
     border-radius: 50%;
 
-    color: #7565d8;
+    color: #524B80;
     font-size: 14px;
     font-weight: 700;
     line-height: 1;
+
+    overflow: hidden;
 }
 
-/* 모바일 */
+/* 마이페이지 버튼 */
+.erp-layout a.erp-topbar-user {
+    padding: 7px 10px;
+    margin: -7px -10px;
+    border-radius: 10px;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.erp-layout a.erp-topbar-user:hover {
+    background-color: #E3E9F6;
+}
+
+.erp-layout a.erp-topbar-user:focus-visible {
+    outline: 2px solid #68619A;
+    outline-offset: 2px;
+}
+
+/* 프로필 아이콘 */
+.erp-layout a.erp-topbar-user .erp-topbar-avatar {
+    font-size: 18px;
+}
+
+/* 프로필 사진 */
+.erp-layout .erp-topbar-avatar img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+}
+
+/* =========================================
+   알림 버튼
+========================================= */
+
+.erp-layout .erp-topbar-notification {
+    position: relative;
+    flex-shrink: 0;
+    margin-left: auto;
+}
+
+.erp-layout .erp-notification-button {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 38px;
+    height: 38px;
+    padding: 0;
+
+    border: 1px solid #C8D6E8;
+    border-radius: 9px;
+    background: #F7F9FE;
+
+    color: #524B80;
+    font-size: 18px;
+    cursor: pointer;
+
+    transition: background 0.2s;
+}
+
+.erp-layout .erp-notification-button:hover {
+    background: #E3E9F6;
+}
+
+.erp-layout .erp-notification-button:focus-visible {
+    outline: 2px solid #68619A;
+    outline-offset: 2px;
+}
+
+/* 읽지 않은 알림 개수 */
+.erp-layout .erp-notification-count {
+    position: absolute;
+    top: -7px;
+    right: -7px;
+
+    min-width: 19px;
+    height: 19px;
+    padding: 0 4px;
+
+    border-radius: 12px;
+    background: #B76A7B;
+    color: white;
+
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 19px;
+    text-align: center;
+    box-sizing: border-box;
+}
+
+/* 알림 팝업 패널 */
+.erp-layout .erp-notification-panel {
+    position: absolute;
+    top: calc(100% + 10px);
+    right: 0;
+    z-index: 50;
+
+    width: 350px;
+    max-width: calc(100vw - 24px);
+    overflow: hidden;
+
+    background: #FFFFFF;
+    border: 1px solid #DFE5F0;
+    border-radius: 12px;
+
+    box-shadow: 0 12px 30px rgba(55, 70, 94, 0.12);
+}
+
+/* 알림 헤더 */
+.erp-layout .erp-notification-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    padding: 13px 15px;
+    border-bottom: 1px solid #E5EAF3;
+    background: #F4F1FB;
+}
+
+.erp-layout .erp-notification-header strong {
+    font-size: 14px;
+    color: #37465E;
+}
+
+.erp-layout .erp-notification-header button {
+    padding: 0;
+    border: 0;
+    background: transparent;
+
+    color: #68619A;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.erp-layout .erp-notification-header button:disabled {
+    color: #AEB6C4;
+    cursor: default;
+}
+
+/* 알림 목록 */
+.erp-layout .erp-notification-list {
+    max-height: 340px;
+    overflow-y: auto;
+}
+
+.erp-layout .erp-notification-empty {
+    padding: 20px;
+    margin: 0;
+
+    color: #718099;
+    font-size: 13px;
+}
+
+/* 알림 항목 */
+.erp-layout a.erp-notification-item {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+
+    padding: 12px 15px;
+    border-bottom: 1px solid #E9EDF4;
+
+    color: #37465E;
+    text-decoration: none;
+}
+
+.erp-layout a.erp-notification-item:hover {
+    background: #EDF3FA;
+}
+
+.erp-layout a.erp-notification-item.unread {
+    background: #F4F1FC;
+}
+
+.erp-layout a.erp-notification-item strong {
+    font-size: 13px;
+}
+
+.erp-layout a.erp-notification-item span {
+    font-size: 12px;
+    line-height: 1.45;
+    overflow-wrap: anywhere;
+}
+
+.erp-layout a.erp-notification-item small {
+    color: #718099;
+    font-size: 11px;
+}
+
+/* =========================================
+   모바일 반응형
+========================================= */
+
 @media (max-width: 768px) {
 
     .erp-layout .erp-topbar {
@@ -260,36 +465,7 @@
         width: 32px;
         height: 32px;
     }
-}
 
-/* 마이페이지 버튼 */
-.erp-layout a.erp-topbar-user {
-    padding: 7px 10px;
-    margin: -7px -10px;
-    border-radius: 10px;
-    text-decoration: none;
-    cursor: pointer;
-    transition: background-color 0.2s;
-}
-
-/* 마우스 올림 */
-.erp-layout a.erp-topbar-user:hover {
-    background-color: #f5f3ff;
-}
-
-/* 키보드 선택 */
-.erp-layout a.erp-topbar-user:focus-visible {
-    outline: 2px solid #7565d8;
-    outline-offset: 2px;
-}
-
-/* 프로필 아이콘 */
-.erp-layout a.erp-topbar-user .erp-topbar-avatar {
-    font-size: 18px;
-}
-
-/* 모바일 마이페이지 표시 */
-@media (max-width: 768px) {
     .erp-layout a.erp-topbar-user .erp-topbar-user-info {
         display: flex;
     }
@@ -297,115 +473,13 @@
     .erp-layout a.erp-topbar-user .erp-topbar-user-info span {
         display: none;
     }
-}
 
-/* Topbar 프로필 사진도 원형 안에서만 표시합니다. */
-.erp-layout .erp-topbar-avatar {
-    overflow: hidden;
-}
+    .erp-layout .erp-notification-panel {
+        right: -55px;
+    }
 
-.erp-layout .erp-topbar-avatar img {
-    display: block;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    border-radius: 50%;
-}
-
-/* 알림 버튼과 펼쳐지는 목록 */
-.erp-layout .erp-topbar-notification {
-    position: relative;
-    flex-shrink: 0;
-    margin-left: auto;
-}
-
-.erp-layout .erp-notification-button {
-    position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 38px;
-    height: 38px;
-    padding: 0;
-    border: 1px solid #e3e5eb;
-    border-radius: 9px;
-    background: white;
-    font-size: 18px;
-    cursor: pointer;
-}
-
-.erp-layout .erp-notification-button:hover { background: #f5f3ff; }
-.erp-layout .erp-notification-button:focus-visible { outline: 2px solid #7565d8; }
-
-.erp-layout .erp-notification-count {
-    position: absolute;
-    top: -7px;
-    right: -7px;
-    min-width: 19px;
-    height: 19px;
-    padding: 0 4px;
-    border-radius: 12px;
-    background: #d64b5a;
-    color: white;
-    font-size: 10px;
-    font-weight: 700;
-    line-height: 19px;
-    text-align: center;
-    box-sizing: border-box;
-}
-
-.erp-layout .erp-notification-panel {
-    position: absolute;
-    top: calc(100% + 10px);
-    right: 0;
-    z-index: 50;
-    width: 350px;
-    max-width: calc(100vw - 24px);
-    overflow: hidden;
-    background: white;
-    border: 1px solid #e2e6ee;
-    border-radius: 10px;
-    box-shadow: 0 12px 30px rgba(20, 35, 55, 0.16);
-}
-
-.erp-layout .erp-notification-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 13px 15px;
-    border-bottom: 1px solid #e8edf4;
-}
-
-.erp-layout .erp-notification-header strong { font-size: 14px; color: #263a49; }
-.erp-layout .erp-notification-header button {
-    padding: 0;
-    border: 0;
-    background: transparent;
-    color: #7565d8;
-    font-size: 12px;
-    cursor: pointer;
-}
-.erp-layout .erp-notification-header button:disabled { color: #aeb6c4; cursor: default; }
-
-.erp-layout .erp-notification-list { max-height: 340px; overflow-y: auto; }
-.erp-layout .erp-notification-empty { padding: 20px; margin: 0; color: #7b8492; font-size: 13px; }
-
-.erp-layout a.erp-notification-item {
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
-    padding: 12px 15px;
-    border-bottom: 1px solid #eef0f3;
-    color: #354257;
-    text-decoration: none;
-}
-.erp-layout a.erp-notification-item:hover { background: #f5f6fa; }
-.erp-layout a.erp-notification-item.unread { background: #f7f5ff; }
-.erp-layout a.erp-notification-item strong { font-size: 13px; }
-.erp-layout a.erp-notification-item span { font-size: 12px; line-height: 1.45; overflow-wrap: anywhere; }
-.erp-layout a.erp-notification-item small { color: #8991a1; font-size: 11px; }
-
-@media (max-width: 768px) {
-    .erp-layout .erp-notification-panel { right: -55px; }
-    .erp-layout .erp-notification-button { width: 34px; height: 34px; }
+    .erp-layout .erp-notification-button {
+        width: 34px;
+        height: 34px;
+    }
 }

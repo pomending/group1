@@ -1,10 +1,16 @@
 
+/* ========================================
+   MODU GOODS ERP - 전체 레이아웃
+   Mist Lavender Theme
+======================================== */
+
 /* 전체 페이지 기본 설정 */
 html,
 body {
     margin: 0;
     padding: 0;
     min-height: 100%;
+    background: #F5F4FA;
 }
 
 #root {
@@ -28,7 +34,7 @@ body {
     margin: 0;
     padding: 0;
 
-    background: #f6f7fb;
+    background: #F5F4FA;
 }
 
 .erp-layout,
@@ -43,6 +49,7 @@ body {
     max-width: none;
 
     align-self: start;
+    border-right: 1px solid #D4CEE5;
 }
 
 /* Topbar + 메인 영역 */
@@ -58,6 +65,8 @@ body {
 
     margin: 0;
     padding: 0;
+
+    background: #F5F4FA;
 }
 
 /* 페이지 콘텐츠 */
@@ -73,7 +82,8 @@ body {
     margin: 0;
     padding: 0;
 
-    background: #f6f7fb;
+    background: #F5F4FA;
+    color: #39354F;
     text-align: left;
 }
 
@@ -82,7 +92,9 @@ body {
     grid-template-columns: minmax(0, 1fr);
 }
 
-/* 데스크톱 사이드바 접기 */
+/* ========================================
+   데스크톱 사이드바 접기
+======================================== */
 @media (min-width: 769px) {
 
     .erp-layout.erp-collapsed {
@@ -120,21 +132,23 @@ body {
     }
 }
 
-/* 화면이 좁아졌을 때 */
+/* ========================================
+   모바일 레이아웃
+======================================== */
 @media (max-width: 768px) {
 
-    /* 1열이 아니라 좁은 사이드바 + 메인 영역 */
+    /* 좁은 사이드바 + 메인 영역 */
     .erp-layout,
     .erp-layout.erp-collapsed {
         grid-template-columns: 76px minmax(0, 1fr);
     }
 
-    /* 팝업에서는 사이드바가 없으므로 전체 너비 */
+    /* 팝업 모드에서는 사이드바 제거 */
     .erp-layout.erp-popup {
         grid-template-columns: minmax(0, 1fr);
     }
 
-    /* 사이드바를 왼쪽 세로 형태로 유지 */
+    /* 사이드바 세로 유지 */
     .erp-layout > .erp-sidebar {
         position: sticky;
         top: 0;
@@ -164,12 +178,12 @@ body {
         display: none;
     }
 
-    /* MAIN MENU 글자 숨기기 */
+    /* 메뉴 제목 숨기기 */
     .erp-layout .erp-sidebar-section {
         display: none;
     }
 
-    /* 메뉴를 세로로 배치 */
+    /* 메뉴 세로 배치 */
     .erp-layout .erp-sidebar-nav {
         display: flex;
         flex-direction: column;
@@ -210,7 +224,9 @@ body {
     }
 }
 
-/* 데스크톱 페이지별 본문 너비 통일 */
+/* ========================================
+   데스크톱 페이지별 본문 너비 통일
+======================================== */
 @media (min-width: 769px) {
 
     /* 대시보드와 일정 관리 좌우 여백 */
@@ -220,7 +236,7 @@ body {
         padding-right: 24px;
     }
 
-    /* 프로젝트 관리와 일정 관리 최대 너비 해제 */
+    /* 프로젝트 관리와 일정 관리 너비 */
     .erp-layout .erp-main .pm-shell,
     .erp-layout .erp-main .pd-page .pd-container,
     .erp-layout .erp-main .pf-page .pf-container,

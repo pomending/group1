@@ -2877,3 +2877,92 @@
   .schedule-app .sm-form-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .schedule-app .sm-form-actions > button { width: 100%; min-width: 0; margin: 0; }
 }
+
+/* =====================================================
+   MODU GOODS ERP / Schedule - Mist Lavender theme
+   Original schedule grid, event colors, responsive and modal logic preserved.
+   Append-only visual overrides.
+===================================================== */
+.schedule-app {
+  --sm-accent: #68619A;
+  --sm-ink: #39354F;
+  --sm-border: #E6E1F0;
+  --sm-muted: #827A98;
+  --sm-soft: #F0EDFA;
+  --sm-lime: #F0EDFA;
+  background: #F5F4FA;
+  color: var(--sm-ink);
+}
+.schedule-app .sm-top { border-color: #E6E1F0; }
+.schedule-app .sm-mark { background: #68619A; color: #FFFFFF; }
+.schedule-app .sm-avatar,
+.schedule-app .sm-directory-project-symbol,
+.schedule-app .sm-person-avatar { background: #F0EDFA; color: #524B80; }
+.schedule-app .sm-eyebrow,
+.schedule-app .sm-stat strong { color: #68619A; }
+.schedule-app .sm-top-right,
+.schedule-app .sm-heading p,
+.schedule-app .sm-muted { color: #827A98; }
+.schedule-app .sm-btn,
+.schedule-app .sm-agenda-item .sm-edit-btn { background: #68619A; border-color: #68619A; color: #FFFFFF; }
+.schedule-app .sm-btn:hover,
+.schedule-app .sm-agenda-item .sm-edit-btn:hover { background: #575084; border-color: #575084; }
+.schedule-app .sm-secondary-btn,
+.schedule-app .sm-icon-btn,
+.schedule-app .sm-cancel { background: #FBFAFE; color: #524B80; border-color: #D8D1E8; }
+.schedule-app .sm-secondary-btn:hover,
+.schedule-app .sm-icon-btn:hover,
+.schedule-app .sm-cancel:hover { background: #F0EDFA; border-color: #C8C0E5; color: #524B80; }
+.schedule-app .sm-view-tabs button.active { background: #68619A; border-color: #68619A; color: #FFFFFF; }
+.schedule-app .sm-view-tabs button:not(.active):hover { background: #F0EDFA; border-color: #C8C0E5; color: #524B80; }
+.schedule-app .sm-card,
+.schedule-app .sm-stat,
+.schedule-app .sm-agenda-item.sm-favorite-item { background: #FFFFFF; border-color: #E6E1F0; }
+.schedule-app .sm-stat[aria-expanded="true"],
+.schedule-app .sm-calendar-project[aria-pressed="true"],
+.schedule-app .sm-directory-project-button[aria-pressed="true"] { background: #F0EDFA; border-color: #C8C0E5; color: #524B80; }
+.schedule-app .sm-calendar-project { background: #F7F5FC; color: #524B80; border-color: #DDD6EA; }
+.schedule-app .sm-directory-project-button { background: #FBFAFE; border-color: #E6E1F0; }
+.schedule-app .sm-calendar-filters { background: #F1EFF8; }
+.schedule-app .sm-calendar-filters select { color: #39354F; }
+.schedule-app .sm-month-view,
+.schedule-app .sm-staff-scroll { border-color: #E6E1F0; }
+.schedule-app .sm-weekday { background: #F1EFF8; color: #5D557A; }
+.schedule-app .sm-day { border-top-color: #EEEAF4; border-right-color: #EEEAF4; }
+.schedule-app .sm-day:hover { background: #FAF8FE; }
+.schedule-app .sm-day[aria-hidden="true"] { background: #F8F7FB; }
+.schedule-app .sm-day-num { color: #39354F; }
+.schedule-app .sm-month-view .sm-day.selected { background: #F0EDFA; box-shadow: inset 0 0 0 1px #C8C0E5; }
+.schedule-app .sm-month-view .sm-day.selected .sm-day-num { background: #68619A; color: #FFFFFF; box-shadow: 0 2px 6px rgba(65,55,95,.15); }
+.schedule-app .sm-month-view .sm-day.today:not(.selected) .sm-day-num:not(.saturday):not(.sunday):not(.holiday) { background: #F0EDFA; color: #524B80; box-shadow: inset 0 0 0 1px #C8C0E5; }
+.schedule-app .sm-week-column.selected { background: #F7F5FC; }
+.schedule-app .sm-week-column.selected .sm-week-date { color: #524B80; }
+.schedule-app .sm-agenda-date { background: #F7F5FC; border-color: #E6E1F0; }
+.schedule-app .sm-agenda-day { background: #68619A; color: #FFFFFF; }
+.schedule-app .sm-agenda-day strong,
+.schedule-app .sm-agenda-day span { color: #FFFFFF; }
+.schedule-app .sm-agenda-card { border-top-color: #C8C0E5; }
+.schedule-app .sm-upcoming-card { background: #FBFAFE; border-color: #E6E1F0; }
+.schedule-app .sm-empty { background: #F7F5FC; border-color: #E6E1F0; color: #827A98; }
+.schedule-app .sm-search-field:focus-within,
+.schedule-app .sm-form input:focus,
+.schedule-app .sm-form select:focus,
+.schedule-app .sm-form textarea:focus { border-color: #9C91C8; box-shadow: 0 0 0 3px rgba(156,145,200,.14); }
+.schedule-app .sm-form label { color: #55516C; }
+.schedule-app .sm-form input,
+.schedule-app .sm-form select,
+.schedule-app .sm-form textarea { border-color: #DDD8EA; color: #39354F; }
+.schedule-app button:focus-visible,
+.schedule-app input:focus-visible,
+.schedule-app select:focus-visible,
+.schedule-app textarea:focus-visible { outline-color: #9286C1; }
+.schedule-app .sm-category-tab.active,
+.schedule-app .sm-category-tab[aria-selected="true"] { background: #F0EDFA; border-color: #C8C0E5; color: #524B80; box-shadow: inset 0 0 0 1px #DDD6EA; }
+.schedule-app .sm-category-tab:hover { background: #F7F5FC; border-color: #C8C0E5; color: #524B80; }
+.schedule-app .sm-extra-settings { border-color: #E6E1F0; }
+.schedule-app .sm-extra-settings summary:hover { color: #524B80; }
+.schedule-app .sm-visibility { background: #F0EDFA; color: #524B80; border-color: #DDD6EA; }
+.schedule-app .sm-modal-backdrop { background: rgba(39,34,59,.38); }
+.schedule-app .sm-modal { border-color: #E6E1F0; background: #FFFFFF; }
+.schedule-app .sm-close { color: #827A98; }
+/* Preserve event-category, deadline, completion, weekend and holiday colors. */
