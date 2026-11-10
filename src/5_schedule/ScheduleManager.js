@@ -38,6 +38,7 @@ import {
   typeColors,
 } from "./scheduleData";
 import "./scheduleStyles.css";
+
 const EMPTY_PROJECTS = [];
 const saveStatusLabels = {
   saving: "저장 중…",
