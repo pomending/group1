@@ -10,7 +10,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useScheduleClock, useScheduleHolidays, useScheduleStorage, useScheduleTeam, useScheduleDraft } from "./scheduleHooks";
 import { loadSchedules } from "./scheduleStorage";
-import { createProjectMilestones, getProjectScheduleSummaries, resolveScheduleProject, getScheduleProjectWarning } from "./ScheduleProjectBridge";
+import { createProjectMilestones, resolveScheduleProject, getScheduleProjectWarning } from "./ScheduleProjectBridge";
 import ScheduleCalendar from "./ScheduleCalendar";
 import ScheduleFormModal, { ScheduleListModal } from "./ScheduleFormModal";
 import ScheduleSidebar from "./ScheduleSidebar";
@@ -116,36 +116,10 @@ export default function ScheduleManager() {
 
   const calendarYear = month.getFullYear();
   const holidayInfo = useScheduleHolidays(calendarYear);
-  const [projectSyncError, setProjectSyncError] = useState("");
-  const [projectSyncRetry, setProjectSyncRetry] = useState(0);
   const projectWarnings = items.map(item => ({ item, message: getScheduleProjectWarning(item, projects) }))
     .filter(entry => entry.message);
 
-  // [다른 파트 데이터 변경: 기존 동작] 5번의 일정 요약을 ERPContext.updateProject로 전달합니다.
-  // 변경 대상은 프로젝트의 schedules 배열이며, Context가 erp_projects 저장 및 프로젝트 변경 이력을 처리합니다.
-  // 일정 수정·삭제뿐 아니라 5번 화면을 열었을 때 요약이 달라도 실행됩니다. 3번 담당자와 공유할 변경 지점입니다.
-  // 프로젝트의 이름·담당자·시작일·마감일은 여기서 수정하지 않습니다. 아래 갱신 범위를 바꿀 때는 사전 확인이 필요합니다.
-  // 마지막 저장 성공 목록 중 연결된 항목만 projects[].schedules 요약으로 보관합니다.
-  // 새 일정은 프로젝트 ID로 연결하고, ID가 없는 기존 일정은 프로젝트명으로 찾습니다.
-  // 비교 후 달라진 경우에만 갱신해 Context 변경으로 인한 반복 업데이트를 막습니다.
-  useEffect(() => {
-    // 최초 읽기·저장 실패의 기본값이나 미저장 편집 내용은 프로젝트로 전달하지 않습니다.
-    if (loadedSchedules.readError || !savedItems || typeof updateProject !== "function") return;
-    const failures = [];
-    for (const project of projects) {
-      const linkedSchedules = getProjectScheduleSummaries(project, savedItems, projects);
-      if (JSON.stringify(project.schedules || []) !== JSON.stringify(linkedSchedules)) {
-        // 공통 Context의 검증 실패나 저장소 예외가 일정 화면까지 중단시키지 않게 합니다.
-        try {
-          const result = updateProject({ id: project.id, schedules: linkedSchedules });
-          if (result?.ok === false) failures.push(project.name + ": " + (result.message || "갱신을 거절했습니다."));
-        } catch {
-          failures.push(project.name + ": 저장 처리 중 오류가 발생했습니다.");
-        }
-      }
-    }
-    setProjectSyncError(failures.length ? "일정은 저장됐지만 프로젝트 연동에 실패했습니다. " + failures.join(" / ") : "");
-  }, [savedItems, projects, updateProject, loadedSchedules.readError, projectSyncRetry]);
+  
 
   // 선택한 프로젝트의 마지막 일정을 지웠다면 더 이상 없는 프로젝트 필터도 함께 해제합니다.
   useEffect(() => {
@@ -774,10 +748,6 @@ export default function ScheduleManager() {
             {message}
           </p>)}
         </details>}
-        {projectSyncError && <div className="sm-storage-warning" role="alert">
-          {projectSyncError}
-          <button type="button" className="sm-secondary-btn" onClick={() => setProjectSyncRetry(count => count + 1)}>프로젝트 연동 다시 시도</button>
-        </div>}
         {storageConflict && <div className="sm-storage-warning" role="alert">
           다른 탭에서 같은 일정을 변경했거나 저장 자료를 읽지 못해 자동 저장을 중지했습니다. 현재 화면의 변경은 아직 저장되지 않았습니다.
           <button type="button" className="sm-secondary-btn" onClick={reloadConflictingSchedules}>현재 변경을 버리고 저장된 일정 불러오기</button>
