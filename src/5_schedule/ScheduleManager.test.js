@@ -33,6 +33,40 @@ jest.mock("../context/ERPContext", () => {
   return { useERP: jest.fn() };
 });
 
+test("끊긴 프로젝트 연결을 찾아 편집 안내를 표시하고 재선택은 저장 전 원본에 반영하지 않는다", async () => {
+  saveSchedules([makeStoredSchedule({ scope: "업무용", category: "프로젝트", project: "삭제된 프로젝트", projectId: 99 })]);
+  render(<ScheduleManager />);
+  await act(async () => { expect(fetch).toHaveBeenCalled(); });
+  expect(screen.getByText("프로젝트 연결 확인 필요 · 1건")).toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "[테스트] 일정 연결 확인", hidden: true }));
+  expect(screen.getByRole("status", { name: "프로젝트 연결 안내" })).toHaveTextContent("연결했던 프로젝트가 없습니다");
+  fireEvent.click(screen.getByRole("button", { name: "프로젝트 다시 선택" }));
+  expect(screen.getByRole("combobox", { name: "프로젝트", exact: true })).toHaveValue("");
+  expect(JSON.parse(localStorage.getItem(storageKey))[0].projectId).toBe(99);
+});
+
+test.each(["실패 결과", "예외"])("프로젝트 연동이 %s여도 일정 화면과 저장 목록을 유지한다", async mode => {
+  const updateProject = jest.fn(() => {
+    if (mode === "예외") throw new Error("project storage failed");
+    return { ok: false, message: "프로젝트 기간 오류" };
+  });
+  useERP.mockReturnValue({ projects: [{ id: 1, name: "연결 프로젝트", schedules: [] }], employees: [], updateProject });
+  saveSchedules([makeStoredSchedule({ scope: "업무용", category: "프로젝트", project: "연결 프로젝트", projectId: 1 })]);
+  render(<ScheduleManager />);
+  await act(async () => { expect(fetch).toHaveBeenCalled(); });
+  expect(screen.getByRole("button", { name: "전체 일정 (1)" })).toBeInTheDocument();
+  expect(screen.getByRole("alert")).toHaveTextContent("프로젝트 연동");
+  expect(screen.getByRole("alert")).toHaveTextContent("연결 프로젝트");
+  expect(screen.getByRole("alert")).toHaveTextContent(mode === "예외" ? "저장 처리 중 오류" : "프로젝트 기간 오류");
+  const calls = updateProject.mock.calls.length;
+  fireEvent.click(screen.getByRole("button", { name: "프로젝트 연동 다시 시도" }));
+  expect(updateProject.mock.calls.length).toBeGreaterThan(calls);
+  updateProject.mockImplementation(() => ({ ok: true }));
+  fireEvent.click(screen.getByRole("button", { name: "프로젝트 연동 다시 시도" }));
+  expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  expect(JSON.parse(localStorage.getItem(storageKey))).toHaveLength(1);
+});
+
 test("일정 읽기 오류 중에는 프로젝트 요약을 유지하고 정상 재조회 후에만 갱신한다", async () => {
   const updateProject = jest.fn();
   const project = { id: 1, name: "[테스트] 프로젝트", schedules: [{ id: "original" }] };
@@ -52,7 +86,7 @@ test("일정 읽기 오류 중에는 프로젝트 요약을 유지하고 정상 
 test("최초 일정 저장에 실패하면 프로젝트 요약과 변경 이력을 갱신하지 않는다", async () => {
   const updateProject = jest.fn();
   useERP.mockReturnValue({ projects: [{ id: 1, name: "연결 프로젝트", schedules: [{ id: "유지" }] }], employees: [], updateProject });
-  saveSchedules([makeStoredSchedule({ project: "연결 프로젝트", projectId: 1 })]);
+  saveSchedules([makeStoredSchedule({ scope: "업무용", category: "프로젝트", project: "연결 프로젝트", projectId: 1 })]);
   const originalSet = Storage.prototype.setItem;
   jest.spyOn(Storage.prototype, "setItem").mockImplementation(function(key, value) {
     if (key === storageKey) throw new Error("quota");
@@ -67,7 +101,7 @@ test("최초 일정 저장에 실패하면 프로젝트 요약과 변경 이력�
 test("프로젝트 요약은 일정 쓰기 잠금이 풀려 실제 저장에 성공한 뒤에만 전달한다", async () => {
   const updateProject = jest.fn();
   useERP.mockReturnValue({ projects: [{ id: 1, name: "연결 프로젝트", schedules: [] }], employees: [], updateProject });
-  saveSchedules([makeStoredSchedule({ project: "연결 프로젝트", projectId: 1 })]);
+  saveSchedules([makeStoredSchedule({ scope: "업무용", category: "프로젝트", project: "연결 프로젝트", projectId: 1 })]);
   const originalLocks = Object.getOwnPropertyDescriptor(navigator, "locks");
   const jobs = [];
   Object.defineProperty(navigator, "locks", { configurable: true, value: {
