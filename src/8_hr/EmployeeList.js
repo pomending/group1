@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { departmentNames, statusClass } from "../utils/employeeUtils";
+import { useState } from "react";
+import { departmentNames, EMPLOYEE_STATUSES, statusClass } from "../utils/employeeUtils";
 import { formatEmployeeId } from "../utils/formatUtils";
 
 const PAGE_SIZE = 8;
@@ -66,11 +66,15 @@ export default function EmployeeList({ employees, projects, onView, onNew }) {
                 </select>
                 <select className="hr-input hr-select" aria-label="상태 필터" value={status} onChange={e => changeStatus(e.target.value)}>
                     <option value="">전체 상태</option>
-                    <option value="재직">재직</option><option value="휴직">휴직</option><option value="퇴사">퇴사</option>
+                    {EMPLOYEE_STATUSES.map(status =>
+                        <option key={status} value={status}>{status}</option>
+                    )}
                 </select>
                 <select className="hr-input hr-select" aria-label="정렬" value={sort} onChange={e => changeSort(e.target.value)}>
-                    <option value="newest">최근 입사 순</option><option value="oldest">오래된 입사 순</option>
-                    <option value="name">이름 순</option><option value="recentId">최근 등록 순</option>
+                    <option value="newest">최근 입사 순</option>
+                    <option value="oldest">오래된 입사 순</option>
+                    <option value="name">이름 순</option>
+                    <option value="recentId">최근 등록 순</option>
                 </select>
             </div>
 
@@ -85,13 +89,11 @@ export default function EmployeeList({ employees, projects, onView, onNew }) {
                             <th>연락처</th>
                             <th>입사일</th>
                             <th>상태</th>
-                            <th>담당 프로젝트</th>
                             <th>상세</th>
                         </tr>
                     </thead>
                     <tbody>
                         {visibleEmployees.map(employee => {
-                            const assignedCount = projects.filter(project => Number(project.managerId) === Number(employee.id)).length;
                             return (
                                 <tr key={employee.id}>
                                     <td className="hr-id">{formatEmployeeId(employee.id)}</td>
@@ -100,7 +102,6 @@ export default function EmployeeList({ employees, projects, onView, onNew }) {
                                     <td>{employee.phone}</td>
                                     <td>{employee.hireDate || "-"}</td>
                                     <td><span className={`hr-status hr-status-${statusClass(employee.status)}`}>{employee.status}</span></td>
-                                    <td>{assignedCount}건</td>
                                     <td><button type="button" className="hr-link-button" onClick={() => onView(employee.id)}>상세 보기</button></td>
                                 </tr>
                             );

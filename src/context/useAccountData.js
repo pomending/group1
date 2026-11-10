@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { initialAccounts } from "../data/mockAccounts";
-import { ACCOUNT_ROLES, ENABLE_STATUS } from "../utils/accountUtils";
+import { ACCOUNT_ROLES, ENABLE_STATUS, validatePassword } from "../utils/accountUtils";
 
 function useAccountData(employees) {
 
@@ -40,11 +40,11 @@ function useAccountData(employees) {
         if (!Number.isSafeInteger(employeeId) || employeeId <= 0) {
             return false;
         }
-    
+
         if (!ACCOUNT_ROLES.includes(role)) {
             return false;
         }
-    
+
         const employee = employees.find(
             e => e.id === employeeId
         );
@@ -98,15 +98,15 @@ function useAccountData(employees) {
         if (!Number.isSafeInteger(accountId) || accountId <= 0) {
             return false;
         }
-    
+
         const account = accounts.find(
             a => a.id === accountId
         );
-    
+
         if (!account) {
             return false;
         }
-    
+
         setAccounts(prev =>
             prev.map(a =>
                 a.id === accountId
@@ -114,7 +114,7 @@ function useAccountData(employees) {
                     : a
             )
         );
-    
+
         return true;
 
     };
@@ -123,17 +123,14 @@ function useAccountData(employees) {
 
         const activeAdmins = accounts.filter(a =>
             a.role === "ADMIN" &&
-            a.status === "활성" &&
-            employees.some(e =>
-                e.id === a.employeeId &&
-                ["재직", "휴직"].includes(e.status)
-            )
+            a.status === "활성"
         );
-    
+
         return (
             activeAdmins.length === 1 &&
             activeAdmins[0].id === accountId
         );
+
     };
 
     const changeAccountRole = (accountId, role) => {
@@ -160,8 +157,19 @@ function useAccountData(employees) {
             return false;
         }
 
+        if (status === "활성") {
+            const account = accounts.find(a => a.id === accountId);
+            const employee = employees.find(
+                e => e.id === account?.employeeId
+            );
+
+            if (!employee || employee.status === "퇴사") {
+                return false;
+            }
+        }
+
         return updateAccount(accountId, { status });
-        
+
     };
 
     const resetAccountPassword = (accountId) => {
@@ -174,32 +182,40 @@ function useAccountData(employees) {
     };
 
     const changePassword = (id, prevPwd, nextPwd1, nextPwd2) => {
-    
+
         const account = accounts.find(a => a.id === id);
     
         if (!account) {
-            return false;
+            return { ok: false, message: "계정을 찾을 수 없습니다." };
         }
     
         if (account.password !== prevPwd) {
-            return false;
+            return { ok: false, message: "기존 비밀번호가 올바르지 않습니다." };
         }
     
-        if (!nextPwd1 || nextPwd1 !== nextPwd2) {
-            return false;
+        const error = validatePassword(nextPwd1);
+    
+        if (error) {
+            return { ok: false, message: error };
+        }
+    
+        if (nextPwd1 !== nextPwd2) {
+            return { ok: false, message: "새 비밀번호가 일치하지 않습니다." };
         }
     
         if (nextPwd1 === prevPwd) {
-            return false;
+            return { ok: false, message: "기존 비밀번호와 다른 비밀번호를 입력하세요." };
         }
-
-        return updateAccount(id, {
-            password:nextPwd1,
-            mustChangePassword:false
+    
+        const success = updateAccount(id, {
+            password: nextPwd1,
+            mustChangePassword: false
         });
-
-    }
-
+    
+        return success
+            ? { ok: true }
+            : { ok: false, message: "비밀번호 변경에 실패했습니다." };
+    };
     const resetAccounts = () => {
 
         const nextId = Math.max(

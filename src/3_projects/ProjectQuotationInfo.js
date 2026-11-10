@@ -1,12 +1,14 @@
 import { formatPrice, formatQuotationId } from "../utils/formatUtils"
+import { totalPrice } from "../utils/quotationUtils";
 
 function ProjectQuotationInfo({ quotation, product, customer }) {
 
     if(!quotation) return null;
 
-    const quotationSupply = Number(quotation.quantity) * Number(quotation.unitPrice);
+    const quotationSupply = totalPrice(Number(quotation.quantity),Number(quotation.unitPrice));
 
     const quotationVat = quotationSupply * 0.1;
+
     const quotationTotal = quotationSupply + quotationVat;
 
     return (

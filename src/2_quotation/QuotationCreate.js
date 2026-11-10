@@ -4,7 +4,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { useERP } from "../context/ERPContext";
 import { formatQuotationId, formatEmployeeId } from "../utils/formatUtils";
 
-function QuotationCreate({ quotations, setQuotations }) {
+function QuotationCreate() {
 
     const navi = useNavigate();
     const location = useLocation();
@@ -15,7 +15,16 @@ function QuotationCreate({ quotations, setQuotations }) {
 
     const [customerId, setCustomerId] = useState("")
     */
-    const { consultations, customers, products, employees } = useERP();
+    const {
+        consultations,
+        customers,
+        products,
+        employees,
+        quotations,
+        addQuotation,
+        updateQuotation,
+        getNextQuotationId
+    } = useERP();
 
     const [consultationId, setConsultationId] = useState("")
     const [productId, setProductId] = useState("")
@@ -97,10 +106,7 @@ function QuotationCreate({ quotations, setQuotations }) {
         : customers.find(customer => customer.id === selectedConsultation?.customerId);
 
     //다음 견적 ID 생성
-    const nextId = Math.max(
-        0,
-        ...quotations.map((q) => q.id)
-    ) + 1;
+    const nextId = getNextQuotationId();
 
     //견적서 임시저장
     const handleTempSave = () => {
@@ -145,15 +151,12 @@ function QuotationCreate({ quotations, setQuotations }) {
             }
         }
         const newQuotation = {
-            id: editQuotation ? editQuotation.id : nextId,
-            /* 원본 비교 · 고객 ID를 직접 저장하던 코드
-            customerId: customerId ? Number(customerId) : null,
-            */
+            ...(editQuotation ? {id: editQuotation.id} : {}),
             customerId: selectedCustomer ? Number(selectedCustomer.id) : null,
             productId: productId ? Number(productId) : null,
             employeeId: employeeId ? Number(employeeId) : null,
             quantity: quantity === "" ? 0 : Number(quantity),
-            unitPrice: quantity === "" ? 0 : Number(unitPrice),
+            unitPrice: unitPrice === "" ? 0 : Number(unitPrice),
             createdAt: createAt,
             validUntil,
             deliveryDate,
@@ -164,15 +167,13 @@ function QuotationCreate({ quotations, setQuotations }) {
 
         if (editQuotation) {
             //기존 견적서 수정
-            setQuotations(
-                quotations.map(q =>
-                    q.id === editQuotation.id ? newQuotation : q
-                )
-            )
+            updateQuotation(newQuotation)
         } else {
             //신규 견적서 등록
-            setQuotations([...quotations, newQuotation])
+            addQuotation(newQuotation)
         }
+
+
         if (editQuotation) {
             navi(`/quotation/detail/${editQuotation.id}`)
         } else {

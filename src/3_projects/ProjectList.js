@@ -1,6 +1,6 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { useERP } from "../context/ERPContext";
-import { getDeadlineStatus, getProjectProgress, getProjectStatus, isProjectDelayed } from "../utils/projectStatus";
+import { getDeadlineStatus, getProjectProgress, getProjectStatus, isProjectDelayed } from "../utils/projectUtils";
 
 function ProjectList(props) {
 

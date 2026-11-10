@@ -1,7 +1,7 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { useERP } from "../context/ERPContext";
 import { formatProjectId, formatQuotationId } from "../utils/formatUtils";
-import { getProjectStatus } from "../utils/projectStatus";
+import { getProjectManagers, getProjectStatus } from "../utils/projectUtils";
 
 function ProjectEdit(props) {
 
@@ -22,38 +22,24 @@ function ProjectEdit(props) {
         c => c.id === selectedProject?.customerId
     );
 
-    const projectManagers = employees.filter(emp =>
-        emp.department === "경영지원팀" &&
-        emp.status === "재직"
+    const projectManagers = getProjectManagers(employees)
+
+    const pastManager = employees.find(
+        e => Number(e.id) === Number(selectedProject.managerId)
     );
 
+    const keepPastManager =
+        selectedProject.status === "완료" &&
+        pastManager &&
+        !projectManagers.some(e => e.id === pastManager.id);
+
     const editProject = (e) => {
+
         e.preventDefault();
 
-        // 유효성 체크
         if (!selectedProject) return;
 
-        if (projectName.trim() === "") {
-            alert("프로젝트명을 입력하세요.");
-            return;
-        }
-
-        if (!startDate || !dueDate) {
-            alert('시작일과 납품 예정일을 모두 입력하세요.');
-            return;
-        }
-
-        if (dueDate < startDate) {
-            alert("납품 예정일은 시작일보다 빠를 수 없습니다.");
-            return;
-        }
-
-        if (!projectManagers.some(emp => emp.id === managerId)) {
-            alert('프로젝트 담당자를 선택하세요.');
-            return;
-        }
-
-        updateProject({
+        const result = updateProject({
             id: selectedProject.id,
             name: projectName.trim(),
             managerId,
@@ -61,6 +47,11 @@ function ProjectEdit(props) {
             dueDate,
             description
         })
+
+        if (!result.ok) {
+            alert(result.message);
+            return;
+        }
 
         props.setPage("detail");
     };
@@ -142,6 +133,9 @@ function ProjectEdit(props) {
                                 onChange={(e) => setManagerId(Number(e.target.value))}
                             >
                                 <option value="" disabled>담당자를 선택하세요</option>
+                                {keepPastManager && (
+                                    <option key={pastManager.id} value={pastManager.id}>{pastManager.name} ({pastManager.status} · 기존 담당자)</option>
+                                )}
                                 {projectManagers.map(emp => (
                                     <option key={emp.id} value={emp.id}>{emp.name}</option>
                                 ))}

@@ -18,7 +18,7 @@ import {
   getRepeatSummary,
   getScheduleDurationFields,
   getScheduleFormError,
-  getScheduleCategories,
+  scheduleCategories,
   scheduleScopes,
   scheduleStatuses,
   normalizeAttendees,
@@ -122,7 +122,7 @@ export default function ScheduleFormModal({
         {form.scope === "업무용" && <div className="sm-category-picker sm-form-wide">
           <span className="sm-category-label">업무 분류</span>
           <div className="sm-category-tabs" role="group" aria-label="일정 분류" {...fieldErrorProps(fieldError, "category")}>
-            {getScheduleCategories(form.scope).map(category => (
+            {scheduleCategories.map(category => (
               <button type="button" key={category}
                 aria-pressed={form.category === category}
                 className={form.category === category ? "sm-category-tab active" : "sm-category-tab"}

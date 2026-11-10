@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useERP } from "../context/ERPContext";
 import { formatQuotationId } from "../utils/formatUtils";
 import ProjectQuotationInfo from "./ProjectQuotationInfo";
+import { getProjectManagers } from "../utils/projectUtils";
 
 function ProjectForm(props) {
 
@@ -19,54 +20,25 @@ function ProjectForm(props) {
         product => product.id === selectedQuotation?.productId
     );
 
-    const projectManagers = employees.filter(emp =>
-        emp.department === "경영지원팀" &&
-        emp.status === "재직"
-    );
+    const projectManagers = getProjectManagers(employees)
 
     const handleSubmit = (e) => {
+
         e.preventDefault();
 
-        // 데이터에 대한 유효성 체크들
-        if (projectName.trim() === '') {
-            alert('프로젝트명을 입력하세요');
-            return;
-        }
-
-        if (!selectedQuotation || selectedQuotation.status !== "승인 완료") {
-            alert("승인된 견적을 선택하세요.");
-            return;
-        }
-
-        if (projects.some(p => p.quotationId === selectedQuotation.id)) {
-            alert("이미 다른 프로젝트에 연결된 견적입니다.");
-            return;
-        }
-
-        if (!projectManagers.some(emp => emp.id === managerId)) {
-            alert('프로젝트 담당자를 선택하세요.');
-            return;
-        }
-
-        // 간단한 날짜 관련 유효성 체크들
-        const today = new Date().toLocaleDateString('sv-SE');
-
-        if (!selectedQuotation?.deliveryDate) {
-            alert('견적에 납품 예정일이 없습니다.');
-            return;
-        }
-
-        addProject({
+        const result = addProject({
             name: projectName.trim(),
             managerId: managerId,
-            startDate: today,
+            startDate: new Date().toLocaleDateString('sv-SE'),
             completedDate: null,
             description: description.trim(),
-            dueDate: selectedQuotation.deliveryDate,
-            quotationId: Number(selQuotation),
-            customerId: selectedQuotation.customerId,
-            status: '대기'
+            quotationId: Number(selQuotation)
         });
+
+        if (!result.ok) {
+            alert(result.message);
+            return;
+        }
 
         props.setPage('list');
     };

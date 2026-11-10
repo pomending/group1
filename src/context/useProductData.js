@@ -55,9 +55,11 @@ function isStoredProductList(value) {
 export function useProductData(seedProducts = initialProducts) {
     const createInitialProducts = () => seedProducts.map(product => ({ ...product }));
     const readFailed = useRef(false);
+    const savedRaw = useRef(null);
     const [products, setProductState] = useState(() => {
         try {
             const raw = localStorage.getItem(STORAGE_KEY);
+            savedRaw.current = raw;
             if (raw === null) return createInitialProducts();
             const saved = JSON.parse(raw);
             if (!isStoredProductList(saved)) throw new Error("Invalid product data");
@@ -77,17 +79,42 @@ export function useProductData(seedProducts = initialProducts) {
         if (readFailed.current && !reset) {
             return failure(null, "저장된 상품을 읽지 못해 변경을 저장할 수 없습니다. 기존 저장 자료를 확인해 주세요.");
         }
+        const imageBackup = [];
         try {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+            // 다른 탭이 먼저 저장했다면 현재 탭의 오래된 목록으로 덮어쓰지 않습니다.
+            if (!reset && localStorage.getItem(STORAGE_KEY) !== savedRaw.current) {
+                const message = "다른 탭에서 상품이 변경되었습니다. 입력 내용을 확인한 뒤 새로고침하고 다시 시도해 주세요.";
+                setProductStorageError(message);
+                return failure(null, message);
+            }
+            if (reset) {
+                // 번호가 재사용되는 초기화에서는 이전 상품의 이미지 연결도 함께 지웁니다.
+                // 실패 시 복원할 수 있도록 상품 이미지 키만 먼저 복사합니다.
+                for (let index = 0; index < localStorage.length; index += 1) {
+                    const key = localStorage.key(index);
+                    if (key?.startsWith("erp_product_image:")) imageBackup.push([key, localStorage.getItem(key)]);
+                }
+                for (const [key] of imageBackup) localStorage.removeItem(key);
+            }
+            const serialized = JSON.stringify(next);
+            localStorage.setItem(STORAGE_KEY, serialized);
+            savedRaw.current = serialized;
         } catch {
+            // 상품 초기화 저장이 실패하면 지웠던 이미지 연결을 되돌립니다.
+            let restored = true;
+            for (const [key, value] of imageBackup) {
+                try { localStorage.setItem(key, value); } catch { restored = false; }
+            }
             const message = "상품을 저장하지 못했습니다. 브라우저 저장 공간·접근 설정을 확인한 뒤 다시 시도해 주세요.";
-            setProductStorageError(message);
-            return failure(null, message);
+            const detail = restored ? message : message + " 일부 이미지 연결도 복구하지 못했습니다.";
+            setProductStorageError(detail);
+            return failure(null, detail);
         }
         readFailed.current = false;
         latestProducts.current = next;
         setProductState(next);
         setProductStorageError("");
+        if (reset) window.dispatchEvent(new Event("erp-product-images-reset"));
         return { ok: true };
     }
 

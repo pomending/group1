@@ -14,49 +14,67 @@ export function resolveScheduleProject(form, projects) {
   const project = form.project.trim();
   const projectId = getScheduleProjectId(form);
   if (!project || form.scope === "개인 일정용") return { project: "", projectId: null };
-  const linked = projectId !== null
-    ? projects.find(entry => String(entry.id) === String(projectId))
-    : projects.find(entry => entry.name === project);
+  let linked;
+  if (projectId !== null) {
+    linked = projects.find(entry => String(entry.id) === String(projectId));
+  } else {
+    linked = projects.find(entry => entry.name === project);
+  }
   // 삭제된 프로젝트의 ID를 동명 프로젝트로 자동 재연결하지 않고 기존 정보를 보존합니다.
-  return linked ? { project: linked.name, projectId: projectId ?? linked.id } : { project, projectId };
+  if (!linked) return { project, projectId };
+  return { project: linked.name, projectId: projectId ?? linked.id };
 }
 
 // 프로젝트의 시작일과 마감일을 저장 일정과 분리한 읽기 전용 달력 항목으로 만듭니다.
 // 일정관리는 Context 직원 목록을 두 번째 인자로 전달합니다.
 // DashboardToday는 담당자를 표시하지 않아 프로젝트만 전달합니다. 직원 목록이 없거나 ID가 일치하지 않으면 미지정입니다.
 export function createProjectMilestones(projects, employees = []) {
-  return projects.flatMap((project) => [
-    { date: project.startDate, milestoneType: "시작일", key: "start" },
-    { date: project.dueDate, milestoneType: "마감일", key: "due" },
-  ].filter(({ date }) => isValidScheduleDate(date)).map(({ date, milestoneType, key }) => ({
-    id: "project-" + project.id + "-" + key,
-    date,
-    time: "00:00",
-    endTime: "23:59",
-    isAllDay: true,
-    title: project.name + " · " + milestoneType,
-    project: project.name,
-    projectManager: employees.find(employee => String(employee.id) === String(project.managerId))?.name || "미지정",
-    person: "프로젝트 일정",
-    type: "기획",
-    category: "프로젝트",
-    scope: "업무용",
-    visibility: "shared",
-    status: "pending",
-    color: typeColors["기획"],
-    isProjectMilestone: true,
-    milestoneType,
-  })));
+  const milestones = [];
+  for (const project of projects) {
+    const manager = employees.find(employee => String(employee.id) === String(project.managerId));
+    const dates = [
+      { date: project.startDate, milestoneType: "시작일", key: "start" },
+      { date: project.dueDate, milestoneType: "마감일", key: "due" },
+    ];
+
+    // 프로젝트마다 시작일과 마감일을 하나씩 확인하고, 유효한 날짜만 달력에 추가합니다.
+    for (const entry of dates) {
+      if (!isValidScheduleDate(entry.date)) continue;
+      milestones.push({
+        id: "project-" + project.id + "-" + entry.key,
+        date: entry.date,
+        time: "00:00",
+        endTime: "23:59",
+        isAllDay: true,
+        title: project.name + " · " + entry.milestoneType,
+        project: project.name,
+        projectManager: manager?.name || "미지정",
+        person: "프로젝트 일정",
+        type: "기획",
+        category: "프로젝트",
+        scope: "업무용",
+        visibility: "shared",
+        status: "pending",
+        color: typeColors["기획"],
+        isProjectMilestone: true,
+        milestoneType: entry.milestoneType,
+      });
+    }
+  }
+  return milestones;
 }
 
 // 일정의 프로젝트 ID를 우선 사용하고, ID가 없는 기존 일정은 이름으로 연결합니다.
 export function getProjectScheduleSummaries(project, items) {
-  return items
-    .filter((item) => item.project && (
-      (item.projectId != null && String(item.projectId) === String(project.id))
-      || (item.projectId == null && item.project === project.name)
-    ))
-    .map((item) => ({
+  const summaries = [];
+  for (const item of items) {
+    // ID가 있으면 ID로 비교합니다. 예전 일정처럼 ID가 없을 때만 이름을 비교합니다.
+    let matchesProject = item.project === project.name;
+    if (item.projectId != null) {
+      matchesProject = String(item.projectId) === String(project.id);
+    }
+    if (!item.project || !matchesProject) continue;
+    summaries.push({
       id: item.id,
       title: item.title,
       date: item.date,
@@ -75,5 +93,7 @@ export function getProjectScheduleSummaries(project, items) {
       repeatInterval: item.repeatInterval || 1,
       holidayRule: item.holidayRule || "keep",
       excludedDates: item.excludedDates || [],
-    }));
+    });
+  }
+  return summaries;
 }

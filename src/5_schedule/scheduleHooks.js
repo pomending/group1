@@ -88,6 +88,8 @@ export function useScheduleStorage() {
   const [loadedSchedules, setLoadedSchedules] = useState(loadSchedules);
   const [items, setItems] = useState(loadedSchedules.items);
   const savedVersion = useRef({ raw: loadedSchedules.raw, items: loadedSchedules.items });
+  // 프로젝트 연동에는 화면의 편집 목록 대신 마지막 저장 성공 목록을 전달합니다.
+  const [savedItems, setSavedItems] = useState(null);
   const editingVersion = useRef(null);
   const [storageConflict, setStorageConflict] = useState(false);
   const [storageError, setStorageError] = useState(false);
@@ -123,6 +125,7 @@ export function useScheduleStorage() {
         const serialized = JSON.stringify(next);
         localStorage.setItem("made-mate-schedules", serialized);
         savedVersion.current = { raw: serialized, items: next };
+        setSavedItems(next);
         if (JSON.stringify(items) !== serialized) setItems(next);
         setStorageError(false);
         // 저장소 쓰기가 성공한 뒤에만 완료로 표시합니다.
@@ -171,15 +174,23 @@ export function useScheduleStorage() {
     setSaveState("saving");
   }
 
+  let saveStatus = saveState;
+  if (loadedSchedules.readError || storageConflict) {
+    saveStatus = "blocked";
+  } else if (storageError) {
+    saveStatus = "error";
+  }
+
   return {
     loadedSchedules,
+    savedItems,
     items,
     setItems,
     editingVersion,
     storageConflict,
     setStorageConflict,
     storageError,
-    saveStatus: loadedSchedules.readError || storageConflict ? "blocked" : storageError ? "error" : saveState,
+    saveStatus,
     reloadConflictingSchedules,
   };
 }
@@ -190,17 +201,74 @@ export function useScheduleTeam() {
   const [teamMembers, setTeamMembers] = useState(loadedTeam.members);
   const [excludedTeamMembers, setExcludedTeamMembers] = useState(loadedTeam.excluded);
   const [teamStorageError, setTeamStorageError] = useState(false);
+  const savedTeam = useRef({ members: loadedTeam.members, excluded: loadedTeam.excluded });
+  const [teamRevision, setTeamRevision] = useState(0);
 
   useEffect(() => {
     if (loadedTeam.readError) return;
-    try {
-      localStorage.setItem("made-mate-schedule-team", JSON.stringify(teamMembers));
-      localStorage.setItem("made-mate-excluded-team", JSON.stringify(excludedTeamMembers));
-      setTeamStorageError(false);
-    } catch {
-      setTeamStorageError(true);
+    let active = true;
+    // 이름별로 기준 목록과 비교합니다. 현재 탭에서 추가·삭제한 이름만 우선하고
+    // 건드리지 않은 이름에는 다른 탭의 변경을 반영합니다.
+    function mergeNames(base, local, remote) {
+      const names = new Set([...base, ...local, ...remote]);
+      const merged = [];
+      for (const name of names) {
+        const changedHere = base.includes(name) !== local.includes(name);
+        // 이 화면에서 바꾼 이름은 현재 선택을, 나머지는 다른 탭의 선택을 따릅니다.
+        let keepName = remote.includes(name);
+        if (changedHere) keepName = local.includes(name);
+        if (keepName) merged.push(name);
+      }
+      return merged.sort((a, b) => a.localeCompare(b, "ko"));
     }
-  }, [teamMembers, excludedTeamMembers, loadedTeam.readError]);
+    function persistTeam() {
+      if (!active) return;
+      try {
+        const remote = loadTeamMembers();
+        if (remote.readError) throw new Error("Invalid remote team");
+        const excluded = mergeNames(savedTeam.current.excluded, excludedTeamMembers, remote.excluded);
+        const members = mergeNames(savedTeam.current.members, teamMembers, remote.members)
+          .filter(name => !excluded.includes(name));
+        const previousMembers = localStorage.getItem("made-mate-schedule-team");
+        const previousExcluded = localStorage.getItem("made-mate-excluded-team");
+        const memberJson = JSON.stringify(members);
+        const excludedJson = JSON.stringify(excluded);
+        try {
+          // 값이 같으면 다시 쓰지 않아 탭 사이의 불필요한 저장 이벤트를 막습니다.
+          if (previousMembers !== memberJson) localStorage.setItem("made-mate-schedule-team", memberJson);
+          if (previousExcluded !== excludedJson) localStorage.setItem("made-mate-excluded-team", excludedJson);
+        } catch (error) {
+          // 두 키 중 하나만 저장된 경우 기존 값을 복원하고 실패를 알립니다.
+          if (previousMembers === null) localStorage.removeItem("made-mate-schedule-team");
+          else localStorage.setItem("made-mate-schedule-team", previousMembers);
+          if (previousExcluded === null) localStorage.removeItem("made-mate-excluded-team");
+          else localStorage.setItem("made-mate-excluded-team", previousExcluded);
+          throw error;
+        }
+        savedTeam.current = { members, excluded };
+        if (JSON.stringify(teamMembers) !== memberJson) setTeamMembers(members);
+        if (JSON.stringify(excludedTeamMembers) !== excludedJson) setExcludedTeamMembers(excluded);
+        setTeamStorageError(false);
+      } catch {
+        setTeamStorageError(true);
+      }
+    }
+    if (navigator.locks?.request) {
+      navigator.locks.request("made-mate-schedule-team-write", persistTeam)
+        .catch(() => { if (active) setTeamStorageError(true); });
+    } else persistTeam();
+    return () => { active = false; };
+  }, [teamMembers, excludedTeamMembers, loadedTeam.readError, teamRevision]);
+
+  useEffect(() => {
+    function refreshTeam(event) {
+      if (event.key === null || ["made-mate-schedule-team", "made-mate-excluded-team"].includes(event.key)) {
+        setTeamRevision(current => current + 1);
+      }
+    }
+    window.addEventListener("storage", refreshTeam);
+    return () => window.removeEventListener("storage", refreshTeam);
+  }, []);
 
   function addTeamMember(value) {
     if (loadedTeam.readError) return "팀원 목록을 읽지 못했습니다. 저장된 자료를 확인해 주세요.";
@@ -240,12 +308,19 @@ export function useScheduleDraft(form, isEditing) {
       if (raw === null) return { draft: null, error: "" };
       const saved = JSON.parse(raw);
       const defaults = createEmptyForm();
-      if (saved?.version !== 1 || !saved.form || !Object.keys(defaults).every(name => {
+      if (saved?.version !== 1 || !saved.form) throw new Error("Invalid draft");
+      const draft = {};
+      // 기본 폼에 있는 필드만 읽습니다. 숫자 입력란은 작성 중 빈칸도 허용합니다.
+      for (const name of Object.keys(defaults)) {
         const value = saved.form[name];
-        return typeof defaults[name] === "number" ? value === "" || (typeof value === "number" && Number.isFinite(value))
-          : typeof value === typeof defaults[name];
-      })) throw new Error("Invalid draft");
-      return { draft: Object.fromEntries(Object.keys(defaults).map(name => [name, saved.form[name]])), error: "" };
+        let valid = typeof value === typeof defaults[name];
+        if (typeof defaults[name] === "number") {
+          valid = value === "" || (typeof value === "number" && Number.isFinite(value));
+        }
+        if (!valid) throw new Error("Invalid draft field");
+        draft[name] = value;
+      }
+      return { draft, error: "" };
     } catch { return { draft: null, error: "임시 작성 내용을 읽지 못했습니다. 임시 보관 삭제 후 다시 작성할 수 있습니다." }; }
   });
   const [draft, setDraft] = useState(initial.draft);
@@ -253,7 +328,10 @@ export function useScheduleDraft(form, isEditing) {
   useEffect(() => {
     if (!form || isEditing || draftError) return;
     const defaults = createEmptyForm();
-    const values = Object.fromEntries(Object.keys(defaults).map(name => [name, form[name]]));
+    const values = {};
+    for (const name of Object.keys(defaults)) {
+      values[name] = form[name];
+    }
     try {
       if (JSON.stringify(values) === JSON.stringify({ ...defaults, date: form.date })) {
         sessionStorage.removeItem(key);
@@ -266,8 +344,13 @@ export function useScheduleDraft(form, isEditing) {
   }, [form, isEditing, draftError]);
   // 새 일정 등록·닫기 승인 또는 사용자의 임시 보관 삭제·초기화에서 호출합니다. 삭제 실패도 화면에 알립니다.
   function clearDraft() {
-    try { sessionStorage.removeItem(key); setDraft(null); setDraftError(""); }
-    catch { setDraftError("임시 보관 내용을 삭제하지 못했습니다. 브라우저 저장소 설정을 확인해 주세요."); }
+    try {
+      sessionStorage.removeItem(key);
+      setDraft(null);
+      setDraftError("");
+    } catch {
+      setDraftError("임시 보관 내용을 삭제하지 못했습니다. 브라우저 저장소 설정을 확인해 주세요.");
+    }
   }
   return { draft, draftError, clearDraft };
 }

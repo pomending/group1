@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { departmentNames, EMPLOYEE_POSITIONS, EMPLOYEE_STATUSES } from "../utils/employeeUtils";
 
 const emptyEmployee = {
@@ -9,9 +9,13 @@ const emptyEmployee = {
 export default function EmployeeForm({ employee, employees, onSave, onCancel }) {
     const isEdit = Boolean(employee);
     const [form, setForm] = useState(() => employee ? {
-        name: employee.name || "", department: employee.department || "",
-        position: employee.position || "", status: employee.status || "재직",
-        email: employee.email || "", phone: employee.phone || "", hireDate: employee.hireDate || ""
+        name: employee.name || "", 
+        department: employee.department || "",
+        position: employee.position || "", 
+        status: employee.status || "재직",
+        email: employee.email || "", 
+        phone: employee.phone || "", 
+        hireDate: employee.hireDate || ""
     } : { ...emptyEmployee });
     const [error, setError] = useState("");
 

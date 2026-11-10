@@ -16,8 +16,13 @@ export function getProductInput(product) {
 export function getProductPriceRange(minValue, maxValue) {
   const min = minValue === "" ? 0 : Number(minValue);
   const max = maxValue === "" ? Infinity : Number(maxValue);
-  if (!Number.isSafeInteger(min) || min < 0
-    || (maxValue !== "" && (!Number.isSafeInteger(max) || max < 0))) {
+  const invalidMin = !Number.isSafeInteger(min) || min < 0;
+  // 최대 금액을 비웠다면 제한이 없으므로 정수 검사를 하지 않습니다.
+  let invalidMax = false;
+  if (maxValue !== "") {
+    invalidMax = !Number.isSafeInteger(max) || max < 0;
+  }
+  if (invalidMin || invalidMax) {
     return { min, max, error: "단가는 0 이상의 정수로 입력해 주세요." };
   }
   if (min > max) return { min, max, error: "최소 단가는 최대 단가 이하여야 합니다." };
@@ -47,7 +52,10 @@ function parseProductDate(value) {
   const dateOnly = /^\d{4}-\d{2}-\d{2}$/.test(value);
   const date = new Date(dateOnly ? `${value}T00:00:00+09:00` : value);
   if (!Number.isFinite(date.getTime())) return null;
-  const parts = Object.fromEntries(productDateFormatter.formatToParts(date).map(part => [part.type, part.value]));
+  const parts = {};
+  for (const part of productDateFormatter.formatToParts(date)) {
+    parts[part.type] = part.value;
+  }
   const day = `${parts.year}-${parts.month}-${parts.day}`;
   if (dateOnly && day !== value) return null;
   return { date, dateOnly, parts, day };
@@ -58,7 +66,10 @@ export function formatProductDate(value, withTime = false) {
   const parsed = parseProductDate(value);
   if (!parsed) return "—";
   const { dateOnly, parts, day } = parsed;
-  return withTime && !dateOnly ? `${day} ${parts.hour}:${parts.minute}:${parts.second}` : day;
+  if (withTime && !dateOnly) {
+    return `${day} ${parts.hour}:${parts.minute}:${parts.second}`;
+  }
+  return day;
 }
 
 // 문자열 순서 대신 실제 시각으로 비교합니다. 날짜가 없거나 잘못된 항목은 양쪽 정렬 모두 마지막에 둡니다.
@@ -72,16 +83,25 @@ export function compareProductDates(left, right, newestFirst = true) {
 
 // Excel에서도 한글을 읽도록 BOM을 넣고 쉼표·따옴표·줄바꿈을 CSV 규칙으로 감쌉니다.
 export function createProductCsv(products) {
-  const cell = value => {
+  function formatCell(value) {
     let text = String(value ?? "");
     // 상품명이 계산식으로 실행되지 않고 문자 그대로 열리도록 처리합니다.
     if (typeof value === "string" && (/^\s*[=+\-@]/.test(text) || /^[\t\r\n]/.test(text))) text = "'" + text;
     return '"' + text.replace(/"/g, '""') + '"';
-  };
-  const rows = [["상품 번호", "상품명", "기본 단가 (원)", "판매 상태", "등록일 (한국 시간)", "최종 수정일 (한국 시간)"],
-    ...products.map(product => [
+  }
+  const rows = [["상품 번호", "상품명", "기본 단가 (원)", "판매 상태", "등록일 (한국 시간)", "최종 수정일 (한국 시간)"]];
+  for (const product of products) {
+    rows.push([
       product.id, product.productName, product.productPrice, getProductStatus(product.productStatus).label,
       formatProductDate(product.productCreatedAt, true), formatProductDate(product.productUpdatedAt, true),
-    ])];
-  return "\uFEFF" + rows.map(row => row.map(cell).join(",")).join("\r\n") + "\r\n";
+    ]);
+  }
+
+  // 한 칸씩 CSV 문자로 바꾸고, 쉼표로 연결해 한 줄을 만듭니다.
+  const lines = [];
+  for (const row of rows) {
+    const cells = row.map(formatCell);
+    lines.push(cells.join(","));
+  }
+  return "\uFEFF" + lines.join("\r\n") + "\r\n";
 }

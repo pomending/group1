@@ -18,14 +18,14 @@ import "./productStyles.css";
 
 const PAGE_SIZE = 10;
 // 정렬은 filter가 만든 새 배열에만 적용합니다. 같은 값이면 ID순으로 정해 페이지 이동 중 순서를 유지합니다.
-const productSorters = {
-  newest: (a, b) => compareProductDates(a.productCreatedAt, b.productCreatedAt),
-  oldest: (a, b) => compareProductDates(a.productCreatedAt, b.productCreatedAt, false),
-  updated: (a, b) => compareProductDates(a.productUpdatedAt, b.productUpdatedAt),
-  name: (a, b) => a.productName.localeCompare(b.productName, "ko"),
-  priceAsc: (a, b) => a.productPrice - b.productPrice,
-  priceDesc: (a, b) => b.productPrice - a.productPrice,
-};
+function compareProducts(a, b, sort) {
+  if (sort === "oldest") return compareProductDates(a.productCreatedAt, b.productCreatedAt, false);
+  if (sort === "updated") return compareProductDates(a.productUpdatedAt, b.productUpdatedAt);
+  if (sort === "name") return a.productName.localeCompare(b.productName, "ko");
+  if (sort === "priceAsc") return a.productPrice - b.productPrice;
+  if (sort === "priceDesc") return b.productPrice - a.productPrice;
+  return compareProductDates(a.productCreatedAt, b.productCreatedAt);
+}
 
 export default function ProductPage() {
   // [1] 데이터와 화면 상태: Context 상품과 검색·편집 조건을 분리합니다.
@@ -46,25 +46,34 @@ export default function ProductPage() {
   const selectedProduct = products.find(product => product.id === selectedId);
   const [notice, setNotice] = useState("");
   // 복귀 위치는 상품명 대신 ID로 기억합니다. 이름 변경·필터 결과 제외 시에도 안전하게 처리합니다.
-  const focusTargets = useRef(new Map());
+  const focusTargets = useRef({});
   const focusRequest = useRef(null);
   const listReturnFocus = useRef("list-heading");
   const editReturnFocus = useRef("register");
   const focusRef = key => node => {
-    if (node) focusTargets.current.set(key, node);
-    else focusTargets.current.delete(key);
+    if (node) focusTargets.current[key] = node;
+    else delete focusTargets.current[key];
   };
   // [2] 목록 계산: 현황은 전체 상품, visible은 조회 결과, pageProducts는 현재 페이지입니다.
   const statusCounts = productStatuses.map(option => [
     option.value, option.label, products.filter(product => product.productStatus === option.value).length,
   ]);
   const searchQuery = normalizeProductName(query);
-  const visible = products.filter(product =>
-    (normalizeProductName(product.productName).includes(searchQuery) || String(product.id) === query.trim())
-    && (status === "all" || product.productStatus === status)
-    && !range.error && product.productPrice >= range.min && product.productPrice <= range.max
-  ).sort((a, b) => productSorters[sort](a, b)
-    || String(a.id).localeCompare(String(b.id), "en", { numeric: true }));
+  const visible = products.filter(product => {
+    // 이름 또는 번호로 검색한 뒤 판매 상태와 단가 조건을 차례로 확인합니다.
+    const matchesName = normalizeProductName(product.productName).includes(searchQuery);
+    const matchesId = String(product.id) === query.trim();
+    const matchesStatus = status === "all" || product.productStatus === status;
+    const matchesPrice = !range.error
+      && product.productPrice >= range.min && product.productPrice <= range.max;
+    return (matchesName || matchesId) && matchesStatus && matchesPrice;
+  });
+  visible.sort((a, b) => {
+    const order = compareProducts(a, b, sort);
+    if (order) return order;
+    // 정렬값이 같으면 상품 번호순으로 표시합니다.
+    return String(a.id).localeCompare(String(b.id), "en", { numeric: true });
+  });
   const totalPages = Math.max(1, Math.ceil(visible.length / PAGE_SIZE));
   // 외부 Context 갱신으로 목록이 줄어도 없는 페이지를 표시하지 않습니다.
   const page = Math.min(currentPage, totalPages);
@@ -73,8 +82,8 @@ export default function ProductPage() {
 
   useLayoutEffect(() => {
     if (!focusRequest.current) return;
-    const target = focusTargets.current.get(focusRequest.current)
-      || focusTargets.current.get(selectedId === null ? "list-heading" : "detail-heading");
+    const target = focusTargets.current[focusRequest.current]
+      || focusTargets.current[selectedId === null ? "list-heading" : "detail-heading"];
     focusRequest.current = null;
     target?.focus();
   }, [editing, selectedId, products, page]);
@@ -120,7 +129,7 @@ export default function ProductPage() {
   function resetPriceRange() {
     setPriceRange({ min: "", max: "" });
     setCurrentPage(1);
-    focusTargets.current.get("min-price")?.focus();
+    focusTargets.current["min-price"]?.focus();
   }
 
   // 페이지를 자르기 전 검색·필터·정렬 결과 전체를 내려받습니다. 상품 상태와 저장소에는 쓰지 않습니다.
@@ -152,7 +161,13 @@ export default function ProductPage() {
     // ID·날짜 생성과 공통 목록 갱신은 상품 Hook에 맡깁니다. 기존 견적 단가는 수정하지 않습니다.
     const result = isNew ? addProduct(input) : updateProduct({ id: editing.id, ...input });
     if (!result.ok) return result;
-    setNotice(!result.changed ? "변경된 내용이 없습니다." : isNew ? "상품을 등록했습니다." : "상품을 수정했습니다.");
+    if (!result.changed) {
+      setNotice("변경된 내용이 없습니다.");
+    } else if (isNew) {
+      setNotice("상품을 등록했습니다.");
+    } else {
+      setNotice("상품을 수정했습니다.");
+    }
     closeEditor();
     // 기존 상품 수정은 검색·페이지를 유지하고 신규 등록일 때만 조건을 해제합니다.
     if (isNew) {
@@ -386,7 +401,7 @@ export default function ProductPage() {
                                 aria-label="검색 조건 초기화"
                                 onClick={() => {
                                   resetConditions();
-                                  focusTargets.current.get("search")?.focus();
+                                  focusTargets.current.search?.focus();
                                 }}
                               >
                                 조건 초기화
