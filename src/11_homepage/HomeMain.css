@@ -1,0 +1,160 @@
+
+/* 홈 화면 기본 디자인 */
+.goods-home {
+    min-height: 100vh;
+    padding: 44px 24px 90px;
+    background: #faf5eb;
+    color: #29231e;
+    font-family: "Pretendard", "Noto Sans KR", Arial, sans-serif;
+}
+.goods-home * { box-sizing: border-box; }
+.goods-home-inner { max-width: 1160px; margin: 0 auto; }
+
+/* 메인 소개 */
+.goods-hero {
+    display: grid;
+    grid-template-columns: 3fr 2fr;
+    min-height: 420px;
+    border: 2px solid #29231e;
+    background: #fff8ec;
+    overflow: hidden;
+}
+.goods-hero-text { padding: 58px 52px; }
+.goods-hero-label {
+    margin: 0 0 22px;
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 2px;
+}
+.goods-hero h1 {
+    margin: 0;
+    font-size: 52px;
+    font-weight: 900;
+    line-height: 1.25;
+    letter-spacing: -2px;
+}
+.goods-hero h1 span { display: block; color: #e55e37; }
+.goods-hero-description {
+    margin: 22px 0 30px;
+    color: #6e6259;
+    font-size: 15px;
+    line-height: 1.9;
+    word-break: keep-all;
+}
+.goods-view-button {
+    display: inline-block;
+    padding: 15px 22px;
+    background: #29231e;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 700;
+    text-decoration: none;
+}
+.goods-view-button:hover { background: #e55e37; color: #fff; }
+.goods-view-button span { margin-left: 12px; }
+
+/* 메인 오른쪽 그림 */
+.goods-hero-art {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-left: 2px solid #29231e;
+    background: #ff8258;
+    overflow: hidden;
+}
+.goods-hero-art strong {
+    color: #fff4e0;
+    font-size: 230px;
+    font-weight: 900;
+    line-height: 1;
+    letter-spacing: -18px;
+    transform: rotate(-12deg);
+}
+.goods-art-top, .goods-art-bottom {
+    position: absolute;
+    left: 24px;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 1px;
+}
+.goods-art-top { top: 24px; }
+.goods-art-bottom { bottom: 24px; }
+
+/* 제작 안내와 미리보기 */
+.goods-features, .goods-preview { margin-top: 72px; }
+.goods-section-heading { margin-bottom: 24px; }
+.goods-section-heading > p {
+    margin: 0 0 8px;
+    color: #e55e37;
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 2px;
+}
+.goods-section-heading h2 { margin: 0 0 10px; font-size: 29px; font-weight: 900; }
+.goods-section-heading > span { color: #786d63; font-size: 14px; }
+.goods-feature-list {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 18px;
+}
+.goods-feature {
+    padding: 27px;
+    min-height: 175px;
+    border: 1px solid #e4d7c6;
+    border-top: 4px solid #29231e;
+    background: #fffdf9;
+}
+.goods-feature-icon { margin-bottom: 18px; font-size: 28px; }
+.goods-feature h3 { margin: 0 0 8px; font-size: 20px; }
+.goods-feature p { margin: 0; color: #796e64; font-size: 14px; }
+
+/* 상품 미리보기 4개 */
+.goods-preview-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 22px;
+}
+.goods-preview-card {
+    display: block;
+    border: 1px solid #e4d7c6;
+    background: #fffdf9;
+    color: #29231e;
+    text-decoration: none;
+    overflow: hidden;
+}
+.goods-preview-card:hover { border-color: #e55e37; }
+.goods-preview-img {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 220px;
+    background: #f4eee5;
+}
+.goods-preview-img img {
+    width: 100%;
+    height: 100%;
+    padding: 14px;
+    object-fit: contain;
+}
+.goods-no-img { font-size: 60px; }
+.goods-preview-info { padding: 20px 24px 24px; }
+.goods-preview-info small {
+    color: #e55e37;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 1px;
+}
+.goods-preview-info h3 { margin: 10px 0 12px; font-size: 20px; }
+.goods-preview-info p { margin: 0; font-size: 18px; font-weight: 800; }
+
+/* 판매 상품이 없을 때 */
+.goods-preview-empty {
+    padding: 56px 20px;
+    border: 2px dashed #d4beaa;
+    background: #fffdf9;
+    text-align: center;
+}
+.goods-empty-symbol { color: #e55e37; font-size: 56px; }
+.goods-preview-empty h3 { margin: 14px 0 10px; font-size: 20px; }
+.goods-preview-empty p { margin: 0; color: #796e64; font-size: 14px; }
