@@ -6,7 +6,7 @@
 
 /* beforeEach에서 저장소·공휴일 응답을 준비하고 사용자 동작 후 화면과 저장 결과를 검증합니다. */
 import React from "react";
-import { act, fireEvent, render, screen, within, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import ScheduleManager from "./ScheduleManager";
 import { useERP } from "../context/ERPContext";
 import { loadSchedules, mergeScheduleChanges } from "./scheduleStorage";
