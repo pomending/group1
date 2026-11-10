@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useERP } from "../context/ERPContext";
-import "./loginStyles.css";
+import "./LoginPage.css";
 
 export default function LoginPage() {
 

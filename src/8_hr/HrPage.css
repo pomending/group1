@@ -139,3 +139,56 @@
   outline: 2px solid #64748b;
   outline-offset: 2px;
 }
+
+/* ====================================================
+   MODU GOODS ERP - HR Mist Lavender Theme
+   원본 CSS를 유지한 채 색상만 보정 (2026-11)
+   직원 목록 / 등록 / 상세 / 부서 / 반응형 유지
+==================================================== */
+.hr-app {
+  --hr-purple: #68619A;
+  --hr-purple-dark: #575084;
+  --hr-ink: #39354F;
+  --hr-muted: #827A98;
+  --hr-line: #E6E1F0;
+  --hr-bg: #F5F4FA;
+}
+.hr-app .hr-page-heading h1,
+.hr-app .hr-section-title h2,
+.hr-app .hr-form-subtitle,
+.hr-app .hr-identity h2 { color: #39354F; }
+.hr-app .hr-stat,
+.hr-app .hr-panel { border-color: #E6E1F0; box-shadow: 0 3px 12px rgba(65,55,95,.035); }
+.hr-app .hr-stat strong { color: #524B80; }
+.hr-app .hr-stat:nth-child(2) { background: #F8F6FC; }
+.hr-app .hr-bar-track { background: #EEEAF5; }
+.hr-app .hr-bar-fill { background: linear-gradient(90deg,#BAB1DA,#68619A); }
+.hr-app .hr-input,
+.hr-app .hr-field :is(input, select, textarea) { background: #FBFAFE; border-color: #DDD8EA; color: #39354F; }
+.hr-app .hr-input:focus,
+.hr-app .hr-field :is(input,select,textarea):focus {
+  border-color: #9C91C8;
+  box-shadow: 0 0 0 3px rgba(156,145,200,.14);
+}
+.hr-app .hr-btn-ghost { background: #F0EDFA; color: #524B80; border-color: #C8C0E5; }
+.hr-app .hr-btn-ghost:hover:not(:disabled) { background: #E3DCF5; color: #524B80; border-color: #ADA2D3; }
+.hr-app .hr-btn-danger { background: #F8EDEF; border-color: #E8C7CF; color: #A34E64; }
+.hr-app .hr-btn-danger:hover:not(:disabled) { background: #F2DDE3; }
+.hr-app .hr-btn-account { background: #F0EDFA; color: #524B80; border-color: #C8C0E5; }
+.hr-app .hr-btn-account:hover { background: #E3DCF5; border-color: #ADA2D3; }
+.hr-app .hr-btn-account:active { background: #DAD3EF; }
+.hr-app .hr-btn-account:focus-visible { outline-color: #9286C1; }
+.hr-app .hr-table th { background: #F1EFF8; color: #5D557A; border-color: #E6E1F0; }
+.hr-app .hr-table td { border-bottom-color: #EEEAF4; color: #49445F; }
+.hr-app .hr-table tbody tr:hover { background: #F8F6FD; }
+.hr-app .hr-id { color: #68619A; }
+.hr-app .hr-link-button { background: #F0EDFA; border-color: #C8C0E5; color: #524B80; }
+.hr-app .hr-link-button:hover { background: #E3DCF5; }
+.hr-app .hr-avatar { background: #E9E4F6; color: #524B80; }
+.hr-app .hr-pagination button { background: #FBFAFE; border-color: #DDD8EA; color: #625B78; }
+.hr-app .hr-pagination button:not(:disabled):hover { background: #F0EDFA; border-color: #9C91C8; }
+.hr-app .hr-status-working { background: #E8F4ED; color: #28734E; }
+.hr-app .hr-status-leave { background: #FFF1E5; color: #A95C22; }
+.hr-app .hr-status-resigned { background: #F0EFF3; color: #777184; }
+.hr-app .hr-form-error { background: #F9EBEE; border-color: #E8C7CF; color: #A34E64; }
+.hr-app .hr-notice { background: #FFF8E9; border-color: #EADDB8; color: #8A682E; }

@@ -99,8 +99,6 @@ export function formatPhone(phone) {
 
 }
 
-//컬럼선택으로 정렬하기 data:정렬할 고객또는 문의배열 sortKey:정렬기준컬럼 sortOrder:오름차순,내림차순
-export function sortData(data, sortKey, sortOrder) {
 
-    const copiedData = [...data]
-}
+
+    

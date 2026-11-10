@@ -353,3 +353,96 @@
 .mypage-photo-input {
     display: none;
 }
+
+/* =========================================
+   MODU GOODS ERP — My Page Lavender Theme
+   Original layouts and responsive rules preserved.
+========================================= */
+.mypage {
+    background: #F5F4FA;
+    color: #39354F;
+}
+.mypage-title,
+.mypage-profile-text h2,
+.mypage-section h3,
+.mypage-password-panel h4 {
+    color: #39354F;
+}
+.mypage-card {
+    border-color: #E6E1F0;
+    box-shadow: 0 3px 12px rgba(65,55,95,.035);
+}
+.mypage-profile {
+    background: #F0EDFA;
+    border-color: #DDD6EF;
+}
+.mypage-avatar {
+    background: #DCD8EE;
+    color: #524B80;
+}
+.mypage-profile-text p,
+.mypage-info-item span,
+.mypage-info-item label,
+.mypage-password-field label {
+    color: #756E8B;
+}
+.mypage-info-item strong { color: #39354F; }
+.mypage-account,
+.mypage-account-section { border-top-color: #E6E1F0; }
+.mypage-info-item input,
+.mypage-password-field input {
+    background: #FBFAFE;
+    border-color: #DDD8EA;
+    color: #39354F;
+    border-radius: 8px;
+}
+.mypage-info-item input:focus,
+.mypage-password-field input:focus {
+    outline: none;
+    border-color: #9C91C8;
+    box-shadow: 0 0 0 3px rgba(156,145,200,.14);
+}
+.mypage-edit-button,
+.mypage-cancel-button,
+.mypage .mypage-password-button,
+.mypage-password-actions button:not(.mypage-password-save) {
+    background: #F0EDFA;
+    border-color: #C8C0E5;
+    color: #524B80;
+}
+.mypage-edit-button:hover,
+.mypage-cancel-button:hover,
+.mypage .mypage-password-button:hover:not(:disabled),
+.mypage-password-actions button:not(.mypage-password-save):hover {
+    background: #E3DCF5;
+}
+.mypage-save-button,
+.mypage-password-actions .mypage-password-save {
+    background: #68619A;
+    border-color: #68619A;
+    color: #FFFFFF;
+}
+.mypage-save-button:hover,
+.mypage-password-actions .mypage-password-save:hover {
+    background: #575084;
+}
+.mypage .mypage-password-button:disabled {
+    color: #9690A5;
+    background: #E9E7EF;
+    border-color: #E9E7EF;
+    cursor: not-allowed;
+}
+.mypage .mypage-logout-button {
+    color: #A34E64;
+    background: #F8EDEF;
+    border-color: #E8C7CF;
+}
+.mypage .mypage-logout-button:hover { background: #F2DDE3; }
+.mypage-password-panel {
+    background: #FBFAFE;
+    border-color: #E6E1F0;
+}
+.mypage button:focus-visible {
+    outline: 2px solid #9286C1;
+    outline-offset: 2px;
+}

@@ -1,450 +1,414 @@
 
-/* =========================
-   1. 전체 화면
-========================= */
+/* =========================================
+   MODU GOODS ERP - 견적 상세
+   Mist Lavender Theme
+========================================= */
 
+/* 전체 화면 */
 .quotation-detail {
     min-height: 100vh;
-    padding: 30px;
-    background: #f5f7fb;
-    color: #1e293b;
+    padding: 28px 30px 40px;
+    background: #F5F4FA;
+    color: #39354F;
     box-sizing: border-box;
     font-family: Arial, sans-serif;
 }
 
-/* =========================
-   2. 상단 헤더
-========================= */
+.quotation-detail *,
+.quotation-detail *::before,
+.quotation-detail *::after {
+    box-sizing: border-box;
+}
 
-.detail-header {
+/* =========================================
+   상단 헤더
+========================================= */
+
+.quotation-detail .detail-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 25px;
+    gap: 16px;
+    margin-bottom: 24px;
 }
 
-.detail-header h1 {
+.quotation-detail .detail-header h1 {
     margin: 0 0 8px;
-    color: #172554;
-    font-size: 27px;
+    color: #39354F;
+    font-size: 26px;
     font-weight: 700;
 }
 
-.detail-header p {
+.quotation-detail .detail-header p {
     margin: 0;
-    color: #64748b;
-    font-size: 14px;
+    color: #827A98;
+    font-size: 13px;
+    line-height: 1.6;
 }
 
-/* =========================
-   3. 상세 정보 영역
-========================= */
+/* =========================================
+   정보 카드 공통
+========================================= */
 
-.detail-content {
+.quotation-detail .detail-content {
     display: flex;
     flex-direction: column;
     gap: 20px;
 }
 
-.detail-info,
-.detail-price,
-.detail-status,
-.detail-memo {
-    padding: 25px;
-    background: white;
-    border: 1px solid #e2e8f0;
-    border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.03);
+.quotation-detail .detail-info,
+.quotation-detail .detail-price,
+.quotation-detail .detail-status,
+.quotation-detail .detail-memo {
+    padding: 24px;
+    background: #FFFFFF;
+    border: 1px solid #E6E1F0;
+    border-radius: 14px;
+    box-shadow: 0 3px 12px rgba(65, 55, 95, 0.035);
 }
 
-.detail-content h2 {
-    margin: 0 0 22px;
-    color: #1e293b;
+.quotation-detail .detail-content h2 {
+    margin: 0 0 20px;
+    color: #39354F;
     font-size: 19px;
     font-weight: 700;
 }
 
-/* =========================
-   4. 견적 정보 그리드
-========================= */
+/* =========================================
+   견적 기본 정보
+========================================= */
 
-.detail-info-grid {
+.quotation-detail .detail-info-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    column-gap: 35px;
+    column-gap: 30px;
 }
 
-.detail-item {
+.quotation-detail .detail-item {
     display: flex;
     justify-content: space-between;
     align-items: center;
     gap: 15px;
     min-width: 0;
-    padding: 18px 5px;
-    border-bottom: 1px solid #edf0f5;
+    padding: 15px 5px;
+    border-bottom: 1px solid #EEEAF4;
+    transition: background 0.15s;
 }
 
-.detail-item span {
-    color: #64748b;
-    font-size: 14px;
+.quotation-detail .detail-item span {
+    color: #827A98;
+    font-size: 13px;
     font-weight: 500;
     white-space: nowrap;
 }
 
-.detail-item strong {
-    color: #334155;
-    font-size: 14px;
+.quotation-detail .detail-item strong {
+    color: #39354F;
+    font-size: 13px;
     font-weight: 600;
     text-align: right;
     overflow-wrap: anywhere;
 }
 
-.detail-item:hover {
-    background: #f8fafc;
+.quotation-detail .detail-item:hover {
+    background: #FBFAFE;
 }
 
-/* =========================
-   5. 견적 금액
-========================= */
+/* =========================================
+   견적 금액
+========================================= */
 
-.detail-price {
-    background: #eff6ff;
-    border-color: #dbeafe;
+.quotation-detail .detail-price h2 {
+    margin: 0 0 15px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #E6E1F0;
 }
 
-.detail-price h2 {
-    margin-bottom: 15px;
+.quotation-detail .price-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 15px;
+    padding: 14px 5px;
 }
 
-.price-info {
+.quotation-detail .price-row span {
+    color: #827A98;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.quotation-detail .price-row strong {
+    color: #39354F;
+    font-size: 15px;
+    font-weight: 600;
+}
+
+.quotation-detail .price-divider {
+    height: 1px;
+    margin: 12px 0;
+    background: #E6E1F0;
+}
+
+/* 최종 견적 금액 강조 */
+.quotation-detail .price-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 15px;
+
+    margin-top: 8px;
+    padding: 18px 20px;
+
+    background: #F0EDFA;
+    border: 1px solid #D6CEEA;
+    border-radius: 9px;
+}
+
+.quotation-detail .price-info span {
+    color: #524B80;
+    font-size: 15px;
+    font-weight: 700;
+}
+
+.quotation-detail .price-info strong {
+    color: #524B80;
+    font-size: 26px;
+    font-weight: 700;
+}
+
+/* =========================================
+   진행 상태
+========================================= */
+
+.quotation-detail .detail-status {
     display: flex;
     justify-content: space-between;
     align-items: center;
     gap: 15px;
 }
 
-.price-info span {
-    color: #475569;
-    font-size: 15px;
-    font-weight: 600;
-}
-
-.price-info strong {
-    color: #2563eb;
-    font-size: 28px;
-    font-weight: 700;
-}
-
-/* =========================
-   6. 진행 상태
-========================= */
-
-.detail-status {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.detail-status h2 {
+.quotation-detail .detail-status h2 {
     margin: 0;
 }
 
-.detail-status-badge {
+.quotation-detail .detail-status-badge {
     display: inline-block;
     min-width: 90px;
     padding: 9px 15px;
     border-radius: 20px;
+
     font-size: 13px;
     font-weight: 600;
     text-align: center;
 }
 
-.detail-status-badge.pending {
-    background: #fff3e6;
-    color: #ea580c;
+/* 승인 대기 */
+.quotation-detail .detail-status-badge.pending {
+    background: #FFF1E5;
+    color: #A95C22;
 }
 
-.detail-status-badge.approved {
-    background: #dcfce7;
-    color: #15803d;
+/* 승인 완료 */
+.quotation-detail .detail-status-badge.approved {
+    background: #E8F4ED;
+    color: #28734E;
 }
 
-.detail-status-badge.rejected {
-    background: #fee2e2;
-    color: #dc2626;
+/* 반려 */
+.quotation-detail .detail-status-badge.rejected {
+    background: #F9EBEE;
+    color: #AA4D60;
 }
 
-.detail-status-badge.temporary {
-    background: #f1f5f9;
-    color: #475569;
+/* 임시저장 */
+.quotation-detail .detail-status-badge.temporary {
+    background: #F0EDFA;
+    color: #524B80;
 }
 
-/* =========================
-   7. 메모
-========================= */
+/* =========================================
+   메모
+========================================= */
 
-.detail-memo h2 {
+.quotation-detail .detail-memo h2 {
     margin-bottom: 15px;
 }
 
-.detail-memo p {
+.quotation-detail .detail-memo p {
     min-height: 45px;
     margin: 0;
     padding: 15px;
-    background: #f8fafc;
+
+    background: #FBFAFE;
+    border: 1px solid #EEEAF4;
     border-radius: 8px;
-    color: #475569;
-    font-size: 14px;
+
+    color: #625B78;
+    font-size: 13px;
     line-height: 1.6;
     white-space: pre-wrap;
+    overflow-wrap: anywhere;
 }
 
-/* =========================
-   8. 하단 버튼 영역
-========================= */
+/* =========================================
+   하단 버튼
+========================================= */
 
-.detail-actions {
+.quotation-detail .detail-actions {
     display: flex;
     justify-content: space-between;
     align-items: center;
     flex-wrap: wrap;
     gap: 15px;
-    margin-top: 25px;
+    margin-top: 24px;
 }
 
-.detail-process,
-.detail-manage {
+.quotation-detail .detail-process,
+.quotation-detail .detail-manage {
     display: flex;
     align-items: center;
     flex-wrap: wrap;
     gap: 8px;
 }
 
-.detail-actions button {
-    height: 42px;
-    padding: 0 20px;
+.quotation-detail .detail-actions button {
+    min-height: 40px;
+    padding: 0 18px;
     border-radius: 8px;
-    font-size: 14px;
+
+    font-family: inherit;
+    font-size: 13px;
     font-weight: 600;
+
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: background 0.2s, border-color 0.2s;
 }
 
-/* 승인 완료 */
-
-.approve-btn {
-    background: #16a34a;
-    color: white;
-    border: 1px solid #16a34a;
+.quotation-detail .detail-actions button:focus-visible {
+    outline: 2px solid #9286C1;
+    outline-offset: 2px;
 }
 
-.approve-btn:hover {
-    background: #15803d;
+/* 승인 */
+.quotation-detail .approve-btn {
+    background: #28734E;
+    color: #FFFFFF;
+    border: 1px solid #28734E;
+}
+
+.quotation-detail .approve-btn:hover {
+    background: #205E40;
 }
 
 /* 반려 */
-
-.reject-btn {
-    background: white;
-    color: #dc2626;
-    border: 1px solid #fecaca;
+.quotation-detail .reject-btn {
+    background: #F9EBEE;
+    color: #AA4D60;
+    border: 1px solid #E8C7CF;
 }
 
-.reject-btn:hover {
-    background: #fee2e2;
+.quotation-detail .reject-btn:hover {
+    background: #F2DDE3;
 }
 
 /* 재검토 */
-
-.review-btn {
-    background: #eff6ff;
-    color: #2563eb;
-    border: 1px solid #bfdbfe;
+.quotation-detail .review-btn {
+    background: #F0EDFA;
+    color: #524B80;
+    border: 1px solid #C8C0E5;
 }
 
-.review-btn:hover {
-    background: #dbeafe;
+.quotation-detail .review-btn:hover {
+    background: #E3DCF5;
 }
 
 /* 수정 */
-
-.edit-btn {
-    background: #2563eb;
-    color: white;
-    border: 1px solid #2563eb;
+.quotation-detail .edit-btn {
+    background: #68619A;
+    color: #FFFFFF;
+    border: 1px solid #68619A;
 }
 
-.edit-btn:hover {
-    background: #1d4ed8;
+.quotation-detail .edit-btn:hover {
+    background: #575084;
 }
 
 /* 삭제 */
-
-.delete-btn {
-    background: white;
-    color: #dc2626;
-    border: 1px solid #fecaca;
+.quotation-detail .delete-btn {
+    background: #F8EDEF;
+    color: #A34E64;
+    border: 1px solid #E8C7CF;
 }
 
-.delete-btn:hover {
-    background: #fee2e2;
+.quotation-detail .delete-btn:hover {
+    background: #F2DDE3;
 }
 
 /* 목록으로 */
-
-.back-btn {
-    background: white;
-    color: #475569;
-    border: 1px solid #cbd5e1;
+.quotation-detail .back-btn {
+    background: #FFFFFF;
+    color: #524B80;
+    border: 1px solid #DDD8EA;
 }
 
-.back-btn:hover {
-    background: #f1f5f9;
+.quotation-detail .back-btn:hover {
+    background: #F0EDFA;
 }
 
-/* =========================
-   9. 반응형
-========================= */
+/* =========================================
+   반응형
+========================================= */
 
 @media (max-width: 700px) {
     .quotation-detail {
         padding: 16px;
     }
 
-    .detail-header h1 {
+    .quotation-detail .detail-header h1 {
         font-size: 23px;
     }
 
-    .detail-info-grid {
+    .quotation-detail .detail-info-grid {
         grid-template-columns: 1fr;
     }
 
-    .detail-item {
-        padding: 15px 3px;
+    .quotation-detail .detail-item {
+        padding: 13px 3px;
     }
 
-    .detail-price,
-    .detail-info,
-    .detail-status,
-    .detail-memo {
-        padding: 20px;
+    .quotation-detail .detail-info,
+    .quotation-detail .detail-price,
+    .quotation-detail .detail-status,
+    .quotation-detail .detail-memo {
+        padding: 18px;
     }
 
-    .price-info {
-        align-items: flex-start;
-        flex-direction: column;
-    }
-
-    .price-info strong {
-        font-size: 24px;
-    }
-
-    .detail-actions {
-        align-items: stretch;
-        flex-direction: column;
-    }
-
-    .detail-process,
-    .detail-manage {
-        width: 100%;
-    }
-
-    .detail-actions button {
-        flex: 1;
-    }
-}
-
-
-/* =========================
-   견적 금액 영역
-========================= */
-
-.detail-price {
-    padding: 25px;
-    background: white;
-    border: 1px solid #e2e8f0;
-    border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.03);
-}
-
-.detail-price h2 {
-    margin: 0 0 22px;
-    padding-bottom: 15px;
-    color: #1e293b;
-    font-size: 19px;
-    font-weight: 700;
-    border-bottom: 1px solid #edf0f5;
-}
-
-/* 공급가액 및 부가세 */
-
-.price-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 14px 5px;
-}
-
-.price-row span {
-    color: #64748b;
-    font-size: 14px;
-    font-weight: 500;
-}
-
-.price-row strong {
-    color: #334155;
-    font-size: 15px;
-    font-weight: 600;
-}
-
-/* 구분선 */
-
-.price-divider {
-    height: 1px;
-    margin: 12px 0;
-    background: #e2e8f0;
-}
-
-/* 최종 견적 금액 */
-
-.price-info {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 15px;
-    padding: 18px 20px;
-    margin-top: 8px;
-    background: #eff6ff;
-    border: 1px solid #dbeafe;
-    border-radius: 9px;
-}
-
-.price-info span {
-    color: #1e40af;
-    font-size: 15px;
-    font-weight: 700;
-}
-
-.price-info strong {
-    color: #2563eb;
-    font-size: 26px;
-    font-weight: 700;
-}
-
-/* 모바일 화면 */
-
-@media (max-width: 700px) {
-    .detail-price {
-        padding: 20px;
-    }
-
-    .price-info {
+    .quotation-detail .price-info {
         align-items: flex-start;
         flex-direction: column;
         gap: 10px;
     }
 
-    .price-info strong {
+    .quotation-detail .price-info strong {
         font-size: 23px;
+    }
+
+    .quotation-detail .detail-status {
+        flex-wrap: wrap;
+    }
+
+    .quotation-detail .detail-actions {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .quotation-detail .detail-process,
+    .quotation-detail .detail-manage {
+        width: 100%;
+    }
+
+    .quotation-detail .detail-actions button {
+        flex: 1;
     }
 }

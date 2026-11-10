@@ -1,9 +1,15 @@
 
+/* =========================================
+   MODU GOODS ERP - 고객 관리
+   Mist Lavender Theme
+========================================= */
+
+/* 고객관리 전체 영역 */
 .crm-page {
-    padding: 30px;
-    background: #f5f7fb;
     min-height: 100vh;
-    color: #253249;
+    padding: 28px 30px 40px;
+    background: #F5F4FA;
+    color: #39354F;
     font-family: Arial, sans-serif;
 }
 
@@ -11,27 +17,35 @@
     box-sizing: border-box;
 }
 
+/* 페이지 상단 */
 .crm-header {
     margin-bottom: 24px;
 }
 
 .crm-path {
-    font-size: 13px;
-    color: #8793a6;
     margin: 0 0 8px;
+    color: #827A98;
+    font-size: 12px;
+    font-weight: 500;
 }
 
 .crm-header h2 {
-    font-size: 26px;
     margin: 0 0 8px;
-    color: #1b2c47;
+    color: #39354F;
+    font-size: 26px;
+    font-weight: 700;
 }
 
 .crm-description {
-    font-size: 14px;
-    color: #7b8797;
     margin: 0;
+    color: #79738A;
+    font-size: 13px;
+    line-height: 1.6;
 }
+
+/* =========================================
+   고객 현황 요약 카드
+========================================= */
 
 .crm-summary {
     display: grid;
@@ -41,51 +55,74 @@
 }
 
 .crm-summary-card {
-    padding: 22px 24px;
-    background: #ffffff;
-    border: 1px solid #e3e8f0;
-    border-radius: 12px;
     display: flex;
     flex-direction: column;
     gap: 12px;
+
+    padding: 24px;
+    background: #FFFFFF;
+    border: 1px solid #E6E1F0;
+    border-radius: 14px;
+
+    box-shadow: 0 3px 12px rgba(65, 55, 95, 0.035);
+}
+
+.crm-summary-card:nth-child(2) {
+    background: #F0EDFA;
+    border-color: #D6CEEA;
 }
 
 .crm-summary-card span {
+    color: #827A98;
     font-size: 13px;
-    color: #7b8797;
 }
 
 .crm-summary-card strong {
+    color: #524B80;
     font-size: 28px;
-    color: #1d3659;
+    font-weight: 700;
 }
 
+/* =========================================
+   고객 목록 카드
+========================================= */
+
 .crm-content {
-    background: #ffffff;
-    border: 1px solid #e3e8f0;
-    border-radius: 12px;
-    padding: 24px;
+    padding: 26px 28px;
+    background: #FFFFFF;
+    border: 1px solid #E6E1F0;
+    border-radius: 14px;
+
+    box-shadow: 0 3px 12px rgba(65, 55, 95, 0.035);
 }
 
 .crm-content-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
+    gap: 12px;
     margin-bottom: 20px;
 }
 
 .crm-content-header h3 {
-    font-size: 18px;
     margin: 0;
+    color: #39354F;
+    font-size: 18px;
+    font-weight: 700;
 }
 
 .crm-content-header span {
+    color: #827A98;
     font-size: 13px;
-    color: #8290a3;
 }
+
+/* =========================================
+   검색 영역
+========================================= */
 
 .crm-search {
     display: flex;
+    align-items: center;
     gap: 10px;
     margin-bottom: 20px;
 }
@@ -93,60 +130,106 @@
 .crm-search input {
     flex: 1;
     min-width: 0;
-    padding: 11px 14px;
-    border: 1px solid #d7deea;
-    border-radius: 7px;
-    font-size: 14px;
+    min-height: 40px;
+    padding: 10px 14px;
+
+    background: #FBFAFE;
+    border: 1px solid #DDD8EA;
+    border-radius: 8px;
+
+    color: #39354F;
+    font-size: 13px;
+    outline: none;
+
+    transition: border-color 0.2s, box-shadow 0.2s;
 }
 
 .crm-search input:focus {
-    outline: none;
-    border-color: #3b6db4;
+    border-color: #9C91C8;
+    box-shadow: 0 0 0 3px rgba(156, 145, 200, 0.14);
 }
+
+.crm-search input::placeholder {
+    color: #938BA4;
+}
+
+/* =========================================
+   버튼 공통 디자인
+========================================= */
 
 .crm-page button {
-    padding: 10px 16px;
+    min-height: 38px;
+    padding: 9px 16px;
+
     border: 1px solid transparent;
-    border-radius: 7px;
+    border-radius: 8px;
+
+    font-family: inherit;
     font-size: 13px;
     font-weight: 600;
+
     cursor: pointer;
     white-space: nowrap;
+
+    transition:
+        background 0.2s,
+        border-color 0.2s,
+        color 0.2s;
 }
 
-.crm-btn-primary {
-    background: #28599b;
-    color: white;
+/* 주요 버튼 */
+.crm-page .crm-btn-primary {
+    background: #68619A;
+    border-color: #68619A;
+    color: #FFFFFF;
 }
 
-.crm-btn-primary:hover {
-    background: #1d477d;
+.crm-page .crm-btn-primary:hover:not(:disabled) {
+    background: #575084;
+    border-color: #575084;
 }
 
-.crm-btn-secondary {
-    background: #ffffff;
-    border-color: #d7deea !important;
-    color: #3e4d62;
+/* 일반 버튼 */
+.crm-page .crm-btn-secondary {
+    background: #F0EDFA;
+    border-color: #C8C0E5;
+    color: #524B80;
 }
 
-.crm-btn-secondary:hover {
-    background: #f3f6fa;
+.crm-page .crm-btn-secondary:hover:not(:disabled) {
+    background: #E3DCF5;
+    border-color: #ADA2D3;
 }
 
-.crm-btn-delete {
-    background: #ffffff;
-    border-color: #f1c8c8 !important;
-    color: #c64a4a;
+/* 삭제 버튼 */
+.crm-page .crm-btn-delete {
+    background: #F8EDEF;
+    border-color: #E8C7CF;
+    color: #A34E64;
 }
 
-.crm-btn-delete:hover {
-    background: #fff3f3;
+.crm-page .crm-btn-delete:hover:not(:disabled) {
+    background: #F2DDE3;
+    border-color: #DCA6B5;
 }
 
+/* 버튼 비활성화 */
 .crm-page button:disabled {
-    opacity: 0.45;
+    background: #E9E7EF;
+    border-color: #E9E7EF;
+    color: #9690A5;
     cursor: not-allowed;
 }
+
+/* 키보드 포커스 */
+.crm-page button:focus-visible {
+    outline: 2px solid #9286C1;
+    outline-offset: 2px;
+}
+
+/* =========================================
+   목록 관리 도구
+========================================= */
 
 .crm-toolbar {
     display: flex;
@@ -157,84 +240,114 @@
 }
 
 .crm-toolbar > span {
+    color: #827A98;
     font-size: 13px;
-    color: #79869a;
 }
 
 .crm-actions {
     display: flex;
+    align-items: center;
+    flex-wrap: wrap;
     gap: 8px;
 }
+
+/* =========================================
+   고객 목록 테이블
+========================================= */
 
 .crm-table-wrap {
     width: 100%;
     overflow-x: auto;
-    border: 1px solid #e3e8f0;
-    border-radius: 8px;
+
+    background: #FFFFFF;
+    border: 1px solid #E6E1F0;
+    border-radius: 10px;
 }
 
 .crm-table {
     width: 100%;
     border-collapse: collapse;
+
+    color: #49445F;
     font-size: 13px;
     text-align: left;
     white-space: nowrap;
 }
 
 .crm-table th {
-    background: #f1f4f9;
-    color: #58677c;
     padding: 14px 16px;
-    border-bottom: 1px solid #e3e8f0;
-    font-weight: 600;
+
+    background: #F1EFF8;
+    border-bottom: 1px solid #E6E1F0;
+
+    color: #5D557A;
+    font-size: 12px;
+    font-weight: 700;
 }
 
 .crm-table td {
-    padding: 13px 16px;
-    border-bottom: 1px solid #edf0f5;
-    color: #526074;
+    padding: 14px 16px;
+
+    border-bottom: 1px solid #EEEAF4;
+
+    color: #49445F;
+    font-size: 13px;
+    vertical-align: middle;
+}
+
+.crm-table tbody tr {
+    transition: background 0.15s;
 }
 
 .crm-table tbody tr:hover {
-    background: #f7faff;
+    background: #F8F6FD;
 }
 
 .crm-table tbody tr:last-child td {
     border-bottom: none;
 }
 
+/* 고객사명 강조 */
 .crm-table .crm-company {
-    color: #254c82;
-    font-weight: 600;
+    color: #524B80;
+    font-weight: 700;
 }
 
+/* 체크박스 */
 .crm-table input[type="checkbox"] {
     width: 15px;
     height: 15px;
-    accent-color: #28599b;
+    accent-color: #68619A;
     cursor: pointer;
 }
 
+/* 검색 결과 없음 */
 .crm-empty {
-    text-align: center;
     padding: 45px !important;
-    color: #95a0b1 !important;
+    color: #938BA4 !important;
+    text-align: center;
 }
+
+/* =========================================
+   페이지네이션
+========================================= */
 
 .crm-pagination {
     position: relative;
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-top: 24px;
+
     min-height: 38px;
+    margin-top: 24px;
 }
 
 .crm-page-info {
     position: absolute;
     left: 0;
+
+    color: #827A98;
     font-size: 12px;
-    color: #8a97a8;
 }
 
 .crm-page-buttons {
@@ -247,37 +360,59 @@
     min-width: 34px;
     height: 34px;
     padding: 6px 10px;
-    border: 1px solid #e0e5ed;
-    background: white;
-    color: #637188;
+
+    background: #FBFAFE;
+    border: 1px solid #DDD8EA;
+    border-radius: 7px;
+
+    color: #625B78;
 }
 
+/* 현재 페이지 */
 .crm-page-buttons button.active {
-    background: #28599b;
-    color: white;
-    border-color: #28599b;
+    background: #68619A;
+    border-color: #68619A;
+    color: #FFFFFF;
 }
 
+/* 다른 페이지 버튼 */
 .crm-page-buttons button:hover:not(:disabled):not(.active) {
-    background: #f1f5fb;
+    background: #F0EDFA;
+    border-color: #C8C0E5;
 }
+
+/* =========================================
+   반응형
+========================================= */
 
 @media (max-width: 700px) {
     .crm-page {
-        padding: 16px;
+        padding: 18px 14px 28px;
+    }
+
+    .crm-header h2 {
+        font-size: 22px;
     }
 
     .crm-summary {
         grid-template-columns: 1fr;
     }
 
+    .crm-summary-card {
+        padding: 18px;
+    }
+
     .crm-content {
-        padding: 15px;
+        padding: 18px;
     }
 
     .crm-search,
     .crm-toolbar {
         flex-wrap: wrap;
+    }
+
+    .crm-actions {
+        width: 100%;
     }
 
     .crm-page-info {

@@ -1,279 +1,288 @@
 
-/* =========================
-   전체 대시보드
-========================= */
+/* =========================================
+   MODU GOODS ERP - 견적관리 공통 스타일
+   Mist Lavender Theme
+========================================= */
 
+/* 견적관리 전체 배경 */
 .quotation-menu {
     min-height: 100vh;
-    padding: 30px;
-    background-color: #f5f7fb;
-    color: #1e293b;
+    padding: 28px 30px 40px;
+    background: #F5F4FA;
+    color: #39354F;
     box-sizing: border-box;
     font-family: Arial, sans-serif;
 }
 
-/* =========================
-   상단 제목
-========================= */
-
-.quotation-header {
-    margin-bottom: 28px;
+.quotation-menu *,
+.quotation-menu *::before,
+.quotation-menu *::after {
+    box-sizing: border-box;
 }
 
-.quotation-header h1 {
+/* =========================================
+   상단 제목
+========================================= */
+
+.quotation-menu .quotation-header {
+    margin-bottom: 24px;
+}
+
+.quotation-menu .quotation-header h1 {
     margin: 0 0 10px;
-    font-size: 27px;
+    color: #39354F;
+    font-size: 26px;
     font-weight: 700;
 }
 
-.quotation-header p {
+.quotation-menu .quotation-header p {
     margin: 0;
-    color: #64748b;
-    font-size: 14px;
+    color: #79738A;
+    font-size: 13px;
+    line-height: 1.6;
 }
 
-/* =========================
-   현황 카드 4개
-========================= */
+/* =========================================
+   현황 카드
+========================================= */
 
-.quotation-summary {
+.quotation-menu .quotation-summary {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 16px;
     padding: 20px;
-    margin-bottom: 28px;
-    background-color: white;
-    border: 1px solid #e2e8f0;
-    border-radius: 12px;
-    box-shadow: 0 2px 6px rgba(15, 23, 42, 0.03);
+    margin-bottom: 24px;
+    background: #FFFFFF;
+    border: 1px solid #E6E1F0;
+    border-radius: 14px;
+    box-shadow: 0 3px 12px rgba(65, 55, 95, 0.035);
 }
 
-.summary-card {
+.quotation-menu .summary-card {
+    min-width: 0;
     padding: 22px 20px;
-    background-color: #ffffff;
-    border: 1px solid #dfe7f1;
+    background: #FFFFFF;
+    border: 1px solid #E6E1F0;
     border-radius: 10px;
-    box-shadow: 0 2px 5px rgba(15, 23, 42, 0.04);
-    transition: 0.2s;
+    box-shadow: 0 2px 8px rgba(65, 55, 95, 0.04);
+    transition: border-color 0.2s, box-shadow 0.2s;
 }
 
-.summary-card:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 5px 12px rgba(15, 23, 42, 0.07);
+.quotation-menu .summary-card:hover {
+    border-color: #C8C0E5;
+    box-shadow: 0 4px 12px rgba(65, 55, 95, 0.08);
 }
 
-.summary-card h3 {
-    margin: 0 0 16px;
-    color: #475569;
-    font-size: 14px;
+.quotation-menu .summary-card h3 {
+    margin: 0 0 14px;
+    color: #827A98;
+    font-size: 13px;
     font-weight: 600;
 }
 
-.summary-number {
-    margin: 0 0 18px;
-    color: #1e293b;
-    font-size: 29px;
+.quotation-menu .summary-number {
+    margin: 0 0 16px;
+    color: #524B80;
+    font-size: 28px;
     font-weight: 700;
 }
 
-.summary-link {
-    color: #2563eb;
+.quotation-menu .summary-link {
+    color: #68619A;
     font-size: 13px;
     font-weight: 600;
     text-decoration: none;
 }
 
-.summary-link:hover {
-    color: #1d4ed8;
+.quotation-menu .summary-link:hover {
+    color: #524B80;
     text-decoration: underline;
 }
 
-/* =========================
+/* =========================================
    빠른 작업
-========================= */
+========================================= */
 
-.fast-work {
-    margin-bottom: 28px;
+.quotation-menu .fast-work {
+    margin-bottom: 24px;
 }
 
-.section-heading {
+.quotation-menu .section-heading {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 16px;
 }
 
-.section-heading > h2,
-.section-heading > p {
+.quotation-menu .section-heading > h2,
+.quotation-menu .section-heading > p {
     grid-column: 1 / -1;
 }
 
-.section-heading > h2 {
+.quotation-menu .section-heading > h2 {
     margin: 0;
-    font-size: 21px;
+    color: #39354F;
+    font-size: 20px;
     font-weight: 700;
 }
 
-.section-heading > p {
+.quotation-menu .section-heading > p {
     margin: -8px 0 5px;
-    color: #64748b;
-    font-size: 14px;
+    color: #827A98;
+    font-size: 13px;
 }
 
-/* 상품 등록 카드 */
-.product {
+/* 빠른 작업 카드 */
+.quotation-menu .product,
+.quotation-menu .quotation {
     padding: 24px;
-    background-color: white;
-    border: 1px solid #e2e8f0;
-    border-radius: 12px;
-    box-shadow: 0 2px 6px rgba(15, 23, 42, 0.03);
+    background: #FFFFFF;
+    border: 1px solid #E6E1F0;
+    border-radius: 14px;
+    box-shadow: 0 3px 12px rgba(65, 55, 95, 0.035);
 }
 
-/* 새 견적 작성 카드 */
-.quotation {
-    padding: 24px;
-    background-color: white;
-    border: 1px solid #e2e8f0;
-    border-radius: 12px;
-    box-shadow: 0 2px 6px rgba(15, 23, 42, 0.03);
-}
-
-.product h3,
-.quotation h3 {
+.quotation-menu .product h3,
+.quotation-menu .quotation h3 {
     margin: 0 0 12px;
+    color: #39354F;
     font-size: 17px;
     font-weight: 700;
 }
 
-.product p,
-.quotation p {
+.quotation-menu .product p,
+.quotation-menu .quotation p {
     margin: 0 0 20px;
-    color: #64748b;
+    color: #827A98;
     font-size: 13px;
+    line-height: 1.6;
 }
 
 /* 빠른 작업 버튼 */
-.product input[type="button"],
-.quotation input[type="button"] {
-    height: 41px;
-    padding: 0 19px;
-    background-color: #2563eb;
-    color: white;
-    border: none;
-    border-radius: 7px;
+.quotation-menu .product input[type="button"],
+.quotation-menu .quotation input[type="button"] {
+    min-height: 40px;
+    padding: 0 18px;
+    background: #68619A;
+    border: 1px solid #68619A;
+    border-radius: 8px;
+    color: #FFFFFF;
     font-size: 13px;
     font-weight: 600;
     cursor: pointer;
-    transition: 0.2s;
+    transition: background 0.2s;
 }
 
-.product input[type="button"]:hover,
-.quotation input[type="button"]:hover {
-    background-color: #1d4ed8;
+.quotation-menu .product input[type="button"]:hover,
+.quotation-menu .quotation input[type="button"]:hover {
+    background: #575084;
 }
 
-/* =========================
+/* =========================================
    최근 견적 내역
-========================= */
+========================================= */
 
-.recent-quotation {
+.quotation-menu .recent-quotation {
     padding: 24px;
-    background-color: white;
-    border: 1px solid #e2e8f0;
-    border-radius: 12px;
-    box-shadow: 0 2px 6px rgba(15, 23, 42, 0.03);
+    background: #FFFFFF;
+    border: 1px solid #E6E1F0;
+    border-radius: 14px;
+    box-shadow: 0 3px 12px rgba(65, 55, 95, 0.035);
 }
 
-/* 제목과 전체 견적 보기 */
-.recent-quotation-header {
+.quotation-menu .recent-quotation-header {
     display: flex;
-    justify-content: space-between;
     align-items: center;
+    justify-content: space-between;
+    gap: 12px;
     margin-bottom: 20px;
 }
 
-.recent-quotation-header h2 {
+.quotation-menu .recent-quotation-header h2 {
     margin: 0;
+    color: #39354F;
     font-size: 19px;
     font-weight: 700;
 }
 
-.recent-quotation-header a {
-    color: #2563eb;
+.quotation-menu .recent-quotation-header a {
+    color: #68619A;
     font-size: 13px;
     font-weight: 600;
     text-decoration: none;
 }
 
-.recent-quotation-header a:hover {
+.quotation-menu .recent-quotation-header a:hover {
     text-decoration: underline;
 }
 
-/* =========================
-   최근 견적 테이블
-========================= */
+/* =========================================
+   견적 테이블
+========================================= */
 
-.table-scroll {
+.quotation-menu .table-scroll {
     width: 100%;
     overflow-x: auto;
 }
 
-.recent-quotation table {
+.quotation-menu .recent-quotation table {
     width: 100%;
     min-width: 700px;
     border-collapse: collapse;
     text-align: center;
 }
 
-/* 테이블 제목 */
-.recent-quotation th {
+.quotation-menu .recent-quotation th {
+    padding: 14px 12px;
+    background: #F1EFF8;
+    color: #5D557A;
+    font-size: 12px;
+    font-weight: 700;
+    border-top: 1px solid #E6E1F0;
+    border-bottom: 1px solid #E6E1F0;
+    white-space: nowrap;
+}
+
+.quotation-menu .recent-quotation td {
     padding: 15px 12px;
-    background-color: #f1f5f9;
-    color: #475569;
+    color: #49445F;
     font-size: 13px;
-    font-weight: 600;
-    border-top: 1px solid #e2e8f0;
-    border-bottom: 1px solid #e2e8f0;
+    border-bottom: 1px solid #EEEAF4;
     white-space: nowrap;
 }
 
-/* 테이블 내용 */
-.recent-quotation td {
-    padding: 16px 12px;
-    color: #334155;
-    font-size: 13px;
-    border-bottom: 1px solid #edf0f5;
-    white-space: nowrap;
+.quotation-menu .recent-quotation tbody tr:hover {
+    background: #F8F6FD;
 }
 
-/* 마우스 효과 */
-.recent-quotation tbody tr:hover {
-    background-color: #f8fafc;
-}
-
-/* =========================
+/* =========================================
    반응형
-========================= */
+========================================= */
 
 @media (max-width: 1000px) {
-    .quotation-summary {
-        grid-template-columns: repeat(2, 1fr);
+    .quotation-menu .quotation-summary {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 }
 
 @media (max-width: 700px) {
     .quotation-menu {
-        padding: 18px;
+        padding: 18px 14px 28px;
     }
 
-    .section-heading {
+    .quotation-menu .section-heading {
         grid-template-columns: 1fr;
     }
 
-    .quotation-summary {
+    .quotation-menu .quotation-summary {
         grid-template-columns: 1fr;
-    }
-
-    .recent-quotation {
         padding: 16px;
+    }
+
+    .quotation-menu .recent-quotation {
+        padding: 16px;
+    }
+
+    .quotation-menu .recent-quotation-header {
+        flex-wrap: wrap;
     }
 }

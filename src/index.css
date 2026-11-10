@@ -11,3 +11,21 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
 }
+
+/* MODU GOODS ERP 공통 디자인 색상 */
+:root {
+  --erp-bg: #F3F5F9;
+  --erp-surface: #FFFFFF;
+
+  --erp-lavender: #DCD8EE;
+  --erp-lavender-light: #F0EDFA;
+
+  --erp-blue: #DBEAF7;
+  --erp-blue-light: #EDF5FC;
+
+  --erp-text: #37465E;
+  --erp-text-muted: #718099;
+
+  --erp-border: #E1E6EF;
+  --erp-accent: #68619A;
+}

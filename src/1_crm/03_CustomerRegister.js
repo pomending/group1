@@ -63,8 +63,9 @@ function CustomerRegister() {
 
     return (
         <div className="crm-form-page">
-
-
+            <div className="crm-form-header">
+            <h2>고객정보 등록</h2>
+            </div>
             <div className="crm-form-field">
                 <label>고객사명 <span className="crm-required">*</span></label>
                 <input value={customerData.companyName}
@@ -147,7 +148,7 @@ function CustomerRegister() {
             </div>
 
 
-        </div>
+        </div >
 
     )
 }
