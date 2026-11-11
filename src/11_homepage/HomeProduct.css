@@ -72,7 +72,21 @@
     padding: 14px;
     object-fit: contain;
 }
-.shop-no-img { font-size: 65px; }
+
+/* 상품 이미지가 없을 때 */
+.shop-no-img {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    font-size: 58px;
+}
+.shop-no-img small {
+    color: #786d63;
+    font-size: 14px;
+    font-weight: 700;
+}
+
 .shop-info { padding: 22px 24px 24px; }
 .shop-info > small {
     color: #e55e37;
