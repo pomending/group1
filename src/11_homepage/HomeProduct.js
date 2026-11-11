@@ -35,7 +35,9 @@ function Photo({ item }) {
     const src = getImage(item);
     const [failed, setFailed] = useState("");
 
-    if (!src || failed === src) return <span className="shop-no-img">📦</span>;
+    // 이미지가 없거나 불러오지 못하면 안내 문구를 표시합니다.
+    if (!src || failed === src) return <span className="shop-no-img">📦<small>이미지 없음</small></span>;
+
     return <img src={src} alt={item.productName} loading="lazy" onError={() => setFailed(src)} />;
 }
 
