@@ -2,12 +2,26 @@
  * 입력: Manager가 ERPContext에서 읽은 프로젝트·직원, 일정관리의 저장 일정
  * 담당자 이름: 전달받은 직원 목록에서 managerId로 찾습니다. 원본 데이터 파일을 직접 참조하지 않습니다.
  * createProjectMilestones: 시작일·마감일을 읽기 전용 달력 항목으로 변환
- * getProjectScheduleSummaries: 프로젝트에 해당하는 일정 요약 생성
- * 이 파일은 변환만 하며 Context 업데이트는 Manager에서 실행합니다.
- * 주의: 요약 결과는 프로젝트의 schedules 배열에 반영됩니다. 필드를 바꾸면 3번이 받는 데이터도 바뀝니다.
  */
 
-import { getScheduleProjectId, isValidScheduleDate, normalizeAttendees, typeColors } from "./scheduleData";
+import { getScheduleProjectId, isValidScheduleDate, typeColors } from "./scheduleData";
+
+// 저장 당시 이름은 보존하고 HR의 현재 정보와 다른 연결만 안내합니다.
+export function getScheduleEmployeeWarning(item, employees) {
+  if (item.scope === "개인 일정용") return "";
+  const people = [...(item.attendeeEmployees || [])];
+  if (item.employeeId != null) people.push({ id: item.employeeId, name: item.person });
+  const messages = [];
+  for (const person of people) {
+    const employee = employees.find(entry => String(entry.id) === String(person.id));
+    let message = "";
+    if (!employee) message = person.name + " · 직원 정보가 없습니다.";
+    else if (employee.status && employee.status !== "재직") message = employee.name + " · " + employee.status;
+    else if (employee.name !== person.name) message = person.name + " → " + employee.name + " · 이름 변경";
+    if (message && !messages.includes(message)) messages.push(message);
+  }
+  return messages.join(" / ");
+}
 
 // 프로젝트에서 변경을 금지한 견적·고객 번호로 같은 ID의 다른 프로젝트를 구분합니다.
 // 과거 자료에 두 번호가 없으면 기존 연결 방식을 유지합니다.
@@ -98,41 +112,33 @@ export function createProjectMilestones(projects, employees = []) {
   return milestones;
 }
 
-// 일정의 프로젝트 ID를 우선 사용하고, ID가 없는 기존 일정은 이름으로 연결합니다.
-export function getProjectScheduleSummaries(project, items, projects = [project]) {
-  const summaries = [];
-  for (const item of items) {
-    // 과거 저장값에 연결 정보가 남아 있어도 개인 일정은 프로젝트에 전달하지 않습니다.
-    if (item.scope === "개인 일정용") continue;
-    // ID가 있으면 ID로 비교합니다. 예전 일정처럼 ID가 없을 때만 이름을 비교합니다.
-    let matchesProject = item.project === project.name;
-    if (item.projectId != null) {
-      matchesProject = String(item.projectId) === String(project.id);
-    } else if (projects.filter(entry => entry.name === item.project).length !== 1) {
-      continue;
-    }
-    if (item.projectReference && item.projectReference !== getProjectReference(project)) continue;
-    if (!item.project || !matchesProject) continue;
-    summaries.push({
-      id: item.id,
-      title: item.title,
-      date: item.date,
-      endDate: item.endDate || "",
-      time: item.time,
-      endTime: item.endTime,
-      isAllDay: Boolean(item.isAllDay),
-      category: item.category || "",
-      type: item.type || "",
-      status: item.status,
-      person: item.person,
-      attendees: normalizeAttendees(item.attendees),
-      visibility: item.visibility || "shared",
-      description: item.description || "",
-      repeatType: item.repeatType || "none",
-      repeatInterval: item.repeatInterval || 1,
-      holidayRule: item.holidayRule || "keep",
-      excludedDates: item.excludedDates || [],
+// 세부 작업은 원본을 읽어 달력 항목으로만 표시합니다.
+export function createTaskMilestones(tasks, projects, employees) {
+  const milestones = [];
+  for (const task of tasks) {
+    if (task.id == null || !isValidScheduleDate(task.taskDeadline)) continue;
+    const project = projects.find(entry => String(entry.id) === String(task.projectId));
+    if (!project) continue;
+    const employee = employees.find(entry => String(entry.id) === String(task.employeeId));
+    milestones.push({
+      id: "task-deadline-" + task.id,
+      date: task.taskDeadline,
+      time: "00:00",
+      endTime: "23:59",
+      isAllDay: true,
+      title: project.name + " · " + (task.taskType || "세부 작업") + " 마감",
+      project: project.name,
+      projectManager: employee?.name || "미지정",
+      person: "프로젝트 일정",
+      scope: "업무용",
+      category: "프로젝트",
+      visibility: "shared",
+      color: typeColors["마감"],
+      isProjectMilestone: true,
+      milestoneType: "세부 작업 마감",
+      isTaskDeadline: true,
+      taskProgress: task.progress || "대기중",
     });
   }
-  return summaries;
+  return milestones;
 }

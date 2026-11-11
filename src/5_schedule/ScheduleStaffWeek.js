@@ -14,7 +14,7 @@
  */
 import React, { useState } from "react";
 import {
-  getSchedulePeople,
+  getScheduleParticipants,
   groupSchedulesByDate,
   weekDays,
 } from "./scheduleData";
@@ -33,9 +33,20 @@ export default function ScheduleStaffWeek({
   onSelectSchedule,
   onToggleFavorite,
 }) {
+  const rows = [];
+  const entries = items.map(item => ({ item, participants: getScheduleParticipants(item) }));
+  for (const name of people) {
+    const matching = entries.flatMap(entry => entry.participants.filter(person => person.name === name));
+    const ids = [...new Set(matching.map(person => person.id).filter(id => id != null))];
+    const hasNameOnly = matching.some(person => person.id === null);
+    if (!ids.length || hasNameOnly) rows.push({ key: name, name, label: ids.length ? name + " (이름 기준)" : name, id: null });
+    for (const id of ids) {
+      rows.push({ key: name + ":" + id, name, label: ids.length > 1 || hasNameOnly ? name + " (직원 " + id + ")" : name, id });
+    }
+  }
   // 이름 하나만 기억해 한 번에 한 사람의 일정만 펼칩니다. 이름 검색이면 첫 결과를 바로 엽니다.
   const [expandedPerson, setExpandedPerson] = useState(() => {
-    if (personSearch && people.length > 0) return people[0];
+    if (personSearch && rows.length > 0) return rows[0].key;
     return null;
   });
   // 담당자 행 옆의 ＋/− 버튼이 이 함수를 호출합니다.
@@ -93,19 +104,21 @@ export default function ScheduleStaffWeek({
           </tr>
         </thead>
         <tbody>
-          {people.map((person) => {
+          {rows.map(({ key: rowKey, name: person, label, id }) => {
             // items는 부모에서 이미 이번 주로 제한했습니다. 여기서는 사람만 확인합니다.
-            const rowItems = items.filter((item) => getSchedulePeople(item).includes(person));
+            const rowItems = entries.filter(entry =>
+              entry.participants.some(participant => participant.id === id && participant.name === person)
+            ).map(entry => entry.item);
             // 사람별 목록을 다시 날짜로 묶으면 각 셀에서 dates[key]로 바로 조회할 수 있습니다.
             const dates = groupSchedulesByDate(rowItems);
-            const isExpanded = expandedPerson === person;
+            const isExpanded = expandedPerson === rowKey;
             return (
-              <tr key={person} className={isExpanded ? undefined : "sm-staff-collapsed"}>
+              <tr key={rowKey} className={isExpanded ? undefined : "sm-staff-collapsed"}>
                 <th scope="row">
                   <button type="button" className="sm-staff-toggle" aria-expanded={isExpanded}
-                    aria-label={`${person} 일정 ${isExpanded ? "접기" : "펼치기"}`}
-                    onClick={() => togglePerson(person)}>
-                    <span>{person}</span><span aria-hidden="true">{isExpanded ? "−" : "＋"}</span>
+                    aria-label={`${label} 일정 ${isExpanded ? "접기" : "펼치기"}`}
+                    onClick={() => togglePerson(rowKey)}>
+                    <span>{label}</span><span aria-hidden="true">{isExpanded ? "−" : "＋"}</span>
                   </button>
                   <small>{rowItems.length}건</small>
                 </th>
@@ -127,7 +140,7 @@ export default function ScheduleStaffWeek({
                           onSelect={onSelectSchedule}
                           onToggleFavorite={onToggleFavorite}
                           roleLabel={
-                            item.person.trim() === person ? "담당" : "참석"
+                            item.person.trim() === person && (item.employeeId ?? null) === id ? "담당" : "참석"
                           }
                         />
                       ))}
@@ -135,9 +148,9 @@ export default function ScheduleStaffWeek({
                     )}
                     {!isExpanded && dayItems.length > 0 && (
                       <button type="button" className="sm-staff-count"
-                        aria-label={`${person} ${key} 일정 ${dayItems.length}건 펼치기`}
+                        aria-label={`${label} ${key} 일정 ${dayItems.length}건 펼치기`}
                         onClick={() => {
-                          setExpandedPerson(person);
+                          setExpandedPerson(rowKey);
                           onSelectDate(key);
                         }}>
                         {dayItems.length}건 ＋

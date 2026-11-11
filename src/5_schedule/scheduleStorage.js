@@ -54,7 +54,9 @@ export function loadSchedules() {
   // 전체 읽기가 실패하면 자동 저장을 막아 원본을 보호합니다.
   try {
     const raw = localStorage.getItem("made-mate-schedules");
-    const savedItems = JSON.parse(raw ?? "[]");
+    const parsed = JSON.parse(raw ?? "[]");
+    const resetId = typeof parsed?.resetId === "string" && Array.isArray(parsed.items) ? parsed.resetId : null;
+    const savedItems = resetId ? parsed.items : parsed;
     if (!Array.isArray(savedItems)) throw new Error("Invalid schedule data");
 
     // 일정 필수값과 날짜별 반복 제외값을 확인하고 이전 형식의 누락값을 보완합니다.
@@ -163,7 +165,7 @@ export function loadSchedules() {
     if (needsBackup || items.length !== savedItems.length) {
       localStorage.setItem(`made-mate-schedules-backup-${Date.now()}`, raw);
     }
-    return { items, readError: false, raw };
+    return { items, readError: false, raw, resetId };
   } catch {
     // 읽기 실패 시 자동 저장을 막아 기존 원본을 빈 배열로 덮어쓰지 않습니다.
     return { items: [], readError: true };
@@ -195,7 +197,9 @@ export function loadTeamMembers() {
 }
 
 export function deleteSchedulesByProject(projectId) {
-
+  if (!Number.isSafeInteger(projectId) || projectId <= 0) {
+    return { ok: false, message: "올바르지 않은 프로젝트 ID입니다." };
+  }
   const loaded = loadSchedules();
 
   if (loaded.readError) {
@@ -208,11 +212,12 @@ export function deleteSchedulesByProject(projectId) {
   const nextItems = loaded.items.filter(
       item => String(item.projectId) !== String(projectId)
   );
+  if (nextItems.length === loaded.items.length) return { ok: true };
 
   try {
       localStorage.setItem(
           "made-mate-schedules",
-          JSON.stringify(nextItems)
+          serializeSchedules(nextItems, loaded.resetId)
       );
 
       window.dispatchEvent(new Event("made-mate-schedules-updated"));
@@ -229,15 +234,19 @@ export function deleteSchedulesByProject(projectId) {
   }
 }
 
+export function serializeSchedules(items, resetId) {
+  return JSON.stringify(resetId ? { resetId, items } : items);
+}
+
 export function resetStoredSchedules() {
   try {
       localStorage.setItem(
           "made-mate-schedules",
-          JSON.stringify([])
+          serializeSchedules([], Date.now() + "-" + Math.random())
       );
 
       window.dispatchEvent(
-          new Event("made-mate-schedules-updated")
+          new Event("made-mate-schedules-reset")
       );
 
       return { ok: true };
@@ -273,11 +282,12 @@ export function deleteSchedulesByEmployee(employeeId) {
   const nextItems = loaded.items.filter(
       item => item.employeeId !== employeeId
   );
+  if (nextItems.length === loaded.items.length) return { ok: true };
 
   try {
       localStorage.setItem(
           "made-mate-schedules",
-          JSON.stringify(nextItems)
+          serializeSchedules(nextItems, loaded.resetId)
       );
 
       window.dispatchEvent(

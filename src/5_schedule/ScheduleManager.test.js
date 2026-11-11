@@ -6,8 +6,10 @@
 
 /* beforeEach에서 저장소·공휴일 응답을 준비하고 사용자 동작 후 화면과 저장 결과를 검증합니다. */
 import React from "react";
+import userEvent from "@testing-library/user-event";
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import ScheduleManager from "./ScheduleManager";
+import ScheduleStaffWeek from "./ScheduleStaffWeek";
 import { useERP } from "../context/ERPContext";
 import { loadSchedules, mergeScheduleChanges } from "./scheduleStorage";
 import ScheduleFormModal, { ScheduleListModal } from "./ScheduleFormModal";
@@ -19,6 +21,98 @@ import {
   normalizeAttendees, createScheduleForm, excludeOccurrence, expandSchedules,
   getSchedulePeople, getRepeatLabel, getScheduleTime, getRepeatSummary, getScheduleDurationFields, restoreDeletedSchedule,
 } from "./scheduleData";
+
+test("세부 작업 마감은 달력과 선택 날짜에 표시하고 일정 원본에 복제하지 않는다", async () => {
+  useERP.mockReturnValue({
+    projects: [{ id: 1, name: "제작 프로젝트" }],
+    employees: [{ id: 3, name: "담당 직원" }],
+    tasks: [{ id: 7, projectId: 1, employeeId: 3, taskType: "검수", taskDeadline: getTodayKey() }],
+  });
+  render(<ScheduleManager />);
+  await act(async () => { expect(fetch).toHaveBeenCalled(); });
+  expect(screen.getByRole("button", { name: /제작 프로젝트 · 검수 마감 선택한 날짜 일정에서 보기/ })).toBeInTheDocument();
+  expect(screen.getByText("마감일 변경은 세부 작업 관리에서 해주세요.")).toBeInTheDocument();
+  expect(screen.getByText("담당 직원")).toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: /검수 마감 일정 삭제/ })).not.toBeInTheDocument();
+  expect(loadSchedules().items).toEqual([]);
+});
+
+test("세부 작업 상태와 이동 링크를 표시하고 완료 작업만 달력과 상세에서 숨긴다", async () => {
+  useERP.mockReturnValue({
+    projects: [{ id: 1, name: "진행 프로젝트" }],
+    employees: [],
+    tasks: [
+      { id: 1, projectId: 1, taskType: "검수", taskDeadline: getTodayKey(), progress: "완료" },
+      { id: 2, projectId: 1, taskType: "포장", taskDeadline: getTodayKey(), progress: "작업중" },
+    ],
+  });
+  render(<ScheduleManager />);
+  expect(screen.getByText("작업 상태 · 완료")).toBeInTheDocument();
+  expect(screen.getAllByRole("link", { name: "세부 작업 관리로 이동" })).toHaveLength(2);
+  fireEvent.click(screen.getByRole("checkbox", { name: "완료된 세부 작업 숨기기" }));
+  expect(screen.queryByText("작업 상태 · 완료")).not.toBeInTheDocument();
+  expect(screen.getByText("작업 상태 · 작업중")).toBeInTheDocument();
+  expect(screen.getAllByRole("link", { name: "세부 작업 관리로 이동" })).toHaveLength(1);
+  fireEvent.click(screen.getByRole("checkbox", { name: "완료된 세부 작업 숨기기" }));
+  expect(screen.getByText("작업 상태 · 완료")).toBeInTheDocument();
+  expect(loadSchedules().items).toEqual([]);
+  await act(async () => { expect(fetch).toHaveBeenCalled(); });
+});
+
+test("프로젝트 이름 변경은 검색과 상세에 반영하고 직원 연결 안내는 저장 원본을 보존한다", async () => {
+  const original = makeStoredSchedule({ date: getTodayKey(), scope: "업무용", projectId: 1,
+    project: "이전 프로젝트", employeeId: 802, person: "이전 직원",
+    attendeeEmployees: [{ id: 999, name: "삭제 직원" }], attendees: ["삭제 직원"] });
+  saveSchedules([original]);
+  useERP.mockReturnValue({ ...useERP(), projects: [{ id: 1, name: "변경 프로젝트" }] });
+  render(<ScheduleManager />);
+  const before = localStorage.getItem(storageKey);
+  expect(screen.getByText("직원 연결 확인 필요 · 1건")).toBeInTheDocument();
+  expect(screen.getByText(/이전 직원 → 김담당 · 이름 변경/)).toHaveTextContent("삭제 직원 · 직원 정보가 없습니다.");
+  fireEvent.change(screen.getByRole("textbox", { name: "일정 검색" }), { target: { value: "변경 프로젝트" } });
+  expect(screen.getByRole("button", { name: /09:00.*\[테스트\] 일정 선택한 날짜 일정에서 보기/ })).toBeInTheDocument();
+  expect(screen.getByText("변경 프로젝트", { selector: "dd" })).toBeInTheDocument();
+  expect(localStorage.getItem(storageKey)).toBe(before);
+  await act(async () => { expect(fetch).toHaveBeenCalled(); });
+});
+
+test("담당자별 주간표는 같은 이름의 담당 일정과 이름만 있는 일정을 나눠 표시한다", () => {
+  const date = "2026-11-10";
+  const item = { ...createEmptyForm(), date, scope: "업무용", person: "김민수" };
+  render(<ScheduleStaffWeek people={["김민수"]} weekDates={[{ key: date }]} selectedDate={date}
+    holidayDates={{}} items={[
+      { ...item, id: "a", employeeId: 1, title: "첫 담당 일정" },
+      { ...item, id: "b", employeeId: 2, title: "둘째 담당 일정" },
+      { ...item, id: "c", title: "이름만 있는 일정" },
+      { ...item, id: "d", person: "", title: "첫 직원 참석 회의", attendees: ["김민수"],
+        attendeeEmployees: [{ id: 1, name: "김민수" }], legacyAttendees: [] },
+      { ...item, id: "e", person: "", title: "둘째 직원 참석 회의", attendees: ["김민수"],
+        attendeeEmployees: [{ id: 2, name: "김민수" }], legacyAttendees: [] },
+    ]} />);
+  fireEvent.click(screen.getByRole("button", { name: "김민수 (직원 2) 일정 펼치기" }));
+  expect(screen.getByText("둘째 담당 일정")).toBeInTheDocument();
+  expect(screen.queryByText("첫 담당 일정")).not.toBeInTheDocument();
+  expect(screen.getByText("둘째 직원 참석 회의")).toBeInTheDocument();
+  expect(screen.queryByText("첫 직원 참석 회의")).not.toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "김민수 (이름 기준) 일정 펼치기" })).toBeInTheDocument();
+});
+
+test("동명이인 담당자는 겹침에서 구분하고 이름만 있는 참석자는 기존대로 확인한다", () => {
+  const candidate = { ...createEmptyForm(), id: "a", date: "2026-11-10", title: "첫 일정",
+    scope: "업무용", person: "김민수", employeeId: 1, time: "09:00", endTime: "11:00" };
+  const other = { ...candidate, id: "b", title: "둘째 일정", employeeId: 2 };
+  const conflicts = item => findScheduleConflicts(candidate, [item], candidate.date, candidate.date, {});
+  expect(conflicts(other)).toEqual([]);
+  expect(conflicts({ ...other, employeeId: 1, person: "이전 이름" })).toHaveLength(1);
+  expect(conflicts({ ...other, employeeId: null })).toHaveLength(1);
+  expect(conflicts({ ...other, attendees: ["김민수"] })).toHaveLength(1);
+  const meeting = { ...other, person: "", employeeId: null, attendees: ["김민수"], legacyAttendees: [],
+    attendeeEmployees: [{ id: 2, name: "김민수" }] };
+  expect(conflicts(meeting)).toEqual([]);
+  expect(conflicts({ ...meeting, attendeeEmployees: [{ id: 1, name: "김민수" }] })).toHaveLength(1);
+  expect(findScheduleConflicts({ ...meeting, id: "c", title: "셋째 일정" }, [meeting],
+    candidate.date, candidate.date, {})).toHaveLength(1);
+});
 
 /* 가짜 시계와 서버 응답은 테스트 안에서만 사용합니다. afterEach에서 복원해 다른 검사에 영향을 주지 않게 합니다. */
 /* 화면 테스트를 읽는 순서: 저장할 데이터 준비 → render로 화면 생성 → fireEvent로 사용자 동작 → expect로 결과 확인.
@@ -381,6 +475,35 @@ function makeStoredSchedule(overrides = {}) {
   return { ...createEmptyForm(), attendees: [], id: "fixture-schedule", scope: "개인 일정용", title: "[테스트] 일정", date: "2026-11-04", ...overrides };
 }
 
+test("겹침 경고를 취소하면 입력과 기존 저장 자료를 유지한다", async () => {
+  saveSchedules([makeStoredSchedule({ date: getTodayKey(), scope: "업무용",
+    person: "김담당", employeeId: 802, time: "09:00", endTime: "17:00" })]);
+  render(<ScheduleManager />);
+  const before = localStorage.getItem(storageKey);
+  fireEvent.click(screen.getByRole("button", { name: "일정 등록", exact: true }));
+  chooseWorkSchedule("회의");
+  fireEvent.change(screen.getByLabelText("일정 이름"), { target: { value: "겹침 취소 검증" } });
+  chooseAssignee("김담당");
+  const confirm = jest.spyOn(window, "confirm").mockReturnValue(false);
+  fireEvent.click(screen.getByRole("button", { name: "일정 저장" }));
+  expect(confirm).toHaveBeenCalledWith(expect.stringContaining("그래도 저장할까요?"));
+  expect(screen.getByLabelText("일정 이름")).toHaveValue("겹침 취소 검증");
+  expect(screen.getByRole("dialog", { name: "새 일정 등록" })).toBeInTheDocument();
+  expect(localStorage.getItem(storageKey)).toBe(before);
+  await act(async () => { expect(fetch).toHaveBeenCalled(); });
+});
+
+test("마우스 누름과 놓기로 수정창을 열고 내부 입력을 눌러도 유지한다", async () => {
+  saveSchedules([makeStoredSchedule({ date: getTodayKey() })]);
+  render(<ScheduleManager />);
+  userEvent.click(screen.getByRole("button", { name: "[테스트] 일정 일정 수정" }));
+  expect(screen.getByRole("dialog", { name: "일정 수정" })).toBeInTheDocument();
+  userEvent.click(screen.getByLabelText("일정 이름"));
+  expect(screen.getByRole("dialog", { name: "일정 수정" })).toBeInTheDocument();
+  expect(screen.getByLabelText("일정 이름")).toHaveValue("[테스트] 일정");
+  await act(async () => { expect(fetch).toHaveBeenCalled(); });
+});
+
 test("전체 목록은 날짜·이름·담당자로 정렬하며 원본 배열을 바꾸지 않는다", () => {
   const items = [
     makeStoredSchedule({ id: "a", title: "나 일정", date: "2026-11-03", person: "가 담당" }),
@@ -473,6 +596,58 @@ test.each(["until", "count"])("등록 폼에서 반복 종료 %s를 설정해 �
   expect(screen.getByLabelText("반복 종료", { exact: true })).toHaveValue(mode);
   await act(async () => { expect(fetch).toHaveBeenCalled(); });
 });
+test("회의 등록은 저장 잠금이 풀릴 때까지 폼과 초안을 유지한 뒤 목록에 반영한다", async () => {
+  const original = Object.getOwnPropertyDescriptor(navigator, "locks");
+  const jobs = [];
+  Object.defineProperty(navigator, "locks", { configurable: true, value: {
+    request: jest.fn((name, callback) => {
+      if (name === "made-mate-schedules-write") jobs.push(callback);
+      else callback();
+      return Promise.resolve();
+    }),
+  } });
+  try {
+    render(<ScheduleManager />);
+    await act(async () => { jobs.shift()(); });
+    fireEvent.click(screen.getByRole("button", { name: "일정 등록", exact: true }));
+    chooseWorkSchedule("회의");
+    chooseAssignee("김담당");
+    fireEvent.click(screen.getByRole("checkbox", { name: "이언우 · 과장" }));
+    fireEvent.change(screen.getByLabelText("일정 이름"), { target: { value: "저장 대기 회의" } });
+    fireEvent.click(screen.getByRole("button", { name: "일정 저장", exact: true }));
+    expect(screen.getByRole("dialog")).toHaveTextContent("일정을 저장하는 중입니다.");
+    expect(loadSchedules().items).toEqual([]);
+    expect(sessionStorage.getItem("made-mate-schedule-draft")).toContain("저장 대기 회의");
+    await act(async () => { jobs.shift()(); });
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(loadSchedules().items[0]).toMatchObject({ title: "저장 대기 회의", attendees: ["이언우"] });
+    expect(sessionStorage.getItem("made-mate-schedule-draft")).toBeNull();
+  } finally {
+    if (original) Object.defineProperty(navigator, "locks", original);
+    else delete navigator.locks;
+  }
+});
+
+test("등록 저장 실패 시 목록에 추가하지 않고 입력을 유지해 한 번만 재등록한다", async () => {
+  const originalSet = Storage.prototype.setItem;
+  const write = jest.spyOn(Storage.prototype, "setItem").mockImplementation(function (key, value) {
+    if (key === storageKey && value.includes("재시도 일정")) throw new Error("저장 실패");
+    return originalSet.call(this, key, value);
+  });
+  render(<ScheduleManager />);
+  fireEvent.click(screen.getByRole("button", { name: "일정 등록", exact: true }));
+  fireEvent.click(screen.getByRole("button", { name: "개인 일정용", exact: true }));
+  fireEvent.change(screen.getByLabelText("일정 이름"), { target: { value: "재시도 일정" } });
+  fireEvent.click(screen.getByRole("button", { name: "일정 저장", exact: true }));
+  expect(within(screen.getByRole("dialog")).getByRole("alert")).toHaveTextContent("다시 저장");
+  expect(screen.getByLabelText("일정 이름")).toHaveValue("재시도 일정");
+  expect(loadSchedules().items).toEqual([]);
+  write.mockRestore();
+  fireEvent.click(screen.getByRole("button", { name: "일정 저장", exact: true }));
+  expect(loadSchedules().items.map(item => item.title)).toEqual(["재시도 일정"]);
+  await act(async () => { expect(fetch).toHaveBeenCalled(); });
+});
+
 test("저장 잠금을 기다리는 동안에는 완료가 아닌 저장 중으로 표시한다", async () => {
   const original = Object.getOwnPropertyDescriptor(navigator, "locks");
   const jobs = [];
@@ -1507,18 +1682,29 @@ test("기존 일정의 임의 담당자와 참석자 이름을 편집해도 자�
   await act(async () => { expect(fetch).toHaveBeenCalled(); });
 });
 
-test("회의 분류에서 담당자와 참석자를 일정에 저장한다", async () => {
-  localStorage.setItem("made-mate-schedule-team", JSON.stringify(["김담당", "이참석"]));
+test("회의 참석자는 재직 직원을 부서별로 표시하고 동명이인 선택을 각각 저장한다", async () => {
+  const erp = useERP();
+  useERP.mockReturnValue({ ...erp, employees: [...erp.employees,
+    { id: 901, name: "이참석", department: "영업팀", position: "사원", status: "재직" },
+    { id: 902, name: "이참석", department: "물류팀", position: "사원", status: "재직" },
+    { id: 903, name: "휴직 직원", department: "물류팀", position: "사원", status: "휴직" },
+  ] });
   render(<ScheduleManager />);
   fireEvent.click(screen.getByRole("button", { name: "일정 등록", exact: true }));
   chooseWorkSchedule("회의");
   fireEvent.change(screen.getByLabelText("일정 이름"), { target: { value: "팀 회의" } });
   chooseAssignee("김담당");
-  fireEvent.click(screen.getByRole("checkbox", { name: "이참석" }));
+  const sales = within(screen.getByRole("group", { name: /영업팀 ·/ })).getByRole("checkbox", { name: "이참석 · 사원" });
+  const logistics = within(screen.getByRole("group", { name: /물류팀 ·/ })).getByRole("checkbox", { name: "이참석 · 사원" });
+  fireEvent.click(sales);
+  expect(logistics).not.toBeChecked();
+  fireEvent.click(logistics);
+  expect(screen.queryByRole("checkbox", { name: /휴직 직원/ })).not.toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: "일정 저장" }));
   const saved = JSON.parse(localStorage.getItem(storageKey))[0];
   expect(saved.person).toBe("김담당");
   expect(saved.attendees).toEqual(["이참석"]);
+  expect(saved.attendeeEmployees).toEqual([{ id: 901, name: "이참석" }, { id: 902, name: "이참석" }]);
   await act(async () => { expect(fetch).toHaveBeenCalled(); });
 });
 

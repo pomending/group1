@@ -1,8 +1,33 @@
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { useScheduleHolidays, useScheduleStorage, useScheduleTeam } from "./scheduleHooks";
+import { loadSchedules, resetStoredSchedules, serializeSchedules } from "./scheduleStorage";
 
 afterEach(() => jest.restoreAllMocks());
 beforeEach(() => localStorage.clear());
+
+test.each([true, false])("초기화 전에 대기 중이던 일정 저장이 빈 목록을 덮어쓰지 않는다 (같은 탭: %s)", sameTab => {
+  const descriptor = Object.getOwnPropertyDescriptor(navigator, "locks");
+  const jobs = [];
+  Object.defineProperty(navigator, "locks", { configurable: true, value: {
+    request: jest.fn((name, callback) => { jobs.push(callback); return Promise.resolve(); }),
+  } });
+  try {
+    const { result } = renderHook(() => useScheduleStorage());
+    act(() => jobs.shift()());
+    act(() => result.current.setItems([schedule]));
+    act(() => {
+      if (sameTab) resetStoredSchedules();
+      else localStorage.setItem(storageKey, serializeSchedules([], "other-tab-reset"));
+      jobs.shift()();
+      if (!sameTab) window.dispatchEvent(new StorageEvent("storage", { key: storageKey }));
+    });
+    expect(result.current.items).toEqual([]);
+    expect(loadSchedules().items).toEqual([]);
+  } finally {
+    if (descriptor) Object.defineProperty(navigator, "locks", descriptor);
+    else delete navigator.locks;
+  }
+});
 
 test("두 탭에서 서로 다른 일정을 수정하면 양쪽 변경을 함께 보존한다", () => {
   localStorage.setItem(storageKey, JSON.stringify([{ ...schedule, id: "a" }, { ...schedule, id: "b" }]));
@@ -87,10 +112,10 @@ test("다른 탭에서 제외한 팀원을 오래된 목록으로 되살리지 �
   expect(JSON.parse(localStorage.getItem("made-mate-excluded-team"))).toEqual([]);
 });
 
-test("일정 저장 실패 시 프로젝트 전달용 마지막 저장 목록을 변경하지 않는다", () => {
+test("일정 저장 실패 시 브라우저에 저장된 원본을 유지한다", () => {
   localStorage.setItem(storageKey, JSON.stringify([schedule]));
   const { result } = renderHook(() => useScheduleStorage());
-  const before = result.current.savedItems;
+  const before = localStorage.getItem(storageKey);
   const originalSet = Storage.prototype.setItem;
   jest.spyOn(Storage.prototype, "setItem").mockImplementation(function(key, value) {
     if (key === storageKey) throw new Error("quota");
@@ -98,18 +123,16 @@ test("일정 저장 실패 시 프로젝트 전달용 마지막 저장 목록을
   });
   act(() => result.current.setItems(items => items.map(item => ({ ...item, title: "미저장" }))));
   expect(result.current.saveStatus).toBe("error");
-  expect(result.current.savedItems).toBe(before);
-  expect(result.current.savedItems[0].title).toBe(schedule.title);
+  expect(localStorage.getItem(storageKey)).toBe(before);
 });
 
-test("같은 일정의 탭 간 편집 충돌 시 저장 성공 목록을 유지한다", () => {
+test("같은 일정의 탭 간 편집 충돌 시 다른 탭의 저장값을 유지한다", () => {
   localStorage.setItem(storageKey, JSON.stringify([schedule]));
   const { result } = renderHook(() => useScheduleStorage());
-  const before = result.current.savedItems;
-  localStorage.setItem(storageKey, JSON.stringify([{ ...before[0], title: "다른 탭 수정" }]));
+  const before = localStorage.getItem(storageKey);
+  localStorage.setItem(storageKey, JSON.stringify([{ ...JSON.parse(before)[0], title: "다른 탭 수정" }]));
   act(() => result.current.setItems(items => items.map(item => ({ ...item, title: "현재 탭 수정" }))));
   expect(result.current.saveStatus).toBe("blocked");
-  expect(result.current.savedItems).toBe(before);
   expect(JSON.parse(localStorage.getItem(storageKey))[0].title).toBe("다른 탭 수정");
 });
 

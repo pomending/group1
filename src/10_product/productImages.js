@@ -54,8 +54,8 @@ const previousImageFiles = {
 };
 
 export function findProductImage(value) {
-  if (typeof value !== "string" || !value.startsWith("catalog:")) return undefined;
-  const savedId = value.slice("catalog:".length);
-  const id = previousImageFiles[savedId] || savedId;
+  if (typeof value !== "string") return undefined;
+  const savedId = value.startsWith("catalog:") ? value.slice("catalog:".length) : value;
+  const id = value.startsWith("catalog:") ? (previousImageFiles[savedId] || savedId) : savedId;
   return productImages.find(item => item.id === id);
 }

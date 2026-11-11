@@ -226,6 +226,7 @@ export const createEmptyForm = () => ({
   // 입력 중에는 문자열로 둡니다. 저장 시 normalizeAttendees가 배열로 바꿉니다.
   // 예: 입력 "민수, 지수" → 저장 ["민수", "지수"] → 수정 입력 "민수, 지수".
   attendees: "",
+  attendeeEmployees: [],
   type: "기획",
   status: "pending",
   repeatType: "none",
@@ -317,7 +318,8 @@ export const createScheduleForm = (item) => {
   // 프로젝트 ID는 입력창에 표시하지 않는 연결 정보입니다. 원본 일정의 id와 구분합니다.
   form.projectId = getScheduleProjectId(item);
   if (typeof item.projectReference === "string") form.projectReference = item.projectReference;
-  form.attendees = normalizeAttendees(item.attendees).join(", ");
+  form.attendeeEmployees = normalizeAttendeeEmployees(item.attendeeEmployees);
+  form.attendees = normalizeAttendees(item.legacyAttendees ?? item.attendees).join(", ");
   form.repeatType = item.repeatType || "none";
   form.repeatInterval = getRepeatInterval(item);
   Object.assign(form, getRepeatEndOptions(item));
@@ -338,6 +340,19 @@ export const createScheduleForm = (item) => {
  * " 민수,지수,민수,, " → 공백 제거·빈 이름 제거 → 중복 제거 → ["민수", "지수"].
  * 입력 종류 확인 → 이름을 하나씩 검사 → 공백 제거 → 중복 확인 순서로 읽으면 됩니다.
  */
+export function normalizeAttendeeEmployees(value) {
+  if (!Array.isArray(value)) return [];
+  const people = [];
+  const ids = new Set();
+  for (const employee of value) {
+    if (!Number.isSafeInteger(employee?.id) || employee.id <= 0 || ids.has(employee.id)) continue;
+    if (typeof employee.name !== "string" || !employee.name.trim()) continue;
+    people.push({ id: employee.id, name: employee.name.trim() });
+    ids.add(employee.id);
+  }
+  return people;
+}
+
 export const normalizeAttendees = (value) => {
   // 정규식의 대괄호는 포함된 문자 중 하나를 뜻합니다.
   // 여기서는 일반 쉼표, 전각 쉼표, 줄바꿈을 각각 이름 구분자로 취급합니다.
@@ -356,9 +371,17 @@ export const normalizeAttendees = (value) => {
   return result;
 };
 
-// 담당자와 참석자를 하나의 이름 배열로 합쳐 사람별 표와 검색에서 사용합니다. 등록 팀원 수는 별도 명단을 셉니다.
-// 담당자="민수", 참석자=["민수", "지수"]이면 중복을 제거한 ["민수", "지수"]를 반환합니다.
-// 현재는 이름 문자열로 사람을 구분하므로 같은 이름은 한 사람으로 취급합니다.
+// 직원 번호가 없는 과거 기록도 이름으로 비교할 수 있게 유지합니다.
+export function getScheduleParticipants(item) {
+  const attendees = normalizeAttendeeEmployees(item.attendeeEmployees);
+  const legacy = normalizeAttendees(item.legacyAttendees ?? normalizeAttendees(item.attendees)
+    .filter(name => !attendees.some(attendee => attendee.name === name)));
+  const people = [...attendees, ...legacy.map(name => ({ id: null, name }))];
+  if (item.person?.trim()) people.push({ id: item.employeeId ?? null, name: item.person.trim() });
+  return people;
+}
+
+// 이름 검색과 팀원 목록에 사용할 담당자·참석자 이름을 중복 없이 반환합니다.
 export const getSchedulePeople = (item) =>
   normalizeAttendees([
     // 담당자가 비어 있거나 문자열이 아니어도 normalizeAttendees가 알아서 건너뜁니다.
@@ -661,7 +684,7 @@ export function findScheduleConflicts(
   const conflicts = [];
   const candidateTitle = candidate.title.toLowerCase();
   // 새 일정의 이름과 참여자는 모든 비교에 공통이므로 반복문 밖에서 한 번만 계산합니다.
-  const candidatePeople = new Set(getSchedulePeople(candidate));
+  const candidatePeople = getScheduleParticipants(candidate);
 
   for (const proposed of proposedDates) {
     const proposedInterval = getScheduleInterval(proposed, true);
@@ -681,7 +704,11 @@ export function findScheduleConflicts(
       const duplicate = existing.title.trim().toLowerCase() === candidateTitle && sameTime;
       const sharedPerson = candidate.scope === "업무용"
         && existing.scope === "업무용"
-        && getSchedulePeople(existing).some(name => candidatePeople.has(name));
+        && getScheduleParticipants(existing).some(person => candidatePeople.some(candidatePerson =>
+          person.id != null && candidatePerson.id != null
+            ? person.id === candidatePerson.id
+            : person.name === candidatePerson.name
+        ));
       const existingInterval = getScheduleInterval(existing, true);
       // 끝 시각과 시작 시각이 맞닿는 경우(10~11시, 11~12시)는 겹침에 포함하지 않습니다.
       const timeOverlap = proposedInterval.start < existingInterval.end

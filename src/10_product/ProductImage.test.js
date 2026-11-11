@@ -10,6 +10,11 @@ beforeAll(() => productImages.push(
 ));
 afterAll(() => { productImages.length = 0; });
 
+test("초기 데이터의 파일명만으로도 카탈로그 이미지를 표시한다", () => {
+  render(<ProductImage product={{ id: 7104, productName: "기본 스티커", productImageUrl: "10-logo-sticker.jpg" }} />);
+  expect(screen.getByRole("img", { name: "기본 스티커 상품 이미지" })).toHaveAttribute("src", "/sticker.jpg");
+});
+
 test("이미지 적용 저장에 실패하면 기존 이미지와 선택창을 유지하고 재시도할 수 있다", () => {
   const product = { id: 7103, productName: "적용 실패", productImageUrl: "/keep.jpg" };
   render(<ProductImage product={product} />);
