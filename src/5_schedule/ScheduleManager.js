@@ -38,6 +38,7 @@ import {
   typeColors,
 } from "./scheduleData";
 import "./scheduleStyles.css";
+
 const EMPTY_PROJECTS = [];
 const saveStatusLabels = {
   saving: "저장 중…",
@@ -274,7 +275,7 @@ export default function ScheduleManager() {
       if (name === "durationMinutes") return { ...current, ...getScheduleDurationFields(current, Number(value)) };
       // 입력 화면은 선택값만 보내고, 숨겨질 연관 필드는 이곳에서 한 번에 초기화합니다.
       if (name === "scope") {
-        return { ...current, scope: value, category: "", project: "", projectId: null, projectReference: "", attendees: "", person: "", status: "pending" };
+        return { ...current, scope: value, category: "", project: "", projectId: null, projectReference: "", attendees: "", person: "",  employeeId: null, status: "pending" };
       }
       if (name === "category") {
         return {

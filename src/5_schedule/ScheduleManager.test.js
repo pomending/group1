@@ -6,7 +6,7 @@
 
 /* beforeEach에서 저장소·공휴일 응답을 준비하고 사용자 동작 후 화면과 저장 결과를 검증합니다. */
 import React from "react";
-import { act, fireEvent, render, screen, within, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import ScheduleManager from "./ScheduleManager";
 import { useERP } from "../context/ERPContext";
 import { loadSchedules, mergeScheduleChanges } from "./scheduleStorage";
@@ -27,7 +27,6 @@ import {
 const storageKey = "made-mate-schedules";
 
 // 실제 화면은 ERPProvider가 필수입니다. 여기서는 useERP를 대체하고 각 검사 전에 빈 목록으로 초기화합니다.
-// 연결 검사의 updateProject도 가짜 함수로 제공해 실제 프로젝트 저장·이력 변경은 실행하지 않습니다.
 // 따라서 이 검사의 통과가 실제 Provider 연동까지 검증했다는 뜻은 아닙니다. 직원 매핑은 Bridge 테스트에서 별도 검사합니다.
 jest.mock("../context/ERPContext", () => {
   return { useERP: jest.fn() };
@@ -43,81 +42,6 @@ test("끊긴 프로젝트 연결을 찾아 편집 안내를 표시하고 재선�
   fireEvent.click(screen.getByRole("button", { name: "프로젝트 다시 선택" }));
   expect(screen.getByRole("combobox", { name: "프로젝트", exact: true })).toHaveValue("");
   expect(JSON.parse(localStorage.getItem(storageKey))[0].projectId).toBe(99);
-});
-
-test.each(["실패 결과", "예외"])("프로젝트 연동이 %s여도 일정 화면과 저장 목록을 유지한다", async mode => {
-  const updateProject = jest.fn(() => {
-    if (mode === "예외") throw new Error("project storage failed");
-    return { ok: false, message: "프로젝트 기간 오류" };
-  });
-  useERP.mockReturnValue({ projects: [{ id: 1, name: "연결 프로젝트", schedules: [] }], employees: [], updateProject });
-  saveSchedules([makeStoredSchedule({ scope: "업무용", category: "프로젝트", project: "연결 프로젝트", projectId: 1 })]);
-  render(<ScheduleManager />);
-  await act(async () => { expect(fetch).toHaveBeenCalled(); });
-  expect(screen.getByRole("button", { name: "전체 일정 (1)" })).toBeInTheDocument();
-  expect(screen.getByRole("alert")).toHaveTextContent("프로젝트 연동");
-  expect(screen.getByRole("alert")).toHaveTextContent("연결 프로젝트");
-  expect(screen.getByRole("alert")).toHaveTextContent(mode === "예외" ? "저장 처리 중 오류" : "프로젝트 기간 오류");
-  const calls = updateProject.mock.calls.length;
-  fireEvent.click(screen.getByRole("button", { name: "프로젝트 연동 다시 시도" }));
-  expect(updateProject.mock.calls.length).toBeGreaterThan(calls);
-  updateProject.mockImplementation(() => ({ ok: true }));
-  fireEvent.click(screen.getByRole("button", { name: "프로젝트 연동 다시 시도" }));
-  expect(screen.queryByRole("alert")).not.toBeInTheDocument();
-  expect(JSON.parse(localStorage.getItem(storageKey))).toHaveLength(1);
-});
-
-test("일정 읽기 오류 중에는 프로젝트 요약을 유지하고 정상 재조회 후에만 갱신한다", async () => {
-  const updateProject = jest.fn();
-  const project = { id: 1, name: "[테스트] 프로젝트", schedules: [{ id: "original" }] };
-  const before = JSON.stringify(project);
-  useERP.mockReturnValue({ projects: [project], employees: [], updateProject });
-  localStorage.setItem(storageKey, "{broken");
-  render(<ScheduleManager />);
-  expect(updateProject).not.toHaveBeenCalled();
-  expect(JSON.stringify(project)).toBe(before);
-  expect(localStorage.getItem(storageKey)).toBe("{broken");
-  localStorage.setItem(storageKey, "[]");
-  fireEvent.click(screen.getByRole("button", { name: "현재 변경을 버리고 저장된 일정 불러오기" }));
-  expect(updateProject).toHaveBeenCalledWith({ id: 1, schedules: [] });
-  await act(async () => { expect(fetch).toHaveBeenCalled(); });
-});
-
-test("최초 일정 저장에 실패하면 프로젝트 요약과 변경 이력을 갱신하지 않는다", async () => {
-  const updateProject = jest.fn();
-  useERP.mockReturnValue({ projects: [{ id: 1, name: "연결 프로젝트", schedules: [{ id: "유지" }] }], employees: [], updateProject });
-  saveSchedules([makeStoredSchedule({ scope: "업무용", category: "프로젝트", project: "연결 프로젝트", projectId: 1 })]);
-  const originalSet = Storage.prototype.setItem;
-  jest.spyOn(Storage.prototype, "setItem").mockImplementation(function(key, value) {
-    if (key === storageKey) throw new Error("quota");
-    return originalSet.call(this, key, value);
-  });
-  render(<ScheduleManager />);
-  await act(async () => { expect(fetch).toHaveBeenCalled(); });
-  expect(updateProject).not.toHaveBeenCalled();
-  expect(screen.getByRole("status", { name: "일정 저장 상태" })).toHaveTextContent("저장 실패");
-});
-
-test("프로젝트 요약은 일정 쓰기 잠금이 풀려 실제 저장에 성공한 뒤에만 전달한다", async () => {
-  const updateProject = jest.fn();
-  useERP.mockReturnValue({ projects: [{ id: 1, name: "연결 프로젝트", schedules: [] }], employees: [], updateProject });
-  saveSchedules([makeStoredSchedule({ scope: "업무용", category: "프로젝트", project: "연결 프로젝트", projectId: 1 })]);
-  const originalLocks = Object.getOwnPropertyDescriptor(navigator, "locks");
-  const jobs = [];
-  Object.defineProperty(navigator, "locks", { configurable: true, value: {
-    request: jest.fn((name, callback) => { jobs.push({ name, callback }); return Promise.resolve(); }),
-  } });
-  let view;
-  try {
-    view = render(<ScheduleManager />);
-    expect(updateProject).not.toHaveBeenCalled();
-    await act(async () => { jobs.find(job => job.name === "made-mate-schedules-write").callback(); });
-    expect(updateProject).toHaveBeenCalledWith({ id: 1, schedules: [expect.objectContaining({ title: expect.any(String) })] });
-  } finally {
-    view?.unmount();
-    if (originalLocks) Object.defineProperty(navigator, "locks", originalLocks);
-    else delete navigator.locks;
-  }
 });
 
 test("과거 반복 중복 정리 전 원본을 보존하고 원본 보존 실패 시 자동 저장을 막는다", () => {

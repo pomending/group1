@@ -6,23 +6,23 @@ beforeEach(() => localStorage.clear());
 
 test("두 탭에서 서로 다른 일정을 수정하면 양쪽 변경을 함께 보존한다", () => {
   localStorage.setItem(storageKey, JSON.stringify([{ ...schedule, id: "a" }, { ...schedule, id: "b" }]));
-  const first = renderHook(() => useScheduleStorage());
-  const second = renderHook(() => useScheduleStorage());
-  act(() => first.result.current.setItems(items => items.map(item => item.id === "a" ? { ...item, title: "첫 탭 수정" } : item)));
-  act(() => second.result.current.setItems(items => items.map(item => item.id === "b" ? { ...item, title: "둘째 탭 수정" } : item)));
+  const view = renderHook(() => useScheduleStorage());
+  const utils = renderHook(() => useScheduleStorage());
+  act(() => view.result.current.setItems(items => items.map(item => item.id === "a" ? { ...item, title: "첫 탭 수정" } : item)));
+  act(() => utils.result.current.setItems(items => items.map(item => item.id === "b" ? { ...item, title: "둘째 탭 수정" } : item)));
   const saved = JSON.parse(localStorage.getItem(storageKey));
   expect(saved.find(item => item.id === "a").title).toBe("첫 탭 수정");
   expect(saved.find(item => item.id === "b").title).toBe("둘째 탭 수정");
-  expect(second.result.current.storageConflict).toBe(false);
+  expect(utils.result.current.storageConflict).toBe(false);
 });
 
 test("다른 탭의 삭제와 현재 탭의 같은 일정 수정이 충돌하면 삭제를 덮어쓰지 않는다", () => {
   localStorage.setItem(storageKey, JSON.stringify([schedule]));
-  const first = renderHook(() => useScheduleStorage());
-  const second = renderHook(() => useScheduleStorage());
-  act(() => first.result.current.setItems([]));
-  act(() => second.result.current.setItems(items => items.map(item => ({ ...item, title: "늦은 수정" }))));
-  expect(second.result.current.saveStatus).toBe("blocked");
+  const view = renderHook(() => useScheduleStorage());
+  const utils = renderHook(() => useScheduleStorage());
+  act(() => view.result.current.setItems([]));
+  act(() => utils.result.current.setItems(items => items.map(item => ({ ...item, title: "늦은 수정" }))));
+  expect(utils.result.current.saveStatus).toBe("blocked");
   expect(localStorage.getItem(storageKey)).toBe("[]");
 });
 
@@ -65,24 +65,24 @@ test("쓰기 잠금 대기 중 화면을 떠나면 늦은 콜백이 저장값을
 });
 
 test("팀원은 두 탭에서 서로 다른 이름을 추가해도 기존 등록을 유지한다", () => {
-  const first = renderHook(() => useScheduleTeam());
-  const second = renderHook(() => useScheduleTeam());
-  act(() => first.result.current.addTeamMember("가 팀원"));
-  act(() => second.result.current.addTeamMember("나 팀원"));
+  const view = renderHook(() => useScheduleTeam());
+  const utils = renderHook(() => useScheduleTeam());
+  act(() => view.result.current.addTeamMember("가 팀원"));
+  act(() => utils.result.current.addTeamMember("나 팀원"));
   expect(JSON.parse(localStorage.getItem("made-mate-schedule-team"))).toEqual(["가 팀원", "나 팀원"]);
   act(() => window.dispatchEvent(new StorageEvent("storage", { key: "made-mate-schedule-team" })));
-  expect(first.result.current.teamMembers).toEqual(["가 팀원", "나 팀원"]);
+  expect(view.result.current.teamMembers).toEqual(["가 팀원", "나 팀원"]);
 });
 
 test("다른 탭에서 제외한 팀원을 오래된 목록으로 되살리지 않고 명시적으로 재등록한다", () => {
   localStorage.setItem("made-mate-schedule-team", JSON.stringify(["가 팀원"]));
-  const first = renderHook(() => useScheduleTeam());
-  const second = renderHook(() => useScheduleTeam());
+  const view = renderHook(() => useScheduleTeam());
+  const utils = renderHook(() => useScheduleTeam());
   jest.spyOn(window, "confirm").mockReturnValue(true);
-  act(() => first.result.current.removeTeamMember("가 팀원"));
-  act(() => second.result.current.addTeamMember("나 팀원"));
-  expect(second.result.current.teamMembers).toEqual(["나 팀원"]);
-  act(() => second.result.current.addTeamMember("가 팀원"));
+  act(() => view.result.current.removeTeamMember("가 팀원"));
+  act(() => utils.result.current.addTeamMember("나 팀원"));
+  expect(utils.result.current.teamMembers).toEqual(["나 팀원"]);
+  act(() => utils.result.current.addTeamMember("가 팀원"));
   expect(JSON.parse(localStorage.getItem("made-mate-schedule-team"))).toEqual(["가 팀원", "나 팀원"]);
   expect(JSON.parse(localStorage.getItem("made-mate-excluded-team"))).toEqual([]);
 });
