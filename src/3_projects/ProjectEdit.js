@@ -25,11 +25,11 @@ function ProjectEdit(props) {
     const projectManagers = getProjectManagers(employees)
 
     const pastManager = employees.find(
-        e => Number(e.id) === Number(selectedProject.managerId)
+        e => e.id === selectedProject?.managerId
     );
 
     const keepPastManager =
-        selectedProject.status === "완료" &&
+        selectedProject?.status === "완료" &&
         pastManager &&
         !projectManagers.some(e => e.id === pastManager.id);
 
@@ -42,7 +42,7 @@ function ProjectEdit(props) {
         const result = updateProject({
             id: selectedProject.id,
             name: projectName.trim(),
-            managerId: Number(managerId),
+            managerId: managerId,
             startDate,
             dueDate,
             description
@@ -63,6 +63,23 @@ function ProjectEdit(props) {
                     <p>프로젝트를 찾을 수 없습니다.</p>
                     <button className="pe-back pj-back" onClick={() => props.setPage("list")}>
                         ← 프로젝트 목록으로
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
+    if (selectedProject.status === "완료") {
+        return (
+            <div className="pe-page pj-page">
+                <div className="pe-container pj-container">
+                    <p>완료된 프로젝트는 수정할 수 없습니다.</p>
+                    <button
+                        type="button"
+                        className="pe-back pj-back"
+                        onClick={() => props.setPage("detail")}
+                    >
+                        ← 프로젝트 상세로
                     </button>
                 </div>
             </div>

@@ -1,11 +1,19 @@
 import { formatPrice, formatQuotationId } from "../utils/formatUtils"
-import { totalPrice } from "../utils/quotationUtils";
+import { totalPrice, getQuotationPriceDetails } from "../utils/quotationUtils";
 
 function ProjectQuotationInfo({ quotation, product, customer }) {
 
-    if(!quotation) return null;
+    if (!quotation) return null;
 
-    const quotationSupply = totalPrice(Number(quotation.quantity),Number(quotation.unitPrice));
+    const quantity = Number(quotation.quantity);
+
+    const {
+        baseUnitPrice,
+        options,
+        finalUnitPrice
+    } = getQuotationPriceDetails(quotation);
+
+    const quotationSupply = totalPrice(quantity, finalUnitPrice);
 
     const quotationVat = quotationSupply * 0.1;
 
@@ -28,19 +36,55 @@ function ProjectQuotationInfo({ quotation, product, customer }) {
                 <table className="pd-quotation-table pj-quote-table">
                     <thead>
                         <tr>
-                            <th>상품명</th>
+                            <th>상품 / 옵션</th>
                             <th>수량</th>
-                            <th>단가</th>
+                            <th>개당 단가</th>
                             <th>공급가액</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <tr>
+                        {/* 상품 기본 단가 */}
+                        <tr className="pj-quote-product-row">
                             <td>{product?.productName ?? "상품 정보 없음"}</td>
-                            <td>{Number(quotation.quantity).toLocaleString()}개</td>
-                            <td>{formatPrice(quotation.unitPrice)}</td>
-                            <td>{formatPrice(quotationSupply)}</td>
+                            <td>{quantity.toLocaleString()}개</td>
+                            <td>{formatPrice(baseUnitPrice)}</td>
+                            <td>{formatPrice(totalPrice(quantity, baseUnitPrice))}</td>
                         </tr>
+
+                        {/* 추가 옵션 */}
+                        {options.map((option, index) => {
+                            const optionPrice = Number(option.unitPrice);
+
+                            return (
+                                <tr className="pj-quote-option-row" key={index}>
+                                    <td>
+                                        <div className="pj-quote-option-label">
+                                            <span className={
+                                                optionPrice < 0
+                                                    ? "pj-quote-option-badge discount"
+                                                    : "pj-quote-option-badge"
+                                            }>
+                                                {optionPrice < 0 ? "할인" : "옵션"}
+                                            </span>
+                                            <span>{option.name}</span>
+                                        </div>
+                                    </td>
+                                    <td></td>
+                                    <td>{formatPrice(optionPrice)}</td>
+                                    <td></td>
+                                </tr>
+                            );
+                        })}
+
+                        {/* 상품 + 옵션 합계 */}
+                        {options.length > 0 && (
+                            <tr className="pj-quote-total-row">
+                                <td><strong>옵션 적용 합계</strong></td>
+                                <td></td>
+                                <td><strong>{formatPrice(finalUnitPrice)}</strong></td>
+                                <td><strong>{formatPrice(quotationSupply)}</strong></td>
+                            </tr>
+                        )}
                     </tbody>
                 </table>
             </div>

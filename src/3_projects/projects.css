@@ -1837,3 +1837,64 @@
   .pj-page .pj-card,
   .pj-page .pm-card { box-shadow: none; }
 }
+/* 상품 기본 행 */
+.pj-quote-product-row {
+  font-weight: 500;
+}
+
+/* 옵션 행 */
+.pj-quote-table .pj-quote-option-row td {
+  background-color: #f8fafc;
+  color: #64748b;
+  font-size: 13px;
+}
+
+/* 옵션 행 왼쪽 구분선 */
+.pj-quote-table .pj-quote-option-row td:first-child {
+  padding-left: 24px;
+  border-left: 3px solid #93c5fd;
+}
+
+/* 옵션 이름과 배지 */
+.pj-quote-option-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* 옵션 배지 */
+.pj-quote-option-badge {
+  display: inline-block;
+  padding: 3px 7px;
+  border-radius: 4px;
+  background-color: #dbeafe;
+  color: #2563eb;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* 할인 배지 */
+.pj-quote-option-badge.discount {
+  background-color: #fee2e2;
+  color: #dc2626;
+}
+
+/* 최종 합계 행 */
+.pj-quote-table .pj-quote-total-row td {
+  background-color: #eff6ff;
+  font-weight: 600;
+}
+
+.pd-status-editor select:disabled,
+.pd-status-save:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+.pd-status-notice {
+    margin-top: 10px;
+    font-size: 13px;
+    color: #64748b;
+}
