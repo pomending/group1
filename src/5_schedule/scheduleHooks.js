@@ -8,8 +8,8 @@
  */
 
 import { useEffect, useRef, useState } from "react";
-import { compareSchedules, getTodayKey, createEmptyForm } from "./scheduleData";
-import { loadSchedules, loadTeamMembers, mergeScheduleChanges } from "./scheduleStorage";
+import { compareSchedules, getTodayKey, createEmptyForm, normalizeAttendeeEmployees } from "./scheduleData";
+import { loadSchedules, loadTeamMembers, mergeScheduleChanges, serializeSchedules } from "./scheduleStorage";
 
 // 오늘 표시와 분 단위 현재 시각을 갱신하고, 자정에 오늘 날짜를 넘깁니다.
 export function useScheduleClock(selectedDate, setSelectedDate, setMonth) {
@@ -87,63 +87,105 @@ export function useScheduleHolidays(calendarYear) {
 export function useScheduleStorage() {
   const [loadedSchedules, setLoadedSchedules] = useState(loadSchedules);
   const [items, setItems] = useState(loadedSchedules.items);
-  const savedVersion = useRef({ raw: loadedSchedules.raw, items: loadedSchedules.items });
-  // 프로젝트 연동에는 화면의 편집 목록 대신 마지막 저장 성공 목록을 전달합니다.
-  const [savedItems, setSavedItems] = useState(null);
+  const savedVersion = useRef(loadedSchedules);
+  const resetVersion = useRef(0);
   const editingVersion = useRef(null);
   const [storageConflict, setStorageConflict] = useState(false);
   const [storageError, setStorageError] = useState(false);
   const [saveState, setSaveState] = useState("saving");
+  const [submission, setSubmission] = useState(null);
+
+  function submitItems(update, onSaved, onError) {
+    if (submission) return;
+    if (loadedSchedules.readError || storageConflict) {
+      onError("저장이 중지됐습니다. 저장된 일정을 다시 불러온 뒤 시도해 주세요.");
+      return;
+    }
+    setSubmission({ update, onSaved, onError });
+  }
 
   useEffect(() => {
     if (loadedSchedules.readError || storageConflict) return undefined;
     let active = true;
+    const versionAtStart = resetVersion.current;
     setSaveState("saving");
+
+    function failSubmission(message) {
+      if (!submission) return;
+      setSubmission(null);
+      submission.onError(message);
+    }
 
     // 화면에서 setItems로 바뀐 목록을 브라우저 저장소에 기록합니다.
     // 마지막 읽은 raw와 현재 저장값이 다르면 다른 탭의 변경을 먼저 병합하고,
     // 같은 일정을 서로 다르게 고친 경우에는 저장을 멈춰 경고를 보여줍니다.
     function persist() {
-      if (!active) return;
+      if (!active || versionAtStart !== resetVersion.current) return;
       try {
-        let next = items;
+        let next = submission ? submission.update(items) : items;
         const raw = localStorage.getItem("made-mate-schedules");
         if (raw !== savedVersion.current.raw) {
           const remote = loadSchedules();
           if (remote.readError) {
             setStorageConflict(true);
+            failSubmission("다른 탭의 저장값을 읽지 못했습니다. 입력을 확인해 주세요.");
             return;
           }
-          const merged = mergeScheduleChanges(savedVersion.current.items, items, remote.items);
+          if (remote.resetId !== savedVersion.current.resetId) {
+            setStorageConflict(true);
+            failSubmission("다른 탭에서 일정을 초기화했습니다. 입력을 확인해 주세요.");
+            return;
+          }
+          const merged = mergeScheduleChanges(savedVersion.current.items, next, remote.items);
           if (merged.conflict) {
             setStorageConflict(true);
+            failSubmission("다른 탭에서 같은 일정을 변경했습니다. 입력을 확인해 주세요.");
             return;
           }
           next = merged.items.sort(compareSchedules);
         }
 
-        const serialized = JSON.stringify(next);
-        localStorage.setItem("made-mate-schedules", serialized);
-        savedVersion.current = { raw: serialized, items: next };
-        setSavedItems(next);
-        if (JSON.stringify(items) !== serialized) setItems(next);
+        const resetId = savedVersion.current.resetId;
+        const serialized = serializeSchedules(next, resetId);
+        if (raw !== serialized) localStorage.setItem("made-mate-schedules", serialized);
+        savedVersion.current = { raw: serialized, items: next, resetId };
+        if (JSON.stringify(items) !== JSON.stringify(next)) setItems(next);
         setStorageError(false);
         // 저장소 쓰기가 성공한 뒤에만 완료로 표시합니다.
         setSaveState("saved");
+        if (submission) {
+          setSubmission(null);
+          submission.onSaved();
+        }
       } catch {
         setStorageError(true);
+        failSubmission("일정을 저장하지 못했습니다. 입력을 유지했으니 다시 저장해 주세요.");
       }
     }
 
     if (navigator.locks?.request) {
       navigator.locks.request("made-mate-schedules-write", persist)
-        .catch(() => { if (active) setStorageError(true); });
+        .catch(() => {
+          if (!active) return;
+          setStorageError(true);
+          failSubmission("일정 저장을 시작하지 못했습니다. 다시 저장해 주세요.");
+        });
     } else {
       persist();
     }
 
     return () => { active = false; };
-  }, [items, loadedSchedules.readError, storageConflict]);
+  }, [items, loadedSchedules.readError, storageConflict, submission]);
+
+  useEffect(() => {
+    if (!submission) return undefined;
+    function confirmLeave(event) {
+      event.preventDefault();
+      event.returnValue = "";
+    }
+    window.addEventListener("beforeunload", confirmLeave);
+    return () => window.removeEventListener("beforeunload", confirmLeave);
+  }, [submission]);
 
   useEffect(() => {
 
@@ -153,16 +195,36 @@ export function useScheduleStorage() {
 
     function checkOtherTab(event) {
         if (event.key === "made-mate-schedules" || event.key === null) {
+            const remote = loadSchedules();
+            if (!remote.readError && remote.resetId !== savedVersion.current.resetId) {
+                refreshAfterReset();
+                return;
+            }
             refreshSchedules();
         }
     }
 
     window.addEventListener("storage", checkOtherTab);
     window.addEventListener("made-mate-schedules-updated", refreshSchedules);
+    function refreshAfterReset() {
+      // 초기화 직전 대기 중이던 쓰기는 중단하고, 초기화된 목록을 읽습니다.
+      resetVersion.current += 1;
+      editingVersion.current = null;
+      setSubmission(null);
+      const remote = loadSchedules();
+      if (!remote.readError) savedVersion.current = remote;
+      setLoadedSchedules(remote);
+      setItems(remote.items);
+      setStorageConflict(false);
+      setStorageError(false);
+      setSaveState("saving");
+    }
+    window.addEventListener("made-mate-schedules-reset", refreshAfterReset);
 
     return () => {
         window.removeEventListener("storage", checkOtherTab);
         window.removeEventListener("made-mate-schedules-updated", refreshSchedules);
+        window.removeEventListener("made-mate-schedules-reset", refreshAfterReset);
     };
 
 }, []);
@@ -175,7 +237,7 @@ export function useScheduleStorage() {
       setStorageError(true);
       return;
     }
-    savedVersion.current = { raw: remote.raw, items: remote.items };
+    savedVersion.current = remote;
     // 정상 재조회한 결과로 초기 오류도 해제합니다. 실패 시에는 위에서 반환해 원본을 보호합니다.
     setLoadedSchedules(remote);
     setItems(remote.items);
@@ -193,7 +255,6 @@ export function useScheduleStorage() {
 
   return {
     loadedSchedules,
-    savedItems,
     items,
     setItems,
     editingVersion,
@@ -201,6 +262,8 @@ export function useScheduleStorage() {
     setStorageConflict,
     storageError,
     saveStatus,
+    submitItems,
+    isSubmitting: Boolean(submission),
     reloadConflictingSchedules,
   };
 }
@@ -322,11 +385,13 @@ export function useScheduleDraft(form, isEditing) {
       const draft = {};
       // 기본 폼에 있는 필드만 읽습니다. 숫자 입력란은 작성 중 빈칸도 허용합니다.
       for (const name of Object.keys(defaults)) {
-        const value = saved.form[name];
+        const value = name === "attendeeEmployees" ? saved.form[name] ?? [] : saved.form[name];
         let valid = typeof value === typeof defaults[name];
         if (name === "employeeId") {
           // 이전 버전의 임시 폼에는 직원 ID가 없었습니다.
           valid = value == null || (Number.isSafeInteger(value) && value > 0);
+        } else if (name === "attendeeEmployees") {
+          valid = Array.isArray(value) && normalizeAttendeeEmployees(value).length === value.length;
         } else if (typeof defaults[name] === "number") {
           valid = value === "" || (typeof value === "number" && Number.isFinite(value));
         }

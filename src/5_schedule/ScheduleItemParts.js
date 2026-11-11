@@ -66,7 +66,7 @@ export function ScheduleEvent({ item, onSelect, compact = false, roleLabel, onTo
   const label = `${item.date} ${time} ${item.title} 선택한 날짜 일정에서 보기`;
   const help = item.scope === "개인 일정용"
     ? `${item.title} · ${time}`
-    : `${item.title} · ${time} · ${item.project} · ${item.person} · ${status.label}`;
+    : `${item.title} · ${time} · ${item.project} · ${item.person} · ${item.taskProgress || status.label}`;
   // 일정 상자를 누르면 날짜 칸 클릭은 막고, 선택한 날짜 일정 패널을 갱신합니다.
   // 카드 안의 선택 클릭이 달력 날짜 칸까지 전파되지 않게 막습니다.
   // 전체 이름 펼치기와 별표는 별도 핸들러에서 전파를 막으므로 이 선택을 실행하지 않습니다.
@@ -96,7 +96,7 @@ export function ScheduleEvent({ item, onSelect, compact = false, roleLabel, onTo
         </div>
         <span className="sm-event-meta">
           {isProjectMilestone
-            ? <span className="sm-project-milestone-tag">프로젝트 {item.milestoneType}</span>
+            ? <span className="sm-project-milestone-tag">{item.isTaskDeadline ? item.milestoneType + " · " + (item.taskProgress || "대기중") : "프로젝트 " + item.milestoneType}</span>
             : <>{item.scope !== "개인 일정용" && <ScheduleStatus status={item.status} />}<ScheduleVisibility visibility={item.visibility} /></>}
         </span>
       </div>
@@ -196,7 +196,7 @@ export function ScheduleAgendaItem({ item, onEdit, onDelete, onStatusChange, onT
       <ScheduleTimeRow item={item} />
       <dl className="sm-favorite-info">
         {isProjectMilestone
-          ? <><dt>구분</dt><dd>프로젝트 일정</dd><dt>프로젝트</dt><dd>{item.project}</dd><dt>담당자</dt><dd>{item.projectManager || "미지정"}</dd><dt>기준일</dt><dd>{item.milestoneType}</dd></>
+          ? <><dt>구분</dt><dd>{item.isTaskDeadline ? "세부 작업" : "프로젝트 일정"}</dd><dt>프로젝트</dt><dd>{item.project}</dd><dt>담당자</dt><dd>{item.projectManager || "미지정"}</dd><dt>기준일</dt><dd>{item.milestoneType}</dd></>
           : <>
             <dt>일정 종류</dt><dd>{item.scope || "업무용"}</dd>
             {item.scope !== "개인 일정용" && <><dt>분류</dt><dd>{item.category || (item.project ? "프로젝트" : "업무")}</dd></>}
@@ -206,10 +206,16 @@ export function ScheduleAgendaItem({ item, onEdit, onDelete, onStatusChange, onT
             {item.category === "프로젝트" && <><dt>업무 유형</dt><dd>{item.type}</dd></>}
           </>}
       </dl>
+      {item.isTaskDeadline && <p className="sm-form-note">작업 상태 · {item.taskProgress || "대기중"}</p>}
+      {isProjectMilestone && <p><a className="sm-secondary-btn" href={item.isTaskDeadline ? "/tasks" : "/projects"}>
+        {item.isTaskDeadline ? "세부 작업 관리로 이동" : "프로젝트 관리로 이동"}
+      </a></p>}
       {!isProjectMilestone && <ScheduleAttendees item={item} paragraph />}
       {!isProjectMilestone && item.description && <p className="sm-description">{item.description}</p>}
       {isProjectMilestone
-        ? <p className="sm-form-note">프로젝트의 시작일·마감일입니다. 날짜 변경은 프로젝트 관리에서 해주세요.</p>
+        ? <p className="sm-form-note">{item.isTaskDeadline
+          ? "마감일 변경은 세부 작업 관리에서 해주세요."
+          : "프로젝트의 시작일·마감일입니다. 날짜 변경은 프로젝트 관리에서 해주세요."}</p>
         : <ScheduleActions item={item} onEdit={onEdit} onDelete={onDelete} onStatusChange={onStatusChange} />}
     </article>
   );

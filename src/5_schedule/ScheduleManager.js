@@ -10,7 +10,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useScheduleClock, useScheduleHolidays, useScheduleStorage, useScheduleTeam, useScheduleDraft } from "./scheduleHooks";
 import { loadSchedules } from "./scheduleStorage";
-import { createProjectMilestones, resolveScheduleProject, getScheduleProjectWarning } from "./ScheduleProjectBridge";
+import { createProjectMilestones, createTaskMilestones, resolveScheduleProject, getScheduleProjectWarning, getScheduleEmployeeWarning } from "./ScheduleProjectBridge";
 import ScheduleCalendar from "./ScheduleCalendar";
 import ScheduleFormModal, { ScheduleListModal } from "./ScheduleFormModal";
 import ScheduleSidebar from "./ScheduleSidebar";
@@ -33,6 +33,7 @@ import {
   dateKey,
   getTodayKey,
   normalizeAttendees,
+  normalizeAttendeeEmployees,
   getSchedulePeople,
   normalizeStatus,
   typeColors,
@@ -74,6 +75,7 @@ export default function ScheduleManager() {
   const [query, setQuery] = useState("");
   const [view, setView] = useState("monthly");
   const [scopeFilter, setScopeFilter] = useState("all");
+  const [hideCompletedTasks, setHideCompletedTasks] = useState(false);
   const [directoryMode, setDirectoryMode] = useState(null);
   const [selectedProject, setSelectedProject] = useState(null);
 
@@ -86,8 +88,15 @@ export default function ScheduleManager() {
     setStorageConflict,
     storageError,
     saveStatus,
+    submitItems,
+    isSubmitting,
     reloadConflictingSchedules,
   } = useScheduleStorage();
+  // 연결 번호로 현재 표시 이름을 구합니다. 저장 원본은 편집·저장할 때 갱신합니다.
+  const displayItems = items.map(item => ({
+    ...item,
+    ...resolveScheduleProject(item, projects),
+  }));
   const {
     teamMembers,
     excludedTeamMembers,
@@ -118,15 +127,17 @@ export default function ScheduleManager() {
   const holidayInfo = useScheduleHolidays(calendarYear);
   const projectWarnings = items.map(item => ({ item, message: getScheduleProjectWarning(item, projects) }))
     .filter(entry => entry.message);
+  const employeeWarnings = items.map(item => ({ item, message: getScheduleEmployeeWarning(item, employees) }))
+    .filter(entry => entry.message);
 
   
 
   // 선택한 프로젝트의 마지막 일정을 지웠다면 더 이상 없는 프로젝트 필터도 함께 해제합니다.
   useEffect(() => {
     if (!selectedProject) return;
-    const exists = items.some((item) => item.project === selectedProject);
+    const exists = items.some(item => resolveScheduleProject(item, projects).project === selectedProject);
     if (!exists) setSelectedProject(null);
-  }, [items, selectedProject]);
+  }, [items, projects, selectedProject]);
 
   // 회의 참석자 목록에서 이름을 선택할 때 폼의 문자열을 갱신합니다.
   function toggleAttendee(name) {
@@ -137,6 +148,17 @@ export default function ScheduleManager() {
       if (attendees.includes(name)) next = attendees.filter((person) => person !== name);
       else next = [...attendees, name];
       return { ...current, attendees: next.join(", ") };
+    });
+  }
+
+  function toggleAttendeeEmployee(employee) {
+    setFormError("");
+    setForm(current => {
+      const selected = current.attendeeEmployees || [];
+      if (selected.some(person => person.id === employee.id)) {
+        return { ...current, attendeeEmployees: selected.filter(person => person.id !== employee.id) };
+      }
+      return { ...current, attendeeEmployees: [...selected, { id: employee.id, name: employee.name.trim() }] };
     });
   }
 
@@ -177,7 +199,7 @@ export default function ScheduleManager() {
   // [2. 표시 데이터 계산] 원본 items → 검색·공유 구분 필터 → 반복 발생일 → 달력·선택 날짜 목록
   const keyword = query.trim().toLowerCase();
   const filteredItems = [];
-  for (const item of items) {
+  for (const item of displayItems) {
     if (selectedProject && item.project !== selectedProject) continue;
     if (scopeFilter !== "all" && item.visibility !== scopeFilter) continue;
     const people = getSchedulePeople(item).join(" ");
@@ -199,10 +221,14 @@ export default function ScheduleManager() {
     to = weekDates[6].key;
   }
   // 프로젝트 날짜도 검색·프로젝트 선택 조건을 따르며, 회사 공유 일정 필터에서만 달력에 표시합니다.
-  const projectMilestones = createProjectMilestones(projects, employees).filter((item) => {
+  const projectMilestones = [
+    ...createProjectMilestones(projects, employees),
+    ...createTaskMilestones(erp.tasks || [], projects, employees),
+  ].filter((item) => {
+    if (hideCompletedTasks && item.isTaskDeadline && item.taskProgress === "완료") return false;
     if (selectedProject && item.project !== selectedProject) return false;
     if (scopeFilter === "private") return false;
-    return (item.title + " " + item.project).toLowerCase().includes(keyword);
+    return (item.title + " " + item.project + " " + item.projectManager).toLowerCase().includes(keyword);
   });
   const visibleProjectMilestones = projectMilestones.filter(
     (item) => item.date >= from && item.date <= to,
@@ -275,7 +301,7 @@ export default function ScheduleManager() {
       if (name === "durationMinutes") return { ...current, ...getScheduleDurationFields(current, Number(value)) };
       // 입력 화면은 선택값만 보내고, 숨겨질 연관 필드는 이곳에서 한 번에 초기화합니다.
       if (name === "scope") {
-        return { ...current, scope: value, category: "", project: "", projectId: null, projectReference: "", attendees: "", person: "",  employeeId: null, status: "pending" };
+        return { ...current, scope: value, category: "", project: "", projectId: null, projectReference: "", attendees: "", attendeeEmployees: [], person: "",  employeeId: null, status: "pending" };
       }
       if (name === "category") {
         return {
@@ -285,6 +311,7 @@ export default function ScheduleManager() {
           projectId: current.category === "프로젝트" && value !== "프로젝트" ? null : current.projectId,
           projectReference: current.category === "프로젝트" && value !== "프로젝트" ? "" : current.projectReference,
           attendees: current.category === "회의" && value !== "회의" ? "" : current.attendees,
+          attendeeEmployees: value === "회의" ? current.attendeeEmployees : [],
         };
       }
       // 사용자가 프로젝트명을 바꾸면 기존 ID를 해제하고 저장할 때 새 이름으로 연결합니다.
@@ -400,11 +427,22 @@ export default function ScheduleManager() {
         return;
       }
     }
-    const attendees = form.scope === "업무용" && form.category === "회의"
-      ? normalizeAttendees(form.attendees)
-      : [];
+    const isMeeting = form.scope === "업무용" && form.category === "회의";
+    const legacyAttendees = isMeeting ? normalizeAttendees(form.attendees) : [];
+    const attendeeEmployees = [];
+    const previousStaff = normalizeAttendeeEmployees(editing?.attendeeEmployees);
+    for (const selection of isMeeting ? normalizeAttendeeEmployees(form.attendeeEmployees) : []) {
+      const active = employees.find(employee => employee.id === selection.id && employee.status === "재직");
+      const previous = previousStaff.find(employee => employee.id === selection.id);
+      if (!active && !previous) {
+        setFormError("재직 상태가 바뀐 참석자가 있습니다. 참석자를 다시 선택해 주세요.");
+        return;
+      }
+      attendeeEmployees.push({ id: selection.id, name: active ? active.name.trim() : previous.name });
+    }
+    const attendees = normalizeAttendees([...legacyAttendees, ...attendeeEmployees.map(employee => employee.name)]);
     const previousAttendees = normalizeAttendees(editing && editing.attendees);
-    for (const name of attendees) {
+    for (const name of legacyAttendees) {
       if (excludedTeamMembers.includes(name) && !previousAttendees.includes(name)) {
         setFormError("팀원 목록에서 제외된 이름은 참석자로 추가할 수 없습니다.");
         return;
@@ -427,6 +465,8 @@ export default function ScheduleManager() {
       person,
       employeeId: form.scope === "업무용" ? form.employeeId : null,
       attendees,
+      attendeeEmployees,
+      legacyAttendees,
       ...projectFields,
     };
     // 반복 규칙은 다음 1년을 확인하고, 휴일 이동 설정은 범위 끝에서 밀릴 날짜도 포함합니다.
@@ -461,7 +501,7 @@ export default function ScheduleManager() {
         || (editing && (editing.person === name || previousAttendees.includes(name)));
       if (wasExisting) continue;
       // HR에서 선택한 담당자는 과거 팀원 목록에서 제외됐어도 재등록할 수 있습니다.
-      if (excludedTeamMembers.includes(name) && name !== person) {
+      if (excludedTeamMembers.includes(name) && name !== person && !attendeeEmployees.some(employee => employee.name === name)) {
         setFormError("팀원 목록에서 제외된 이름입니다. 다시 등록한 뒤 선택해 주세요.");
         return;
       }
@@ -497,7 +537,7 @@ export default function ScheduleManager() {
     }
 
     // 한 회차 수정은 원본에서 제외하고, 새 일정으로 추가합니다.
-    setItems((current) => {
+    submitItems((current) => {
       if (!editing) return [...current, item].sort(compareSchedules);
       // 전체 수정은 기존 ID를 교체합니다. 한 회차 수정은 원본에 제외 날짜를 남긴 뒤
       // 새 ID의 일반 일정을 추가하므로 다른 회차의 내용과 반복 규칙은 유지됩니다.
@@ -506,11 +546,12 @@ export default function ScheduleManager() {
         return occurrenceDate ? excludeOccurrence(schedule, occurrenceDate) : item;
       });
       return (occurrenceDate ? [...next, item] : next).sort(compareSchedules);
-    });
-    selectDate(form.date);
-    // 저장 후 프로젝트명·공유 구분이 바뀌어도 방금 저장한 일정이 필터에 가리지 않게 합니다.
-    clearScheduleFilters();
-    closeScheduleForm();
+    }, () => {
+      selectDate(form.date);
+      // 저장 후 프로젝트명·공유 구분이 바뀌어도 방금 저장한 일정이 필터에 가리지 않게 합니다.
+      clearScheduleFilters();
+      closeScheduleForm();
+    }, setFormError);
   };
   // 날짜별 반복 항목의 상태를 바꾸면 그날만 일반 항목으로 분리합니다.
   // 원본 규칙의 status를 바꾸지 않아 다음 주/다음 달의 업무까지 완료되지 않습니다.
@@ -614,7 +655,7 @@ export default function ScheduleManager() {
   // 프로젝트 목록과 팀원의 담당 프로젝트가 같은 이동 함수를 공유합니다.
   // 필터 때문에 선택한 일정이 숨지 않게 초기화하고, 반복을 포함한 가까운 발생일로 이동합니다.
   const showProjectSchedules = (project) => {
-    const projectItems = items.filter((item) => item.project === project);
+    const projectItems = displayItems.filter((item) => item.project === project);
     const date = getScheduleFocusDate(projectItems, Date.now(), holidayDates);
     // 목록이 열린 뒤 데이터가 바뀌어 프로젝트 일정이 없어졌다면 잘못된 날짜로 이동하지 않습니다.
     if (!date) return;
@@ -632,11 +673,11 @@ export default function ScheduleManager() {
   // [7. 요약·부가 표시] 통계·즐겨찾기·다가오는 일정 등 각 화면에 전달할 값을 만듭니다.
   const todayWorkCount = expandSchedules(items, todayKey, todayKey, holidayDates).length;
   // 다가오는 목록은 검색과 무관하게 오늘 포함 7일 이내의 미완료 발생 일정 중 가까운 5건을 보여줍니다.
-  const upcomingSchedules = getUpcomingSchedules(items, currentTime, 5, 7, holidayDates);
-  const favoriteItems = items.filter((item) => item.isFavorite);
+  const upcomingSchedules = getUpcomingSchedules(displayItems, currentTime, 5, 7, holidayDates);
+  const favoriteItems = displayItems.filter((item) => item.isFavorite);
   // 상태별 진행 수가 아니라 일정에 입력된 서로 다른 프로젝트명 개수입니다.
   // 이름을 처음 만났을 때만 배열에 넣습니다. 배열 길이가 중복을 뺀 프로젝트 수입니다.
-  const projectNames = [...new Set(items.map((item) => item.project).filter(Boolean))];
+  const projectNames = [...new Set(displayItems.map((item) => item.project).filter(Boolean))];
   const projectSuggestions = projects.map(
     project => project.name
 );
@@ -702,24 +743,6 @@ export default function ScheduleManager() {
           <button type="button" onClick={() => { const date = reminderNotice.date; setReminderNotice(null); showCurrentPeriod("daily", date); focusCalendar(); }}>일정 보기</button>
           <button type="button" aria-label="알림 닫기" onClick={() => setReminderNotice(null)}>닫기</button>
         </aside>}
-        {/* 회사·사용자 표시용 예시 영역입니다. 팀명과 아바타 글자는 현재 로그인 계정에서 읽지 않는 고정값입니다. */}
-        <header className="sm-top">
-          <div className="sm-brand">
-            <div className="sm-mark">G</div>
-            <div className="sm-brand-copy">
-              <strong>GOODS ERP</strong>
-              <span className="sm-muted">Management System</span>
-            </div>
-          </div>
-          <div className="sm-top-right">
-            <span>굿즈 제작 운영팀</span>
-            {/* todayKey는 자정이 지나면 부모의 날짜 갱신 로직으로 바뀝니다.
-                time의 dateTime은 기계가 읽는 원본 날짜, 내부 글자는 사람이 읽는 표시입니다. */}
-            <time className="sm-today-label" dateTime={todayKey}>{todayKey.replaceAll("-", ".")}</time>
-            <div className="sm-avatar">민</div>
-          </div>
-        </header>
-
         <section className="sm-heading">
           <div>
             <div className="sm-eyebrow">TEAM PLANNER</div>
@@ -745,6 +768,13 @@ export default function ScheduleManager() {
           <summary>프로젝트 연결 확인 필요 · {projectWarnings.length}건</summary>
           {projectWarnings.map(({ item, message }) => <p key={item.id}>
             <button type="button" className="sm-secondary-btn" onClick={() => openScheduleForm(item)}>{item.title} 연결 확인</button>
+            {message}
+          </p>)}
+        </details>}
+        {employeeWarnings.length > 0 && <details className="sm-storage-warning">
+          <summary>직원 연결 확인 필요 · {employeeWarnings.length}건</summary>
+          {employeeWarnings.map(({ item, message }) => <p key={item.id}>
+            <button type="button" className="sm-secondary-btn" onClick={() => openScheduleForm(item)}>{item.title} 직원 확인</button>
             {message}
           </p>)}
         </details>}
@@ -777,6 +807,10 @@ export default function ScheduleManager() {
           </button>
         </section>
 
+        <label className="sm-form-note">
+          <input type="checkbox" checked={hideCompletedTasks}
+            onChange={event => setHideCompletedTasks(event.target.checked)} /> 완료된 세부 작업 숨기기
+        </label>
         {/* 달력과 오른쪽 일정 패널을 각각 별도 컴포넌트로 표시합니다. */}
         <div className="sm-layout">
           {/* 부모의 값과 함수를 props로 전달합니다. 자식은 함수를 호출해 부모 state 변경을 요청합니다. */}
@@ -813,7 +847,7 @@ export default function ScheduleManager() {
               selectedProject는 선택 표시용 값, onSelectProject는 클릭 시 상태를 바꾸는 함수입니다. */}
           <ScheduleSidebar
             directoryMode={directoryMode}
-            directoryItems={items}
+            directoryItems={displayItems}
             teamMembers={teamMembers}
             onAddTeamMember={addTeamMember}
             onRemoveTeamMember={removeTeamMember}
@@ -852,16 +886,17 @@ export default function ScheduleManager() {
         <ScheduleFormModal
           key={editing ? `${editing.id}:${editing.occurrenceDate || "series"}` : "new"}
           form={form}
+          saving={isSubmitting}
           projectWarning={getScheduleProjectWarning(form, projects)}
           isRestoredDraft={restoringDraftRef.current}
           projectSuggestions={projectSuggestions}
-          teamMembers={teamMembers}
           employees={employees}
           originalAssignee={editing ? { person: editing.person, employeeId: editing.employeeId ?? null } : null}
           onSelectAssignee={selectAssignee}
           onDelete={() => { if (deleteSchedule(editing)) closeScheduleForm(); }}
           onCopy={copySchedule}
           onToggleAttendee={toggleAttendee}
+          onToggleAttendeeEmployee={toggleAttendeeEmployee}
           error={formError}
           onChange={updateForm}
           onSubmit={addSchedule}
@@ -876,7 +911,7 @@ export default function ScheduleManager() {
           items={
             listDateFilter
               ? expandSchedules(filteredItems, listDateFilter, listDateFilter, holidayDates)
-              : items
+              : displayItems
           }
           filterDate={listDateFilter}
           hasActiveFilter={Boolean(listDateFilter && (query.trim() || selectedProject || scopeFilter !== "all"))}
