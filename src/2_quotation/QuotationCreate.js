@@ -3,6 +3,7 @@ import "./QuotationCreate.css"
 import { useLocation, useNavigate } from "react-router-dom";
 import { useERP } from "../context/ERPContext";
 import { formatQuotationId, formatEmployeeId } from "../utils/formatUtils";
+import { totalPrice as calculateTotalPrice, getQuotationUnitPrice } from "../utils/quotationUtils";
 
 function QuotationCreate() {
 
@@ -12,8 +13,8 @@ function QuotationCreate() {
     const [createdAt, setCreatedAt] = useState(() => {
         const today = new Date();
         const year = today.getFullYear();
-        const month = String(today.getMonth() +1).padStart(2,"0");
-        const day = String(today.getDate()).padStart(2,"0");
+        const month = String(today.getMonth() + 1).padStart(2, "0");
+        const day = String(today.getDate()).padStart(2, "0");
 
         return `${year}-${month}-${day}`;
     });
@@ -42,7 +43,9 @@ function QuotationCreate() {
 
     //내부 담당자 검색 필터링
     const filteredEmployees = employees.filter((employee) =>
-        employee.status === "재직" && employee.name.includes(employeeSearch))
+        employee.status === "재직" &&
+        employee.department === "영업팀" &&
+        employee.name.includes(employeeSearch))
 
 
     const quotationRequests = consultations.filter(consultation =>
@@ -62,10 +65,18 @@ function QuotationCreate() {
     //수량 상태값
     const [quantity, setQuantity] = useState("")
 
-    //상품 총 금액 계산
-    const totalPrice = Number(quantity) * Number(unitPrice)
+    //옵션 추가
+    const [options, setOptions] = useState([]);
 
-    //부가세 및 최종 견적 금액
+    //옵션 포함 개당 단가 계산
+    const optionUnitPrice = getQuotationUnitPrice({
+        unitPrice, options
+    })
+
+    //공급가액 계산
+    const totalPrice = calculateTotalPrice(quantity, optionUnitPrice)
+
+    //부가서 및 최종 견적 금액
     const vat = totalPrice * 0.1;
     const finalPrice = totalPrice + vat;
 
@@ -75,7 +86,7 @@ function QuotationCreate() {
     const [paymentMethod, setPaymentMethod] = useState("")
     const [memo, setMemo] = useState("")
 
-    
+
     const fromDetail = location.state?.fromDetail;
     const editId = location.state?.editId;
     const editQuotation = quotations.find(q => q.id === Number(editId));
@@ -100,16 +111,50 @@ function QuotationCreate() {
         saveQuotation("승인 대기");
     };
 
+    //제작 옵션 추가
+    const handleAddOption = () => {
+        setOptions(prev => [
+            ...prev,
+            {
+                id: Date.now() + Math.random(),
+                name: "",
+                unitPrice: ""
+            }
+        ])
+    }
+
+    //제작 옵션 수정
+    const handleChangeOption = (id, field, value) => {
+        setOptions(prev =>
+            prev.map(option =>
+                option.id === id
+                    ? { ...option, [field]: value }
+                    : option
+            )
+        )
+    }
+
+    //제작 옵션 삭제
+    const handleDeleteOption = (id) => {
+        setOptions(prev =>
+            prev.filter(option => option.id !== id)
+        )
+    }
+
     //공통 저장 함수
     const saveQuotation = (status) => {
-
+        
         const newQuotation = {
-            ...(editQuotation ? {id: editQuotation.id} : {}),
+            ...(editQuotation ? { id: editQuotation.id } : {}),
             customerId: selectedCustomer ? Number(selectedCustomer.id) : null,
             productId: productId ? Number(productId) : null,
             employeeId: employeeId ? Number(employeeId) : null,
             quantity: quantity === "" ? 0 : Number(quantity),
             unitPrice: unitPrice === "" ? 0 : Number(unitPrice),
+            options: options.map(option => ({
+                name: option.name,
+                unitPrice: Number(option.unitPrice)
+            })),
             createdAt: createdAt,
             validUntil,
             deliveryDate,
@@ -118,6 +163,7 @@ function QuotationCreate() {
             status
         }
 
+        console.log("저장할 견적서:", newQuotation);
         let result;
 
         if (editQuotation) {
@@ -125,10 +171,10 @@ function QuotationCreate() {
             result = updateQuotation(newQuotation)
         } else {
             //신규 견적서 등록
-           result = addQuotation(newQuotation)
+            result = addQuotation(newQuotation)
         }
 
-        if(!result.ok){
+        if (!result.ok) {
             alert(result.message)
             return;
         }
@@ -140,9 +186,9 @@ function QuotationCreate() {
         }
     }
 
-    
+
     React.useEffect(() => {
-        
+
         if (!editQuotation) return;
 
         setConsultationId(
@@ -163,6 +209,12 @@ function QuotationCreate() {
 
         setQuantity(editQuotation.quantity || "");
         setUnitPrice(editQuotation.unitPrice || "");
+        setOptions(
+            (editQuotation.options ?? []).map(option => ({
+                ...option,
+                id: Date.now() + Math.random()
+            }))
+        )
 
         setCreatedAt(editQuotation.createdAt || "");
         setValidUntil(editQuotation.validUntil || "");
@@ -266,7 +318,7 @@ function QuotationCreate() {
 
                     <div className="form-grid">
                         <div className="form-group">
-                            
+
                             <label htmlFor="quotation-consultation">견적 요청 상담</label>
                             <select
                                 id="quotation-consultation"
@@ -332,6 +384,7 @@ function QuotationCreate() {
                                     setProductId("")
                                     setUnitPrice("")
                                     setQuantity("")
+                                    setOptions([])
                                     setShowProductList(true)
                                 }}
                                 onFocus={() => setShowProductList(true)}
@@ -349,7 +402,7 @@ function QuotationCreate() {
                                                     setProductId(product.id);
                                                     setProductSearch(product.productName);
                                                     setShowProductList(false);
-                                                    setUnitPrice(product.productPrice)
+                                                    setUnitPrice(product.productPrice);
                                                 }}
                                             >
                                                 <strong>{product.productName}</strong>
@@ -378,13 +431,13 @@ function QuotationCreate() {
                         </div>
 
                         <div className="form-group">
-                            <label>단가 (원)</label>
+                            <label>기본 단가 (원)</label>
                             <input
                                 type="number"
-                                className="quantity-input"
-                                placeholder="단가를 입력하세요."
+                                className="readonly-input"
+                                placeholder="상품 선택 시 자동 입력"
                                 value={unitPrice}
-                                onChange={(e) => setUnitPrice(e.target.value)} />
+                                readOnly />
                         </div>
 
                         <div className="form-group">
@@ -397,6 +450,40 @@ function QuotationCreate() {
                                 className="readonly-input"
                             />
                         </div>
+
+                        <div>
+                            <button onClick={handleAddOption}>
+                                + 옵션 추가
+                            </button>
+
+                            {options.map((option) => (
+                                <div key={option.id}>
+                                    <input
+                                        type="text"
+                                        placeholder="옵션명 입력"
+                                        value={option.name}
+                                        onChange={(e) => 
+                                            handleChangeOption(option.id, "name", e.target.value)
+                                        }
+                                    />
+
+                                    <input
+                                        type="number"
+                                        placeholder="추가 단가 입력"
+                                        value={option.unitPrice}
+                                        onChange={(e) => 
+                                            handleChangeOption(option.id, "unitPrice", e.target.value)
+                                        }
+                                    />
+
+                                    <button onClick={() => handleDeleteOption(option.id)}>
+                                        삭제
+                                    </button>
+
+                                </div>
+                            ))}
+                        </div>
+
                     </div>
                 </section>
 
