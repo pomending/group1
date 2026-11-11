@@ -141,6 +141,16 @@ export function ERPProvider({ children }) {
     // 담당자로 사용 중인 직원은 삭제하지 않는다.
     const deleteEmployee = (id) => {
 
+        const employeeId = Number(id);
+
+        if (!Number.isSafeInteger(employeeId) || employeeId <= 0 ||
+            !employeeData.employees.some(e => Number(e.id) === employeeId)) {
+            return {
+                ok: false,
+                message: "삭제할 직원을 찾을 수 없습니다."
+            };
+        }
+
         const hasProject = projectData.projects.some(
             project => Number(project.managerId) === Number(id)
         );
