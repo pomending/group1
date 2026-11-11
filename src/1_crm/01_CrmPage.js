@@ -5,6 +5,7 @@ import CustomerEdit from "./03_CustomerEdit";
 
 import { Route, Routes } from "react-router-dom";
 import { useERP } from "../context/ERPContext";
+import NotFoundPage from "../components/NotFoundPage";
 
 function CrmPage() {
 
