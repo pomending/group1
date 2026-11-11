@@ -19,12 +19,14 @@ export function getQuotationPriceDetails(quotation) {
         0
     );
 
+
     return {
         baseUnitPrice,
         options,
         optionUnitPrice,
         finalUnitPrice: baseUnitPrice + optionUnitPrice
     };
+}
 //옵션 가격을 포함한 단가 계산 함수
 export function getQuotationUnitPrice(quotation) {
     const basePrice = Number(quotation.unitPrice) || 0;
