@@ -12,9 +12,10 @@ import { useERP } from "../context/ERPContext";
 function CustomerManagement() {
     //ERPcontext에 있는 함수 가져오기
     const { customers, addCustomer,
-        saveEditedCustomer, deleteCustomers, employees } = useERP();
+        saveEditedCustomer, deleteCustomers, employees, consultations,
+        quotations,projects } = useERP();
 
-    
+
 
 
     //검색창에 입력한 검색어
@@ -77,6 +78,21 @@ function CustomerManagement() {
     //체크박스로 선택한 고객 삭제(체크가 되어있지 않은 목록을 불러와 저장)
     function deleteSelectedCustomers() {
         const deleteCount = checkedIds.length;
+        
+        const selectedCustomers = customers.filter(customer =>
+            checkedIds.includes(customer.id))
+       
+            const cannotDelete = selectedCustomers.some(customer =>
+            customer.registrationSource === "autoSave" ||
+            consultations.some(consultation =>
+                consultation.customerId === customer.id)
+        )
+        if(cannotDelete){
+            alert ("자동 등록되었거나 문의와 연결된 고객은 삭제할 수 없습니다.")
+            return;
+        }
+
+
         const isConfirmed = window.confirm(
             `선택한 고객 ${deleteCount}건을 삭제하시겠습니까?`
         );
@@ -148,7 +164,7 @@ function CustomerManagement() {
         await downloadExcel(selectedCustomers);
     }
 
-   
+
 
 
     return (

@@ -30,13 +30,14 @@ import {
 // isOccurrence이면 반복 중 특정 날짜만 수정하므로 반복 선택창을 숨기고 해당 날짜의 정보만 바꿉니다.
 export default function ScheduleFormModal({
   form,
-  teamMembers,
+  saving = false,
   employees = [],
   originalAssignee = null,
   onSelectAssignee,
   projectSuggestions = [],
   projectWarning = "",
   onToggleAttendee,
+  onToggleAttendeeEmployee,
   error,
   onChange,
   onSubmit,
@@ -64,6 +65,7 @@ export default function ScheduleFormModal({
   // 입력이 처음 값과 다르거나 임시 보관을 복구한 폼이면 폐기를 확인합니다. 복구한 내용은 변경하지 않았어도 확인합니다.
   // 실제 저장·삭제와 폼 닫기는 부모 콜백에서 처리합니다.
   function requestClose() {
+    if (saving) return;
     if (!canDiscardChanges()) return;
     onClose();
   }
@@ -74,7 +76,17 @@ export default function ScheduleFormModal({
   const submitText = isEditing ? "수정 저장" : "일정 저장";
 
   const selectedAttendees = normalizeAttendees(form.attendees);
-  const attendeeOptions = [...new Set([...teamMembers, form.person.trim(), ...selectedAttendees].filter(Boolean))];
+  const selectedStaff = form.attendeeEmployees || [];
+  const attendeeDepartments = new Map();
+  for (const employee of employees) {
+    if (employee.status !== "재직") continue;
+    const department = employee.department || "부서 미지정";
+    if (!attendeeDepartments.has(department)) attendeeDepartments.set(department, []);
+    attendeeDepartments.get(department).push(employee);
+  }
+  const unavailableAttendees = selectedStaff.filter(person =>
+    !employees.some(employee => employee.id === person.id && employee.status === "재직")
+  );
   const assigneeName = form.person.trim();
   const selectedEmployee = employees.find(employee =>
     employee.id === form.employeeId && employee.name.trim() === assigneeName
@@ -108,7 +120,8 @@ export default function ScheduleFormModal({
       {/* 이름·프로젝트명은 사전에 없는 고유명사가 많으므로 브라우저 맞춤법 검사를 끕니다.
           spellCheck=false는 입력 내용을 바꾸지 않고 맞춤법 표시만 제어하며 자식 입력창에 상속됩니다.
           한글을 조합하는 동안 운영체제가 표시하는 입력기 밑줄과는 별개의 브라우저 설정입니다. */}
-      <form ref={formRef} className="sm-form" aria-labelledby="sm-form-title" onSubmit={onSubmit} spellCheck={false} autoCorrect="off"
+      {saving && <p className="sm-form-note" role="status">일정을 저장하는 중입니다.</p>}
+      <form ref={formRef} className="sm-form" aria-labelledby="sm-form-title" onSubmit={onSubmit} spellCheck={false} autoCorrect="off" inert={saving || undefined}
         onInvalid={event => setNativeError(getScheduleFormError(form) || { field: event.target.name, message: event.target.validationMessage })}>
         {/* 입력값은 부모 form에서 받으며 onChange로 갱신합니다. 브라우저 입력 제한과 별개로 저장 시에도 검증합니다. */}
         {/* 각 입력창을 직접 작성해 name과 form의 속성이 어떻게 연결되는지 바로 볼 수 있습니다.
@@ -201,14 +214,33 @@ export default function ScheduleFormModal({
         {form.scope === "업무용" && form.category === "회의" && (
           <fieldset className="sm-team-options sm-form-wide sm-meeting-attendees">
             <legend>참석자 추가</legend>
-            <p className="sm-form-note">회의에 참여할 팀원을 선택하세요.</p>
-            {attendeeOptions.map(name => (
+            <p className="sm-form-note">부서별로 재직 직원을 선택하세요.</p>
+            {[...attendeeDepartments].map(([department, staff]) => (
+              <fieldset className="sm-team-options" key={department}>
+                <legend>{department} · {staff.length}명</legend>
+                {staff.map(employee => (
+                  <label key={employee.id}>
+                    <input type="checkbox" checked={selectedStaff.some(person => person.id === employee.id)}
+                      onChange={() => onToggleAttendeeEmployee(employee)} />
+                    {employee.name}{employee.position ? " · " + employee.position : ""}
+                  </label>
+                ))}
+              </fieldset>
+            ))}
+            {(selectedAttendees.length > 0 || unavailableAttendees.length > 0) && <p className="sm-form-note">기존 참석자</p>}
+            {selectedAttendees.map(name => (
               <label key={name}>
-                <input type="checkbox" checked={selectedAttendees.includes(name)} onChange={() => onToggleAttendee(name)} />
+                <input type="checkbox" checked onChange={() => onToggleAttendee(name)} />
                 {name}
               </label>
             ))}
-            {attendeeOptions.length === 0 && <p className="sm-form-note">담당자를 입력하거나 팀원 일정이 등록되면 참석자를 선택할 수 있습니다.</p>}
+            {unavailableAttendees.map(employee => (
+              <label key={employee.id}>
+                <input type="checkbox" checked onChange={() => onToggleAttendeeEmployee(employee)} />
+                {employee.name} · 기존 직원
+              </label>
+            ))}
+            {attendeeDepartments.size === 0 && <p className="sm-form-note">선택할 수 있는 재직 직원이 없습니다.</p>}
           </fieldset>
         )}
         {form.scope === "업무용" && <label className="sm-form-wide">일정 상태

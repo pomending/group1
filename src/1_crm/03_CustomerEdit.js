@@ -46,7 +46,7 @@ function CustomerEdit() {
         }
 
         if (EditingCustomerData.employeeId == null || EditingCustomerData.employeeId === "") {
-            alert("필수 등록정보(내부 담당자)를 확인해주세요.");
+            alert(" 담당자를 확인해주세요.");
             return;
         }
         if (!validatePhone(EditingCustomerData.phone)) {
@@ -133,7 +133,8 @@ function CustomerEdit() {
 
                 <div className="crm-form-field">
                     <label>메모</label>
-                    <input value={EditingCustomerData.memo}
+                    <textarea
+                        value={EditingCustomerData.memo}
                         onChange={(e) => (
                             setEditingCustomerData({ ...EditingCustomerData, memo: e.target.value })
                         )} />

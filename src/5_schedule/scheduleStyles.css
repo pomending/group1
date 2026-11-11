@@ -73,7 +73,6 @@
  * justify-content:space-between은 양끝 배치, gap은 항목 사이 간격입니다.
  * display:grid + place-items:center 조합은 아이콘을 가로·세로 가운데에 놓습니다.
  */
-.sm-top,
 .sm-heading,
 .sm-calendar-head,
 .sm-month,
@@ -83,65 +82,9 @@
   align-items: center;
   justify-content: space-between;
 }
-.sm-top {
-  flex-wrap: wrap;
-  gap: 12px;
-  margin-bottom: 16px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid #dce2d8;
-}
-.sm-brand-copy {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-}
-.sm-brand-copy strong {
-  font-size: 15px;
-  line-height: 1.15;
-}
-.sm-brand-copy .sm-muted {
-  font-size: 10px;
-  line-height: 1.2;
-}
-.sm-brand {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 16px;
-  font-weight: 700;
-}
-.sm-mark,
-.sm-avatar {
-  display: grid;
-  place-items: center;
-}
 .sm-storage-warning {
   margin: -6px 0 14px;
   color: #d4505e;
-  font-size: 12px;
-}
-.sm-mark {
-  width: 36px;
-  height: 36px;
-  border-radius: 11px;
-  background: var(--sm-accent);
-  color: var(--sm-lime);
-}
-.sm-avatar {
-  width: 34px;
-  height: 34px;
-  flex-shrink: 0;
-  border-radius: 50%;
-  background: #e5e9dc;
-  color: var(--sm-accent);
-  font-weight: 700;
-}
-.sm-top-right {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  color: var(--sm-muted);
   font-size: 12px;
 }
 .sm-heading {
@@ -227,11 +170,6 @@
   justify-content: center;
   gap: 8px;
   font-weight: 700;
-}
-.sm-today-label {
-  padding-left: 14px;
-  border-left: 1px solid #d4ddd2;
-  font-variant-numeric: tabular-nums;
 }
 .sm-stat > div {
   min-width: 0;
@@ -1535,15 +1473,6 @@
     align-items: flex-start;
     flex-direction: column;
   }
-  .sm-top-right span {
-    display: none;
-  }
-  .sm-top {
-    margin-bottom: 24px;
-  }
-  .sm-today-label {
-    display: none;
-  }
   .sm-stat {
     gap: 8px;
     min-height: 136px;
@@ -2402,21 +2331,9 @@
   background: #f6f7fb;
   color: var(--sm-ink);
 }
-.schedule-app .sm-top {
-  border-color: #dfe2ea;
-}
-.schedule-app .sm-mark {
-  background: #7565d8;
-  color: #fff;
-}
-.schedule-app .sm-avatar {
-  background: #eef0f6;
-  color: #46506a;
-}
 .schedule-app .sm-eyebrow {
   color: #7565d8;
 }
-.schedule-app .sm-top-right,
 .schedule-app .sm-heading p,
 .schedule-app .sm-panel-title .sm-muted,
 .schedule-app .sm-muted {
@@ -2935,14 +2852,10 @@
   background: #F5F4FA;
   color: var(--sm-ink);
 }
-.schedule-app .sm-top { border-color: #E6E1F0; }
-.schedule-app .sm-mark { background: #68619A; color: #FFFFFF; }
-.schedule-app .sm-avatar,
 .schedule-app .sm-directory-project-symbol,
 .schedule-app .sm-person-avatar { background: #F0EDFA; color: #524B80; }
 .schedule-app .sm-eyebrow,
 .schedule-app .sm-stat strong { color: #68619A; }
-.schedule-app .sm-top-right,
 .schedule-app .sm-heading p,
 .schedule-app .sm-muted { color: #827A98; }
 .schedule-app .sm-btn,

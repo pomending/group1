@@ -1,9 +1,30 @@
-import { loadSchedules, loadTeamMembers } from "./scheduleStorage";
+import { loadSchedules, loadTeamMembers, deleteSchedulesByProject, deleteSchedulesByEmployee } from "./scheduleStorage";
 
 const key = "made-mate-schedules";
 const item = { id: "schedule-1", title: "저장 일정", date: "2026-11-10", time: "09:00", endTime: "10:00" };
 beforeEach(() => localStorage.clear());
 afterEach(() => jest.restoreAllMocks());
+
+test("프로젝트·직원 삭제는 연결 ID가 있는 일정만 삭제한다", () => {
+  const independent = { ...item, project: "이름만 저장", person: "담당자" };
+  localStorage.setItem(key, JSON.stringify([
+    independent,
+    { ...independent, id: "project", projectId: "2" },
+    { ...independent, id: "employee", employeeId: 3 },
+  ]));
+  expect(deleteSchedulesByProject(2).ok).toBe(true);
+  expect(deleteSchedulesByEmployee(3).ok).toBe(true);
+  expect(loadSchedules().items.map(entry => entry.id)).toEqual([item.id]);
+});
+
+test("잘못된 프로젝트 ID와 연결 일정 없는 삭제는 원본 저장값을 그대로 둔다", () => {
+  const raw = JSON.stringify([item]);
+  localStorage.setItem(key, raw);
+  expect(deleteSchedulesByProject(null).ok).toBe(false);
+  expect(deleteSchedulesByProject(2).ok).toBe(true);
+  expect(deleteSchedulesByEmployee(3).ok).toBe(true);
+  expect(localStorage.getItem(key)).toBe(raw);
+});
 
 test.each([
   [{ reminderMinutes: false }, { reminderMinutes: 0 }],

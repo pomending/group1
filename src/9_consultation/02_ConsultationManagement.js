@@ -11,7 +11,8 @@ import {
 function ConsultationManagement() {
     //문의목록을 관리할 usestate
     const { consultations, addConsultation, updateConsultation,
-        deleteConsultations, employees, customers, addCustomer
+        deleteConsultations, employees, customers, addCustomer,
+        saveEditedCustomer
     } = useERP();
 
     //체크박스로 선택한 문의 Id를 저장할 usestate
@@ -65,7 +66,7 @@ function ConsultationManagement() {
         if (!validateMemo(editData.memo)) {
             return;
         }
-        if(!validateDuplicateConsultation(editData,consultations)){
+        if (!validateDuplicateConsultation(editData, consultations)) {
             return;
         }
 
@@ -96,7 +97,10 @@ function ConsultationManagement() {
                     email: editData.email || "",
                     address: "",
                     createdAt: new Date().toLocaleDateString("sv-SE"),
-                    memo: ""
+                    memo: editData.memo?.trim()
+                        ? `${new Date().toLocaleDateString("sv-SE")} | ${editData.memo}`
+                        : "",
+                    registrationSource: "autosave"
                 }
                 )
 
@@ -104,6 +108,28 @@ function ConsultationManagement() {
                 isNewCustomer = true;
             } else {
                 customerId = existingCustomer.id
+                //날짜형식 
+                const today = new Date().toLocaleDateString("sv-SE");
+                //메모형식
+                const newMemo = `${today} | ${editData.memo}`;
+
+                const updatedMemo = editData.memo?.trim()
+                    ? [existingCustomer.memo, newMemo].filter(Boolean).join("\n")
+                    : (existingCustomer.memo || "");
+
+                if (existingCustomer.customerManager !== editData.customerManager
+                    || existingCustomer.email !== (editData.email?.trim() || existingCustomer.email)
+                    || existingCustomer.phone !== editData.phone
+                    || existingCustomer.memo !== editData.updatedMemo
+                ) {
+                    saveEditedCustomer(
+                        {
+                            ...existingCustomer, customerManager: editData.customerManager,
+                            email: editData.email?.trim() || existingCustomer.email,
+                            phone: editData.phone, memo: updatedMemo
+                        }
+                    )
+                }
             }
         }
 

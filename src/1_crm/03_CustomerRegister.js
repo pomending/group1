@@ -44,7 +44,7 @@ function CustomerRegister() {
             return;
         }
         if (customerData.employeeId == null || customerData.employeeId === "") {
-            alert("필수 등록정보(내부 담당자)를 확인해주세요.");
+            alert("담당자를 확인해주세요.");
             return;
         }
 
@@ -84,7 +84,8 @@ function CustomerRegister() {
 
         window.opener.addCustomer({
             ...customerData,
-            createdAt: createdAt
+            createdAt: createdAt,
+            registrationSource : "save"
         });
 
         alert("고객이 등록되었습니다.");
