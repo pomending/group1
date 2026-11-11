@@ -60,7 +60,6 @@ export default function ScheduleManager() {
   // HR 직원 목록으로 일정 담당자를 선택합니다. 부서 제한 없이 재직 직원만 새로 선택할 수 있습니다.
   // 참석자·담당자별 일정표의 이름 기반 팀원 목록은 기존대로 유지합니다.
   const employees = erp.employees || [];
-  const updateProject = erp.updateProject;
 
   // 월간 달력의 기준 월과 현재 선택 날짜입니다.
   const [month, setMonth] = useState(() => {
@@ -80,7 +79,6 @@ export default function ScheduleManager() {
 
   const {
     loadedSchedules,
-    savedItems,
     items,
     setItems,
     editingVersion,
@@ -277,7 +275,7 @@ export default function ScheduleManager() {
       if (name === "durationMinutes") return { ...current, ...getScheduleDurationFields(current, Number(value)) };
       // 입력 화면은 선택값만 보내고, 숨겨질 연관 필드는 이곳에서 한 번에 초기화합니다.
       if (name === "scope") {
-        return { ...current, scope: value, category: "", project: "", projectId: null, projectReference: "", attendees: "", person: "", status: "pending" };
+        return { ...current, scope: value, category: "", project: "", projectId: null, projectReference: "", attendees: "", person: "",  employeeId: null, status: "pending" };
       }
       if (name === "category") {
         return {
