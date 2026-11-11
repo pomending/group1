@@ -96,9 +96,9 @@ function TaskDetail() {
     const handleSubmit = () => {
 
         const taskData = {
-            projectId: Number(selectedProjectId),
+            projectId: selectedProjectId,
             taskType,
-            employeeId: Number(employeeId),
+            employeeId,
             taskDeadline,
             progress
         };
@@ -150,7 +150,7 @@ function TaskDetail() {
 
         // 기존 작업 정보 불러오기
         setTaskType(targetTask.taskType);
-        setEmployeeId(String(targetTask.employeeId));
+        setEmployeeId(targetTask.employeeId);
         setTaskDeadline(targetTask.taskDeadline);
         setProgress(targetTask.progress || "대기중");
 
@@ -190,8 +190,10 @@ function TaskDetail() {
                     id="projectSelect"
                     value={selectedProjectId}
                     onChange={(e) => {
-                        setSelectedProjectId(e.target.value);
-                        resetTaskForm();
+                        setSelectedProjectId(
+                            e.target.value === "" ? "" : Number(e.target.value)
+                        );
+                        closeModal();
                     }}
                 >
                     <option value="">프로젝트를 선택하세요</option>
@@ -280,144 +282,145 @@ function TaskDetail() {
                         </table>
                     </div>
 
+                    {selectedProject.status !== "완료" && (
+                        <div className="td-board-content">
+                            <h4>프로젝트 상세 정보</h4>
+                            <div className="project-detail">
 
-                    <div className="td-board-content">
-                        <h4>프로젝트 상세 정보</h4>
-                        <div className="project-detail">
-
-                            {/* 작업 진행상태 */}
-                            <div>
-                                <p>작업 진행상태</p>
-                                <select value={taskType}
-                                    onChange={(e) => {
-                                        setTaskType(e.target.value)
-                                        setEmployeeId("");
-                                    }}>
-                                    <option value="">작업을 선택해주세요.</option>
-                                    {TASK_TYPES.map(task => (
-                                        <option key={task} value={task}>{task}</option>
-                                    ))}
-                                </select>
-                            </div>
-
-                            {/* 담당자 */}
-                            <div>
-                                <p>담당자</p>
-                                <select
-                                    value={employeeId}
-                                    onChange={(e) => {
-                                        setEmployeeId(e.target.value);
-                                    }}
-                                >
-                                    <option value="">담당자를 선택하세요</option>
-                                    {keepPastEmployee && (
-                                        <option key={pastEmployee.id} value={pastEmployee.id}>{pastEmployee.name} ({pastEmployee.status} · 기존 담당자)</option>
-                                    )}
-                                    {availableEmployees.map((employee) => (
-                                        <option key={employee.id} value={employee.id}>
-                                            {employee.name}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-
-                            {/* 작업 마감일 */}
-                            <div>
-                                <p>작업 마감일</p>
-                                <input type="date" value={taskDeadline}
-                                    onChange={(e) => setTaskDeadline(e.target.value)} />
-                            </div>
-                        </div>
-                        <button className="save-btn" onClick={handleSubmit}>저장</button>
-
-
-
-                        {/* 작업 목록: 저장 후 표시 */}
-                        {selectedTasks.length > 0
-                            && (
-
-                                <div className="td-task-list">
-
-                                    <div className="td-task-list-header">
-                                        <h4>등록된 작업 목록</h4>
-                                        <span>
-                                            총 {
-                                                selectedTasks.length
-                                            } 건
-                                        </span>
-                                    </div>
-
-                                    <table className="td-task-table">
-
-                                        <thead>
-                                            <tr>
-                                                <th>번호</th>
-                                                <th>작업 단계</th>
-                                                <th>담당자</th>
-                                                <th>작업 마감일</th>
-                                                <th>진행 상태</th>
-                                                <th>관리</th>
-                                            </tr>
-                                        </thead>
-
-                                        <tbody>
-                                            {selectedTasks.map((task) => {
-
-                                                // 작업에 등록된 담당자 찾기
-                                                const employee = employees.find(
-                                                    (emp) => Number(emp.id) === Number(task.employeeId)
-                                                );
-
-                                                return (
-                                                    <tr key={task.id}>
-                                                        <td>{task.id}</td>
-
-                                                        <td>{task.taskType}</td>
-
-                                                        {/* 담당자 이름만 표시 */}
-                                                        <td>{employee?.name || "-"}</td>
-
-                                                        <td>{task.taskDeadline}</td>
-
-                                                        <td>
-                                                            <span className="td-task-status">
-                                                                {task.progress}
-                                                            </span>
-                                                        </td>
-
-                                                        <td>
-                                                            <button
-                                                                className="td-modify-btn"
-                                                                onClick={() => handleUpdateTask(task.id)}
-                                                            >
-                                                                수정
-                                                            </button>
-
-                                                            <button
-                                                                className="td-delete-btn"
-                                                                onClick={() => handleDeleteTask(task.id)}
-                                                            >
-                                                                삭제
-                                                            </button>
-                                                        </td>
-                                                    </tr>
-                                                );
-                                            })}
-                                        </tbody>
-
-                                    </table>
-
+                                {/* 작업 진행상태 */}
+                                <div>
+                                    <p>작업 진행상태</p>
+                                    <select value={taskType}
+                                        onChange={(e) => {
+                                            setTaskType(e.target.value)
+                                            setEmployeeId("");
+                                        }}>
+                                        <option value="">작업을 선택해주세요.</option>
+                                        {TASK_TYPES.map(task => (
+                                            <option key={task} value={task}>{task}</option>
+                                        ))}
+                                    </select>
                                 </div>
 
-                            )}
+                                {/* 담당자 */}
+                                <div>
+                                    <p>담당자</p>
+                                    <select
+                                        value={employeeId}
+                                        onChange={(e) => {
+                                            setEmployeeId(
+                                                e.target.value === "" ? "" : Number(e.target.value)
+                                            );
+                                        }}
+                                    >
+                                        <option value="">담당자를 선택하세요</option>
+                                        {availableEmployees.map((employee) => (
+                                            <option key={employee.id} value={employee.id}>
+                                                {employee.name}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
 
-                    </div>
+                                {/* 작업 마감일 */}
+                                <div>
+                                    <p>작업 마감일</p>
+                                    <input type="date" value={taskDeadline}
+                                        onChange={(e) => setTaskDeadline(e.target.value)} />
+                                </div>
+                            </div>
+                            <button className="save-btn" onClick={handleSubmit}>저장</button>
+                        </div>
+                    )}
+
+                    {/* 작업 목록: 저장 후 표시 */}
+                    {selectedTasks.length > 0
+                        && (
+
+                            <div className="td-task-list">
+
+                                <div className="td-task-list-header">
+                                    <h4>등록된 작업 목록</h4>
+                                    <span>
+                                        총 {
+                                            selectedTasks.length
+                                        } 건
+                                    </span>
+                                </div>
+
+                                <table className="td-task-table">
+
+                                    <thead>
+                                        <tr>
+                                            <th>번호</th>
+                                            <th>작업 단계</th>
+                                            <th>담당자</th>
+                                            <th>작업 마감일</th>
+                                            <th>진행 상태</th>
+                                            {selectedProject.status !== "완료" && (
+                                                <th>관리</th>
+                                            )}
+                                        </tr>
+                                    </thead>
+
+                                    <tbody>
+                                        {selectedTasks.map((task) => {
+
+                                            // 작업에 등록된 담당자 찾기
+                                            const employee = employees.find(
+                                                (emp) => Number(emp.id) === Number(task.employeeId)
+                                            );
+
+                                            return (
+                                                <tr key={task.id}>
+                                                    <td>{task.id}</td>
+
+                                                    <td>{task.taskType}</td>
+
+                                                    {/* 담당자 이름만 표시 */}
+                                                    <td>{employee?.name || "-"}</td>
+
+                                                    <td>{task.taskDeadline}</td>
+
+                                                    <td>
+                                                        <span className="td-task-status">
+                                                            {task.progress}
+                                                        </span>
+                                                    </td>
+
+                                                    {selectedProject.status !== '완료' && <td>
+                                                        <button
+                                                            className="td-modify-btn"
+                                                            onClick={() => handleUpdateTask(task.id)}
+                                                        >
+                                                            수정
+                                                        </button>
+
+                                                        <button
+                                                            className="td-delete-btn"
+                                                            onClick={() => handleDeleteTask(task.id)}
+                                                        >
+                                                            삭제
+                                                        </button>
+                                                    </td>}
+                                                </tr>
+                                            );
+                                        })}
+                                    </tbody>
+
+                                </table>
+
+                            </div>
+
+                        )}
 
                 </div>
-            )}
+
+            )
+            }
 
             {/* 작업 수정 팝업 */}
-            {isEditModalOpen && (
+            {isEditModalOpen && selectedProject?.status !== "완료" && (
                 <div className="td-modal-overlay">
 
                     <div className="td-edit-modal">
@@ -444,9 +447,16 @@ function TaskDetail() {
 
                                 <select
                                     value={employeeId}
-                                    onChange={(e) => setEmployeeId(e.target.value)}
+                                    onChange={(e) => setEmployeeId(
+                                        e.target.value === "" ? "" : Number(e.target.value)
+                                    )}
                                 >
                                     <option value="">담당자를 선택하세요.</option>
+                                    {keepPastEmployee && (
+                                        <option value={pastEmployee.id}>
+                                            {pastEmployee.name} ({pastEmployee.status} · 기존 담당자)
+                                        </option>
+                                    )}
 
                                     {availableEmployees.map((employee) => (
                                         <option
@@ -505,9 +515,10 @@ function TaskDetail() {
 
                     </div>
                 </div>
-            )}
+            )
+            }
 
-        </div>
+        </div >
 
     );
 }

@@ -130,11 +130,18 @@ export const validateProject = (projectData, employees, original = null) => {
 
     if (!keepOldManager) {
 
+        if (
+            !Number.isSafeInteger(projectData.managerId) ||
+            projectData.managerId <= 0
+        ) {
+            return "올바르지 않은 담당자 ID입니다.";
+        }
+        
         const validManager = getProjectManagers(employees)
-            .some(emp => emp.id === Number(projectData.managerId));
-
+            .some(emp => emp.id === projectData.managerId);
+        
         if (!validManager) {
-            return "경영지원팀의 재직중인 직원을 선택하세요."
+            return "경영지원팀의 재직중인 직원을 선택하세요.";
         }
 
     }
@@ -143,14 +150,53 @@ export const validateProject = (projectData, employees, original = null) => {
 
 };
 
-export const breaksCompletedProject = (projectId, projects, nextTasks) => {
+export const canCompleteProject = (project, tasks) => {
 
-    const project = projects.find(
-        p => Number(p.id) === Number(projectId)
+    if (!project) {
+        return {
+            ok: false,
+            message: "프로젝트를 찾을 수 없습니다."
+        };
+    }
+
+    if (
+        !Number.isSafeInteger(project?.id) ||
+        project.id <= 0
+    ) {
+        return {
+            ok: false,
+            message: "올바르지 않은 프로젝트 ID입니다."
+        };
+    }
+
+    if (project.status === "완료") {
+        return {
+            ok: false,
+            message: "이미 완료된 프로젝트입니다."
+        };
+    }
+
+    const requiredTypes = [
+        "제작 관리",
+        "검수 관리",
+        "포장 관리"
+    ];
+
+    const allCompleted = requiredTypes.every(type =>
+        tasks.some(task =>
+            task.projectId === project.id &&
+            task.taskType === type &&
+            task.progress === "완료"
+        )
     );
 
-    return (
-        project?.status === "완료" &&
-        getProjectProgress(project, nextTasks) !== 100
-    );
+    if (!allCompleted) {
+        return {
+            ok: false,
+            message: "제작, 검수, 포장 작업이 모두 완료되어야 합니다."
+        };
+    }
+
+    return { ok: true };
+
 };

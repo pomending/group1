@@ -93,7 +93,7 @@ function useTaskData(projects, employees){
             ...updatedTask
         };
 
-        if (Number(original.projectId) !== Number(mergedTask.projectId)) {
+        if (original.projectId !== mergedTask.projectId) {
             return {
                 ok: false,
                 message: "세부 작업의 소속 프로젝트는 변경할 수 없습니다."

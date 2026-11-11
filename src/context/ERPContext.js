@@ -7,25 +7,26 @@ import useAuthData from "./useAuthData";
 import useProductData from "./useProductData";
 import useConsultationData from "./useConsultationData";
 import useTaskData from "./useTaskData";
-import { breaksCompletedProject, getProjectManagers, getProjectProgress } from "../utils/projectUtils";
+import { getProjectManagers, canCompleteProject } from "../utils/projectUtils";
 import { getAvailableEmployees } from "../utils/taskUtils";
 import { validateEmployee } from "../utils/employeeUtils";
 import useQuotationData from "./useQuotationData";
-import { deleteSchedulesByProject, deleteSchedulesByEmployee, resetStoredSchedules, } from "../5_schedule/scheduleStorage";
+import { deleteSchedulesByProject, deleteSchedulesByEmployee, resetStoredSchedules } from "../5_schedule/scheduleStorage";
 
 const ERPContext = createContext(null);
 
 export function ERPProvider({ children }) {
     // 현재 실제 구현된 모듈만 호출한다. 다른 팀원의 빈 hook은 완성 후 연결.
     const employeeData = useEmployeeData();
-    const projectData = useProjectData(employeeData.employees);
+    const quotationData = useQuotationData();
+    const projectData = useProjectData(employeeData.employees, quotationData.quotations);
+    const { completeProject, ...publicProjectData } = projectData;
     const customerData = useCustomerData();
     const productData = useProductData();
     const accountData = useAccountData(employeeData.employees);
     const authData = useAuthData(accountData.accounts, employeeData.employees);
     const consultationData = useConsultationData();
     const taskData = useTaskData(projectData.projects, employeeData.employees);
-    const quotationData = useQuotationData();
 
 
     const updateEmployee = (updatedEmployee) => {
@@ -141,10 +142,8 @@ export function ERPProvider({ children }) {
     // 담당자로 사용 중인 직원은 삭제하지 않는다.
     const deleteEmployee = (id) => {
 
-        const employeeId = Number(id);
-
-        if (!Number.isSafeInteger(employeeId) || employeeId <= 0 ||
-            !employeeData.employees.some(e => Number(e.id) === employeeId)) {
+        if (!Number.isSafeInteger(id) || id <= 0 ||
+            !employeeData.employees.some(e => Number(e.id) === id)) {
             return {
                 ok: false,
                 message: "삭제할 직원을 찾을 수 없습니다."
@@ -255,8 +254,8 @@ export function ERPProvider({ children }) {
         };
 
         if (
-            Number(mergedProject.quotationId) !== Number(original.quotationId) ||
-            Number(mergedProject.customerId) !== Number(original.customerId)
+            mergedProject.quotationId !== original.quotationId ||
+            mergedProject.customerId !== original.customerId
         ) {
             return {
                 ok: false,
@@ -279,89 +278,107 @@ export function ERPProvider({ children }) {
             };
         }
 
-        if (
-            original.status !== "완료" &&
-            mergedProject.status === "완료"
-        ) {
-            const progress = getProjectProgress(
-                mergedProject,
-                taskData.tasks
-            );
-
-            if (progress !== 100) {
-                return {
-                    ok: false,
-                    message: "모든 세부 작업을 완료해야 프로젝트를 완료할 수 있습니다."
-                };
-            }
-        }
-
         return projectData.updateProject(updatedProject);
 
     };
 
     const deleteProject = (id) => {
 
-        const projectId = Number(id);
-
-        const hasProject = projectData.projects.some(
-            project => Number(project.id) === projectId
-        );
-
-        if (!hasProject) {
+        if (!Number.isSafeInteger(id) || id <= 0) {
+            return {
+                ok: false,
+                message: "올바르지 않은 프로젝트 ID입니다."
+            };
+        }
+    
+        const project = projectData.projects.find(p => p.id === id);
+    
+        if (!project) {
             return {
                 ok: false,
                 message: "삭제할 프로젝트를 찾을 수 없습니다."
             };
         }
-
+    
+        if (project.status === "완료") {
+            return {
+                ok: false,
+                message: "완료된 프로젝트는 삭제할 수 없습니다."
+            };
+        }
+    
         const hasTask = taskData.tasks.some(
-            task => Number(task.projectId) === projectId
+            task => task.projectId === id
         );
-
+    
         if (hasTask) {
             return {
                 ok: false,
                 message: "세부 작업이 등록된 프로젝트는 삭제할 수 없습니다."
             };
         }
-
-        const scheduleResult = deleteSchedulesByProject(projectId);
-
+    
+        const scheduleResult = deleteSchedulesByProject(id);
+    
         if (!scheduleResult.ok) {
             return scheduleResult;
         }
-
-        projectData.deleteProject(projectId);
-
-        return { ok: true };
+    
+        return projectData.deleteProject(id);
     };
 
     const addTask = (newTask) => {
 
-        const nextTasks = [
-            ...taskData.tasks,
-            newTask
-        ];
-
-        if (breaksCompletedProject(
-            newTask.projectId,
-            projectData.projects,
-            nextTasks
-        )) {
+        // 프로젝트 ID 유효성 검사
+        if (
+            !Number.isSafeInteger(newTask.projectId) ||
+            newTask.projectId <= 0
+        ) {
             return {
                 ok: false,
-                message: "완료된 프로젝트의 진행률은 100%를 유지해야 합니다."
+                message: "올바르지 않은 프로젝트 ID입니다."
             };
         }
 
+        // 소속 프로젝트 확인
+        const project = projectData.projects.find(
+            p => p.id === newTask.projectId
+        );
+
+        if (!project) {
+            return {
+                ok: false,
+                message: "소속 프로젝트를 찾을 수 없습니다."
+            };
+        }
+
+        // 완료된 프로젝트에는 작업 추가 금지
+        if (project.status === "완료") {
+            return {
+                ok: false,
+                message: "완료된 프로젝트에는 세부 작업을 추가할 수 없습니다."
+            };
+        }
+
+        // 배송 작업 생성과 동시에 완료 처리하는 것은 금지
+        if (
+            newTask.taskType === "배송 관리" &&
+            newTask.progress === "완료"
+        ) {
+            return {
+                ok: false,
+                message: "배송 작업은 생성과 동시에 완료할 수 없습니다."
+            };
+        }
+
+        // 모든 검증 통과 후 실제 세부 작업 생성
         return taskData.addTask(newTask);
     };
 
     const updateTask = (updatedTask) => {
 
         const original = taskData.tasks.find(
-            t => Number(t.id) === Number(updatedTask.id)
+            t => t.id === updatedTask.id
         );
 
         if (!original) {
@@ -373,51 +390,80 @@ export function ERPProvider({ children }) {
             ...updatedTask
         };
 
-        const nextTasks = taskData.tasks.map(task =>
-            Number(task.id) === Number(updatedTask.id)
-                ? mergedTask
-                : task
+        const project = projectData.projects.find(
+            p => p.id === original.projectId
         );
 
-        if (breaksCompletedProject(
-            original.projectId,
-            projectData.projects,
-            nextTasks
-        )) {
+        if (!project) {
             return {
                 ok: false,
-                message: "완료된 프로젝트의 진행률은 100%를 유지해야 합니다."
+                message: "소속 프로젝트를 찾을 수 없습니다."
             };
         }
 
-        return taskData.updateTask(updatedTask);
+        if (project.status === "완료") {
+            return {
+                ok: false,
+                message: "완료된 프로젝트의 세부 작업은 수정할 수 없습니다."
+            };
+        }
+
+        const isCompletingDelivery =
+            original.taskType === "배송 관리" &&
+            mergedTask.taskType === "배송 관리" &&
+            original.progress !== "완료" &&
+            mergedTask.progress === "완료";
+
+        if (isCompletingDelivery) {
+            const check = canCompleteProject(project, taskData.tasks);
+
+            if (!check.ok) return check;
+        }
+
+        const result = taskData.updateTask(updatedTask);
+
+        if (!result.ok) return result;
+
+        if (isCompletingDelivery) {
+            return projectData.completeProject(original.projectId);
+        }
+
+        return result;
+
     };
 
     const deleteTask = (taskId) => {
 
         const original = taskData.tasks.find(
-            t => Number(t.id) === Number(taskId)
+            task => task.id === taskId
         );
 
+        // 작업 ID 및 존재 여부 검증은 useTaskData에서 처리
         if (!original) {
             return taskData.deleteTask(taskId);
         }
 
-        const nextTasks = taskData.tasks.filter(
-            t => Number(t.id) !== Number(taskId)
+        // 소속 프로젝트 확인
+        const project = projectData.projects.find(
+            p => p.id === original.projectId
         );
 
-        if (breaksCompletedProject(
-            original.projectId,
-            projectData.projects,
-            nextTasks
-        )) {
+        if (!project) {
             return {
                 ok: false,
-                message: "완료된 프로젝트의 진행률은 100%를 유지해야 합니다."
+                message: "소속 프로젝트를 찾을 수 없습니다."
             };
         }
 
+        // 완료된 프로젝트의 세부 작업 삭제 금지
+        if (project.status === "완료") {
+            return {
+                ok: false,
+                message: "완료된 프로젝트의 세부 작업은 삭제할 수 없습니다."
+            };
+        }
+
+        // 모든 검증 통과 후 삭제
         return taskData.deleteTask(taskId);
     };
 
@@ -448,7 +494,7 @@ export function ERPProvider({ children }) {
 
     return (
         <ERPContext.Provider value={{
-            ...projectData,
+            ...publicProjectData,
             ...employeeData,
             ...customerData,
             ...productData,
