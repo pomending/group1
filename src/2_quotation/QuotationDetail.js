@@ -213,21 +213,25 @@ function QuotationDetail() {
 
                         <div className="detail-item">
                             <span>기본 단가</span>
-                            {/* <strong>{formatPrice(quotation.unitPrice)}</strong> */}
-                            <strong>{formatPrice(quotation.baseUnitPrice)}</strong>
+                            <strong>{formatPrice(quotation.baseUnitPrice ?? quotation.unitPrice ?? 0)}</strong>
                         </div>
 
-                        <div className="detail-item">
+                        <div className="detail-item option-detail-item">
                             <span>제작 옵션</span>
 
-                            <div>
+                            <div className="detail-option-list">
                                 {(quotation.options ?? []).length === 0 ? (
                                     <strong>없음</strong>
                                 ) : (
                                     quotation.options.map((option, index) => (
-                                        <p key={index}>
-                                            {option.name} : {Number(option.unitPrice).toLocaleString()}원
-                                        </p>
+                                        <div className="detail-option-item" key={index}>
+                                            <span className="option-name" >
+                                                {option.name}
+                                            </span>
+                                            <strong className="option-price">
+                                                {Number(option.unitPrice ?? 0).toLocaleString()}원
+                                            </strong>
+                                        </div>
                                     ))
                                 )}
                             </div>
@@ -292,17 +296,13 @@ function QuotationDetail() {
                         </>
                     )}
 
-                    {quotation.status === "승인 완료" && (
+                    {(quotation.status === "승인 완료" || 
+                    quotation.status === "반려") && (
                         <button className="review-btn" onClick={handleReview}>
                             재검토 요청
                         </button>
                     )}
 
-                    {quotation.status === "반려" && (
-                        <button className="review-btn" onClick={handleReview}>
-                            승인 대기
-                        </button>
-                    )}
                 </div>
 
                 <div className="detail-manage">

@@ -99,8 +99,9 @@ export default function useQuotationData() {
         // 기존 상품을 유지하는 경우 기본 단가 변경 금지
         if (
             existing.productId != null &&
-            existing.productId === mergedQuotation.productId &&
-            existing.baseUnitPrice !== mergedQuotation.baseUnitPrice
+            Number(existing.productId) === Number(mergedQuotation.productId) &&
+            Number(existing.baseUnitPrice ?? existing.UnitPrice) !==
+            Number(existing.baseUnitPrice ?? mergedQuotation.UnitPrice)
         ) {
             return {
                 ok: false,
@@ -108,7 +109,16 @@ export default function useQuotationData() {
             };
         }
 
-        const result = validateQuotation(mergedQuotation)
+        const quotationToValidate = {
+            ...mergedQuotation,
+            baseUnitPrice: Number(
+                mergedQuotation.baseUnitPrice ??
+                mergedQuotation.UnitPrice ??
+                0
+            )
+        }
+
+        const result = validateQuotation(quotationToValidate)
 
         if(!result.ok){
             return result
@@ -117,7 +127,7 @@ export default function useQuotationData() {
         setQuotations(prev =>
             prev.map(q =>
                 Number(q.id) === Number(updatedQuotation.id)
-                ? mergedQuotation
+                ? quotationToValidate
                 : q
             )
         )

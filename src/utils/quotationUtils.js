@@ -8,7 +8,7 @@ export const totalPrice = (quantity, price) => {
 
 export function getQuotationPriceDetails(quotation) {
 
-    const baseUnitPrice = Number(quotation.baseUnitPrice);
+    const baseUnitPrice = Number(quotation.baseUnitPrice ?? quotation.unitPrice ?? 0);
 
     const options = Array.isArray(quotation.options)
         ? quotation.options
@@ -58,11 +58,6 @@ export const validateQuotation = (quotation) => {
         return { ok: false, message: "수량은 0보다 커야 합니다." }
     }
 
-    // if(!Number.isFinite(Number(quotation.unitPrice)) ||
-    //     Number(quotation.unitPrice) <= 0){
-    //         return {ok: false, message: "단가는 0보다 커야 합니다."}
-    // }
-
     if (!Number.isFinite(quotation.baseUnitPrice) ||
         quotation.baseUnitPrice <= 0) {
         return {
@@ -81,7 +76,8 @@ export const validateQuotation = (quotation) => {
     const hasInvalidOption = quotation.options.some(option =>
         typeof option?.name !== "string" ||
         !option.name.trim() ||
-        !Number.isFinite(option.unitPrice)
+        !Number.isFinite(option.unitPrice) ||
+        option.unitPrice < 0
     );
 
     if (hasInvalidOption) {

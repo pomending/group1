@@ -163,14 +163,6 @@ function QuotationList() {
                                                 불러오기
                                             </button>
 
-                                            {/* <button onClick={() => {
-                                                if (window.confirm("이 임시 저장 견적서를 삭제하시겠습니까?")) {
-                                                    deleteQuotation(q.id);
-                                                }
-                                            }}>
-                                                삭제
-                                            </button> */}
-
                                             <button onClick={() => {
                                                 if (window.confirm("이 임시 저장 견적서를 삭제하시겠습니까?")) {
                                                     const result = deleteQuotation(q.id);
@@ -250,7 +242,7 @@ function QuotationList() {
                         onChange={(e) => setStatus(e.target.value)}>
                         <option>전체 상태</option>
                         {QUOTATION_STATUS.map(status =>
-                            <option>{status}</option>
+                            <option key={status} value={status}>{status}</option>
                         )
                         }
                     </select>
