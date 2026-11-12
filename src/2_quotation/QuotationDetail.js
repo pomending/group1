@@ -8,6 +8,7 @@ import {
     formatPrice
 } from "../utils/formatUtils";
 import "./QuotationDetail.css"
+import { getQuotationUnitPrice } from "../utils/quotationUtils";
 
 function QuotationDetail() {
 
@@ -23,20 +24,24 @@ function QuotationDetail() {
         employees
     } = useERP();
 
-
+    
 
     // URL의 견적 ID와 일치하는 견적서 찾기
     const quotation = quotations.find(
         q => q.id === Number(id)
     );
-
+    
     if (!quotation) {
         return <div>견적서를 찾을 수 없습니다.</div>;
     }
 
-    //견적 금액 계산
-    const supplyAmount = Number(quotation.quantity || 0)
-        * Number(quotation.unitPrice || 0);
+    //옵션 포함 개당 단가 계산
+    const optionUnitPrice = getQuotationUnitPrice(quotation);
+
+    //공급가액 계산
+    const supplyAmount = Number(quotation.quantity || 0) * optionUnitPrice;
+
+    //부가세 및 최종 금액
     const vat = supplyAmount * 0.1;
     const finalPrice = supplyAmount + vat;
 
@@ -195,12 +200,30 @@ function QuotationDetail() {
                         </div>
 
                         <div className="detail-item">
-                            <span>단가</span>
+                            <span>기본 단가</span>
                             <strong>{formatPrice(quotation.unitPrice)}</strong>
                         </div>
+
+                        <div className="detail-item">
+                            <span>제작 옵션</span>
+
+                            <div>
+                                {(quotation.option ?? []).length === 0 ? (
+                                    <strong>없음</strong>
+                                ) : (
+                                    quotation.option.map((option,index) => (
+                                        <p key={index}>
+                                            {option.name} : {Number(option.unitPrice).toLocaleString()}원
+                                        </p>
+                                    ))
+                                )}
+                            </div>
+
+                        </div>
+
                     </div>
                 </section>
-
+                
                 <section className="detail-price">
                     <h2>견적 금액</h2>
 
