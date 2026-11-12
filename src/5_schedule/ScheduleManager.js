@@ -10,7 +10,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useScheduleClock, useScheduleHolidays, useScheduleStorage, useScheduleTeam, useScheduleDraft } from "./scheduleHooks";
 import { loadSchedules } from "./scheduleStorage";
-import { createProjectMilestones, createTaskMilestones, resolveScheduleProject, getScheduleProjectWarning, getScheduleEmployeeWarning } from "./ScheduleProjectBridge";
+import { createProjectMilestones, createTaskMilestones, createQuotationMilestones, matchesScheduleStaff, resolveScheduleProject, getScheduleProjectWarning, getScheduleEmployeeWarning } from "./ScheduleProjectBridge";
 import ScheduleCalendar from "./ScheduleCalendar";
 import ScheduleFormModal, { ScheduleListModal } from "./ScheduleFormModal";
 import ScheduleSidebar from "./ScheduleSidebar";
@@ -35,12 +35,13 @@ import {
   normalizeAttendees,
   normalizeAttendeeEmployees,
   getSchedulePeople,
+  getScheduleParticipants,
   normalizeStatus,
   typeColors,
 } from "./scheduleData";
 import "./scheduleStyles.css";
 
-const EMPTY_PROJECTS = [];
+const EMPTY_LIST = [];
 const saveStatusLabels = {
   saving: "저장 중…",
   saved: "브라우저에 저장 완료",
@@ -56,11 +57,12 @@ export default function ScheduleManager() {
   // 실제 화면은 ERPProvider 내부에서 실행해야 합니다. useERP는 Provider가 없으면 오류를 던집니다.
   // 아래 선택적 접근과 빈 배열은 누락된 필드에 대한 보완이며 Provider 없이 실행할 수 있다는 뜻은 아닙니다.
   const erp = useERP();
-  const projects = erp?.projects || EMPTY_PROJECTS;
+  const projects = erp?.projects || EMPTY_LIST;
   // Context의 useEmployeeData가 erp_employees 저장값을 먼저 읽고, 없거나 읽지 못하면 mockData의 initialEmployees를 사용합니다.
   // HR 직원 목록으로 일정 담당자를 선택합니다. 부서 제한 없이 재직 직원만 새로 선택할 수 있습니다.
   // 참석자·담당자별 일정표의 이름 기반 팀원 목록은 기존대로 유지합니다.
-  const employees = erp.employees || [];
+  const employees = erp.employees || EMPTY_LIST;
+  const currentEmployeeId = erp.currentEmployee?.id ?? erp.currentUser?.employeeId ?? null;
 
   // 월간 달력의 기준 월과 현재 선택 날짜입니다.
   const [month, setMonth] = useState(() => {
@@ -76,8 +78,26 @@ export default function ScheduleManager() {
   const [view, setView] = useState("monthly");
   const [scopeFilter, setScopeFilter] = useState("all");
   const [hideCompletedTasks, setHideCompletedTasks] = useState(false);
+  const [mySchedulesOnly, setMySchedulesOnly] = useState(false);
+  const [department, setDepartment] = useState("");
+  const [filterNotice, setFilterNotice] = useState("");
+  const [showQuotationExpiry, setShowQuotationExpiry] = useState(false);
+  const [deadlineView, setDeadlineView] = useState("upcoming");
   const [directoryMode, setDirectoryMode] = useState(null);
   const [selectedProject, setSelectedProject] = useState(null);
+
+  // 계정이 달라지면 이전 직원의 조회 선택을 해제합니다.
+  useEffect(() => {
+    setMySchedulesOnly(false);
+  }, [currentEmployeeId]);
+
+  // HR 변경으로 사라진 부서는 전체 부서로 되돌리고 이유를 안내합니다.
+  useEffect(() => {
+    if (department && !employees.some(employee => employee.department === department)) {
+      setDepartment("");
+      setFilterNotice("선택한 부서가 직원 목록에 없어 전체 부서로 변경했습니다.");
+    }
+  }, [employees, department]);
 
   const {
     loadedSchedules,
@@ -114,7 +134,12 @@ export default function ScheduleManager() {
   const [reminderNotice, setReminderNotice] = useState(null);
   const firedReminders = useRef(new Set());
   const [editing, setEditing] = useState(null);
-  const { draft, draftError, clearDraft } = useScheduleDraft(form, editing !== null);
+  const { draft, draftError, clearDraft } = useScheduleDraft(form, editing !== null, loadedSchedules.resetId);
+  useEffect(() => {
+    setForm(null);
+    setEditing(null);
+    setListOpen(false);
+  }, [loadedSchedules.resetId]);
   // 삭제 기록은 메모리에만 15초 보관합니다. 연속 삭제 시 가장 최근 한 건으로 교체합니다.
   const [deletionNotice, setDeletionNotice] = useState(null);
   useEffect(() => {
@@ -198,11 +223,17 @@ export default function ScheduleManager() {
   // 검색어, 프로젝트, 공유 구분 조건으로 저장된 일정을 먼저 거릅니다.
   // [2. 표시 데이터 계산] 원본 items → 검색·공유 구분 필터 → 반복 발생일 → 달력·선택 날짜 목록
   const keyword = query.trim().toLowerCase();
+  const departments = [...new Set(employees.map(employee => employee.department).filter(Boolean))].sort();
+  const hasStaffFilter = (mySchedulesOnly && currentEmployeeId != null) || Boolean(department);
+  function matchesPeople(item) {
+    return matchesScheduleStaff(item, employees, mySchedulesOnly ? currentEmployeeId : null, department);
+  }
+  const staffFilteredItems = displayItems.filter(matchesPeople);
   const filteredItems = [];
-  for (const item of displayItems) {
+  for (const item of staffFilteredItems) {
     if (selectedProject && item.project !== selectedProject) continue;
     if (scopeFilter !== "all" && item.visibility !== scopeFilter) continue;
-    const people = getSchedulePeople(item).join(" ");
+    const people = getSchedulePeople(item, employees).join(" ");
     const searchText = `${item.title} ${item.project} ${people}`.toLowerCase();
     if (!searchText.includes(keyword)) continue;
     filteredItems.push(item);
@@ -221,10 +252,17 @@ export default function ScheduleManager() {
     to = weekDates[6].key;
   }
   // 프로젝트 날짜도 검색·프로젝트 선택 조건을 따르며, 회사 공유 일정 필터에서만 달력에 표시합니다.
-  const projectMilestones = [
+  const taskMilestones = createTaskMilestones(erp.tasks || [], projects, employees);
+  const linkedMilestones = [
     ...createProjectMilestones(projects, employees),
-    ...createTaskMilestones(erp.tasks || [], projects, employees),
-  ].filter((item) => {
+    ...taskMilestones,
+  ];
+  if (showQuotationExpiry) {
+    const quotationMilestones = createQuotationMilestones(erp.quotations || [], erp.customers || [], employees);
+    linkedMilestones.push(...quotationMilestones);
+  }
+  const projectMilestones = linkedMilestones.filter((item) => {
+    if (!matchesPeople(item)) return false;
     if (hideCompletedTasks && item.isTaskDeadline && item.taskProgress === "완료") return false;
     if (selectedProject && item.project !== selectedProject) return false;
     if (scopeFilter === "private") return false;
@@ -242,6 +280,18 @@ export default function ScheduleManager() {
     ...expandSchedules(filteredItems, selectedDate, selectedDate, holidayDates),
     ...selectedProjectMilestones,
   ];
+  const deadlineEnd = new Date(todayKey + "T00:00:00");
+  deadlineEnd.setDate(deadlineEnd.getDate() + 6);
+  const deadlineEndKey = dateKey(deadlineEnd);
+  const deadlineItems = taskMilestones.filter(item => {
+    if (item.taskProgress === "완료" || !matchesPeople(item)) return false;
+    if (selectedProject && item.project !== selectedProject) return false;
+    if (scopeFilter === "private") return false;
+    if (!(item.title + " " + item.projectManager).toLowerCase().includes(keyword)) return false;
+    if (deadlineView === "overdue") return item.date < todayKey;
+    if (deadlineView === "today") return item.date === todayKey;
+    return item.date >= todayKey && item.date <= deadlineEndKey;
+  }).sort(compareSchedules);
 
   // 월별 달력은 일요일 시작 격자로 계산합니다. 주간 보기는 기존 월요일 시작을 유지합니다.
   const calendarDays = [];
@@ -635,6 +685,9 @@ export default function ScheduleManager() {
     setQuery("");
     setSelectedProject(null);
     setScopeFilter("all");
+    setMySchedulesOnly(false);
+    setDepartment("");
+    setFilterNotice("");
   }
 
   // 상단 통계는 전체 데이터를 세므로 이동할 때도 검색·필터를 해제해 같은 기준으로 보여줍니다.
@@ -673,8 +726,8 @@ export default function ScheduleManager() {
   // [7. 요약·부가 표시] 통계·즐겨찾기·다가오는 일정 등 각 화면에 전달할 값을 만듭니다.
   const todayWorkCount = expandSchedules(items, todayKey, todayKey, holidayDates).length;
   // 다가오는 목록은 검색과 무관하게 오늘 포함 7일 이내의 미완료 발생 일정 중 가까운 5건을 보여줍니다.
-  const upcomingSchedules = getUpcomingSchedules(displayItems, currentTime, 5, 7, holidayDates);
-  const favoriteItems = displayItems.filter((item) => item.isFavorite);
+  const upcomingSchedules = getUpcomingSchedules(staffFilteredItems, currentTime, 5, 7, holidayDates);
+  const favoriteItems = staffFilteredItems.filter((item) => item.isFavorite);
   // 상태별 진행 수가 아니라 일정에 입력된 서로 다른 프로젝트명 개수입니다.
   // 이름을 처음 만났을 때만 배열에 넣습니다. 배열 길이가 중복을 뺀 프로젝트 수입니다.
   const projectNames = [...new Set(displayItems.map((item) => item.project).filter(Boolean))];
@@ -693,11 +746,22 @@ export default function ScheduleManager() {
     periodLabel = `${selectedDateObject.getFullYear()}년 ${selectedDateObject.getMonth() + 1}월 ${selectedDateObject.getDate()}일 (${weekday})`;
   }
 
-  // 직원 행은 별도 등록 목록을 기준으로 합니다. 일정에만 적힌 미등록 이름은 행으로 만들지 않습니다.
-  // 아래에서 배열 내용을 바꾸지 않고 다른 결과 배열을 대입하므로 복사본을 만들 필요는 없습니다.
-  let staffPeople = visibleProjectMilestones.length > 0
-    ? [...teamMembers, "프로젝트 일정"]
-    : teamMembers;
+  // 팀원 목록에 저장된 이름과, 직원 번호로 확인한 HR의 현재 이름을 함께 사용합니다.
+  const linkedStaffNames = [];
+  for (const item of filteredItems) {
+    for (const person of getScheduleParticipants(item)) {
+      if (person.id == null) continue;
+      const employee = employees.find(entry => String(entry.id) === String(person.id));
+      if (employee) linkedStaffNames.push(employee.name);
+    }
+  }
+  const visibleTeamMembers = teamMembers.filter(name =>
+    employees.some(employee => employee.name === name)
+    || items.some(item => getSchedulePeople(item, employees).includes(name)));
+  let staffPeople = [...new Set([...visibleTeamMembers, ...linkedStaffNames, ...visibleProjectMilestones.map(item => item.person)])];
+  if (hasStaffFilter) {
+    staffPeople = staffPeople.filter(name => visibleItems.some(item => getSchedulePeople(item, employees).includes(name)));
+  }
   // 이름을 검색했다면 함께 참석한 다른 사람의 행까지 늘어나지 않게 검색한 사람만 남깁니다.
   // 이름과 일치하는 팀원이 없으면 일정 검색 결과에 담당·참석으로 연결된 등록 팀원만 남깁니다.
   let staffPersonSearch = "";
@@ -716,7 +780,7 @@ export default function ScheduleManager() {
       // some은 조건에 맞는 일정이 하나라도 있으면 true입니다.
       staffPeople = staffPeople.filter((person) =>
         person === "프로젝트 일정"
-          || filteredItems.some((item) => getSchedulePeople(item).includes(person)));
+          || [...filteredItems, ...visibleProjectMilestones].some((item) => getSchedulePeople(item, employees).includes(person)));
     }
   }
 
@@ -761,6 +825,7 @@ export default function ScheduleManager() {
           </div>
         </section>
 
+        <p className="sm-form-note">상단의 오늘·전체 일정 건수는 직접 등록한 일정 기준입니다. 프로젝트·작업 마감·견적 유효기간은 달력에 함께 표시됩니다.</p>
         <p className="sm-muted" role="status" aria-label="일정 저장 상태" aria-live="polite">
           {saveStatusLabels[saveStatus]}
         </p>
@@ -807,6 +872,33 @@ export default function ScheduleManager() {
           </button>
         </section>
 
+        <div className="sm-integration-filters">
+          <label className="sm-form-note"><input type="checkbox" checked={mySchedulesOnly && currentEmployeeId != null}
+            disabled={currentEmployeeId == null} onChange={event => setMySchedulesOnly(event.target.checked)} /> 내 담당·참석 일정</label>
+          {currentEmployeeId == null && <span className="sm-form-note">내 일정은 로그인 후 조회할 수 있습니다.</span>}
+          <label className="sm-form-note">부서
+            <select value={department} onChange={event => { setDepartment(event.target.value); setFilterNotice(""); }} aria-label="일정 부서 필터">
+              <option value="">전체 부서</option>
+              {departments.map(name => <option key={name} value={name}>{name}</option>)}
+            </select>
+          </label>
+          <label className="sm-form-note"><input type="checkbox" checked={showQuotationExpiry}
+            onChange={event => setShowQuotationExpiry(event.target.checked)} /> 견적 유효기간 표시</label>
+          {hasStaffFilter && <button type="button" className="sm-secondary-btn" onClick={clearScheduleFilters}>담당·부서 필터 초기화</button>}
+        </div>
+        {filterNotice && <p className="sm-form-note" role="status">{filterNotice}</p>}
+        <details className="sm-card sm-deadline-panel">
+          <summary>미완료 작업 마감 모아보기</summary>
+          <label>조회 기간 <select aria-label="작업 마감 조회 기간" value={deadlineView} onChange={event => setDeadlineView(event.target.value)}>
+            <option value="overdue">지연 작업</option><option value="today">오늘 마감</option><option value="upcoming">7일 이내 마감</option>
+          </select></label>
+          <p className="sm-form-note">{deadlineItems.length}건</p>
+          {deadlineItems.length === 0 && <p className="sm-form-note">조건에 맞는 미완료 작업이 없습니다.</p>}
+          {deadlineItems.map(item => <p key={item.id}><button type="button" className="sm-secondary-btn"
+            onClick={() => { selectDate(item.date); setView("daily"); focusCalendar(); }}>
+            {item.date} · {item.title} · {item.projectManager}
+          </button></p>)}
+        </details>
         <label className="sm-form-note">
           <input type="checkbox" checked={hideCompletedTasks}
             onChange={event => setHideCompletedTasks(event.target.checked)} /> 완료된 세부 작업 숨기기
@@ -826,6 +918,7 @@ export default function ScheduleManager() {
             periodLabel={periodLabel}
             weekDates={weekDates}
             scopeFilter={scopeFilter}
+            hasStaffFilter={hasStaffFilter}
             onScopeFilterChange={setScopeFilter}
             onClearFilters={clearScheduleFilters}
             query={query}
@@ -837,6 +930,7 @@ export default function ScheduleManager() {
             calendarDays={calendarDays}
             visibleItems={visibleItems}
             staffPeople={staffPeople}
+            employees={employees}
             staffPersonSearch={staffPersonSearch}
             selectedDate={selectedDate}
             todayKey={todayKey}
@@ -866,7 +960,7 @@ export default function ScheduleManager() {
             selectedDateObject={selectedDateObject}
             selectedHoliday={selectedHoliday}
             selectedItems={selectedItems}
-            hasActiveFilter={Boolean(query.trim() || selectedProject || scopeFilter !== "all")}
+            hasActiveFilter={Boolean(query.trim() || selectedProject || scopeFilter !== "all" || hasStaffFilter)}
             upcomingSchedules={upcomingSchedules}
             currentTime={currentTime}
             onSelectUpcoming={(date) => {
@@ -910,11 +1004,14 @@ export default function ScheduleManager() {
         <ScheduleListModal
           items={
             listDateFilter
-              ? expandSchedules(filteredItems, listDateFilter, listDateFilter, holidayDates)
+              ? [
+                ...expandSchedules(filteredItems, listDateFilter, listDateFilter, holidayDates),
+                ...projectMilestones.filter(item => item.date === listDateFilter),
+              ]
               : displayItems
           }
           filterDate={listDateFilter}
-          hasActiveFilter={Boolean(listDateFilter && (query.trim() || selectedProject || scopeFilter !== "all"))}
+          hasActiveFilter={Boolean(listDateFilter && (query.trim() || selectedProject || scopeFilter !== "all" || hasStaffFilter))}
           totalCount={items.length}
           onToggleFavorite={toggleFavorite}
           onClearDateFilter={() => setListDateFilter(null)}

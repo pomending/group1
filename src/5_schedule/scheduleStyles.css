@@ -2921,3 +2921,40 @@
 .schedule-app .sm-modal { border-color: #E6E1F0; background: #FFFFFF; }
 .schedule-app .sm-close { color: #827A98; }
 /* Preserve event-category, deadline, completion, weekend and holiday colors. */
+.sm-integration-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 20px;
+  margin: 12px 0;
+}
+
+.sm-integration-filters label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+}
+
+.sm-integration-filters select,
+.sm-deadline-panel select {
+  font: inherit;
+  color: inherit;
+  padding: 6px 10px;
+  border: 1px solid #ddd9eb;
+  border-radius: 6px;
+  background: #fff;
+}
+
+.sm-deadline-panel {
+  margin-bottom: 16px;
+}
+
+.sm-deadline-panel summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.sm-deadline-panel[open] summary {
+  margin-bottom: 12px;
+}

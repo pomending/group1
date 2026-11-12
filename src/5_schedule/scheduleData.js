@@ -382,14 +382,22 @@ export function getScheduleParticipants(item) {
 }
 
 // 이름 검색과 팀원 목록에 사용할 담당자·참석자 이름을 중복 없이 반환합니다.
-export const getSchedulePeople = (item) =>
-  normalizeAttendees([
+export function getSchedulePeople(item, employees = []) {
+  const names = [
     // 담당자가 비어 있거나 문자열이 아니어도 normalizeAttendees가 알아서 건너뜁니다.
     item.person,
     // ...가 없으면 [담당자, [참석자들]]로 중첩됩니다. 펼쳐야 이름들이 한 배열에 나란히 들어갑니다.
     // normalizeAttendees가 누락값도 배열로 보장하므로 펼치기를 안전하게 사용할 수 있습니다.
     ...normalizeAttendees(item.attendees),
-  ]);
+  ];
+  // 직원 번호로 현재 이름을 더해 개명 전후 이름을 모두 검색할 수 있게 합니다.
+  for (const person of getScheduleParticipants(item)) {
+    if (person.id == null) continue;
+    const employee = employees.find(entry => String(entry.id) === String(person.id));
+    if (employee) names.push(employee.name);
+  }
+  return normalizeAttendees(names);
+}
 
 // 반복 일정은 규칙 하나만 저장하고, 보고 있는 기간에 해당하는 날짜만 계산합니다.
 // 이렇게 하면 종료일 없이 먼 미래의 달로 이동해도 같은 규칙을 적용할 수 있습니다.
@@ -807,8 +815,17 @@ export function getScheduleFormError(form) {
   }
   if (form.scope === "업무용") {
     if (!scheduleStatuses.some(status => status.value === form.status)) return { field: "status", message: "일정 상태를 선택해 주세요." };
-    if (form.category === "회의" && normalizeAttendees(form.attendees).some(name => name.length > 30)) {
-      return { field: "attendees", message: "참석자 이름은 30자 이내로 입력해 주세요." };
+    if (form.category === "회의") {
+      const linkedAttendees = normalizeAttendeeEmployees(form.attendeeEmployees);
+      if (form.attendeeEmployees !== undefined &&
+        (!Array.isArray(form.attendeeEmployees) || linkedAttendees.length !== form.attendeeEmployees.length)) {
+        return { field: "attendees", message: "참석자 직원 정보를 다시 선택해 주세요." };
+      }
+      if (typeof form.attendees !== "string" && !Array.isArray(form.attendees)) {
+        return { field: "attendees", message: "참석자 이름을 확인해 주세요." };
+      }
+      const names = [...normalizeAttendees(form.attendees), ...linkedAttendees.map(employee => employee.name)];
+      if (names.some(name => name.length > 30)) return { field: "attendees", message: "참석자 이름은 30자 이내로 입력해 주세요." };
     }
   }
   return null;

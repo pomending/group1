@@ -17,6 +17,7 @@ import {
   isValidScheduleTime,
   isNumericInput,
   normalizeAttendees,
+  normalizeAttendeeEmployees,
   normalizeStatus,
   scheduleTypes,
   typeColors,
@@ -101,6 +102,26 @@ export function loadSchedules() {
       const type = scheduleTypes.includes(item.type) ? item.type : "기획";
       if (item.type !== undefined && item.type !== type) needsBackup = true;
       const schedule = { ...item };
+      // 손상된 참석자 연결값은 배열로 보완하고 정리 전 원본을 백업합니다.
+      const linkedAttendees = normalizeAttendeeEmployees(item.attendeeEmployees);
+      const legacyAttendees = normalizeAttendees([
+        ...normalizeAttendees(item.legacyAttendees),
+        ...normalizeAttendees(item.attendees).filter(name => !linkedAttendees.some(employee => employee.name === name)),
+      ]);
+      if (item.attendeeEmployees !== undefined) {
+        schedule.attendeeEmployees = linkedAttendees;
+        if (JSON.stringify(item.attendeeEmployees) !== JSON.stringify(linkedAttendees)) needsBackup = true;
+      }
+      if (item.legacyAttendees !== undefined || item.attendeeEmployees !== undefined) {
+        schedule.legacyAttendees = legacyAttendees;
+        if (JSON.stringify(item.legacyAttendees) !== JSON.stringify(legacyAttendees)) needsBackup = true;
+      }
+      const attendeeNames = normalizeAttendees([
+        ...normalizeAttendees(item.attendees),
+        ...linkedAttendees.map(employee => employee.name),
+        ...legacyAttendees,
+      ]);
+      if (item.attendees !== undefined && JSON.stringify(item.attendees) !== JSON.stringify(attendeeNames)) needsBackup = true;
       // 고객관리 연동을 제거했으므로 과거 일정에 남은 고객 사본도 제외합니다.
       delete schedule.connections;
       normalized.push({
@@ -124,7 +145,7 @@ export function loadSchedules() {
           ? item.employeeId : null,
         // 이전 일정에는 attendees가 없을 수 있습니다. []로 보완하면 새 표에서도 안전하게 읽습니다.
         // 저장 배열에 중복/공백이 있더라도 불러오는 시점에 같은 정리 규칙을 다시 적용합니다.
-        attendees: normalizeAttendees(item.attendees),
+        attendees: attendeeNames,
         description:
           typeof item.description === "string" ? item.description : "",
         type,
@@ -239,11 +260,17 @@ export function serializeSchedules(items, resetId) {
 }
 
 export function resetStoredSchedules() {
+  const keys = ["made-mate-schedule-team", "made-mate-excluded-team", "made-mate-schedules"];
+  const previous = [];
+  let previousDraft;
   try {
-      localStorage.setItem(
-          "made-mate-schedules",
-          serializeSchedules([], Date.now() + "-" + Math.random())
-      );
+      for (const key of keys) previous.push(localStorage.getItem(key));
+      previousDraft = sessionStorage.getItem("made-mate-schedule-draft");
+      localStorage.setItem(keys[0], "[]");
+      localStorage.setItem(keys[1], "[]");
+      sessionStorage.removeItem("made-mate-schedule-draft");
+      // 초기화 번호를 마지막에 기록해 열린 탭의 이전 저장을 구분합니다.
+      localStorage.setItem(keys[2], serializeSchedules([], Date.now() + "-" + Math.random()));
 
       window.dispatchEvent(
           new Event("made-mate-schedules-reset")
@@ -252,6 +279,16 @@ export function resetStoredSchedules() {
       return { ok: true };
 
   } catch (error) {
+      // 읽기까지 성공한 키만 복원합니다. 초기화 실패 시 기존 자료를 유지합니다.
+      try {
+        for (let index = 0; index < previous.length; index += 1) {
+          if (previous[index] === null) localStorage.removeItem(keys[index]);
+          else localStorage.setItem(keys[index], previous[index]);
+        }
+        if (previousDraft != null) sessionStorage.setItem("made-mate-schedule-draft", previousDraft);
+      } catch (restoreError) {
+        console.error("일정 초기화 원본 복원 실패", restoreError);
+      }
       console.error("일정 초기화 실패", error);
 
       return {

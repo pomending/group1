@@ -270,16 +270,18 @@ export function useScheduleStorage() {
 
 // 팀원 상태와 등록·삭제 규칙, 브라우저 저장을 함께 관리합니다.
 export function useScheduleTeam() {
-  const [loadedTeam] = useState(loadTeamMembers);
+  const [loadedTeam, setLoadedTeam] = useState(loadTeamMembers);
   const [teamMembers, setTeamMembers] = useState(loadedTeam.members);
   const [excludedTeamMembers, setExcludedTeamMembers] = useState(loadedTeam.excluded);
   const [teamStorageError, setTeamStorageError] = useState(false);
   const savedTeam = useRef({ members: loadedTeam.members, excluded: loadedTeam.excluded });
+  const teamResetId = useRef(loadSchedules().resetId ?? null);
   const [teamRevision, setTeamRevision] = useState(0);
 
   useEffect(() => {
     if (loadedTeam.readError) return;
     let active = true;
+    const resetIdAtStart = teamResetId.current;
     // 이름별로 기준 목록과 비교합니다. 현재 탭에서 추가·삭제한 이름만 우선하고
     // 건드리지 않은 이름에는 다른 탭의 변경을 반영합니다.
     function mergeNames(base, local, remote) {
@@ -297,6 +299,10 @@ export function useScheduleTeam() {
     function persistTeam() {
       if (!active) return;
       try {
+        if ((loadSchedules().resetId ?? null) !== resetIdAtStart) {
+          reloadTeamAfterReset();
+          return;
+        }
         const remote = loadTeamMembers();
         if (remote.readError) throw new Error("Invalid remote team");
         const excluded = mergeNames(savedTeam.current.excluded, excludedTeamMembers, remote.excluded);
@@ -335,13 +341,34 @@ export function useScheduleTeam() {
 
   useEffect(() => {
     function refreshTeam(event) {
+      if (event.key === "made-mate-schedules" || event.key === null) {
+        if ((loadSchedules().resetId ?? null) !== teamResetId.current) {
+          reloadTeamAfterReset();
+          return;
+        }
+      }
       if (event.key === null || ["made-mate-schedule-team", "made-mate-excluded-team"].includes(event.key)) {
         setTeamRevision(current => current + 1);
       }
     }
     window.addEventListener("storage", refreshTeam);
-    return () => window.removeEventListener("storage", refreshTeam);
+    window.addEventListener("made-mate-schedules-reset", reloadTeamAfterReset);
+    return () => {
+      window.removeEventListener("storage", refreshTeam);
+      window.removeEventListener("made-mate-schedules-reset", reloadTeamAfterReset);
+    };
   }, []);
+
+  function reloadTeamAfterReset() {
+    const loaded = loadTeamMembers();
+    teamResetId.current = loadSchedules().resetId ?? null;
+    savedTeam.current = { members: loaded.members, excluded: loaded.excluded };
+    setLoadedTeam(loaded);
+    setTeamMembers(loaded.members);
+    setExcludedTeamMembers(loaded.excluded);
+    setTeamStorageError(false);
+    setTeamRevision(current => current + 1);
+  }
 
   function addTeamMember(value) {
     if (loadedTeam.readError) return "팀원 목록을 읽지 못했습니다. 저장된 자료를 확인해 주세요.";
@@ -373,13 +400,17 @@ export function useScheduleTeam() {
 // 새 일정의 알려진 폼 필드만 sessionStorage의 made-mate-schedule-draft에 보관합니다. 같은 탭의 새로고침 후 복구용입니다.
 // 기존 일정 수정은 제외하며 원본 일정·프로젝트·팀원 저장소에는 쓰지 않습니다. 영구 보관이나 탭 간 동기화는 하지 않습니다.
 // 선택 날짜를 제외한 값이 모두 기본 상태로 돌아오면 임시 내용을 지웁니다. 오류가 있으면 자동 쓰기를 멈춥니다.
-export function useScheduleDraft(form, isEditing) {
+export function useScheduleDraft(form, isEditing, resetId = null) {
   const key = "made-mate-schedule-draft";
   const [initial] = useState(() => {
     try {
       const raw = sessionStorage.getItem(key);
       if (raw === null) return { draft: null, error: "" };
       const saved = JSON.parse(raw);
+      if ((saved?.resetId ?? null) !== (resetId ?? null)) {
+        sessionStorage.removeItem(key);
+        return { draft: null, error: "" };
+      }
       const defaults = createEmptyForm();
       if (saved?.version !== 1 || !saved.form) throw new Error("Invalid draft");
       const draft = {};
@@ -403,8 +434,16 @@ export function useScheduleDraft(form, isEditing) {
   });
   const [draft, setDraft] = useState(initial.draft);
   const [draftError, setDraftError] = useState(initial.error);
+  const draftResetId = useRef(resetId);
+  const discardedForm = useRef(null);
   useEffect(() => {
-    if (!form || isEditing || draftError) return;
+    if (draftResetId.current !== resetId) {
+      draftResetId.current = resetId;
+      discardedForm.current = form;
+      clearDraft();
+      return;
+    }
+    if (!form || form === discardedForm.current || isEditing || draftError) return;
     const defaults = createEmptyForm();
     const values = {};
     for (const name of Object.keys(defaults)) {
@@ -416,10 +455,10 @@ export function useScheduleDraft(form, isEditing) {
         setDraft(null);
         return;
       }
-      sessionStorage.setItem(key, JSON.stringify({ version: 1, form: values }));
+      sessionStorage.setItem(key, JSON.stringify({ version: 1, resetId, form: values }));
       setDraft(values);
     } catch { setDraftError("작성 내용을 임시 보관하지 못했습니다. 창을 닫기 전에 일정을 저장해 주세요."); }
-  }, [form, isEditing, draftError]);
+  }, [form, isEditing, draftError, resetId]);
   // 새 일정 등록·닫기 승인 또는 사용자의 임시 보관 삭제·초기화에서 호출합니다. 삭제 실패도 화면에 알립니다.
   function clearDraft() {
     try {

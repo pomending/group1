@@ -1,9 +1,56 @@
 import { act, renderHook, waitFor } from "@testing-library/react";
-import { useScheduleHolidays, useScheduleStorage, useScheduleTeam } from "./scheduleHooks";
+import { useScheduleDraft, useScheduleHolidays, useScheduleStorage, useScheduleTeam } from "./scheduleHooks";
 import { loadSchedules, resetStoredSchedules, serializeSchedules } from "./scheduleStorage";
+import { createEmptyForm } from "./scheduleData";
 
 afterEach(() => jest.restoreAllMocks());
-beforeEach(() => localStorage.clear());
+beforeEach(() => { localStorage.clear(); sessionStorage.clear(); });
+
+test.each([true, false])("초기화 전 대기하던 팀원 저장은 이름과 제외 목록을 되살리지 않는다 (같은 탭: %s)", async sameTab => {
+  localStorage.setItem("made-mate-schedule-team", JSON.stringify(["이전 팀원"]));
+  localStorage.setItem("made-mate-excluded-team", JSON.stringify(["제외 팀원"]));
+  const descriptor = Object.getOwnPropertyDescriptor(navigator, "locks");
+  const jobs = [];
+  Object.defineProperty(navigator, "locks", { configurable: true, value: {
+    request: jest.fn((name, callback) => { jobs.push(callback); return Promise.resolve(); }),
+  } });
+  try {
+    const { result } = renderHook(() => useScheduleTeam());
+    act(() => result.current.addTeamMember("늦은 팀원"));
+    act(() => {
+      if (sameTab) expect(resetStoredSchedules().ok).toBe(true);
+      else {
+        localStorage.setItem("made-mate-schedule-team", "[]");
+        localStorage.setItem("made-mate-excluded-team", "[]");
+        localStorage.setItem(storageKey, serializeSchedules([], "다른 탭 초기화"));
+      }
+    });
+    await act(async () => {
+      const pending = jobs.splice(0);
+      for (const job of pending) job();
+    });
+    expect(JSON.parse(localStorage.getItem("made-mate-schedule-team"))).toEqual([]);
+    expect(JSON.parse(localStorage.getItem("made-mate-excluded-team"))).toEqual([]);
+    expect(result.current.teamMembers).toEqual([]);
+  } finally {
+    if (descriptor) Object.defineProperty(navigator, "locks", descriptor);
+    else delete navigator.locks;
+  }
+});
+
+test("초기화 번호가 바뀌면 열린 폼의 이전 초안을 다시 저장하지 않고 재접속 초안도 폐기한다", () => {
+  const form = { ...createEmptyForm(), title: "이전 작성" };
+  const hook = renderHook(({ resetId }) => useScheduleDraft(form, false, resetId), { initialProps: { resetId: null } });
+  expect(hook.result.current.draft.title).toBe("이전 작성");
+  hook.rerender({ resetId: "new-reset" });
+  expect(hook.result.current.draft).toBeNull();
+  expect(sessionStorage.getItem("made-mate-schedule-draft")).toBeNull();
+  hook.unmount();
+  sessionStorage.setItem("made-mate-schedule-draft", JSON.stringify({ version: 1, form }));
+  const reopened = renderHook(() => useScheduleDraft(null, false, "new-reset"));
+  expect(reopened.result.current.draft).toBeNull();
+  expect(sessionStorage.getItem("made-mate-schedule-draft")).toBeNull();
+});
 
 test.each([true, false])("초기화 전에 대기 중이던 일정 저장이 빈 목록을 덮어쓰지 않는다 (같은 탭: %s)", sameTab => {
   const descriptor = Object.getOwnPropertyDescriptor(navigator, "locks");

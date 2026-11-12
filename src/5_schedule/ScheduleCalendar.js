@@ -27,6 +27,7 @@ export default function ScheduleCalendar({
   periodLabel,
   weekDates,
   scopeFilter,
+  hasStaffFilter = false,
   onScopeFilterChange,
   query,
   onQueryChange,
@@ -38,6 +39,7 @@ export default function ScheduleCalendar({
   // Manager가 검색·공유 구분 필터를 통과한 전체 일정에서 추린 사람 이름 목록입니다.
   // visibleItems는 표시 기간의 일정 목록이라 이번 주 0건인 사람을 만들 때 이 별도 목록이 필요합니다.
   staffPeople,
+  employees = [],
   staffPersonSearch,
   selectedDate,
   todayKey,
@@ -121,7 +123,7 @@ export default function ScheduleCalendar({
             <option value="shared">회사 공유</option>
             <option value="private">개인 표시</option>
           </select>
-          {(query || selectedProject || scopeFilter !== "all") && (
+          {(query || selectedProject || scopeFilter !== "all" || hasStaffFilter) && (
             <button type="button" className="sm-list-all-btn" onClick={onClearFilters}>검색·필터 초기화</button>
           )}
         </div>
@@ -289,11 +291,11 @@ export default function ScheduleCalendar({
       {/* 담당자별 주간 보기에는 계산된 발생 일정과 팀원 목록을 전달합니다. 표 내부 펼침 상태는 보기 전환 시 초기화됩니다. */}
       {view === "staff" && (
         <ScheduleStaffWeek
-          key={staffPersonSearch || "all"}
           onToggleFavorite={onToggleFavorite}
           people={staffPeople}
           personSearch={staffPersonSearch}
-          hasActiveFilter={Boolean(query.trim() || selectedProject || scopeFilter !== "all")}
+          hasActiveFilter={Boolean(query.trim() || selectedProject || scopeFilter !== "all" || hasStaffFilter)}
+          employees={employees}
           weekDates={weekDates}
           items={visibleItems}
           selectedDate={selectedDate}
