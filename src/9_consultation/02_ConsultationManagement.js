@@ -217,15 +217,15 @@ function ConsultationManagement() {
     })
 
     //클레임 건수확인
-    const pendingClaims = claims.filter(claim =>
-        claim.status === "접수" || claim.status === "처리 중"
-    )
-    const pendingCount = pendingClaims.length;
+    // const pendingClaims = claims.filter(claim =>
+    //     claim.status === "접수" || claim.status === "처리 중"
+    // )
+    // const pendingCount = pendingClaims.length;
 
     return (
         <div className="consultation-page">
             <h2>상담 관리</h2>
-            <h3>미완료 클레임 {pendingCount}건</h3>
+            {/* <h3>미완료 클레임 {pendingCount}건</h3> */}
             <div className="consultation-box">
                 <h6>고객 문의 접수 및 처리 현황 관리</h6>
 
