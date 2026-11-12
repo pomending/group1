@@ -12,8 +12,8 @@ import { getAvailableEmployees } from "../utils/taskUtils";
 import { validateEmployee } from "../utils/employeeUtils";
 import useQuotationData from "./useQuotationData";
 import { deleteSchedulesByProject, deleteSchedulesByEmployee, resetStoredSchedules } from "../5_schedule/scheduleStorage";
-import { claims } from "../data/mockData";
 import { isValidDate } from "../utils/dateUtils";
+import useClaimData from "./useClaimData";
 
 const ERPContext = createContext(null);
 
@@ -29,6 +29,7 @@ export function ERPProvider({ children }) {
     const accountData = useAccountData(employeeData.employees);
     const authData = useAuthData(accountData.accounts, employeeData.employees);
     const taskData = useTaskData();
+    const claimData = useClaimData();
 
     const deleteConsultations = (ids) => {
 
@@ -80,7 +81,7 @@ export function ERPProvider({ children }) {
         }
 
         // 클레임에서 참조 중인 상담 확인
-        const hasClaim = claims.some(
+        const hasClaim = claimData.claims.some(
             claim => ids.includes(claim.consultationId)
         );
 
@@ -979,7 +980,7 @@ export function ERPProvider({ children }) {
             ...consultationData,
             ...taskData,
             ...quotationData,
-            claims,
+            ...claimData,
 
             deleteConsultations,
 
