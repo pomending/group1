@@ -384,7 +384,7 @@ export const consultations = [
         phone: "010-3456-7890",
         email: "woosung@example.com",
         employeeId: 11,
-        status: "견적 요청",
+        status: "인계 완료",
         memo: "친환경 에코백 300개 제작 상담"
     },
     {
@@ -432,7 +432,7 @@ export const consultations = [
         phone: "010-7890-1234",
         email: "taehoon@example.com",
         employeeId: 11,
-        status: "견적 요청",
+        status: "인계 완료",
         memo: "마라톤 기념 티셔츠 800벌"
     },
     {
@@ -444,7 +444,7 @@ export const consultations = [
         phone: "010-8901-2345",
         email: "haneul@example.com",
         employeeId: 4,
-        status: "문의 종료",
+        status: "인계 완료",
         memo: "재활용 소재 파우치 제작"
     },
     {

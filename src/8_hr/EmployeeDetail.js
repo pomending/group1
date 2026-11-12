@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { statusClass } from "../utils/employeeUtils";
 import { formatEmployeeId, formatProjectId } from "../utils/formatUtils";
+import { getProjectStatus } from "../utils/projectUtils";
 
 export default function EmployeeDetail({ employee, projects, onEdit, onDelete, tasks = [] }) {
     const [error, setError] = useState("");
@@ -81,7 +82,7 @@ export default function EmployeeDetail({ employee, projects, onEdit, onDelete, t
                                             {formatProjectId(project.id)}
                                         </td>
                                         <td><strong>{project.name}</strong></td>
-                                        <td>{project.status}</td>
+                                        <td>{getProjectStatus(project)}</td>
                                         <td>{project.startDate || "-"}</td>
                                         <td>{project.dueDate || "-"}</td>
                                     </tr>

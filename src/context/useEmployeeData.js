@@ -87,7 +87,6 @@ export default function useEmployeeData() {
 
     return {
         employees,
-        setEmployees, // 기존 팀원 코드와의 호환용. 화면에서는 CRUD 사용 권장
         addEmployee,
         updateEmployee,
         deleteEmployee,

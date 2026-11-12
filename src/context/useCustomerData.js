@@ -77,7 +77,6 @@ export function useCustomerData() {
     return {
 
         customers,
-        setCustomers,
         addCustomer,
         saveEditedCustomer,
         deleteCustomers,
