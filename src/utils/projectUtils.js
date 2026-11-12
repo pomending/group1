@@ -96,7 +96,7 @@ export const validateProject = (projectData) => {
     ) {
         return "올바른 프로젝트 날짜를 입력하세요.";
     }
-    
+
     if (
         projectData.completedDate &&
         !isValidDate(projectData.completedDate)
@@ -150,6 +150,15 @@ export const canCompleteProject = (project, tasks) => {
         return {
             ok: false,
             message: "이미 완료된 프로젝트입니다."
+        };
+    }
+
+    const today = new Date().toLocaleDateString("sv-SE");
+
+    if (project.startDate > today) {
+        return {
+            ok: false,
+            message: "프로젝트 시작 예정일 이전에는 완료할 수 없습니다."
         };
     }
 

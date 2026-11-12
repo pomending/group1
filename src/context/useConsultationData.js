@@ -162,7 +162,6 @@ export default function useConsultationData() {
 
     return {
         consultations,
-        setConsultations,
         addConsultation,
         updateConsultation,
         deleteConsultations,
