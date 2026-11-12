@@ -124,7 +124,7 @@ export default function EmployeeDetail({ employee, projects, onEdit, onDelete, t
                                     return (
                                         <tr key={task.id}>
                                             <td>{project?.name ?? "프로젝트 없음"}</td>
-                                            <td>{task.taskStatus}</td>
+                                            <td>{task.taskType}</td>
                                             <td>{task.taskDeadline || "-"}</td>
                                             <td>{task.progress}</td>
                                         </tr>

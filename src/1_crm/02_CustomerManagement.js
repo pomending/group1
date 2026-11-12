@@ -76,36 +76,61 @@ function CustomerManagement() {
     }
 
     //체크박스로 선택한 고객 삭제(체크가 되어있지 않은 목록을 불러와 저장)
+    // function deleteSelectedCustomers() {
+    //     const deleteCount = checkedIds.length;
+        
+    //     const selectedCustomers = customers.filter(customer =>
+    //         checkedIds.includes(customer.id))
+       
+    //         const cannotDelete = selectedCustomers.some(customer =>
+    //         customer.registrationSource === "autoSave" ||
+    //         consultations.some(consultation =>
+    //             consultation.customerId === customer.id)
+    //     )
+    //     if(cannotDelete){
+    //         alert ("자동 등록되었거나 문의와 연결된 고객은 삭제할 수 없습니다.")
+    //         return;
+    //     }
+
+
+    //     const isConfirmed = window.confirm(
+    //         `선택한 고객 ${deleteCount}건을 삭제하시겠습니까?`
+    //     );
+    //     if (!isConfirmed) {
+    //         return;
+    //     }
+    //     //삭제함수 context에서 가져오기
+    //     deleteCustomers(checkedIds);
+
+    //     setSearch("");
+    //     setCheckedIds([]);
+    //     setCurrentPage(1);
+
+    //     alert(`고객정보 ${deleteCount}건이 삭제되었습니다.`);
+    // }
+
     function deleteSelectedCustomers() {
         const deleteCount = checkedIds.length;
-        
-        const selectedCustomers = customers.filter(customer =>
-            checkedIds.includes(customer.id))
-       
-            const cannotDelete = selectedCustomers.some(customer =>
-            customer.registrationSource === "autoSave" ||
-            consultations.some(consultation =>
-                consultation.customerId === customer.id)
-        )
-        if(cannotDelete){
-            alert ("자동 등록되었거나 문의와 연결된 고객은 삭제할 수 없습니다.")
-            return;
-        }
-
-
+    
         const isConfirmed = window.confirm(
             `선택한 고객 ${deleteCount}건을 삭제하시겠습니까?`
         );
+    
         if (!isConfirmed) {
             return;
         }
-        //삭제함수 context에서 가져오기
-        deleteCustomers(checkedIds);
-
+    
+        const result = deleteCustomers(checkedIds);
+    
+        if (!result.ok) {
+            alert(result.message);
+            return;
+        }
+    
         setSearch("");
         setCheckedIds([]);
         setCurrentPage(1);
-
+    
         alert(`고객정보 ${deleteCount}건이 삭제되었습니다.`);
     }
 

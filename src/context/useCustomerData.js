@@ -62,6 +62,8 @@ export function useCustomerData() {
             !ids.includes(customer.id)
         );
         setCustomers(remainingCustomers);
+
+        return { ok: true };
     }
 
 

@@ -190,7 +190,7 @@ function Topbar({ isCollapsed, setIsCollapsed }) {
                         addNotification(employeeId, {
                             key: `task-assigned:${item.id}`,
                             title: "업무 배정",
-                            message: `'${item.taskStatus}' 업무 담당자로 지정되었습니다.`,
+                            message: `'${item.taskType}' 업무 담당자로 지정되었습니다.`,
                             link: "/tasks"
                         });
                     });
