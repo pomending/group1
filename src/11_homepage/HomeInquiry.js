@@ -9,7 +9,7 @@ const emptyForm = {
 };
 
 function HomeInquiry({ isMaster = false }) {
-    const { claim: list, addClaim, updateClaim, deleteClaim, checkClaimOrderNo, getPhone, getEmail } = useClaimData();
+    const { claim: list, addClaim, updateClaim, deleteClaim, checkOrder, getPhone, getEmail } = useClaimData();
     const [form, setForm] = useState(emptyForm);
     const [page, setPage] = useState("list");
     const [selectedId, setSelectedId] = useState(null);
@@ -100,6 +100,7 @@ function HomeInquiry({ isMaster = false }) {
         const file = e.target.files[0];
         if (!file) return;
         e.target.value = "";
+
         if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
             setError("JPG, PNG, WEBP 사진만 첨부할 수 있습니다.");
             return;
@@ -114,12 +115,14 @@ function HomeInquiry({ isMaster = false }) {
         setPhotoLoading(true);
         const reader = new FileReader();
         photoReader.current = reader;
+
         reader.onload = function () {
             if (photoReader.current !== reader) return;
             changeField("photo", reader.result);
             setPhotoLoading(false);
             photoReader.current = null;
         };
+
         reader.onerror = function () {
             if (photoReader.current !== reader) return;
             setError("사진을 읽지 못했습니다.");
@@ -137,6 +140,7 @@ function HomeInquiry({ isMaster = false }) {
             setError("수정 권한을 확인해 주세요.");
             return;
         }
+
         const result = editing ? updateClaim({ ...form, id: selectedId }) : addClaim(form);
         if (!result.ok) {
             setError(result.message);
@@ -177,7 +181,7 @@ function HomeInquiry({ isMaster = false }) {
 
     function check(e) {
         e.preventDefault();
-        if (selected && checkClaimOrderNo(selectedId, checkNo)) {
+        if (selected && checkOrder(selectedId, checkNo)) {
             setVerified(true);
             setError("");
         } else {
