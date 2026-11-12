@@ -68,20 +68,12 @@ function QuotationCreate() {
     //옵션 추가
     const [options, setOptions] = useState([]);
 
-    //옵션 포함 개당 단가 계산
-    // const optionUnitPrice = getQuotationUnitPrice({
-    //     unitPrice, options
-    // })
-
     const finalUnitPrice = getQuotationPriceDetails({
         baseUnitPrice,
         options
     }).finalUnitPrice;
 
     const totalPrice = calculateTotalPrice(quantity, finalUnitPrice);
-
-    //공급가액 계산
-    // const totalPrice = calculateTotalPrice(quantity, optionUnitPrice)
 
     //부가서 및 최종 견적 금액
     const vat = totalPrice * 0.1;
@@ -216,7 +208,7 @@ function QuotationCreate() {
 
 
         setQuantity(editQuotation.quantity || "");
-        setBaseUnitPrice(editQuotation.baseUnitPrice ?? "");
+        setBaseUnitPrice(editQuotation.baseUnitPrice ?? editQuotation.unitPrice ?? "");
         setOptions(
             (editQuotation.options ?? []).map(option => ({
                 ...option,
@@ -390,7 +382,6 @@ function QuotationCreate() {
                                 onChange={(e) => {
                                     setProductSearch(e.target.value)
                                     setProductId("")
-                                    // setUnitPrice("");
                                     setBaseUnitPrice("");
                                     setQuantity("")
                                     setOptions([])
@@ -411,7 +402,7 @@ function QuotationCreate() {
                                                     setProductId(product.id);
                                                     setProductSearch(product.productName);
                                                     setShowProductList(false);
-                                                
+
                                                     if (editQuotation?.productId === product.id) {
                                                         setBaseUnitPrice(editQuotation.baseUnitPrice);
                                                     } else {
@@ -450,7 +441,6 @@ function QuotationCreate() {
                                 type="number"
                                 className="readonly-input"
                                 placeholder="상품 선택 시 자동 입력"
-                                // value={unitPrice}
                                 value={baseUnitPrice}
                                 readOnly />
                         </div>
@@ -466,14 +456,15 @@ function QuotationCreate() {
                             />
                         </div>
 
-                        <div>
-                            <button onClick={handleAddOption}>
+                        <div className="option-section">
+                            <button className="option-add-btn" onClick={handleAddOption}>
                                 + 옵션 추가
                             </button>
 
                             {options.map((option) => (
-                                <div key={option.id}>
+                                <div className="option-row" key={option.id}>
                                     <input
+                                        className="option-name-input"
                                         type="text"
                                         placeholder="옵션명 입력"
                                         value={option.name}
@@ -483,6 +474,7 @@ function QuotationCreate() {
                                     />
 
                                     <input
+                                    className="option-price-input"
                                         type="number"
                                         placeholder="추가 단가 입력"
                                         value={option.unitPrice}
@@ -491,7 +483,7 @@ function QuotationCreate() {
                                         }
                                     />
 
-                                    <button onClick={() => handleDeleteOption(option.id)}>
+                                    <button className="option-delete-btn" onClick={() => handleDeleteOption(option.id)}>
                                         삭제
                                     </button>
 

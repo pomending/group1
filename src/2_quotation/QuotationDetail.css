@@ -6,12 +6,13 @@
 
 /* 전체 화면 */
 .quotation-detail {
+    width: 100%;
     min-height: 100vh;
     padding: 28px 30px 40px;
     background: #F5F4FA;
     color: #39354F;
-    box-sizing: border-box;
     font-family: Arial, sans-serif;
+    box-sizing: border-box;
 }
 
 .quotation-detail *,
@@ -60,6 +61,7 @@
 .quotation-detail .detail-price,
 .quotation-detail .detail-status,
 .quotation-detail .detail-memo {
+    width: 100%;
     padding: 24px;
     background: #FFFFFF;
     border: 1px solid #E6E1F0;
@@ -95,23 +97,105 @@
     transition: background 0.15s;
 }
 
-.quotation-detail .detail-item span {
+.quotation-detail .detail-item:hover {
+    background: #FBFAFE;
+}
+
+/* 항목명 */
+.quotation-detail .detail-item > span {
     color: #827A98;
+    font-family: Arial, sans-serif;
     font-size: 13px;
     font-weight: 500;
     white-space: nowrap;
 }
 
-.quotation-detail .detail-item strong {
+/* 항목 값 */
+.quotation-detail .detail-item > strong {
     color: #39354F;
+    font-family: Arial, sans-serif;
     font-size: 13px;
     font-weight: 600;
     text-align: right;
     overflow-wrap: anywhere;
 }
 
-.quotation-detail .detail-item:hover {
-    background: #FBFAFE;
+/* =========================================
+   제작 옵션
+========================================= */
+
+/* 제작 옵션은 전체 가로 영역 사용 */
+.quotation-detail .detail-info-grid > .option-detail-item {
+    grid-column: 1 / -1;
+    display: block;
+    width: 100%;
+    padding: 15px 5px;
+}
+
+/* 제작 옵션 제목 */
+.quotation-detail .option-detail-item > span {
+    display: block;
+    margin-bottom: 8px;
+    color: #827A98;
+    font-family: Arial, sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+}
+
+/* 제작 옵션 목록 */
+.quotation-detail .detail-option-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    width: 100%;
+    min-width: 0;
+}
+
+/* 옵션 한 줄 */
+.quotation-detail .detail-option-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 15px;
+    width: 100%;
+    min-height: 43px;
+    padding: 12px 5px;
+    background: transparent;
+    border-bottom: 1px solid #EEEAF4;
+}
+
+.quotation-detail .detail-option-item:last-child {
+    border-bottom: none;
+}
+
+/* 옵션명 - 기존 거래처, 상품 항목명과 동일 */
+.quotation-detail .detail-option-item .option-name {
+    color: #827A98;
+    font-family: Arial, sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1.5;
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+
+/* 옵션 가격 - 기존 기본 단가와 동일 */
+.quotation-detail .detail-option-item .option-price {
+    color: #39354F;
+    font-family: Arial, sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    text-align: right;
+    white-space: nowrap;
+}
+
+/* 옵션이 없을 때 */
+.quotation-detail .detail-option-list > strong {
+    color: #39354F;
+    font-family: Arial, sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    text-align: right;
 }
 
 /* =========================================
@@ -150,16 +234,14 @@
     background: #E6E1F0;
 }
 
-/* 최종 견적 금액 강조 */
+/* 최종 견적 금액 */
 .quotation-detail .price-info {
     display: flex;
     justify-content: space-between;
     align-items: center;
     gap: 15px;
-
     margin-top: 8px;
     padding: 18px 20px;
-
     background: #F0EDFA;
     border: 1px solid #D6CEEA;
     border-radius: 9px;
@@ -197,7 +279,6 @@
     min-width: 90px;
     padding: 9px 15px;
     border-radius: 20px;
-
     font-size: 13px;
     font-weight: 600;
     text-align: center;
@@ -221,7 +302,7 @@
     color: #AA4D60;
 }
 
-/* 임시저장 */
+/* 임시 저장 */
 .quotation-detail .detail-status-badge.temporary {
     background: #F0EDFA;
     color: #524B80;
@@ -239,11 +320,9 @@
     min-height: 45px;
     margin: 0;
     padding: 15px;
-
     background: #FBFAFE;
     border: 1px solid #EEEAF4;
     border-radius: 8px;
-
     color: #625B78;
     font-size: 13px;
     line-height: 1.6;
@@ -276,11 +355,9 @@
     min-height: 40px;
     padding: 0 18px;
     border-radius: 8px;
-
     font-family: inherit;
     font-size: 13px;
     font-weight: 600;
-
     cursor: pointer;
     transition: background 0.2s, border-color 0.2s;
 }
@@ -373,15 +450,19 @@
         grid-template-columns: 1fr;
     }
 
-    .quotation-detail .detail-item {
-        padding: 13px 3px;
-    }
-
     .quotation-detail .detail-info,
     .quotation-detail .detail-price,
     .quotation-detail .detail-status,
     .quotation-detail .detail-memo {
         padding: 18px;
+    }
+
+    .quotation-detail .detail-item {
+        padding: 13px 3px;
+    }
+
+    .quotation-detail .detail-info-grid > .option-detail-item {
+        grid-column: 1 / -1;
     }
 
     .quotation-detail .price-info {

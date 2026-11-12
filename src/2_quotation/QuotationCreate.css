@@ -1,632 +1,242 @@
-
-/* =========================================
-   MODU GOODS ERP - 견적 작성
-   Mist Lavender Theme
-========================================= */
-
-/* 전체 페이지 */
+/* MODU GOODS ERP | Quotation Create | Mist Lavender */
 .quotation-create {
+    --qc-bg: #F5F4FA;
+    --qc-surface: #FFFFFF;
+    --qc-soft: #FBFAFE;
+    --qc-line: #E6E1F0;
+    --qc-border: #DDD8EA;
+    --qc-text: #39354F;
+    --qc-muted: #827A98;
+    --qc-primary: #68619A;
+    --qc-primary-hover: #575084;
     width: 100%;
+    min-width: 0;
     min-height: 100vh;
     padding: 28px 30px 40px;
-    background: #F5F4FA;
-    color: #39354F;
+    background: var(--qc-bg);
+    color: var(--qc-text);
     font-family: "Pretendard", "Noto Sans KR", Arial, sans-serif;
     box-sizing: border-box;
-}
-
-.quotation-create *,
-.quotation-create *::before,
-.quotation-create *::after {
-    box-sizing: border-box;
-}
-
-/* 페이지 제목 */
-.quotation-create .create-header {
-    margin-bottom: 24px;
-}
-
-.quotation-create .create-header h1 {
-    margin: 0 0 8px;
-    font-size: 26px;
-    font-weight: 700;
-    color: #39354F;
-}
-
-.quotation-create .create-header p {
-    margin: 0;
-    font-size: 13px;
-    color: #827A98;
-    line-height: 1.6;
-}
-
-/* =========================================
-   메인 콘텐츠 및 섹션
-========================================= */
-
-.quotation-create .create-content {
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-}
-
-.quotation-create .create-content > section {
-    width: 100%;
-    padding: 24px 28px;
-    background: #FFFFFF;
-    border: 1px solid #E6E1F0;
-    border-radius: 14px;
-    box-shadow: 0 3px 12px rgba(65, 55, 95, 0.035);
-}
-
-/* 섹션 제목 */
-.quotation-create .section-header,
-.quotation-create .form-section {
-    display: flex;
-    align-items: center;
-    gap: 11px;
-    margin-bottom: 22px;
-    padding-bottom: 17px;
-    border-bottom: 1px solid #E6E1F0;
-}
-
-.quotation-create .section-number {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    flex-shrink: 0;
-    width: 30px;
-    height: 30px;
-    border-radius: 8px;
-    background: #F0EDFA;
-    color: #68619A;
-    font-size: 13px;
-    font-weight: 700;
-}
-
-.quotation-create .section-header h2,
-.quotation-create .form-section h2 {
-    margin: 0;
-    color: #39354F;
-    font-size: 17px;
-    font-weight: 700;
-}
-
-/* =========================================
-   기본 입력 폼
-========================================= */
-
-.quotation-create .form-grid {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 20px 26px;
-}
-
-.quotation-create .form-group {
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    min-width: 0;
-}
-
-.quotation-create .form-group label,
-.quotation-create .product-form .form-group p {
-    display: flex;
-    align-items: center;
-    min-height: 16px;
-    margin: 0;
-    color: #55516C;
-    font-size: 13px;
-    font-weight: 600;
-    line-height: 1.4;
-}
-
-/* 입력창 및 선택창 */
-.quotation-create .form-group input,
-.quotation-create .form-group select,
-.quotation-create .form-group textarea {
-    width: 100%;
-    min-height: 42px;
-    padding: 10px 12px;
-    background: #FBFAFE;
-    border: 1px solid #DDD8EA;
-    border-radius: 8px;
-    color: #39354F;
-    font-family: inherit;
-    font-size: 13px;
-    outline: none;
-    transition: border-color 0.2s, box-shadow 0.2s;
-}
-
-.quotation-create .form-group input::placeholder,
-.quotation-create .form-group textarea::placeholder {
-    color: #938BA4;
-}
-
-.quotation-create .form-group input:focus,
-.quotation-create .form-group select:focus,
-.quotation-create .form-group textarea:focus {
-    border-color: #9C91C8;
-    box-shadow: 0 0 0 3px rgba(156, 145, 200, 0.14);
-}
-
-/* 읽기 전용 입력창 */
-.quotation-create .readonly-input,
-.quotation-create .form-group input:read-only {
-    background: #F1EFF6;
-    color: #777089;
-}
-
-/* =========================================
-   상품 정보
-========================================= */
-
-.quotation-create .product-form {
-    display: grid;
-    grid-template-columns: 2fr 1fr 1.3fr 1.5fr;
-    gap: 15px;
-    align-items: start;
-    width: 100%;
-    padding: 20px;
-    background: #FBFAFE;
-    border: 1px solid #E6E1F0;
-    border-radius: 10px;
-}
-
-.quotation-create .product-form .form-group {
-    width: 100%;
-    min-width: 0;
-    gap: 9px;
-    margin: 0;
-    padding: 0;
-}
-
-.quotation-create .product-form .form-group label,
-.quotation-create .product-form .form-group p {
-    width: 100%;
-    min-height: 16px;
-    margin: 0;
-    color: #55516C;
-    font-size: 13px;
-    font-weight: 600;
-    white-space: nowrap;
-}
-
-.quotation-create .product-form .form-group input {
-    display: block;
-    width: 100%;
-    height: 42px;
-    min-height: 42px;
-    margin: 0;
-    padding: 0 12px;
-    background: #FFFFFF;
-    border: 1px solid #DDD8EA;
-    border-radius: 8px;
-    color: #39354F;
-    font-size: 13px;
-}
-
-.quotation-create .product-form .form-group input:focus {
-    border-color: #9C91C8;
-    box-shadow: 0 0 0 3px rgba(156, 145, 200, 0.14);
-}
-
-/* 상품 총금액 */
-.quotation-create .product-form .form-group:last-child input {
-    background: #F1EFF6;
-    color: #625B78;
-}
-
-/* =========================================
-   직원·거래처·상품 검색 결과
-========================================= */
-
-.quotation-create .employee-list,
-.quotation-create .customer-list,
-.quotation-create .product-list {
-    position: relative;
-    display: block;
-    width: 100%;
-    max-height: 220px;
-    overflow-y: auto;
-    margin-top: 8px;
-    padding: 0;
-    background: #FFFFFF;
-    border: 1px solid #DDD8EA;
-    border-radius: 9px;
-    box-shadow: 0 6px 16px rgba(65, 55, 95, 0.08);
-}
-
-/* 검색 결과 개별 항목 */
-.quotation-create .employee-item,
-.quotation-create .customer-item,
-.quotation-create .product-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 12px;
-    width: 100%;
-    min-height: 52px;
-    padding: 11px 14px;
-    margin: 0;
-    background: #FFFFFF;
-    border: none;
-    border-bottom: 1px solid #EEEAF4;
-    cursor: pointer;
-    transition: background 0.15s;
-}
-
-.quotation-create .employee-item:last-child,
-.quotation-create .customer-item:last-child,
-.quotation-create .product-item:last-child {
-    border-bottom: none;
-}
-
-.quotation-create .employee-item:hover,
-.quotation-create .customer-item:hover,
-.quotation-create .product-item:hover {
-    background: #F8F6FD;
-}
-
-/* 검색 결과 이름 */
-.quotation-create .employee-item strong,
-.quotation-create .customer-item strong,
-.quotation-create .product-item strong {
-    color: #39354F;
-    font-size: 13px;
-    font-weight: 600;
-}
-
-/* 직원/거래처 부가 정보 */
-.quotation-create .employee-info,
-.quotation-create .customer-info {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    justify-content: center;
-    gap: 4px;
-    margin-left: auto;
-}
-
-.quotation-create .employee-info span,
-.quotation-create .customer-info span,
-.quotation-create .product-item span {
-    color: #827A98;
-    font-size: 12px;
-}
-
-/* 검색 결과 없음 */
-.quotation-create .employee-list p,
-.quotation-create .customer-list p,
-.quotation-create .product-list p {
-    margin: 0;
-    padding: 15px;
-    color: #827A98;
-    font-size: 13px;
-    text-align: center;
-}
-
-/* 검색 결과 스크롤바 */
-.quotation-create .employee-list::-webkit-scrollbar,
-.quotation-create .customer-list::-webkit-scrollbar,
-.quotation-create .product-list::-webkit-scrollbar {
-    width: 6px;
-}
-
-.quotation-create .employee-list::-webkit-scrollbar-thumb,
-.quotation-create .customer-list::-webkit-scrollbar-thumb,
-.quotation-create .product-list::-webkit-scrollbar-thumb {
-    background: #D6CEEA;
-    border-radius: 10px;
-}
-
-/* =========================================
-   견적 금액
-========================================= */
-
-.quotation-create .amount-grid {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 16px;
-}
-
-.quotation-create .amount-item {
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    gap: 14px;
-    min-height: 95px;
-    padding: 21px;
-    background: #FBFAFE;
-    border: 1px solid #E6E1F0;
-    border-radius: 10px;
-}
-
-.quotation-create .amount-item span {
-    color: #827A98;
-    font-size: 13px;
-    font-weight: 500;
-}
-
-.quotation-create .amount-item strong {
-    color: #39354F;
-    font-size: 21px;
-    font-weight: 700;
-}
-
-/* 최종 견적 금액 */
-.quotation-create .amount-item.total-amount {
-    background: #F0EDFA;
-    border-color: #D6CEEA;
-}
-
-.quotation-create .amount-item.total-amount span {
-    color: #68619A;
-}
-
-.quotation-create .amount-item.total-amount strong {
-    color: #524B80;
-    font-size: 23px;
-}
-
-/* =========================================
-   하단 버튼
-========================================= */
-
-.quotation-create .create-footer {
-    display: flex;
-    justify-content: flex-end;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 10px;
-    margin-top: 24px;
-}
-
-.quotation-create .create-footer button {
-    min-height: 42px;
-    padding: 0 22px;
-    border-radius: 8px;
-    font-family: inherit;
-    font-size: 13px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background 0.2s, border-color 0.2s;
-}
-
-/* 취소 */
-.quotation-create .cancel-btn {
-    background: #FFFFFF;
-    color: #625B78;
-    border: 1px solid #DDD8EA;
-}
-
-.quotation-create .cancel-btn:hover {
-    background: #F0EDFA;
-}
-
-/* 임시저장 */
-.quotation-create .temp-save-btn {
-    background: #F0EDFA;
-    color: #524B80;
-    border: 1px solid #C8C0E5;
-}
-
-.quotation-create .temp-save-btn:hover {
-    background: #E3DCF5;
-}
-
-/* 견적 저장 */
-.quotation-create .save-btn {
-    background: #68619A;
-    color: #FFFFFF;
-    border: 1px solid #68619A;
-}
-
-.quotation-create .save-btn:hover {
-    background: #575084;
-}
-
-.quotation-create .create-footer button:focus-visible {
-    outline: 2px solid #9286C1;
-    outline-offset: 2px;
-}
-
-/* =========================================
-   반응형
-========================================= */
-
-@media (max-width: 1000px) {
-    .quotation-create .product-form {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-}
-
-@media (max-width: 650px) {
-    .quotation-create {
-        padding: 18px 14px 30px;
-    }
-
-    .quotation-create .create-header h1 {
-        font-size: 23px;
-    }
-
-    .quotation-create .create-content > section {
-        padding: 18px 16px;
-    }
-
+  }
+  .quotation-create *,
+  .quotation-create *::before,
+  .quotation-create *::after { box-sizing: border-box; }
+  
+  /* Header */
+  .quotation-create .create-header { margin-bottom: 24px; }
+  .quotation-create .create-header h1 { margin: 0 0 8px; font-size: 26px; font-weight: 700; color: var(--qc-text); }
+  .quotation-create .create-header p { margin: 0; font-size: 13px; line-height: 1.6; color: var(--qc-muted); }
+  
+  /* Main sections */
+  .quotation-create .create-content { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
+  .quotation-create .create-content > section {
+    width: 100%; min-width: 0; padding: 24px 28px;
+    background: var(--qc-surface); border: 1px solid var(--qc-line);
+    border-radius: 14px; box-shadow: 0 3px 12px rgba(65,55,95,.035);
+  }
+  .quotation-create .section-header,
+  .quotation-create .form-section {
+    display: flex; align-items: center; gap: 11px;
+    margin-bottom: 22px; padding-bottom: 17px; border-bottom: 1px solid var(--qc-line);
+  }
+  .quotation-create .section-number {
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    width: 30px; height: 30px; border-radius: 8px;
+    background: #F0EDFA; color: var(--qc-primary); font-size: 13px; font-weight: 700;
+  }
+  .quotation-create .section-header h2,
+  .quotation-create .form-section h2 { margin: 0; font-size: 17px; font-weight: 700; color: var(--qc-text); }
+  
+  /* Forms */
+  .quotation-create .form-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 20px 26px; min-width: 0; }
+  .quotation-create .form-group { position: relative; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+  .quotation-create .form-group label,
+  .quotation-create .product-form .form-group p {
+    display: flex; align-items: center; min-height: 16px; margin: 0;
+    color: #55516C; font-size: 13px; font-weight: 600; line-height: 1.4;
+  }
+  .quotation-create .form-group input,
+  .quotation-create .form-group select,
+  .quotation-create .form-group textarea {
+    width: 100%; min-width: 0; min-height: 42px; padding: 10px 12px;
+    background: var(--qc-soft); border: 1px solid var(--qc-border);
+    border-radius: 8px; color: var(--qc-text); font: 13px inherit;
+    font-family: inherit; font-size: 13px; outline: none;
+    transition: border-color .2s, box-shadow .2s;
+  }
+  .quotation-create .form-group input::placeholder,
+  .quotation-create .form-group textarea::placeholder { color: #938BA4; }
+  .quotation-create .form-group input:focus,
+  .quotation-create .form-group select:focus,
+  .quotation-create .form-group textarea:focus {
+    border-color: #9C91C8; box-shadow: 0 0 0 3px rgba(156,145,200,.14);
+  }
+  .quotation-create .readonly-input,
+  .quotation-create .form-group input:read-only { background: #F1EFF6; color: #777089; }
+  .quotation-create .form-group textarea { resize: vertical; line-height: 1.6; }
+  
+  /* Product selection */
+  .quotation-create .product-form {
+    display: grid; grid-template-columns: 2fr 1fr 1.3fr 1.5fr;
+    gap: 15px; align-items: start; width: 100%; min-width: 0;
+    padding: 20px; background: var(--qc-soft);
+    border: 1px solid var(--qc-line); border-radius: 10px;
+  }
+  .quotation-create .product-form .form-group { width: 100%; min-width: 0; gap: 9px; margin: 0; padding: 0; }
+  .quotation-create .product-form .form-group label,
+  .quotation-create .product-form .form-group p {
+    width: 100%; min-height: 16px; margin: 0; color: #55516C;
+    font-size: 13px; font-weight: 600; white-space: nowrap;
+  }
+  .quotation-create .product-form .form-group input {
+    display: block; width: 100%; height: 42px; min-height: 42px;
+    margin: 0; padding: 0 12px; background: #FFFFFF;
+    border: 1px solid var(--qc-border); border-radius: 8px;
+    color: var(--qc-text); font-size: 13px;
+  }
+  .quotation-create .product-form .form-group input:focus {
+    border-color: #9C91C8; box-shadow: 0 0 0 3px rgba(156,145,200,.14);
+  }
+  .quotation-create .product-form .form-group:last-child input:read-only { background: #F1EFF6; color: #625B78; }
+  
+  /* Search results */
+  .quotation-create .employee-list,
+  .quotation-create .customer-list,
+  .quotation-create .product-list {
+    position: relative; display: block; width: 100%; max-height: 220px;
+    overflow-y: auto; margin-top: 8px; padding: 0;
+    background: #FFFFFF; border: 1px solid var(--qc-border);
+    border-radius: 9px; box-shadow: 0 6px 16px rgba(65,55,95,.08);
+  }
+  .quotation-create .employee-item,
+  .quotation-create .customer-item,
+  .quotation-create .product-item {
+    display: flex; justify-content: space-between; align-items: center; gap: 12px;
+    width: 100%; min-height: 52px; padding: 11px 14px; margin: 0;
+    background: #FFFFFF; border: 0; border-bottom: 1px solid #EEEAF4;
+    text-align: left; cursor: pointer; transition: background .15s;
+  }
+  .quotation-create .employee-item:last-child,
+  .quotation-create .customer-item:last-child,
+  .quotation-create .product-item:last-child { border-bottom: 0; }
+  .quotation-create .employee-item:hover,
+  .quotation-create .customer-item:hover,
+  .quotation-create .product-item:hover { background: #F8F6FD; }
+  .quotation-create .employee-item strong,
+  .quotation-create .customer-item strong,
+  .quotation-create .product-item strong { color: var(--qc-text); font-size: 13px; font-weight: 600; }
+  .quotation-create .employee-info,
+  .quotation-create .customer-info {
+    display: flex; flex-direction: column; align-items: flex-end;
+    justify-content: center; gap: 4px; margin-left: auto;
+  }
+  .quotation-create .employee-info span,
+  .quotation-create .customer-info span,
+  .quotation-create .product-item span { color: var(--qc-muted); font-size: 12px; }
+  .quotation-create .employee-list p,
+  .quotation-create .customer-list p,
+  .quotation-create .product-list p { margin: 0; padding: 15px; color: var(--qc-muted); font-size: 13px; text-align: center; }
+  .quotation-create .employee-list::-webkit-scrollbar,
+  .quotation-create .customer-list::-webkit-scrollbar,
+  .quotation-create .product-list::-webkit-scrollbar { width: 6px; }
+  .quotation-create .employee-list::-webkit-scrollbar-thumb,
+  .quotation-create .customer-list::-webkit-scrollbar-thumb,
+  .quotation-create .product-list::-webkit-scrollbar-thumb { background: #D6CEEA; border-radius: 10px; }
+  
+  /* Production options: wide rows, independent of content size */
+  .quotation-create .option-section {
+    display: flex; flex-direction: column; align-items: stretch;
+    gap: 12px; width: 100%; min-width: 0; max-width: none; margin-top: 16px;
+  }
+  /* When options are direct children of a grid, span its entire width. */
+  .quotation-create .form-grid > .option-section,
+  .quotation-create .product-form > .option-section { grid-column: 1 / -1; }
+  .quotation-create .option-add-btn {
+    align-self: flex-start; min-height: 38px; padding: 0 16px;
+    background: #F0EDFA; color: var(--qc-primary);
+    border: 1px solid #C8C0E5; border-radius: 8px;
+    font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer;
+  }
+  .quotation-create .option-add-btn:hover { background: #E3DCF5; }
+  .quotation-create .option-row {
+    display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) 70px;
+    align-items: center; gap: 14px;
+    width: 100%; min-width: 0; max-width: none;
+    padding: 14px; background: var(--qc-soft);
+    border: 1px solid var(--qc-line); border-radius: 10px;
+  }
+  .quotation-create .option-name-input,
+  .quotation-create .option-price-input {
+    display: block; width: 100%; min-width: 0; height: 46px;
+    padding: 0 14px; background: #FFFFFF; color: var(--qc-text);
+    border: 1px solid var(--qc-border); border-radius: 8px;
+    font-family: inherit; font-size: 13px; outline: none;
+    transition: border-color .2s, box-shadow .2s;
+  }
+  .quotation-create .option-name-input:focus,
+  .quotation-create .option-price-input:focus {
+    border-color: #9C91C8; box-shadow: 0 0 0 3px rgba(156,145,200,.14);
+  }
+  .quotation-create .option-name-input::placeholder,
+  .quotation-create .option-price-input::placeholder { color: #938BA4; }
+  .quotation-create .option-delete-btn {
+    width: 70px; height: 46px; padding: 0 10px;
+    background: #FFFFFF; color: #B45363;
+    border: 1px solid #EACBD1; border-radius: 8px;
+    font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer;
+  }
+  .quotation-create .option-delete-btn:hover { background: #FFF1F3; }
+  .quotation-create .option-price-input::-webkit-inner-spin-button,
+  .quotation-create .option-price-input::-webkit-outer-spin-button,
+  .quotation-create .quantity-input::-webkit-inner-spin-button,
+  .quotation-create .quantity-input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+  .quotation-create .option-price-input,
+  .quotation-create .quantity-input { appearance: textfield; -moz-appearance: textfield; }
+  
+  /* Price summary */
+  .quotation-create .amount-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 16px; }
+  .quotation-create .amount-item {
+    display: flex; flex-direction: column; justify-content: space-between; gap: 14px;
+    min-height: 95px; padding: 21px; background: var(--qc-soft);
+    border: 1px solid var(--qc-line); border-radius: 10px;
+  }
+  .quotation-create .amount-item span { color: var(--qc-muted); font-size: 13px; font-weight: 500; }
+  .quotation-create .amount-item strong { color: var(--qc-text); font-size: 21px; font-weight: 700; overflow-wrap: anywhere; }
+  .quotation-create .amount-item.total-amount { background: #F0EDFA; border-color: #D6CEEA; }
+  .quotation-create .amount-item.total-amount span { color: var(--qc-primary); }
+  .quotation-create .amount-item.total-amount strong { color: #524B80; font-size: 23px; }
+  
+  /* Footer buttons */
+  .quotation-create .create-footer {
+    display: flex; justify-content: flex-end; align-items: center;
+    flex-wrap: wrap; gap: 10px; margin-top: 24px;
+  }
+  .quotation-create .create-footer button {
+    min-height: 42px; padding: 0 22px; border-radius: 8px;
+    font-family: inherit; font-size: 13px; font-weight: 600;
+    cursor: pointer; transition: background .2s, border-color .2s;
+  }
+  .quotation-create .cancel-btn { background: #FFFFFF; color: #625B78; border: 1px solid var(--qc-border); }
+  .quotation-create .cancel-btn:hover { background: #F0EDFA; }
+  .quotation-create .temp-save-btn { background: #F0EDFA; color: #524B80; border: 1px solid #C8C0E5; }
+  .quotation-create .temp-save-btn:hover { background: #E3DCF5; }
+  .quotation-create .save-btn { background: var(--qc-primary); color: #FFFFFF; border: 1px solid var(--qc-primary); }
+  .quotation-create .save-btn:hover { background: var(--qc-primary-hover); }
+  .quotation-create button:focus-visible { outline: 2px solid #9286C1; outline-offset: 2px; }
+  
+  /* Responsive */
+  @media (max-width: 1000px) {
+    .quotation-create .product-form { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  }
+  @media (max-width: 650px) {
+    .quotation-create { padding: 18px 14px 30px; }
+    .quotation-create .create-header h1 { font-size: 23px; }
+    .quotation-create .create-content > section { padding: 18px 16px; }
     .quotation-create .form-grid,
     .quotation-create .product-form,
-    .quotation-create .amount-grid {
-        grid-template-columns: 1fr;
-    }
-
-    .quotation-create .create-footer button {
-        flex: 1;
-    }
-}
-
-/* 내부 담당자 입력 영역 */
-.form-group {
-    position: relative;
-}
-
-/* 직원 검색 결과 전체 */
-.employee-list {
-    position: relative;
-    display: block;
-    width: 100%;
-    max-height: 220px;
-    overflow-y: auto;
-    margin-top: 8px;
-    padding: 0;
-    background-color: #ffffff;
-    border: 1px solid #dce3ef;
-    border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
-    box-sizing: border-box;
-}
-
-/* 직원 검색 결과 한 명 */
-.employee-list .employee-item {
-    display: flex;
-    flex-direction: row;
-    justify-content: space-between;
-    align-items: center;
-    width: 100%;
-    min-height: 58px;
-    padding: 12px 15px;
-    margin: 0;
-    background-color: #ffffff;
-    border: none;
-    border-bottom: 1px solid #edf0f5;
-    box-sizing: border-box;
-    cursor: pointer;
-    transition: background-color 0.2s ease;
-}
-
-/* 마지막 직원의 아래쪽 테두리 제거 */
-.employee-list .employee-item:last-child {
-    border-bottom: none;
-}
-
-/* 마우스를 올렸을 때 */
-.employee-list .employee-item:hover {
-    background-color: #f5f7fc;
-}
-
-/* 직원 이름 - 왼쪽 */
-.employee-list .employee-item strong {
-    display: block;
-    font-size: 14px;
-    font-weight: 600;
-    color: #303b50;
-}
-
-/* 사원번호와 부서 - 오른쪽 */
-.employee-list .employee-info {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: flex-end;
-    gap: 4px;
-    margin-left: auto;
-}
-
-/* 사원번호 */
-.employee-list .employee-info span:first-child {
-    font-size: 12px;
-    font-weight: 600;
-    color: #65748b;
-}
-
-/* 부서 */
-.employee-list .employee-info span:last-child {
-    font-size: 12px;
-    color: #8a94a6;
-}
-
-/* 검색 결과가 없을 때 */
-.employee-list p {
-    margin: 0;
-    padding: 15px;
-    font-size: 13px;
-    color: #8a94a6;
-    text-align: center;
-}
-
-/* 스크롤바 */
-.employee-list::-webkit-scrollbar {
-    width: 6px;
-}
-
-.employee-list::-webkit-scrollbar-thumb {
-    background-color: #d5dce8;
-    border-radius: 10px;
-}
-
-.employee-list::-webkit-scrollbar-track {
-    background-color: transparent;
-}
-
-/* 거래처 검색 영역 */
-.customer-list {
-    position: relative;
-    display: block;
-    width: 100%;
-    max-height: 220px;
-    overflow-y: auto;
-    margin-top: 8px;
-    padding: 0;
-    background-color: #fff;
-    border: 1px solid #dce3ef;
-    border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
-    box-sizing: border-box;
-}
-
-.customer-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 12px 15px;
-    border-bottom: 1px solid #edf0f5;
-    cursor: pointer;
-}
-
-.customer-item:last-child {
-    border-bottom: none;
-}
-
-.customer-item:hover {
-    background-color: #f5f7fc;
-}
-
-.customer-item strong {
-    font-size: 14px;
-    color: #303b50;
-}
-
-.customer-info {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-}
-
-.customer-info span {
-    font-size: 12px;
-    color: #8a94a6;
-}
-
-/* Chrome, Edge, Safari 숫자 조절 버튼 제거 */
-.quantity-input::-webkit-inner-spin-button,
-.quantity-input::-webkit-outer-spin-button {
-    -webkit-appearance: none;
-    margin: 0;
-}
-
-/* Firefox 숫자 조절 버튼 제거 */
-.quantity-input {
-    appearance: textfield;
-    -moz-appearance: textfield;
-}
+    .quotation-create .amount-grid { grid-template-columns: 1fr; }
+    .quotation-create .option-row { grid-template-columns: 1fr; }
+    .quotation-create .option-delete-btn { width: 100%; }
+    .quotation-create .create-footer button { flex: 1; }
+  }
+  
