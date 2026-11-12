@@ -70,3 +70,34 @@
 .inq-detail-buttons { display: flex; gap: 10px; }
 .inq-actions .inq-delete { border-color: #bd392a; color: #bd392a; }
 .inq-actions .inq-delete:hover { background: #fff0eb; }
+
+
+/* ===== GOODS STUDIO : SOFT LAVENDER REDESIGN ===== */
+.inq { background: radial-gradient(ellipse at 0% 0%, #f0e5ff, transparent 45%), #fdfbff; color: #29243c; }
+.inq-inner { max-width: 1160px; }
+.inq-head { border-bottom: 1px solid #e6d9f3; }
+.inq-head > p { color: #9d79d3; }
+.inq-head h1,.inq-bar h2,.inq-write-head h1,.inq-box h2 { color: #29243c; }
+.inq-head span,.inq-write-head p,.inq-box > p,.inq-note,.inq-box small { color: #786e87; }
+.inq-bar button,.inq-actions button { border: 0; border-radius: 999px; background: #a98adf; box-shadow: 0 6px 14px rgba(148,111,204,.12); }
+.inq-bar button:hover,.inq-actions button[type="submit"]:not(:disabled):hover { background: #9270ce; }
+.inq-table { border: 1px solid #eadff5; border-collapse: separate; border-spacing: 0; border-radius: 22px; overflow: hidden; background: #fff; }
+.inq-table th,.inq-table td { border-bottom: 1px solid #f0e8f8; }
+.inq-table th { background: #f7f1fe; color: #665581; }
+.inq-row:hover { background: #fbf7ff; }
+.inq-row:focus-visible { outline: 2px solid #ae91df; }
+.inq-status { border-radius: 999px; background: #eee3fb; color: #805bad; }
+.inq-box { border: 1px solid #ebdff6; border-radius: 23px; background: #fff; box-shadow: 0 7px 23px rgba(114,88,153,.04); }
+.inq-box h2,.inq-detail-top,.inq-detail-info,.inq-detail-images { border-color: #eee4f8; }
+.inq-box input,.inq-box select,.inq-box textarea { border: 1px solid #dfd2ef; border-radius: 11px; background: #fffeff; }
+.inq-box input:focus,.inq-box select:focus,.inq-box textarea:focus { outline: 2px solid #c8b2eb; }
+.inq-box input::placeholder,.inq-box textarea::placeholder { color: #a49aad; }
+.inq-write-head button,.inq-photo button { border: 1px solid #d9c9ec; border-radius: 999px; color: #6e548f; background: #fff; }
+.inq-write-head button:hover,.inq-photo button:hover { background: #f4eaff; }
+.inq-actions button[type="button"] { border: 1px solid #ded0ef; background: #fbf8ff; color: #745d94; }
+.inq-actions button[type="button"]:hover { background: #f2e9fd; }
+.inq-actions .inq-delete { border-color: #e6a6b6; color: #b34d6c; }
+.inq-actions .inq-delete:hover { background: #fff0f4; }
+.inq-actions button:disabled { background: #ede8f2; color: #a39aaf; }
+.inq-detail-body p,.inq-detail-info strong { color: #373045; }
+@media (max-width: 700px) { .inq { padding: 30px 15px 70px; } .inq-head h1 { font-size: 34px; } .inq-two,.inq-detail-info { grid-template-columns: 1fr; } .inq-box { padding: 20px; } .inq-table th,.inq-table td { padding: 13px 10px; font-size: 12px; } .inq-bar { gap: 12px; } .inq-bar button { padding: 11px 14px; } }

@@ -130,3 +130,27 @@
 .shop-empty h2 { margin: 15px 0 10px; font-size: 21px; }
 .shop-empty p { margin: 0; color: #786d63; font-size: 14px; }
 .shop-empty button { margin-top: 22px; }
+
+
+/* ===== GOODS STUDIO : SOFT LAVENDER REDESIGN ===== */
+.shop { background: radial-gradient(ellipse at 0% 0%, #f0e5ff, transparent 45%), #fdfbff; color: #29243c; }
+.shop-inner { max-width: 1260px; }
+.shop-head { border-bottom: 1px solid #e5d8f5; }
+.shop-head > p,.shop-info > small { color: #a080d7; }
+.shop-head h1 { color: #29243c; letter-spacing: -1px; }
+.shop-head span,.shop-search span { color: #777083; }
+.shop-search input { border: 1px solid #dfd1ef; border-radius: 999px; background: #fff; padding: 16px 22px; }
+.shop-search input:focus { outline: 2px solid #cbb3ed; }
+.shop-search strong { color: #8059bc; }
+.shop-list { grid-template-columns: repeat(3,minmax(0,1fr)); gap: 22px; }
+.shop-card { border: 1px solid #eadff5; border-radius: 25px; background: #fff; box-shadow: 0 8px 28px rgba(126,96,166,.06); transition: transform .2s, box-shadow .2s; }
+.shop-card:hover { transform: translateY(-5px); box-shadow: 0 20px 42px rgba(126,96,166,.12); }
+.shop-img { background: radial-gradient(circle,#faf6ff,#ebe0fa); }
+.shop-info h2,.shop-info > strong { color: #29243c; }
+.shop-info button,.shop-empty button { border-radius: 999px; background: #ac8bdf; }
+.shop-info button:hover,.shop-empty button:hover { background: #9270ce; }
+.shop-detail { border-top: 2px solid #d7bfef; border-radius: 12px; background: #f9f4ff; }
+.shop-detail p,.shop-empty p,.shop-no-img small { color: #746c85; }
+.shop-empty { background: #fbf7ff; border: 2px dashed #d8c8eb; border-radius: 25px; }
+@media (max-width: 950px) { .shop-list { grid-template-columns: repeat(2,minmax(0,1fr)); } }
+@media (max-width: 650px) { .shop { padding: 30px 16px 70px; } .shop-list { grid-template-columns: 1fr; } .shop-search { align-items: stretch; flex-direction: column; gap: 10px; } .shop-search input { width: 100%; } .shop-head h1 { font-size: 34px; } }
