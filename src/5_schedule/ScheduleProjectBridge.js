@@ -4,12 +4,60 @@
  * createProjectMilestones: 시작일·마감일을 읽기 전용 달력 항목으로 변환
  */
 
-import { getScheduleProjectId, isValidScheduleDate, typeColors } from "./scheduleData";
+import { getScheduleProjectId, getScheduleParticipants, isValidScheduleDate, normalizeAttendeeEmployees, typeColors } from "./scheduleData";
+
+// ID가 없는 과거 기록은 직원을 임의로 추측하지 않고 전체 조회에 남깁니다.
+export function matchesScheduleStaff(item, employees, employeeId, department) {
+  let participants = getScheduleParticipants(item);
+  if (item.ownerEmployeeId != null) {
+    participants = [{ id: item.ownerEmployeeId, name: item.projectManager }];
+  }
+  // 선택하지 않은 조건은 통과시킵니다. 두 조건을 골랐으면 둘 다 맞아야 합니다.
+  let matchesEmployee = employeeId == null;
+  let matchesDepartment = !department;
+  for (const person of participants) {
+    if (employeeId != null && String(person.id) === String(employeeId)) matchesEmployee = true;
+    const employee = employees.find(entry => String(entry.id) === String(person.id));
+    if (employee && employee.department === department) matchesDepartment = true;
+  }
+  return matchesEmployee && matchesDepartment;
+}
+
+export function createQuotationMilestones(quotations, customers, employees) {
+  const milestones = [];
+  for (const quotation of quotations) {
+    if (quotation.id == null || !isValidScheduleDate(quotation.validUntil)) continue;
+    const customer = customers.find(entry => String(entry.id) === String(quotation.customerId));
+    const employee = employees.find(entry => String(entry.id) === String(quotation.employeeId));
+    const customerName = customer?.companyName || customer?.name || "고객 미지정";
+    milestones.push({
+      id: "quotation-expiry-" + quotation.id,
+      date: quotation.validUntil,
+      time: "00:00",
+      endTime: "23:59",
+      isAllDay: true,
+      title: customerName + " · 견적 #" + quotation.id + " 유효기간",
+      project: "",
+      person: employee?.name || "견적 담당자 미지정",
+      employeeId: employee?.id ?? null,
+      projectManager: employee?.name || "미지정",
+      scope: "업무용",
+      category: "견적",
+      visibility: "shared",
+      color: typeColors["마감"],
+      isProjectMilestone: true,
+      isQuotationExpiry: true,
+      quotationStatus: quotation.status || "상태 미지정",
+      milestoneType: "견적 유효기간",
+    });
+  }
+  return milestones;
+}
 
 // 저장 당시 이름은 보존하고 HR의 현재 정보와 다른 연결만 안내합니다.
 export function getScheduleEmployeeWarning(item, employees) {
   if (item.scope === "개인 일정용") return "";
-  const people = [...(item.attendeeEmployees || [])];
+  const people = normalizeAttendeeEmployees(item.attendeeEmployees);
   if (item.employeeId != null) people.push({ id: item.employeeId, name: item.person });
   const messages = [];
   for (const person of people) {
@@ -98,11 +146,13 @@ export function createProjectMilestones(projects, employees = []) {
         project: project.name,
         projectManager: manager?.name || "미지정",
         person: "프로젝트 일정",
+        ownerEmployeeId: manager?.id ?? null,
         type: "기획",
         category: "프로젝트",
         scope: "업무용",
         visibility: "shared",
-        status: "pending",
+        status: project.status === "완료" ? "completed" : "pending",
+        projectStatus: project.status || "예정",
         color: typeColors["기획"],
         isProjectMilestone: true,
         milestoneType: entry.milestoneType,
@@ -129,7 +179,8 @@ export function createTaskMilestones(tasks, projects, employees) {
       title: project.name + " · " + (task.taskType || "세부 작업") + " 마감",
       project: project.name,
       projectManager: employee?.name || "미지정",
-      person: "프로젝트 일정",
+      person: employee?.name || "프로젝트 일정",
+      employeeId: employee?.id ?? null,
       scope: "업무용",
       category: "프로젝트",
       visibility: "shared",

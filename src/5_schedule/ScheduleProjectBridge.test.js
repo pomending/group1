@@ -1,10 +1,41 @@
-import { createProjectMilestones, resolveScheduleProject, getScheduleProjectWarning } from "./ScheduleProjectBridge";
+import { createProjectMilestones, createQuotationMilestones, matchesScheduleStaff, resolveScheduleProject, getScheduleProjectWarning } from "./ScheduleProjectBridge";
 import { createScheduleForm } from "./scheduleData";
 
 const projects = [{
   id: 1, name: "표시 확인", managerId: 20,
   startDate: "2026-11-04", dueDate: "2026-11-06",
 }];
+
+test("프로젝트 완료 상태는 읽기 전용 일정에도 반영하고 원본을 보존한다", () => {
+  const source = [{ ...projects[0], status: "완료" }, { ...projects[0], id: 2, status: "진행 중" }];
+  const before = JSON.stringify(source);
+  const milestones = createProjectMilestones(source);
+  expect(milestones.filter(item => item.status === "completed")).toHaveLength(2);
+  expect(milestones.filter(item => item.status === "pending")).toHaveLength(2);
+  expect(milestones[0].projectStatus).toBe("완료");
+  expect(JSON.stringify(source)).toBe(before);
+});
+
+test("개인·부서 필터는 동명이인과 이름만 있는 기록을 직원 번호로 구분한다", () => {
+  const employees = [{ id: 1, name: "동명", department: "영업팀" }, { id: 2, name: "동명", department: "생산팀" }];
+  const meeting = { person: "담당", employeeId: 3, attendeeEmployees: [{ id: 2, name: "동명" }], legacyAttendees: [] };
+  expect(matchesScheduleStaff(meeting, employees, 1, "")).toBe(false);
+  expect(matchesScheduleStaff(meeting, employees, 2, "생산팀")).toBe(true);
+  expect(matchesScheduleStaff(meeting, employees, null, "영업팀")).toBe(false);
+  expect(matchesScheduleStaff({ person: "동명" }, employees, 1, "")).toBe(false);
+  expect(matchesScheduleStaff({ person: "동명" }, employees, null, "")).toBe(true);
+});
+
+test("견적 유효기간은 잘못된 날짜를 제외하고 고객과 담당자를 읽기 전용으로 연결한다", () => {
+  const quotes = [{ id: 1, validUntil: "2026-11-15", customerId: 4, employeeId: 2 },
+    { id: 2, validUntil: "2026-02-30" }];
+  const before = JSON.stringify(quotes);
+  const result = createQuotationMilestones(quotes, [{ id: 4, companyName: "테스트 고객" }], [{ id: 2, name: "영업 직원" }]);
+  expect(result).toHaveLength(1);
+  expect(result[0]).toMatchObject({ date: "2026-11-15", employeeId: 2, isQuotationExpiry: true });
+  expect(result[0].title).toContain("테스트 고객");
+  expect(JSON.stringify(quotes)).toBe(before);
+});
 
 test("끊긴 ID·재사용된 ID·동명 연결만 안내하고 원본은 바꾸지 않는다", () => {
   const project = { id: 1, name: "연결", quotationId: 10, customerId: 20 };

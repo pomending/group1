@@ -63,10 +63,31 @@ export function ScheduleEvent({ item, onSelect, compact = false, roleLabel, onTo
   const isProjectMilestone = Boolean(item.isProjectMilestone);
   const status = getStatusOption(item.status);
   const time = getScheduleTime(item);
+  let personLabel = roleLabel || item.person;
+  let milestoneLabel = item.milestoneType;
+  let compactMilestoneLabel = "프로젝트 " + item.milestoneType;
+  if (item.isTaskDeadline) {
+    personLabel = roleLabel || "세부 작업";
+    milestoneLabel = item.milestoneType + " · " + (item.taskProgress || "대기중");
+    compactMilestoneLabel = milestoneLabel;
+  } else if (item.isQuotationExpiry) {
+    personLabel = "견적";
+    milestoneLabel = item.milestoneType + " · " + (item.quotationStatus || "상태 미지정");
+    compactMilestoneLabel = milestoneLabel;
+  } else if (isProjectMilestone) {
+    personLabel = "프로젝트";
+    if (item.projectStatus) {
+      milestoneLabel = item.milestoneType + " · " + item.projectStatus;
+      compactMilestoneLabel = "프로젝트 " + milestoneLabel;
+    }
+  }
   const label = `${item.date} ${time} ${item.title} 선택한 날짜 일정에서 보기`;
+  let helpStatus = item.taskProgress || status.label;
+  if (item.isQuotationExpiry) helpStatus = item.quotationStatus || "상태 미지정";
+  else if (isProjectMilestone && !item.isTaskDeadline) helpStatus = item.projectStatus || status.label;
   const help = item.scope === "개인 일정용"
     ? `${item.title} · ${time}`
-    : `${item.title} · ${time} · ${item.project} · ${item.person} · ${item.taskProgress || status.label}`;
+    : `${item.title} · ${time} · ${item.project} · ${item.person} · ${helpStatus}`;
   // 일정 상자를 누르면 날짜 칸 클릭은 막고, 선택한 날짜 일정 패널을 갱신합니다.
   // 카드 안의 선택 클릭이 달력 날짜 칸까지 전파되지 않게 막습니다.
   // 전체 이름 펼치기와 별표는 별도 핸들러에서 전파를 막으므로 이 선택을 실행하지 않습니다.
@@ -96,7 +117,7 @@ export function ScheduleEvent({ item, onSelect, compact = false, roleLabel, onTo
         </div>
         <span className="sm-event-meta">
           {isProjectMilestone
-            ? <span className="sm-project-milestone-tag">{item.isTaskDeadline ? item.milestoneType + " · " + (item.taskProgress || "대기중") : "프로젝트 " + item.milestoneType}</span>
+            ? <span className="sm-project-milestone-tag">{compactMilestoneLabel}</span>
             : <>{item.scope !== "개인 일정용" && <ScheduleStatus status={item.status} />}<ScheduleVisibility visibility={item.visibility} /></>}
         </span>
       </div>
@@ -113,10 +134,10 @@ export function ScheduleEvent({ item, onSelect, compact = false, roleLabel, onTo
     >
       <time>{time}</time>
       <span>{item.title}</span>
-      <small>{isProjectMilestone ? "프로젝트" : (roleLabel || item.person)}</small>
+      <small>{personLabel}</small>
       {!isProjectMilestone && item.scope !== "개인 일정용" && <ScheduleStatus status={item.status} />}
       {isProjectMilestone
-        ? <span className="sm-project-milestone-tag">{item.milestoneType}</span>
+        ? <span className="sm-project-milestone-tag">{milestoneLabel}</span>
         : <ScheduleVisibility visibility={item.visibility} />}
     </button>
   );
@@ -186,6 +207,22 @@ export function ScheduleTimeRow({ item }) {
 // 실제 수정·삭제는 이 컴포넌트가 하지 않고 부모가 전달한 함수에 item을 넘깁니다.
 export function ScheduleAgendaItem({ item, onEdit, onDelete, onStatusChange, onToggleFavorite }) {
   const isProjectMilestone = Boolean(item.isProjectMilestone);
+  // 종류별 문구를 먼저 정하면 아래 화면 코드는 같은 구조로 읽을 수 있습니다.
+  let milestoneCategory = "프로젝트 일정";
+  let managementPath = "/projects";
+  let managementLabel = "프로젝트 관리로 이동";
+  let milestoneNote = "프로젝트의 시작일·마감일입니다. 날짜 변경은 프로젝트 관리에서 해주세요.";
+  if (item.isTaskDeadline) {
+    milestoneCategory = "세부 작업";
+    managementPath = "/tasks";
+    managementLabel = "세부 작업 관리로 이동";
+    milestoneNote = "마감일 변경은 세부 작업 관리에서 해주세요.";
+  } else if (item.isQuotationExpiry) {
+    milestoneCategory = "견적";
+    managementPath = "/quotation";
+    managementLabel = "견적 관리로 이동";
+    milestoneNote = "유효기간 변경은 견적 관리에서 해주세요.";
+  }
   return (
     <article className={"sm-agenda-item sm-favorite-item " + (isProjectMilestone ? "sm-project-milestone-item" : "")} style={{ "--sm-event-color": item.color }}>
       {/* 즐겨찾기와 같은 배치를 재사용합니다. 제목과 별을 분리하고 정보마다 이름을 붙입니다. */}
@@ -196,7 +233,12 @@ export function ScheduleAgendaItem({ item, onEdit, onDelete, onStatusChange, onT
       <ScheduleTimeRow item={item} />
       <dl className="sm-favorite-info">
         {isProjectMilestone
-          ? <><dt>구분</dt><dd>{item.isTaskDeadline ? "세부 작업" : "프로젝트 일정"}</dd><dt>프로젝트</dt><dd>{item.project}</dd><dt>담당자</dt><dd>{item.projectManager || "미지정"}</dd><dt>기준일</dt><dd>{item.milestoneType}</dd></>
+          ? <>
+            <dt>구분</dt><dd>{milestoneCategory}</dd>
+            {item.project && <><dt>프로젝트</dt><dd>{item.project}</dd></>}
+            <dt>담당자</dt><dd>{item.projectManager || "미지정"}</dd>
+            <dt>기준일</dt><dd>{item.milestoneType}</dd>
+          </>
           : <>
             <dt>일정 종류</dt><dd>{item.scope || "업무용"}</dd>
             {item.scope !== "개인 일정용" && <><dt>분류</dt><dd>{item.category || (item.project ? "프로젝트" : "업무")}</dd></>}
@@ -207,15 +249,16 @@ export function ScheduleAgendaItem({ item, onEdit, onDelete, onStatusChange, onT
           </>}
       </dl>
       {item.isTaskDeadline && <p className="sm-form-note">작업 상태 · {item.taskProgress || "대기중"}</p>}
-      {isProjectMilestone && <p><a className="sm-secondary-btn" href={item.isTaskDeadline ? "/tasks" : "/projects"}>
-        {item.isTaskDeadline ? "세부 작업 관리로 이동" : "프로젝트 관리로 이동"}
+      {item.isQuotationExpiry && <p className="sm-form-note">견적 상태 · {item.quotationStatus || "상태 미지정"}</p>}
+      {isProjectMilestone && !item.isTaskDeadline && !item.isQuotationExpiry && item.projectStatus &&
+        <p className="sm-form-note">프로젝트 상태 · {item.projectStatus}</p>}
+      {isProjectMilestone && <p><a className="sm-secondary-btn" href={managementPath}>
+        {managementLabel}
       </a></p>}
       {!isProjectMilestone && <ScheduleAttendees item={item} paragraph />}
       {!isProjectMilestone && item.description && <p className="sm-description">{item.description}</p>}
       {isProjectMilestone
-        ? <p className="sm-form-note">{item.isTaskDeadline
-          ? "마감일 변경은 세부 작업 관리에서 해주세요."
-          : "프로젝트의 시작일·마감일입니다. 날짜 변경은 프로젝트 관리에서 해주세요."}</p>
+        ? <p className="sm-form-note">{milestoneNote}</p>
         : <ScheduleActions item={item} onEdit={onEdit} onDelete={onDelete} onStatusChange={onStatusChange} />}
     </article>
   );

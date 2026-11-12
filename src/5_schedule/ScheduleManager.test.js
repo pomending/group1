@@ -22,6 +22,229 @@ import {
   getSchedulePeople, getRepeatLabel, getScheduleTime, getRepeatSummary, getScheduleDurationFields, restoreDeletedSchedule,
 } from "./scheduleData";
 
+test("손상된 참석자 연결이 저장돼 있어도 회의 조회와 편집에서 오류 없이 이름을 보존한다", async () => {
+  saveSchedules([makeStoredSchedule({ date: getTodayKey(), scope: "업무용", category: "회의",
+    person: "김담당", employeeId: 802, title: "참석자 복원 회의", attendees: ["외부 참석자"],
+    attendeeEmployees: {}, legacyAttendees: null })]);
+  render(<ScheduleManager />);
+  expect(screen.getByText("참석자: 외부 참석자")).toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "참석자 복원 회의 일정 수정" }));
+  expect(screen.getByRole("dialog", { name: "일정 수정" })).toBeInTheDocument();
+  expect(screen.getByRole("checkbox", { name: "외부 참석자", exact: true })).toBeChecked();
+  fireEvent.click(screen.getByRole("button", { name: "수정 저장" }));
+  expect(loadSchedules().items[0].attendees).toEqual(["외부 참석자"]);
+  await act(async () => { expect(fetch).toHaveBeenCalled(); });
+});
+
+test("주간표는 연결 없는 캐시 이름만 숨기고 HR 직원과 과거 일정 이름은 유지한다", async () => {
+  saveSchedules([makeStoredSchedule({ date: "2025-01-01", scope: "업무용", person: "과거 이름" })]);
+  localStorage.setItem("made-mate-schedule-team", JSON.stringify(["버려진 이름", "김담당", "과거 이름"]));
+  render(<ScheduleManager />);
+  fireEvent.click(screen.getByRole("tab", { name: "담당자별 주간" }));
+  expect(screen.queryByRole("button", { name: "버려진 이름 일정 펼치기" })).not.toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "김담당 일정 펼치기" })).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "과거 이름 일정 펼치기" })).toBeInTheDocument();
+  await act(async () => { expect(fetch).toHaveBeenCalled(); });
+});
+
+test.each([["옛 이름", "현재 이름"], ["현재 이름", "옛 이름"]])("개명 전후 팀원 이름의 순서와 관계없이 빈 중복 행을 만들지 않는다: %j", (first, second) => {
+  const date = getTodayKey();
+  const item = { ...createEmptyForm(), id: "rename-only", date, person: "옛 이름", employeeId: 1, title: "이전 기록" };
+  render(<ScheduleStaffWeek people={[first, second]} employees={[{ id: 1, name: "현재 이름" }]}
+    items={[item]} weekDates={[{ key: date }]} selectedDate={date} holidayDates={{}} />);
+  expect(screen.getAllByRole("button", { name: /일정 펼치기$/ })).toHaveLength(1);
+  expect(screen.getByRole("button", { name: "현재 이름 일정 펼치기" })).toBeInTheDocument();
+});
+
+test("주간표를 연 뒤 현재 이름으로 검색하면 이전 기록을 찾고 검색한 직원 행을 펼친다", async () => {
+  const employees = [{ id: 1, name: "현재 이름" }, { id: 2, name: "다른 직원" }];
+  useERP.mockReturnValue({ employees, projects: [] });
+  saveSchedules([
+    makeStoredSchedule({ id: "old", date: getTodayKey(), scope: "업무용", person: "옛 이름", employeeId: 1, title: "개명 전 기록" }),
+    makeStoredSchedule({ id: "other", date: getTodayKey(), scope: "업무용", person: "다른 직원", employeeId: 2, title: "다른 직원 기록" }),
+  ]);
+  localStorage.setItem("made-mate-schedule-team", JSON.stringify(["옛 이름", "현재 이름", "다른 직원"]));
+  render(<ScheduleManager />);
+  const before = localStorage.getItem(storageKey);
+  fireEvent.click(screen.getByRole("tab", { name: "담당자별 주간" }));
+  fireEvent.change(screen.getByRole("textbox", { name: "일정 검색" }), { target: { value: "현재 이름" } });
+  const week = within(screen.getByRole("region", { name: "담당자별 주간 일정표" }));
+  expect(week.getByRole("button", { name: "현재 이름 일정 접기" })).toHaveAttribute("aria-expanded", "true");
+  expect(week.getByText("개명 전 기록")).toBeInTheDocument();
+  fireEvent.change(screen.getByRole("textbox", { name: "일정 검색" }), { target: { value: "다른 직원" } });
+  expect(week.getByRole("button", { name: "다른 직원 일정 접기" })).toBeInTheDocument();
+  expect(week.getByText("다른 직원 기록")).toBeInTheDocument();
+  fireEvent.change(screen.getByRole("textbox", { name: "일정 검색" }), { target: { value: "옛 이름" } });
+  expect(week.getByRole("button", { name: "현재 이름 일정 접기" })).toBeInTheDocument();
+  expect(week.getByText("개명 전 기록")).toBeInTheDocument();
+  fireEvent.change(screen.getByRole("textbox", { name: "일정 검색" }), { target: { value: "" } });
+  expect(week.getByRole("button", { name: "현재 이름 일정 펼치기" })).toBeInTheDocument();
+  expect(localStorage.getItem(storageKey)).toBe(before);
+  expect(getSchedulePeople({ person: "옛 이름", employeeId: 1 }, employees)).toEqual(["옛 이름", "현재 이름"]);
+  expect(getSchedulePeople({ person: "옛 이름" }, employees)).toEqual(["옛 이름"]);
+  await act(async () => { expect(fetch).toHaveBeenCalled(); });
+});
+
+test("개명 전후 담당·참석 일정은 현재 직원 이름의 한 행에 모으고 동명이인은 구분한다", () => {
+  const date = getTodayKey();
+  const base = { ...createEmptyForm(), date, scope: "업무용" };
+  const items = [
+    { ...base, id: "old", person: "이전 이름", employeeId: 1, title: "개명 전 담당" },
+    { ...base, id: "new", person: "현재 이름", employeeId: 1, title: "개명 후 담당" },
+    { ...base, id: "meeting", person: "다른 담당", title: "개명 전 참석",
+      attendeeEmployees: [{ id: 1, name: "이전 이름" }], legacyAttendees: [] },
+    { ...base, id: "other", person: "현재 이름", employeeId: 2, title: "동명이인 담당" },
+  ];
+  const before = JSON.stringify(items);
+  render(<ScheduleStaffWeek people={["이전 이름", "현재 이름"]}
+    employees={[{ id: 1, name: "현재 이름" }, { id: 2, name: "현재 이름" }]}
+    items={items} weekDates={[{ key: date }]} selectedDate={date} holidayDates={{}} />);
+  expect(screen.getAllByRole("button", { name: /일정 펼치기$/ })).toHaveLength(2);
+  fireEvent.click(screen.getByRole("button", { name: "현재 이름 (직원 1) 일정 펼치기" }));
+  const row = screen.getByRole("button", { name: "현재 이름 (직원 1) 일정 접기" }).closest("tr");
+  expect(within(row).getByText("개명 전 담당")).toBeInTheDocument();
+  expect(within(row).getByText("개명 후 담당")).toBeInTheDocument();
+  expect(within(row).getByText("개명 전 참석")).toBeInTheDocument();
+  expect(within(row).queryByText("동명이인 담당")).not.toBeInTheDocument();
+  expect(JSON.stringify(items)).toBe(before);
+});
+
+test("견적과 완료 프로젝트의 설명·달력·상세는 원본 상태를 표시한다", async () => {
+  useERP.mockReturnValue({
+    employees: [], customers: [{ id: 1, companyName: "상태 고객" }],
+    projects: [{ id: 1, name: "완료 프로젝트", startDate: getTodayKey(), status: "완료" }],
+    quotations: [{ id: 1, customerId: 1, validUntil: getTodayKey(), status: "승인 완료" }],
+  });
+  render(<ScheduleManager />);
+  fireEvent.click(screen.getByRole("checkbox", { name: "견적 유효기간 표시" }));
+  const project = screen.getByRole("button", { name: /완료 프로젝트 · 시작일 선택한 날짜/ });
+  expect(project).toHaveAttribute("title", expect.stringContaining("· 완료"));
+  const quote = screen.getByRole("button", { name: /견적 #1 유효기간 선택한 날짜/ });
+  expect(quote).toHaveAttribute("title", expect.stringContaining("· 승인 완료"));
+  expect(screen.getByText("프로젝트 시작일 · 완료")).toBeInTheDocument();
+  expect(screen.getByText("프로젝트 상태 · 완료")).toBeInTheDocument();
+  expect(screen.getByText(/상단의 오늘·전체 일정 건수는 직접 등록한 일정 기준/)).toBeInTheDocument();
+  await act(async () => { expect(fetch).toHaveBeenCalled(); });
+});
+
+test("날짜 더보기는 연동 항목을 읽기 전용으로 표시하고 견적 상태와 작업 완료 필터를 유지한다", async () => {
+  useERP.mockReturnValue({
+    projects: [{ id: 1, name: "더보기 프로젝트", startDate: getTodayKey() }],
+    employees: [], customers: [{ id: 1, companyName: "더보기 고객" }],
+    tasks: [{ id: 1, projectId: 1, taskDeadline: getTodayKey(), taskType: "완료 작업", progress: "완료" }],
+    quotations: [{ id: 1, customerId: 1, validUntil: getTodayKey(), status: "승인 완료" }],
+  });
+  render(<ScheduleManager />);
+  const before = localStorage.getItem(storageKey);
+  fireEvent.click(screen.getByRole("checkbox", { name: "견적 유효기간 표시" }));
+  fireEvent.click(screen.getByRole("button", { name: "+ 더보기", exact: true }));
+  const dialog = within(screen.getByRole("dialog"));
+  expect(dialog.getByRole("status", { name: "목록 표시 건수" })).toHaveTextContent("표시 3건");
+  expect(dialog.getByText("견적 상태 · 승인 완료")).toBeInTheDocument();
+  expect(dialog.getByRole("link", { name: "견적 관리로 이동" })).toHaveAttribute("href", "/quotation");
+  expect(dialog.queryByRole("button", { name: /일정 수정/ })).not.toBeInTheDocument();
+  expect(dialog.queryByRole("button", { name: /즐겨찾기/ })).not.toBeInTheDocument();
+  fireEvent.change(dialog.getByRole("combobox", { name: "목록 진행 상태" }), { target: { value: "completed" } });
+  expect(dialog.getByText("작업 상태 · 완료")).toBeInTheDocument();
+  expect(dialog.getByRole("status", { name: "목록 표시 건수" })).toHaveTextContent("표시 1건");
+  expect(localStorage.getItem(storageKey)).toBe(before);
+  await act(async () => { expect(fetch).toHaveBeenCalled(); });
+});
+
+test("내 일정 선택은 계정 전환과 로그아웃 시 해제되고 없는 부서 선택은 안내 후 초기화된다", async () => {
+  const employees = [{ id: 1, name: "영업 직원", department: "영업팀" }, { id: 2, name: "생산 직원", department: "생산팀" }];
+  const erp = { employees, projects: [], currentEmployee: employees[0] };
+  useERP.mockReturnValue(erp);
+  const view = render(<ScheduleManager />);
+  const myFilter = () => screen.getByRole("checkbox", { name: "내 담당·참석 일정" });
+  fireEvent.click(myFilter());
+  expect(myFilter()).toBeChecked();
+  useERP.mockReturnValue({ ...erp, currentEmployee: employees[1] });
+  view.rerender(<ScheduleManager />);
+  expect(myFilter()).not.toBeChecked();
+  fireEvent.click(myFilter());
+  useERP.mockReturnValue({ ...erp, currentEmployee: null });
+  view.rerender(<ScheduleManager />);
+  expect(myFilter()).not.toBeChecked();
+  expect(myFilter()).toBeDisabled();
+  fireEvent.change(screen.getByRole("combobox", { name: "일정 부서 필터" }), { target: { value: "영업팀" } });
+  useERP.mockReturnValue({ ...erp, employees: [employees[1]], currentEmployee: null });
+  view.rerender(<ScheduleManager />);
+  expect(screen.getByRole("combobox", { name: "일정 부서 필터" })).toHaveValue("");
+  expect(screen.getByText("선택한 부서가 직원 목록에 없어 전체 부서로 변경했습니다.")).toBeInTheDocument();
+  await act(async () => { expect(fetch).toHaveBeenCalled(); });
+});
+
+test("로그인 직원의 담당·참석 일정과 부서 필터를 적용하고 초기화한다", async () => {
+  const employees = [
+    { id: 1, name: "영업 직원", department: "영업팀", status: "재직" },
+    { id: 2, name: "생산 직원", department: "생산팀", status: "재직" },
+  ];
+  useERP.mockReturnValue({ employees, projects: [], currentEmployee: employees[0] });
+  saveSchedules([
+    makeStoredSchedule({ id: "mine", date: getTodayKey(), title: "내 담당 일정", scope: "업무용", person: "영업 직원", employeeId: 1 }),
+    makeStoredSchedule({ id: "meeting", date: getTodayKey(), title: "내 참석 회의", scope: "업무용", person: "생산 직원", employeeId: 2,
+      attendees: ["영업 직원"], attendeeEmployees: [{ id: 1, name: "영업 직원" }], legacyAttendees: [] }),
+    makeStoredSchedule({ id: "other", date: getTodayKey(), title: "다른 직원 일정", scope: "업무용", person: "생산 직원", employeeId: 2 }),
+  ]);
+  render(<ScheduleManager />);
+  const before = localStorage.getItem(storageKey);
+  const calendar = within(screen.getByRole("region", { name: "일정 달력" }));
+  fireEvent.click(screen.getByRole("tab", { name: "일별" }));
+  fireEvent.click(screen.getByRole("checkbox", { name: "내 담당·참석 일정" }));
+  expect(calendar.getByRole("button", { name: /내 참석 회의 선택한 날짜/ })).toBeInTheDocument();
+  expect(calendar.queryByRole("button", { name: /다른 직원 일정 선택한 날짜/ })).not.toBeInTheDocument();
+  fireEvent.change(screen.getByRole("combobox", { name: "일정 부서 필터" }), { target: { value: "생산팀" } });
+  expect(calendar.queryByRole("button", { name: /내 담당 일정 선택한 날짜/ })).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "담당·부서 필터 초기화" }));
+  expect(calendar.getByRole("button", { name: /다른 직원 일정 선택한 날짜/ })).toBeInTheDocument();
+  expect(localStorage.getItem(storageKey)).toBe(before);
+  await act(async () => { expect(fetch).toHaveBeenCalled(); });
+});
+
+test("미완료 마감 조회는 지연·오늘·7일 경계를 구분하고 완료 작업을 제외한다", async () => {
+  const day = offset => { const date = new Date(getTodayKey() + "T12:00:00"); date.setDate(date.getDate() + offset); return dateKey(date); };
+  useERP.mockReturnValue({ employees: [], projects: [{ id: 1, name: "마감 검증" }],
+    tasks: [-1, 0, 6, 7].map((offset, index) => ({ id: index, projectId: 1, taskType: "작업" + offset, taskDeadline: day(offset), progress: "대기중" }))
+      .concat({ id: 10, projectId: 1, taskType: "끝난 작업", taskDeadline: day(0), progress: "완료" }) });
+  render(<ScheduleManager />);
+  fireEvent.click(screen.getByText("미완료 작업 마감 모아보기"));
+  const panel = screen.getByRole("combobox", { name: "작업 마감 조회 기간" }).closest("details");
+  expect(within(panel).getAllByRole("button")).toHaveLength(2);
+  expect(within(panel).queryByText(/끝난 작업/)).not.toBeInTheDocument();
+  fireEvent.change(screen.getByRole("combobox", { name: "작업 마감 조회 기간" }), { target: { value: "overdue" } });
+  expect(within(panel).getByRole("button")).toHaveTextContent("작업-1");
+  fireEvent.change(screen.getByRole("combobox", { name: "작업 마감 조회 기간" }), { target: { value: "today" } });
+  expect(within(panel).getByRole("button")).toHaveTextContent("작업0");
+  fireEvent.click(within(panel).getByRole("button"));
+  expect(screen.getByRole("tab", { name: "일별" })).toHaveAttribute("aria-selected", "true");
+  await act(async () => { expect(fetch).toHaveBeenCalled(); });
+});
+
+test("견적 유효기간 표시와 담당자별 작업 행은 저장 일정을 추가하지 않는다", async () => {
+  const employees = [{ id: 1, name: "동명", department: "영업팀" }, { id: 2, name: "동명", department: "생산팀" }];
+  useERP.mockReturnValue({ employees, projects: [{ id: 1, name: "주간 검증" }],
+    tasks: employees.map(employee => ({ id: employee.id, projectId: 1, employeeId: employee.id,
+      taskType: "담당 작업" + employee.id, taskDeadline: getTodayKey() })),
+    quotations: [{ id: 7, validUntil: getTodayKey(), customerId: 3, employeeId: 1 }],
+    customers: [{ id: 3, companyName: "견적 고객" }] });
+  render(<ScheduleManager />);
+  expect(screen.getByRole("checkbox", { name: "내 담당·참석 일정" })).toBeDisabled();
+  fireEvent.click(screen.getByRole("tab", { name: "일별" }));
+  expect(screen.queryByRole("button", { name: /견적 #7 유효기간 선택한 날짜/ })).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole("checkbox", { name: "견적 유효기간 표시" }));
+  expect(screen.getByRole("button", { name: /견적 #7 유효기간 선택한 날짜/ })).toBeInTheDocument();
+  expect(screen.getByRole("link", { name: "견적 관리로 이동" })).toHaveAttribute("href", "/quotation");
+  fireEvent.click(screen.getByRole("checkbox", { name: "견적 유효기간 표시" }));
+  fireEvent.click(screen.getByRole("tab", { name: "담당자별 주간" }));
+  fireEvent.click(screen.getByRole("button", { name: "동명 (직원 1) 일정 펼치기" }));
+  const row = screen.getByRole("button", { name: "동명 (직원 1) 일정 접기" }).closest("tr");
+  expect(within(row).getByText("주간 검증 · 담당 작업1 마감")).toBeInTheDocument();
+  expect(within(row).queryByText("주간 검증 · 담당 작업2 마감")).not.toBeInTheDocument();
+  expect(loadSchedules().items).toEqual([]);
+  await act(async () => { expect(fetch).toHaveBeenCalled(); });
+});
+
 test("세부 작업 마감은 달력과 선택 날짜에 표시하고 일정 원본에 복제하지 않는다", async () => {
   useERP.mockReturnValue({
     projects: [{ id: 1, name: "제작 프로젝트" }],
