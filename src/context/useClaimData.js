@@ -1,4 +1,5 @@
 import react, { useEffect, useState } from "react"
+import { claims as initialClaims } from "../data/mockData"
 
 const STORAGE_KEY = "home_inquiries"
 const CHANGE_EVENT = "home-inquiries-changed"
@@ -76,7 +77,8 @@ const getEmail = (post) => {
 }
 
 function useClaimData() {
-    const [claim, setClaim] = useState([])
+
+    const [claims, setClaims] = useState(initialClaims)
 
     useEffect(() => {
 
@@ -87,7 +89,7 @@ function useClaimData() {
     }
 
     const addClaim = (newClaim) => {
-        setClaim([...claim, {}])
+        setClaims([...claims, {}])
     }
 
     const updateClaim = (updatedClaim) => {
@@ -103,7 +105,7 @@ function useClaimData() {
     }
 
     return {
-        claim,
+        claims,
         addClaim,
         updateClaim,
         deleteClaim,
