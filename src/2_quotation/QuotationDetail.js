@@ -8,7 +8,7 @@ import {
     formatPrice
 } from "../utils/formatUtils";
 import "./QuotationDetail.css"
-import { getQuotationUnitPrice } from "../utils/quotationUtils";
+import { getQuotationPriceDetails } from "../utils/quotationUtils";
 
 function QuotationDetail() {
 
@@ -24,19 +24,21 @@ function QuotationDetail() {
         employees
     } = useERP();
 
-    
+
 
     // URL의 견적 ID와 일치하는 견적서 찾기
     const quotation = quotations.find(
         q => q.id === Number(id)
     );
-    
+
     if (!quotation) {
         return <div>견적서를 찾을 수 없습니다.</div>;
     }
 
     //옵션 포함 개당 단가 계산
-    const optionUnitPrice = getQuotationUnitPrice(quotation);
+    // const optionUnitPrice = getQuotationUnitPrice(quotation);
+    const optionUnitPrice =
+        getQuotationPriceDetails(quotation).finalUnitPrice;
 
     //공급가액 계산
     const supplyAmount = Number(quotation.quantity || 0) * optionUnitPrice;
@@ -122,19 +124,29 @@ function QuotationDetail() {
     //견적서 삭제
     const handleDelete = () => {
 
-        if(quotation.status === "승인 완료"){
-            alert("승인 완료된 견적서는 삭제할 수 없습니다.")
-            return;
-        }
+        // if (quotation.status === "승인 완료") {
+        //     alert("승인 완료된 견적서는 삭제할 수 없습니다.")
+        //     return;
+        // }
 
         if (!window.confirm("이 견적서를 삭제하시겠습니까?\n삭제한 견적서는 복구할 수 없습니다.")) {
             return;
         }
 
-        deleteQuotation(quotation.id)
+        // deleteQuotation(quotation.id)
 
-        alert("견적서가 삭제되었습니다.")
-        navi("/quotation")
+        // alert("견적서가 삭제되었습니다.")
+        // navi("/quotation")
+
+        const result = deleteQuotation(quotation.id);
+
+        if (!result.ok) {
+            alert(result.message);
+            return;
+        }
+
+        alert("견적서가 삭제되었습니다.");
+        navi("/quotation");
 
     }
 
@@ -201,17 +213,18 @@ function QuotationDetail() {
 
                         <div className="detail-item">
                             <span>기본 단가</span>
-                            <strong>{formatPrice(quotation.unitPrice)}</strong>
+                            {/* <strong>{formatPrice(quotation.unitPrice)}</strong> */}
+                            <strong>{formatPrice(quotation.baseUnitPrice)}</strong>
                         </div>
 
                         <div className="detail-item">
                             <span>제작 옵션</span>
 
                             <div>
-                                {(quotation.option ?? []).length === 0 ? (
+                                {(quotation.options ?? []).length === 0 ? (
                                     <strong>없음</strong>
                                 ) : (
-                                    quotation.option.map((option,index) => (
+                                    quotation.options.map((option, index) => (
                                         <p key={index}>
                                             {option.name} : {Number(option.unitPrice).toLocaleString()}원
                                         </p>
@@ -223,7 +236,7 @@ function QuotationDetail() {
 
                     </div>
                 </section>
-                
+
                 <section className="detail-price">
                     <h2>견적 금액</h2>
 

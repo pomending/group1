@@ -1611,3 +1611,20 @@ export const initialEmployees = [
         hireDate: "2026-09-01"
     }
 ];
+
+export const claims = [
+    {
+        id: 1, companyName: "한빛굿즈", customerManager: "김민수",
+        phone: "010-0000-0001", email: "", consultationId:1,
+        inquiryType: "제품 불량", title: "스테인리스 텀블러 뚜껑 불량 문의",
+        content: "납품받은 텀블러 중 일부 제품의 뚜껑이 제대로 닫히지 않습니다.\n불량 제품의 교환 가능 여부를 확인 부탁드립니다.",
+        photo: "", status: "접수", createdAt: "2026-11-10"
+    },
+    {
+        id: 2, companyName: "새봄기획", customerManager: "이서연",
+        phone: "", email: "sample@example.com", consultationId:2,
+        inquiryType: "배송 문제", title: "주문한 상품 일부가 도착하지 않았습니다",
+        content: "주문한 굿즈 중 일부 수량이 누락되어 배송됐습니다.\n남은 상품의 배송 일정을 알려주세요.",
+        photo: "", status: "처리 중", createdAt: "2026-11-11"
+    }
+];

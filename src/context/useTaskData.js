@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { tasks as initialTasks } from "../data/mockData";
 import { validateTask } from "../utils/taskUtils";
 
-function useTaskData(projects, employees){
+function useTaskData(){
 
     const NEXT_ID_KEY = 'erp_task_next_id'
     const STORAGE_KEY = 'erp_tasks'
@@ -37,7 +37,7 @@ function useTaskData(projects, employees){
 
     const addTask = (newTask) => {
 
-        const error = validateTask(newTask, projects, employees, tasks)
+        const error = validateTask(newTask, tasks);
 
         if (error) {
             return { ok: false, message: error };
@@ -100,10 +100,15 @@ function useTaskData(projects, employees){
             };
         }
 
+        if (original.taskType !== mergedTask.taskType) {
+            return {
+                ok: false,
+                message: "세부 작업의 종류는 변경할 수 없습니다."
+            };
+        }
+
         const error = validateTask(
-            mergedTask, 
-            projects, 
-            employees, 
+            mergedTask,
             tasks,
             original.id
         );

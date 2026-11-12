@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import { initialProjects } from "../data/mockData"
 import { validateProject } from "../utils/projectUtils"
 
-export function useProjectData(employees, quotations) {
+export function useProjectData() {
 
     const STORAGE_KEY = 'erp_projects'
     const NEXT_ID_KEY = 'erp_project_next_id'
@@ -72,41 +72,10 @@ export function useProjectData(employees, quotations) {
 
     const addProject = (newProject) => {
 
-        const error = validateProject(newProject, employees)
+        const error = validateProject(newProject)
 
         if (error) {
             return { ok: false, message: error };
-        }
-
-        // 견적 ID 타입 검증
-        if (
-            !Number.isSafeInteger(newProject.quotationId) ||
-            newProject.quotationId <= 0
-        ) {
-            return {
-                ok: false,
-                message: "올바르지 않은 견적 ID입니다."
-            };
-        }
-
-        // 견적 존재 여부 검증
-        const quotation = quotations.find(
-            q => q.id === newProject.quotationId
-        );
-
-        if (!quotation) {
-            return {
-                ok: false,
-                message: "존재하지 않는 견적입니다."
-            };
-        }
-
-        // 견적 승인 상태 검증
-        if (quotation.status !== "승인 완료") {
-            return {
-                ok: false,
-                message: "승인 완료된 견적만 프로젝트에 등록할 수 있습니다."
-            };
         }
 
         // 견적 중복 사용 검증
@@ -183,7 +152,7 @@ export function useProjectData(employees, quotations) {
         const error = validateProject({
             ...original,
             ...updatedProject
-        }, employees, original);
+        });
 
         if (error !== null) {
             return { ok: false, message: error };

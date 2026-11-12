@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import "./02_ConsultationManagement.css";
 import { useERP } from "../context/ERPContext";
-import { validateCustomer } from "../utils/customerUtils";
 import {
     validateCompanyName, validateConsultation, validateCustomerManager, validateDuplicateConsultation,
     validateEmail, validateMemo, validatePhone, formatPhone
@@ -12,7 +11,7 @@ function ConsultationManagement() {
     //문의목록을 관리할 usestate
     const { consultations, addConsultation, updateConsultation,
         deleteConsultations, employees, customers, addCustomer,
-        saveEditedCustomer
+        saveEditedCustomer, claims
     } = useERP();
 
     //체크박스로 선택한 문의 Id를 저장할 usestate
@@ -134,7 +133,12 @@ function ConsultationManagement() {
         }
 
         if (editData.id) {
-            updateConsultation({ ...editData, customerId });
+            const result = updateConsultation({ ...editData, customerId });
+        
+            if (!result.ok) {
+                alert(result.message);
+                return;
+            }
         } else {
             addConsultation({ ...editData, customerId });
         }
@@ -160,7 +164,12 @@ function ConsultationManagement() {
             return;
         }
 
-        deleteConsultations(checkIds)
+        const deleteResult = deleteConsultations(checkIds);
+
+        if (!deleteResult.ok) {
+            alert(deleteResult.message);
+            return;
+        }
 
         setCheckedIds([]);
         if (checkIds.includes(editData.id)) {
@@ -192,11 +201,16 @@ function ConsultationManagement() {
         }
     })
 
-
+    //클레임 건수확인
+    const pendingClaims = claims.filter(claim =>
+        claim.status === "접수" || claim.status === "처리 중"
+    )
+    const pendingCount = pendingClaims.length;
 
     return (
         <div className="consultation-page">
             <h2>상담 관리</h2>
+            <h3>미완료 클레임 {pendingCount}건</h3>
             <div className="consultation-box">
                 <h6>고객 문의 접수 및 처리 현황 관리</h6>
 

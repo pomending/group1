@@ -76,7 +76,7 @@ export const getProjectProgress = (project, tasks) => {
 
 };
 
-export const validateProject = (projectData, employees, original = null) => {
+export const validateProject = (projectData) => {
 
     if (!projectData.name?.trim()) {
         return "프로젝트명을 입력하세요.";
@@ -121,29 +121,6 @@ export const validateProject = (projectData, employees, original = null) => {
 
     if (projectData.status !== "완료" && projectData.completedDate) {
         return "완료되지 않은 프로젝트에는 완료일을 등록할 수 없습니다.";
-    }
-
-    const keepOldManager =
-        original?.status === "완료" &&
-        projectData.status === "완료" &&
-        original.managerId === projectData.managerId;
-
-    if (!keepOldManager) {
-
-        if (
-            !Number.isSafeInteger(projectData.managerId) ||
-            projectData.managerId <= 0
-        ) {
-            return "올바르지 않은 담당자 ID입니다.";
-        }
-        
-        const validManager = getProjectManagers(employees)
-            .some(emp => emp.id === projectData.managerId);
-        
-        if (!validManager) {
-            return "경영지원팀의 재직중인 직원을 선택하세요.";
-        }
-
     }
 
     return null;

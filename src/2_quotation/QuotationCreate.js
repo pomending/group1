@@ -3,7 +3,7 @@ import "./QuotationCreate.css"
 import { useLocation, useNavigate } from "react-router-dom";
 import { useERP } from "../context/ERPContext";
 import { formatQuotationId, formatEmployeeId } from "../utils/formatUtils";
-import { totalPrice as calculateTotalPrice, getQuotationUnitPrice } from "../utils/quotationUtils";
+import { totalPrice as calculateTotalPrice, getQuotationPriceDetails } from "../utils/quotationUtils";
 
 function QuotationCreate() {
 
@@ -60,21 +60,28 @@ function QuotationCreate() {
     )
 
     //단가 상태값
-    const [unitPrice, setUnitPrice] = useState("")
+    const [baseUnitPrice, setBaseUnitPrice] = useState("");
 
     //수량 상태값
-    const [quantity, setQuantity] = useState("")
+    const [quantity, setQuantity] = useState("");
 
     //옵션 추가
     const [options, setOptions] = useState([]);
 
     //옵션 포함 개당 단가 계산
-    const optionUnitPrice = getQuotationUnitPrice({
-        unitPrice, options
-    })
+    // const optionUnitPrice = getQuotationUnitPrice({
+    //     unitPrice, options
+    // })
+
+    const finalUnitPrice = getQuotationPriceDetails({
+        baseUnitPrice,
+        options
+    }).finalUnitPrice;
+
+    const totalPrice = calculateTotalPrice(quantity, finalUnitPrice);
 
     //공급가액 계산
-    const totalPrice = calculateTotalPrice(quantity, optionUnitPrice)
+    // const totalPrice = calculateTotalPrice(quantity, optionUnitPrice)
 
     //부가서 및 최종 견적 금액
     const vat = totalPrice * 0.1;
@@ -143,14 +150,15 @@ function QuotationCreate() {
 
     //공통 저장 함수
     const saveQuotation = (status) => {
-        
+
         const newQuotation = {
             ...(editQuotation ? { id: editQuotation.id } : {}),
             customerId: selectedCustomer ? Number(selectedCustomer.id) : null,
             productId: productId ? Number(productId) : null,
             employeeId: employeeId ? Number(employeeId) : null,
             quantity: quantity === "" ? 0 : Number(quantity),
-            unitPrice: unitPrice === "" ? 0 : Number(unitPrice),
+            // unitPrice: unitPrice === "" ? 0 : Number(unitPrice),
+            baseUnitPrice: baseUnitPrice === "" ? 0 : Number(baseUnitPrice),
             options: options.map(option => ({
                 name: option.name,
                 unitPrice: Number(option.unitPrice)
@@ -208,7 +216,7 @@ function QuotationCreate() {
 
 
         setQuantity(editQuotation.quantity || "");
-        setUnitPrice(editQuotation.unitPrice || "");
+        setBaseUnitPrice(editQuotation.baseUnitPrice ?? "");
         setOptions(
             (editQuotation.options ?? []).map(option => ({
                 ...option,
@@ -382,7 +390,8 @@ function QuotationCreate() {
                                 onChange={(e) => {
                                     setProductSearch(e.target.value)
                                     setProductId("")
-                                    setUnitPrice("")
+                                    // setUnitPrice("");
+                                    setBaseUnitPrice("");
                                     setQuantity("")
                                     setOptions([])
                                     setShowProductList(true)
@@ -402,7 +411,12 @@ function QuotationCreate() {
                                                     setProductId(product.id);
                                                     setProductSearch(product.productName);
                                                     setShowProductList(false);
-                                                    setUnitPrice(product.productPrice);
+                                                
+                                                    if (editQuotation?.productId === product.id) {
+                                                        setBaseUnitPrice(editQuotation.baseUnitPrice);
+                                                    } else {
+                                                        setBaseUnitPrice(product.productPrice);
+                                                    }
                                                 }}
                                             >
                                                 <strong>{product.productName}</strong>
@@ -436,7 +450,8 @@ function QuotationCreate() {
                                 type="number"
                                 className="readonly-input"
                                 placeholder="상품 선택 시 자동 입력"
-                                value={unitPrice}
+                                // value={unitPrice}
+                                value={baseUnitPrice}
                                 readOnly />
                         </div>
 
@@ -462,7 +477,7 @@ function QuotationCreate() {
                                         type="text"
                                         placeholder="옵션명 입력"
                                         value={option.name}
-                                        onChange={(e) => 
+                                        onChange={(e) =>
                                             handleChangeOption(option.id, "name", e.target.value)
                                         }
                                     />
@@ -471,7 +486,7 @@ function QuotationCreate() {
                                         type="number"
                                         placeholder="추가 단가 입력"
                                         value={option.unitPrice}
-                                        onChange={(e) => 
+                                        onChange={(e) =>
                                             handleChangeOption(option.id, "unitPrice", e.target.value)
                                         }
                                     />

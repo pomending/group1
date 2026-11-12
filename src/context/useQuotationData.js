@@ -3,6 +3,7 @@
 
 import { useState, useEffect } from "react";
 import { quotations as initialQuotations } from "../data/mockData";
+import { validateQuotation } from "../utils/quotationUtils";
 
 export default function useQuotationData() {
 
@@ -50,69 +51,7 @@ export default function useQuotationData() {
         );
     };
 
-    //견적 데이터 유효성 검사
-    const validateQuotation = (quotation) => {
-
-        //임시 저장은 필수 입력 검사 제외
-        if (quotation.status === "임시 저장") {
-            return { ok: true };
-        }
-
-        if (!quotation.customerId) {
-            return { ok: false, message: "거래처를 선택해주세요." }
-        }
-
-        if (!quotation.productId) {
-            return { ok: false, message: "상품을 선택해주세요." }
-        }
-
-        if (!quotation.employeeId) {
-            return { ok: false, message: "내부 담당자를 선택해주세요." };
-        }
-
-        if (!quotation.createdAt) {
-            return { ok: false, message: "작성일을 입력해주세요." };
-        }
-
-        //Number.isFinite()은 정상적인 숫자인지 확인해준다.
-        if(!Number.isFinite(Number(quotation.quantity)) ||
-            Number(quotation.quantity) <= 0){
-                return {ok: false, message: "수량은 0보다 커야 합니다."}
-        }
-
-        if(!Number.isFinite(Number(quotation.unitPrice)) ||
-            Number(quotation.unitPrice) <= 0){
-                return {ok: false, message: "단가는 0보다 커야 합니다."}
-        }
-
-        //결제 방법 유효성 검사
-        if(!quotation.paymentMethod){
-            return {ok: false, message: "결제 방법을 선택해주세요."}
-        }
-
-        //견적 유효기간 필수 입력 검사
-        if(!quotation.validUntil){
-            return {ok: false, message: "견적 유효기간을 입력해주세요."}
-        }
-
-        //견적 유효기간 날짜 검사
-        if(quotation.validUntil < quotation.createdAt){
-                return {ok: false, message: "견적 유효기간은 작성일 이후여야 합니다."}
-        }
-
-        //납품 예정일 필수 입력 검사
-        if(!quotation.deliveryDate){
-            return {ok: false, message: "납품 예정일을 입력해주세요."}
-        }
-
-        //납품 예정일 날짜 검사
-        if (quotation.deliveryDate < quotation.createdAt) {
-            return { ok: false, message: "납품 예정일은 작성일 이후여야 합니다." };
-        }
-
-        return { ok: true };
-
-    }
+    
 
     // 견적 등록
     const addQuotation = (newQuotation) => {
@@ -156,6 +95,18 @@ export default function useQuotationData() {
             ...existing,
             ...updatedQuotation
         }
+        
+        // 기존 상품을 유지하는 경우 기본 단가 변경 금지
+        if (
+            existing.productId != null &&
+            existing.productId === mergedQuotation.productId &&
+            existing.baseUnitPrice !== mergedQuotation.baseUnitPrice
+        ) {
+            return {
+                ok: false,
+                message: "기존 견적의 기본 단가는 변경할 수 없습니다."
+            };
+        }
 
         const result = validateQuotation(mergedQuotation)
 
@@ -181,6 +132,8 @@ export default function useQuotationData() {
             // 기존 견적서 목록에서 삭제하려는 번호만 빼고 나머지는 전부 남겨라라는 뜻
             prev.filter(q => q.id !== Number(id))
         );
+
+        return { ok: true };
     };
 
     // 견적 초기화
