@@ -80,11 +80,25 @@ function ConsultationManagement() {
             }
         }
 
-        let customerId = editData.customerId ?? null
         let isNewCustomer = false;
+        const originalConsultation = consultations.find(
+            (consultation) => consultation.id === editData.id)
+
+        const isMemoChanged = !originalConsultation
+            || (originalConsultation.memo !== editData.memo)
+
+        if (originalConsultation &&
+            originalConsultation.companyName !== editData.companyName &&
+            originalConsultation.status === "견적 요청") {
+            alert("견적 요청된 상담의 고객은 변경할 수 없습니다.")
+            return;
+        }
+
+        let customerId = editData.customerId ?? null
         if (editData.status === "견적 요청") {
             const existingCustomer = customers.find(
                 (customer) => customer.companyName === editData.companyName)
+
 
             if (!existingCustomer) {
                 const newCustomerId = addCustomer({
@@ -113,6 +127,7 @@ function ConsultationManagement() {
                 const newMemo = `${today} | ${editData.memo}`;
 
                 const updatedMemo = editData.memo?.trim()
+                        
                     ? [existingCustomer.memo, newMemo].filter(Boolean).join("\n")
                     : (existingCustomer.memo || "");
 
@@ -134,7 +149,7 @@ function ConsultationManagement() {
 
         if (editData.id) {
             const result = updateConsultation({ ...editData, customerId });
-        
+
             if (!result.ok) {
                 alert(result.message);
                 return;

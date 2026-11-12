@@ -126,3 +126,35 @@
 }
 .home-master-actions button[type="submit"] { background: #29231e; color: #fff; }
 .home-master-actions button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+
+/* ===== GOODS STUDIO : SOFT LAVENDER REDESIGN ===== */
+.home-topbar { background: rgba(253,250,255,.97); border-bottom: 1px solid #eadff5; color: #29243c; box-shadow: 0 3px 15px rgba(103,75,155,.035); }
+.home-topbar-inner { max-width: 1260px; min-height: 80px; padding: 14px 24px; }
+.home-topbar-logo { border: 0; border-radius: 17px; color: #fff; background: linear-gradient(135deg,#c7b0ed,#a584dd); box-shadow: 0 5px 14px #dacaf3; transition: transform .2s; }
+.home-topbar-logo:hover { transform: rotate(-8deg); }
+.home-topbar-name strong { color: #2e2940; letter-spacing: -.7px; }
+.home-topbar-name span { color: #9080ac; }
+.home-customer-label { color: #8e76b6; padding: 9px 15px; border: 1px solid #dfcdf6; border-radius: 999px; background: #fcf8ff; }
+.home-topbar-nav { border-top: 1px solid #f2eafa; }
+.home-topbar-menu { max-width: 1260px; }
+.home-menu-button { color: #756f86; border-bottom-width: 2px; transition: color .2s, background .2s; }
+.home-menu-button:hover { color: #9774ce; background: #f8f2ff; }
+.home-menu-button.active { color: #865cc7; border-bottom-color: #a787df; }
+.home-master-dashboard { border: 0; border-radius: 12px; background: #a58ad9; }
+.home-master-exit { border: 1px solid #d8c6ed; border-radius: 12px; color: #765c9d; }
+.home-master-dialog { border: 1px solid #e3d6f3; border-radius: 24px; background: #fefbff; box-shadow: 12px 12px 0 #e8dcf7; }
+.home-master-dialog input { border: 1px solid #d8c5f0; border-radius: 11px; }
+.home-master-dialog input:focus { border-color: #a88bdc; }
+.home-master-actions button { border: 1px solid #ddcdf0; border-radius: 12px; }
+.home-master-actions button[type="submit"] { border-color: #a487d7; background: #a487d7; }
+@media (max-width: 650px) {
+ .home-topbar-inner { min-height: 72px; padding: 12px 15px; }
+ .home-topbar-logo { width: 46px; height: 46px; }
+ .home-topbar-name strong { font-size: 21px; }
+ .home-topbar-name span { font-size: 8px; }
+ .home-customer-label { display: none; }
+ .home-topbar-menu { padding: 0 10px; gap: 0; }
+ .home-menu-button { padding: 14px 12px; font-size: 13px; }
+ .home-master-dialog { width: calc(100vw - 32px); }
+}
