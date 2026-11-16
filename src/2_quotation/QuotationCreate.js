@@ -107,6 +107,11 @@ function QuotationCreate() {
 
     //견적서 저장
     const handleSave = () => {
+
+        if(!window.confirm("견적서를 저장하시겠습니까?")){
+            return;
+        }
+
         saveQuotation("승인 대기");
     };
 
@@ -163,7 +168,6 @@ function QuotationCreate() {
             status
         }
 
-        console.log("저장할 견적서:", newQuotation);
         let result;
 
         if (editQuotation) {
@@ -177,6 +181,15 @@ function QuotationCreate() {
         if (!result.ok) {
             alert(result.message);
             return;
+        }
+
+        //저장 성공 알림
+        if(status === "임시 저장"){
+            alert("견적서가 임시저장되었습니다.")
+        }else if(editQuotation){
+            alert("견적서가 수정되었습니다.")
+        }else{
+            alert("견적서가 저장되었습니다.")
         }
 
         if (editQuotation) {
@@ -567,7 +580,25 @@ function QuotationCreate() {
                     </section>
                 </main>
 
-                <div className="create-footer">
+                        <div className="form-group">
+                            <label>특이사항</label>
+                            <input
+                                type="text"
+                                placeholder="특이사항을 입력하세요."
+                                value={memo}
+                                onChange={(e) => setMemo(e.target.value)} />
+                        </div>
+                    </div>
+                </section>
+            </main>
+
+            <div className="create-footer">
+                <button
+                    className="cancel-btn"
+                    onClick={() => navi(`/quotation/detail/${editQuotation.id}`)}>
+                    취소
+                </button>
+                {!fromDetail && (
                     <button
                         className="cancel-btn"
                         onClick={() => navi("/quotation")}>

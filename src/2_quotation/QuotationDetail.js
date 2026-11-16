@@ -36,7 +36,6 @@ function QuotationDetail() {
     }
 
     //옵션 포함 개당 단가 계산
-    // const optionUnitPrice = getQuotationUnitPrice(quotation);
     const optionUnitPrice =
         getQuotationPriceDetails(quotation).finalUnitPrice;
 
@@ -106,6 +105,10 @@ function QuotationDetail() {
     //견적서 수정
     const handleEdit = () => {
 
+        if(!window.confirm("견적서를 수정하시겠습니까?")){
+            return;
+        }
+
         if (quotation.status === "승인 완료" ||
             quotation.status === "반려"
         ) {
@@ -124,19 +127,9 @@ function QuotationDetail() {
     //견적서 삭제
     const handleDelete = () => {
 
-        // if (quotation.status === "승인 완료") {
-        //     alert("승인 완료된 견적서는 삭제할 수 없습니다.")
-        //     return;
-        // }
-
         if (!window.confirm("이 견적서를 삭제하시겠습니까?\n삭제한 견적서는 복구할 수 없습니다.")) {
             return;
         }
-
-        // deleteQuotation(quotation.id)
-
-        // alert("견적서가 삭제되었습니다.")
-        // navi("/quotation")
 
         const result = deleteQuotation(quotation.id);
 
