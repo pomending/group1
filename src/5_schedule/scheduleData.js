@@ -23,16 +23,18 @@ export const scheduleTypes = [
   "출고",
   "기타",
 ];
-export const scheduleCategories = ["회의", "프로젝트", "업무", "외근", "휴가", "기타"];
+export const scheduleCategories = ["회의", "업무", "외근", "휴가", "기타"];
 export const scheduleScopes = ["업무용", "개인 일정용"];
 export function getScheduleScope(item = {}) {
   return scheduleScopes.includes(item.scope) ? item.scope : "업무용";
 }
 export function getScheduleCategory(item = {}) {
+  // 예전 프로젝트 분류는 업무로 표시하되 프로젝트 연결 정보는 보존합니다.
+  if (item.category === "프로젝트") return "업무";
   if (scheduleCategories.includes(item.category)) return item.category;
   if (item.scope === "개인 일정용") return "";
   if (normalizeAttendees(item.attendees).length) return "회의";
-  return typeof item.project === "string" && item.project.trim() ? "프로젝트" : "업무";
+  return "업무";
 }
 export const MAX_REPEAT_INTERVAL = 120;
 // 기존 biweekly=true 데이터도 2주 간격으로 읽습니다. 새 데이터의 숫자 간격을 우선합니다.
@@ -744,15 +746,11 @@ export function isNumericInput(value) {
 export function getScheduleFormError(form) {
   if (!form || typeof form !== "object") return { field: "scope", message: "일정 입력 내용을 확인해 주세요." };
   const title = typeof form.title === "string" ? form.title.trim() : "";
-  const project = typeof form.project === "string" ? form.project.trim() : "";
   if (!scheduleScopes.includes(form.scope)) {
     return { field: "scope", message: "업무용 또는 개인 일정용을 먼저 선택해 주세요." };
   }
   if (form.scope === "업무용" && !scheduleCategories.includes(form.category)) {
     return { field: "category", message: "일정 분류를 선택해 주세요." };
-  }
-  if (form.scope === "업무용" && form.category === "프로젝트" && !project) {
-    return { field: "project", message: "프로젝트 분류에는 프로젝트명을 입력해 주세요." };
   }
   if (typeof form.project !== "string") return { field: "project", message: "프로젝트명은 글자로 입력해 주세요." };
   if (!title) {
@@ -761,7 +759,7 @@ export function getScheduleFormError(form) {
   // 입력창의 maxLength와 같은 제한을 저장 전에도 검사합니다.
   // 임시 보관 복구나 직접 제출로 브라우저 제한을 건너뛰어도 잘못된 값을 저장하지 않습니다.
   if (form.title.length > 80) return { field: "title", message: "일정 이름은 80자 이내로 입력해 주세요." };
-  if (form.scope === "업무용" && form.category === "프로젝트" && form.project.length > 60) {
+  if (form.scope === "업무용" && form.project.length > 60) {
     return { field: "project", message: "프로젝트명은 60자 이내로 입력해 주세요." };
   }
   if (typeof form.description !== "string" || form.description.length > 3000) {

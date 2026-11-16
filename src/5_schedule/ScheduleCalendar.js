@@ -124,7 +124,7 @@ export default function ScheduleCalendar({
             <option value="private">개인 표시</option>
           </select>
           {(query || selectedProject || scopeFilter !== "all" || hasStaffFilter) && (
-            <button type="button" className="sm-list-all-btn" onClick={onClearFilters}>검색·필터 초기화</button>
+            <button type="button" className="sm-filter-reset-btn" onClick={onClearFilters}>검색·필터 초기화</button>
           )}
         </div>
       </div>
