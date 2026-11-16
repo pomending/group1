@@ -15,6 +15,7 @@ import { deleteSchedulesByProject, deleteSchedulesByEmployee, resetStoredSchedul
 import { isValidDate } from "../utils/dateUtils";
 import useClaimData from "./useClaimData";
 import { validateClaim } from "../utils/claimUtils";
+import { resetDashboardData } from "../6_dashboard/dashboardStorage";
 
 const ERPContext = createContext(null);
 
@@ -102,6 +103,107 @@ export function ERPProvider({ children }) {
         }
 
         return consultationData.deleteConsultations(ids);
+    };
+
+    const validateCustomerEmployee = (customer) => {
+
+        const employeeId = customer.employeeId;
+    
+        if (employeeId == null || employeeId === "") {
+            return {
+                ok: false,
+                message: "담당자를 지정해주세요."
+            };
+        }
+    
+        const employee = employeeData.employees.find(
+            e => e.id === employeeId
+        );
+    
+        if (!employee) {
+            return {
+                ok: false,
+                message: "존재하지 않는 담당자입니다."
+            };
+        }
+    
+        if (
+            employee.status !== "재직" ||
+            employee.department !== "영업팀"
+        ) {
+            return {
+                ok: false,
+                message: "재직 중인 영업팀 직원만 담당자로 지정할 수 있습니다."
+            };
+        }
+    
+        return { ok: true };
+    };
+
+    const addCustomer = (newCustomer) => {
+
+        if (
+            !newCustomer ||
+            typeof newCustomer !== "object" ||
+            Array.isArray(newCustomer)
+        ) {
+            return {
+                ok: false,
+                message: "올바르지 않은 고객 정보입니다."
+            };
+        }
+    
+        const result = validateCustomerEmployee(newCustomer);
+    
+        if (!result.ok) {
+            return result;
+        }
+    
+        const newId = customerData.addCustomer(newCustomer);
+    
+        return {
+            ok: true,
+            id: newId
+        };
+    };
+
+    const saveEditedCustomer = (updatedCustomer) => {
+
+        if (
+            !Number.isSafeInteger(updatedCustomer?.id) ||
+            updatedCustomer.id <= 0
+        ) {
+            return {
+                ok: false,
+                message: "올바르지 않은 고객 ID입니다."
+            };
+        }
+    
+        const original = customerData.customers.find(
+            c => c.id === updatedCustomer.id
+        );
+    
+        if (!original) {
+            return {
+                ok: false,
+                message: "존재하지 않는 고객입니다."
+            };
+        }
+    
+        const mergedCustomer = {
+            ...original,
+            ...updatedCustomer
+        };
+    
+        const result = validateCustomerEmployee(mergedCustomer);
+    
+        if (!result.ok) {
+            return result;
+        }
+    
+        customerData.saveEditedCustomer(mergedCustomer);
+    
+        return { ok: true };
     };
 
     const deleteCustomers = (ids) => {
@@ -1338,9 +1440,11 @@ export function ERPProvider({ children }) {
         taskData.resetTasks();
         quotationData.resetQuotations();
         claimData.resetClaim();
+        resetDashboardData();
 
         authData.logout();
 
+        return { ok: true };
 
     };
 
@@ -1362,6 +1466,8 @@ export function ERPProvider({ children }) {
             updateConsultation,
             deleteConsultations,
 
+            addCustomer,
+            saveEditedCustomer,
             deleteCustomers,
 
             updateEmployee,
