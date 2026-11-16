@@ -14,23 +14,6 @@ function readList(key, fallback) {
     }
 }
 
-// 마이페이지에서 저장한 이름·이메일·전화번호를 기존 직원 정보에 반영합니다.
-function getEmployeeInfo(employee) {
-    if (!employee) return null;
-    try {
-        const key = `erpMyPageInfo_${String(employee.email).trim().toLowerCase()}`;
-        const saved = JSON.parse(localStorage.getItem(key) || "null");
-        return saved ? {
-            ...employee,
-            name: saved.name || employee.name,
-            email: saved.email || employee.email,
-            phone: saved.phone ?? employee.phone
-        } : employee;
-    } catch {
-        return employee;
-    }
-}
-
 // 게시판의 작성자 확인에 사용합니다. 계정 ID와 직원 ID는 별개입니다.
 export function getBoardUser() {
     let accountId;
@@ -51,7 +34,7 @@ export function getBoardUser() {
     return {
         employeeId: employee.id,
         email: String(employee.email).trim().toLowerCase(),
-        name: getEmployeeInfo(employee).name
+        name: employee.name
     };
 }
 
@@ -73,14 +56,21 @@ function getProfilePhoto(employeeId) {
 }
 
 function MyPage() {
-    const { currentUser: account, currentEmployee, logout, changePassword } = useERP();
+
+    const {
+        currentUser: account,
+        currentEmployee,
+        logout,
+        changePassword,
+        updateEmployee
+    } = useERP();
+
     const employeeId = account?.employeeId;
-    const infoKey = `erpMyPageInfo_${String(currentEmployee?.email || "").trim().toLowerCase()}`;
+
     const photoInputRef = useRef(null);
     const [photo, setPhoto] = useState(() => getProfilePhoto(employeeId));
-    const [savedEmployee, setSavedEmployee] = useState(null);
-    const employee = savedEmployee?.id === currentEmployee?.id
-        ? savedEmployee : getEmployeeInfo(currentEmployee);
+
+    const employee = currentEmployee;
 
     const [isEditing, setIsEditing] = useState(false);
     const [name, setName] = useState(employee?.name || "");
@@ -141,16 +131,24 @@ function MyPage() {
 
     const saveInfo = event => {
         event.preventDefault();
-        if (!name.trim() || !email.trim()) return alert("이름과 이메일을 입력해 주세요.");
-        const changed = { name: name.trim(), email: email.trim(), phone: phone.trim() };
-        try {
-            localStorage.setItem(infoKey, JSON.stringify(changed));
-        } catch {
-            return alert("정보를 저장할 수 없습니다.");
+
+        if (!employee) {
+            return;
         }
-        setSavedEmployee({ ...employee, ...changed });
+
+        const result = updateEmployee({
+            id: employee.id,
+            name: name.trim(),
+            email: email.trim(),
+            phone: phone.trim()
+        });
+
+        if (!result.ok) {
+            alert(result.message);
+            return;
+        }
+
         setIsEditing(false);
-        window.dispatchEvent(new Event("erpProfilePhotoChanged"));
     };
 
     const closePasswordForm = () => {
@@ -212,7 +210,7 @@ function MyPage() {
                             type="file"
                             accept="image/jpeg,image/png,image/webp,image/gif"
                             onChange={changeProfilePhoto}
-                            aria-label="프로필 사진 파일 선택"/>
+                            aria-label="프로필 사진 파일 선택" />
                         <div className="mypage-profile-text">
                             {/* 직원 이름 */}
                             {isEditing ? (
@@ -227,7 +225,7 @@ function MyPage() {
                                             maxWidth: "100%"
                                         }}
                                         maxLength={30}
-                                        required/>
+                                        required />
                                 </div>
                             ) : (
                                 <h2>{employee.name}</h2>
@@ -264,7 +262,7 @@ function MyPage() {
                                         value={email}
                                         onChange={(e) => setEmail(e.target.value)}
                                         maxLength={100}
-                                        required/>
+                                        required />
                                 ) : (
                                     <strong>{employee.email}</strong>
                                 )}
@@ -281,7 +279,9 @@ function MyPage() {
                                         value={phone}
                                         onChange={(e) => setPhone(e.target.value)}
                                         placeholder="010-0000-0000"
-                                        maxLength={20}/>
+                                        maxLength={20}
+                                        required
+                                    />
                                 ) : (
                                     <strong>
                                         {employee.phone || "미등록"}
@@ -348,7 +348,7 @@ function MyPage() {
                                             : "계정 데이터 없음"}
                                     </strong>
                                 </div>
-                                
+
                                 {account && (
                                     <div className="mypage-info-item">
                                         <span>계정 생성일 (UTC)</span>
@@ -388,7 +388,7 @@ function MyPage() {
                                             type="password"
                                             value={currentPassword}
                                             onChange={(e) => setCurrentPassword(e.target.value)}
-                                            autoComplete="current-password"/>
+                                            autoComplete="current-password" />
                                     </div>
                                     <div className="mypage-password-field">
                                         <label htmlFor="mypage-new-password">새 비밀번호</label>
@@ -397,7 +397,7 @@ function MyPage() {
                                             type="password"
                                             value={newPassword}
                                             onChange={(e) => setNewPassword(e.target.value)}
-                                            autoComplete="new-password"/>
+                                            autoComplete="new-password" />
                                     </div>
                                     <div className="mypage-password-field">
                                         <label htmlFor="mypage-confirm-password">새 비밀번호 확인</label>
@@ -406,7 +406,7 @@ function MyPage() {
                                             type="password"
                                             value={confirmPassword}
                                             onChange={(e) => setConfirmPassword(e.target.value)}
-                                            autoComplete="new-password"/>
+                                            autoComplete="new-password" />
                                     </div>
                                 </div>
                                 <div className="mypage-password-actions">

@@ -107,7 +107,7 @@ function ConsultationManagement() {
 
 
             if (!existingCustomer) {
-                const newCustomerId = addCustomer({
+                const result = addCustomer({
                     companyName: editData.companyName,
                     businessNumber: "",
                     customerManager: editData.customerManager,
@@ -120,10 +120,14 @@ function ConsultationManagement() {
                         ? `${new Date().toLocaleDateString("sv-SE")} | ${editData.memo}`
                         : "",
                     registrationSource: "autosave"
-                }
-                )
+                });
 
-                customerId = newCustomerId
+                if (!result.ok) {
+                    alert(result.message);
+                    return;
+                }
+
+                customerId = result.id;
                 isNewCustomer = true;
             } else {
                 customerId = existingCustomer.id
@@ -143,18 +147,24 @@ function ConsultationManagement() {
                     ? [existingCustomer.memo, newMemo].filter(Boolean).join("\n")
                     : (existingCustomer.memo || "");
 
-                if (existingCustomer.customerManager !== editData.customerManager
-                    || existingCustomer.email !== (editData.email?.trim() || existingCustomer.email)
-                    || existingCustomer.phone !== editData.phone
-                    || existingCustomer.memo !== updatedMemo
+                if (
+                    existingCustomer.customerManager !== editData.customerManager ||
+                    existingCustomer.email !== (editData.email?.trim() || existingCustomer.email) ||
+                    existingCustomer.phone !== editData.phone ||
+                    existingCustomer.memo !== updatedMemo
                 ) {
-                    saveEditedCustomer(
-                        {
-                            ...existingCustomer, customerManager: editData.customerManager,
-                            email: editData.email?.trim() || existingCustomer.email,
-                            phone: editData.phone, memo: updatedMemo
-                        }
-                    )
+                    const result = saveEditedCustomer({
+                        ...existingCustomer,
+                        customerManager: editData.customerManager,
+                        email: editData.email?.trim() || existingCustomer.email,
+                        phone: editData.phone,
+                        memo: updatedMemo
+                    });
+
+                    if (!result.ok) {
+                        alert(result.message);
+                        return;
+                    }
                 }
             }
         }

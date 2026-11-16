@@ -7,24 +7,22 @@ import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
 import "./02_CustomerManagement.css";
 import { useERP } from "../context/ERPContext";
-
+import CustomerRegister from "./03_CustomerRegister";
+import CustomerEdit from "./03_CustomerEdit";
 
 function CustomerManagement() {
     //ERPcontext에 있는 함수 가져오기
-    const { customers, addCustomer,
-        saveEditedCustomer, deleteCustomers, employees, consultations,
-        quotations,projects } = useERP();
-
-
-
+    const { customers, deleteCustomers, employees } = useERP();
 
     //검색창에 입력한 검색어
     const [search, setSearch] = useState("");
     //검색조건으로 나온 고객목록
     const [searchList, setSearchList] = useState(customers);
     useEffect(() => {
-        setSearchList(customers)
-    }, [customers])
+        setSearchList(customers);
+        setSearch("");
+        setCurrentPage(1);
+    }, [customers]);
     //체크 박스로 선택한 고객들의 ID목록
     const [checkedIds, setCheckedIds] = useState([]);
     //현재 보고있는 페이지 번호
@@ -38,6 +36,12 @@ function CustomerManagement() {
         (currentPage - 1) * customerCountPerPage,
         currentPage * customerCountPerPage
     );
+
+    const [modal, setModal] = useState(null);
+
+    const closeModal = () => {
+        setModal(null);
+    };
 
     //고객사명으로 고객 검색
     function searchCustomer(e) {
@@ -64,82 +68,46 @@ function CustomerManagement() {
 
     //선택한 고객의 수정팝업 열기
     function openEditCustomer() {
-        const selectedCustomer = customers.find((customer) =>
-            customer.id === checkedIds[0]
+
+        const selectedCustomer = customers.find(
+            customer => customer.id === checkedIds[0]
         );
-        //주소,창이름,크기
-        window.open(
-            "/crm/edit?id=" + selectedCustomer.id + "&popup=1",
-            "customerEdit",
-            "width=520,height=540"
-        );
+
+        if (!selectedCustomer) {
+            alert("고객을 선택해주세요.");
+            return;
+        }
+
+        setModal({
+            type: "edit",
+            customerId: selectedCustomer.id
+        });
     }
-
-    //체크박스로 선택한 고객 삭제(체크가 되어있지 않은 목록을 불러와 저장)
-    // function deleteSelectedCustomers() {
-    //     const deleteCount = checkedIds.length;
-        
-    //     const selectedCustomers = customers.filter(customer =>
-    //         checkedIds.includes(customer.id))
-       
-    //         const cannotDelete = selectedCustomers.some(customer =>
-    //         customer.registrationSource === "autoSave" ||
-    //         consultations.some(consultation =>
-    //             consultation.customerId === customer.id)
-    //     )
-    //     if(cannotDelete){
-    //         alert ("자동 등록되었거나 문의와 연결된 고객은 삭제할 수 없습니다.")
-    //         return;
-    //     }
-
-
-    //     const isConfirmed = window.confirm(
-    //         `선택한 고객 ${deleteCount}건을 삭제하시겠습니까?`
-    //     );
-    //     if (!isConfirmed) {
-    //         return;
-    //     }
-    //     //삭제함수 context에서 가져오기
-    //     deleteCustomers(checkedIds);
-
-    //     setSearch("");
-    //     setCheckedIds([]);
-    //     setCurrentPage(1);
-
-    //     alert(`고객정보 ${deleteCount}건이 삭제되었습니다.`);
-    // }
 
     function deleteSelectedCustomers() {
         const deleteCount = checkedIds.length;
-    
+
         const isConfirmed = window.confirm(
             `선택한 고객 ${deleteCount}건을 삭제하시겠습니까?`
         );
-    
+
         if (!isConfirmed) {
             return;
         }
-    
+
         const result = deleteCustomers(checkedIds);
-    
+
         if (!result.ok) {
             alert(result.message);
             return;
         }
-    
+
         setSearch("");
         setCheckedIds([]);
         setCurrentPage(1);
-    
+
         alert(`고객정보 ${deleteCount}건이 삭제되었습니다.`);
     }
-
-
-
-    //고객 등록·수정 팝업에서 부모 창의 함수와 데이터를 사용하도록 연결
-    window.saveEditedCustomer = saveEditedCustomer;
-    window.getCurrentCustomers = () => customers;
-    window.addCustomer = addCustomer;
 
     //고객 목록을 엑셀파일로 생성 및 다운로드파일 만들기 async =비동기 처리
     //엑셀 문서 생성 → 시트 생성 → 고객 데이터 입력 → XLSX 데이터 생성 → Blob으로 묶기 → 다운로드
@@ -249,13 +217,7 @@ function CustomerManagement() {
                     <div className="crm-actions">
                         <button
                             className="crm-btn-primary"
-                            onClick={() =>
-                                window.open(
-                                    "/crm/register?popup=1",
-                                    "customerRegister",
-                                    "width=520,height=540"
-                                )
-                            }
+                            onClick={() => setModal({ type: "register" })}
                         >
                             + 고객 등록
                         </button>
@@ -401,6 +363,38 @@ function CustomerManagement() {
                     </div>
                 </div>
             </div>
+
+            {/* 기존 고객 관리 화면 */}
+
+            {modal && (
+                <div className="crm-modal-overlay">
+
+                    <div className="crm-modal">
+
+                        <div className="crm-modal-header">
+                            <button
+                                className="crm-modal-close"
+                                onClick={closeModal}
+                            >
+                                ×
+                            </button>
+                        </div>
+
+                        {modal.type === "register" && (
+                            <CustomerRegister onClose={closeModal} />
+                        )}
+
+                        {modal.type === "edit" && (
+                            <CustomerEdit
+                                customerId={modal.customerId}
+                                onClose={closeModal}
+                            />
+                        )}
+
+                    </div>
+
+                </div>
+            )}
         </div>
     );
 }
