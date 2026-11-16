@@ -14,6 +14,12 @@ function TaskList() {
     // 작업 단계 필터
     const [ taskTypeFilter, setTaskTypeFilter ] = useState("전체");
 
+    // 현재 페이지
+    const [currentPage, setCurrentPage] = useState(1);
+
+    // 한 페이지에서 표시할 작업 개수
+    const itemsPerPage = 10;
+
     const { tasks, projects, employees } = useERP();
 
     const navigate = useNavigate();
@@ -26,6 +32,18 @@ function TaskList() {
 
         return task.taskType === taskTypeFilter;
     });
+
+    // 전체 페이지수
+    const totalPages = Math.ceil(filteredTasks.length / itemsPerPage)
+
+    // 현재 페이지에 표시할 데이터의 시작 위치
+    const startIndex = (currentPage - 1) * itemsPerPage
+
+    //현재 페이지에 표시할 작업 목록
+    const currentTasks = filteredTasks.slice(
+        startIndex,
+        startIndex + itemsPerPage
+    );
 
     return (
         <div className="task-page">
@@ -69,9 +87,10 @@ function TaskList() {
 
                     <select
                         value={taskTypeFilter}
-                        onChange={(e) =>
-                            setTaskTypeFilter(e.target.value)
-                        }
+                        onChange={(e) => {
+                            setTaskTypeFilter(e.target.value);
+                            setCurrentPage(1);
+                        }}
                     >
                         <option value="전체">전체 단계</option>
                         {TASK_TYPES.map(status => (
@@ -96,7 +115,7 @@ function TaskList() {
                     <tbody>
                         {filteredTasks.length > 0 ? (
 
-                            filteredTasks.map((task) => {
+                            currentTasks.map((task) => {
                                 const project = projects.find(
                                     (p) => p.id === task.projectId
                                 );
@@ -147,6 +166,31 @@ function TaskList() {
                     </tbody>
 
                 </table>
+
+                {/* 페이지네이션 */}
+                {totalPages > 1 && (
+                    <div className="task-pagination">
+                        <button onClick={() => setCurrentPage(prev => prev - 1)}
+                                disabled = {currentPage === 1}
+                        >
+                            이전
+                        </button>
+                        {Array.from({length: totalPages}, (_, index) => (
+                            <button key={index + 1}
+                                    className={currentPage === index + 1 ? "active" : ""}
+                                    onClick={() => setCurrentPage(index + 1)}
+                            >
+                                {index + 1}
+                        </button>
+                        
+                        ))}
+                        <button onClick ={() => setCurrentPage(prev => prev + 1)}
+                                disabled={currentPage === totalPages}
+                        >
+                            다음
+                        </button>
+                    </div>
+                )}
 
             </div>
 
