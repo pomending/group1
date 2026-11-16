@@ -1,3 +1,4 @@
+
 /* Projects 공통 스타일 — ProjectPage에서 한 번만 import
    pj-* : 목록/등록/상세/수정 공통
    pm-* : 목록, pf-* : 등록, pd-* : 상세, pe-* : 수정 전용 */
@@ -10,10 +11,10 @@
   --pj-muted: #85899a;
   width: 100%;
   min-height: 100vh;
-  padding: 22px 24px 36px;
+  padding: 28px 30px 40px;
   background: #f6f7fb;
   color: #303348;
-  font: 14px/1.4 Arial, sans-serif;
+  font: 14px/1.5 Arial, sans-serif;
   text-align: left;
 }
 
@@ -24,7 +25,7 @@
 
 .pj-container {
   width: 100%;
-  max-width: 980px;
+  max-width: 1100px;
   margin: 0 auto;
 }
 
@@ -32,7 +33,7 @@
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  margin: 0 0 20px;
+  margin: 0 0 18px;
   padding: 0;
   border: 0;
   background: none;
@@ -50,7 +51,7 @@
   display: block;
   margin: 0 0 5px;
   color: var(--pj-accent);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 700;
   letter-spacing: .8px;
 }
@@ -58,7 +59,7 @@
 .pj-subtitle {
   margin: 6px 0 0;
   color: var(--pj-muted);
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .pj-card {
@@ -93,10 +94,10 @@
   min-width: 0;
   margin: 0;
   padding: 9px 12px;
-  border: 1px solid #dedee9;
+  border: 1px solid #DDD8EA;
   border-radius: 8px;
-  background: #fff;
-  color: #35374d;
+  background: #FBFAFE;
+  color: #39354F;
   font: 13px/1.45 Arial, sans-serif;
 }
 
@@ -116,6 +117,8 @@
   white-space: nowrap;
   font-weight: 600;
   font-family: Arial, sans-serif;
+  min-height: 40px;
+  font-size: 13px;
 }
 
 .pj-primary {
@@ -146,7 +149,7 @@
   align-items: center;
   flex-shrink: 0;
   border-radius: 20px;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
   white-space: nowrap;
 }
@@ -187,13 +190,13 @@
 .pj-quote-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .pj-quote-table th {
   background: #f5f4fb;
   color: #797b90;
-  font-weight: 600;
+  font-weight: 700;
   text-align: left;
 }
 
@@ -218,7 +221,7 @@
 
 .pj-quote-total span {
   color: var(--pj-muted);
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .pj-quote-total strong {
@@ -228,11 +231,11 @@
 
 /* 2. 프로젝트 목록 */
 .project-app {
-  padding: 18px 24px 30px;
+  padding: 28px 30px 40px;
 }
 
 .pm-shell {
-  max-width: 1200px;
+  max-width: none;
 }
 
 .pm-heading {
@@ -240,7 +243,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  margin-bottom: 13px;
+  margin-bottom: 20px;
 }
 
 .pm-eyebrow {
@@ -249,13 +252,14 @@
 
 .pm-heading h2 {
   margin: 0;
-  font-size: 24px;
+  font-size: 26px;
+  font-weight: 700;
 }
 
 .pm-heading p {
   margin: 3px 0 0;
   color: var(--pj-muted);
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .pm-heading-actions {
@@ -267,7 +271,7 @@
 }
 
 .pm-btn {
-  padding: 9px 14px;
+  padding: 10px 18px;
   border: 0;
 }
 
@@ -288,30 +292,31 @@
 .pm-stats {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px;
-  margin-bottom: 12px;
+  gap: 14px;
+  margin-bottom: 18px;
 }
 
 .pm-stat {
-  padding: 12px 16px;
-  border-radius: 11px;
+  padding: 20px 22px;
+  border-radius: 12px;
 }
 
 .pm-stat-label {
-  margin-bottom: 3px;
+  margin-bottom: 6px;
   color: var(--pj-muted);
-  font-size: 12px;
+  font-size: 13px;
+  font-weight: 600;
 }
 
 .pm-stat-value {
-  font-size: 22px;
+  font-size: 26px;
   font-weight: 700;
   line-height: 1.25;
 }
 
 .pm-card {
-  padding: 15px 18px;
-  border-radius: 11px;
+  padding: 24px 28px;
+  border-radius: 12px;
 }
 
 .pm-card-header {
@@ -319,35 +324,38 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  margin-bottom: 12px;
+  margin-bottom: 20px;
 }
 
 .pm-card-header h3 {
   margin: 0;
-  font-size: 16px;
+  font-size: 18px;
+  font-weight: 700;
 }
 
 .pm-card-header span {
-  color: var(--pj-muted);
-  font-size: 12px;
+  color: #524B80;
+  font-size: 16px;
+  font-weight: 600;
 }
 
 .pm-filters {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 12px;
+  gap: 12px;
+  margin-bottom: 20px;
 }
 
 .pm-search,
 .pm-select {
-  height: 36px;
-  padding: 0 11px;
-  border: 1px solid #dedee9;
-  border-radius: 7px;
-  background: #fff;
-  color: #303348;
-  font: 12px/1.4 Arial, sans-serif;
+  height: 40px;
+  padding: 0 12px;
+  border: 1px solid #DDD8EA;
+  border-radius: 8px;
+  background: #FBFAFE;
+  color: #39354F;
+  font: 13px/1.4 Arial, sans-serif;
+  min-width: 172px;
 }
 
 .pm-search {
@@ -377,17 +385,17 @@
 }
 
 .project-list th {
-  padding: 9px 12px;
+  padding: 14px 16px;
   border-bottom: 1px solid var(--pj-line);
   background: #fafafe;
   color: var(--pj-muted);
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 700;
   white-space: nowrap;
 }
 
 .project-list td {
-  padding: 10px 12px;
+  padding: 14px 16px;
   border-bottom: 1px solid #f0f0f4;
   font-size: 13px;
   vertical-align: middle;
@@ -403,17 +411,17 @@
 
 .pm-project-name {
   margin-bottom: 2px;
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .pm-project-date {
   color: #9294a3;
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .pm-status {
   display: inline-block;
-  padding: 4px 9px;
+  padding: 6px 11px;
 }
 
 .pm-status-대기,
@@ -424,8 +432,8 @@
 
 .pm-status-진행중,
 .pd-status-진행중 {
-  background: #f2efff;
-  color: #7565d8;
+  background: #FFF4D6;
+  color: #946200;
 }
 
 .pm-status-완료,
@@ -454,7 +462,7 @@
 
 .pm-progress-text {
   color: #77798c;
-  font-size: 11px;
+  font-size: 12px;
   white-space: nowrap;
 }
 
@@ -482,14 +490,15 @@
 }
 
 .pm-view-btn {
-  padding: 6px 11px;
+  padding: 9px 16px;
   border: 1px solid #e2def8;
-  border-radius: 7px;
+  border-radius: 8px;
   background: #fff;
   color: #6858c8;
-  font-size: 12px;
+  font-size: 13px;
   cursor: pointer;
   white-space: nowrap;
+  font-weight: 600;
 }
 
 .pm-view-btn:hover {
@@ -504,7 +513,7 @@
 
 /* 3. 프로젝트 등록 */
 .pf-page .pf-container {
-  max-width: 980px;
+  max-width: 1100px;
 }
 
 .pf-heading {
@@ -517,7 +526,8 @@
 
 .pf-heading h2 {
   margin: 0;
-  font-size: 24px;
+  font-size: 26px;
+  font-weight: 700;
 }
 
 .pf-eyebrow,
@@ -540,14 +550,14 @@
   height: auto !important;
   min-height: 0 !important;
   margin: 0;
-  padding: 28px 32px !important;
+  padding: 26px 28px !important;
 }
 
 .pf-page .pf-card-header {
   display: block;
   height: auto !important;
   min-height: 0 !important;
-  margin-bottom: 28px;
+  margin-bottom: 22px;
   padding-bottom: 20px;
 }
 
@@ -567,13 +577,13 @@
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   column-gap: 20px;
-  row-gap: 26px;
+  row-gap: 20px;
   width: 100%;
 }
 
 .pf-field {
   align-items: stretch;
-  gap: 9px;
+  gap: 7px;
 }
 
 .pf-page .pf-full {
@@ -584,8 +594,8 @@
 }
 
 .pf-field label {
-  color: #4b4e63;
-  font-size: 12px;
+  color: #55516C;
+  font-size: 13px;
   font-weight: 600;
 }
 
@@ -634,6 +644,7 @@
   margin: 0;
   color: #43415d;
   font-size: 15px;
+  font-weight: 700;
 }
 
 .pf-approved {
@@ -660,7 +671,7 @@
 
 .pf-quotation-meta span {
   color: #9391a5;
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .pf-quotation-meta strong {
@@ -745,7 +756,7 @@
 
 .pf-btn {
   padding: 10px 18px;
-  font: 600 12px/1.4 Arial, sans-serif;
+  font: 600 13px/1.4 Arial, sans-serif;
   white-space: normal;
 }
 
@@ -782,15 +793,16 @@
 
 .pd-heading h1 {
   margin: 0;
-  font-size: 24px;
+  font-size: 26px;
   line-height: 1.35;
   overflow-wrap: anywhere;
+  font-weight: 700;
 }
 
 .pd-heading p:not(.pd-eyebrow) {
   margin: 5px 0 0;
   color: var(--pj-muted);
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .pd-heading-actions {
@@ -830,7 +842,7 @@
 .pd-card {
   width: 100%;
   margin: 0 0 16px;
-  padding: 22px 28px;
+  padding: 24px 28px;
 }
 
 .pd-card-header {
@@ -849,8 +861,9 @@
 .pd-card-header h2 {
   margin: 0;
   color: #303348;
-  font-size: 17px;
+  font-size: 18px;
   line-height: 1.4;
+  font-weight: 700;
 }
 
 .pd-number {
@@ -874,13 +887,13 @@
 
 .pd-info-item span,
 .pd-description>span {
-  color: #9395a5;
-  font-size: 11px;
+  color: #827A98;
+  font-size: 12px;
 }
 
 .pd-info-item strong {
   color: #383b52;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
   overflow-wrap: anywhere;
 }
@@ -897,7 +910,7 @@
   border-radius: 7px;
   background: #f8f8fc;
   color: #606476;
-  font-size: 12px;
+  font-size: 13px;
   line-height: 1.5;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
@@ -926,7 +939,8 @@
 .pd-status-section h3 {
   margin: 0 0 15px;
   color: #45475e;
-  font-size: 13px;
+  font-size: 14px;
+  font-weight: 700;
 }
 
 .pd-status-grid {
@@ -936,8 +950,8 @@
 }
 
 .pd-status-field label {
-  color: #9395a5;
-  font-size: 11px;
+  color: #55516C;
+  font-size: 13px;
   font-weight: 600;
   line-height: 17px;
 }
@@ -972,7 +986,7 @@
   min-height: 36px;
   margin: 14px 0 0 auto;
   padding: 8px 18px;
-  font-size: 12px;
+  font-size: 13px;
   line-height: 1.4;
 }
 
@@ -1010,7 +1024,7 @@
   display: block;
   margin-bottom: 10px;
   color: #6152bf;
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .pd-history-item ul {
@@ -1021,7 +1035,7 @@
 .pd-history-item li {
   padding: 3px 0;
   color: #43465b;
-  font-size: 12px;
+  font-size: 13px;
   line-height: 1.6;
   overflow-wrap: anywhere;
 }
@@ -1033,7 +1047,8 @@
 .pd-subheading {
   margin: 0 0 11px;
   color: #45475e;
-  font-size: 13px;
+  font-size: 14px;
+  font-weight: 700;
 }
 
 .pd-quotation {
@@ -1059,12 +1074,12 @@
 
 .pd-quotation-top>div span {
   color: #9391a5;
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .pd-quotation-top strong {
   color: #3b3a53;
-  font-size: 12px;
+  font-size: 13px;
   overflow-wrap: anywhere;
 }
 
@@ -1108,7 +1123,7 @@
   border-radius: 8px;
   background: #fafafe;
   color: #9395a5;
-  font-size: 12px;
+  font-size: 13px;
   text-align: center;
   line-height: 1.5;
 }
@@ -1120,12 +1135,12 @@
 
 /* 5. 프로젝트 수정 */
 .pe-page {
-  padding: 20px 24px 40px;
+  padding: 28px 30px 40px;
   line-height: 1.45;
 }
 
 .pe-container {
-  max-width: 1120px;
+  max-width: 1100px;
 }
 
 .pe-back {
@@ -1145,7 +1160,8 @@
 .pe-heading h1 {
   margin: 0;
   color: #292b44;
-  font-size: 25px;
+  font-size: 26px;
+  font-weight: 700;
 }
 
 .pe-eyebrow,
@@ -1181,7 +1197,7 @@
   display: block;
   width: 100%;
   margin: 0;
-  padding: 22px 26px 20px;
+  padding: 26px 28px 22px;
 }
 
 .pe-card-heading {
@@ -1214,9 +1230,9 @@
 }
 
 .pe-field label {
-  color: #55586b;
-  font-size: 12px;
-  font-weight: 700;
+  color: #55516C;
+  font-size: 13px;
+  font-weight: 600;
   text-align: left;
 }
 
@@ -1334,7 +1350,7 @@
 
 @media (max-width: 680px) {
   .project-app {
-    padding: 14px 12px;
+    padding: 18px 14px 28px;
   }
 
   .pm-heading {
@@ -1350,11 +1366,11 @@
   }
 
   .pm-stats {
-    gap: 6px;
+    gap: 10px;
   }
 
   .pm-stat {
-    padding: 10px;
+    padding: 14px;
   }
 
   .pm-stat-value {
@@ -1362,7 +1378,7 @@
   }
 
   .pm-card {
-    padding: 12px;
+    padding: 18px;
   }
 
   .pm-filters {
@@ -1380,7 +1396,7 @@
   }
 
   .pe-page {
-    padding: 16px 12px 28px;
+    padding: 18px 14px 28px;
   }
 
   .pe-heading {
@@ -1417,7 +1433,7 @@
 
 @media (max-width: 600px) {
   :is(.pf-page, .pd-page) {
-    padding: 16px 12px 28px;
+    padding: 18px 14px 28px;
   }
 
   .pf-heading {
@@ -1765,7 +1781,7 @@
   background: #FFFFFF;
   border: 1px solid #E6E1F0;
   border-radius: 12px;
-  padding: 17px 19px;
+  padding: clamp(14px, 2vw, 22px);
 }
 .pj-page .pm-stat-value { color: #524B80; }
 .pj-page .pm-card {
@@ -1784,10 +1800,11 @@
   background: #F0EDFA;
   border-color: #C8C0E5;
   color: #524B80;
+  font-weight: 600;
 }
 .pj-page .pm-view-btn:hover { background: #E3DCF5; }
 .pj-page .pm-status-진행중,
-.pj-page .pd-status-진행중 { background: #F0EDFA; color: #524B80; }
+.pj-page .pd-status-진행중 { background: #FFF4D6; color: #946200; }
 .pj-page .pm-status-대기,
 .pj-page .pd-status-대기 { background: #F0EFF4; color: #716C80; }
 .pj-page .pm-status-완료,
@@ -1844,15 +1861,15 @@
 
 /* 옵션 행 */
 .pj-quote-table .pj-quote-option-row td {
-  background-color: #f8fafc;
-  color: #64748b;
+  background-color: #FBFAFE;
+  color: #625B78;
   font-size: 13px;
 }
 
 /* 옵션 행 왼쪽 구분선 */
 .pj-quote-table .pj-quote-option-row td:first-child {
   padding-left: 24px;
-  border-left: 3px solid #93c5fd;
+  border-left: 3px solid #C8C0E5;
 }
 
 /* 옵션 이름과 배지 */
@@ -1868,8 +1885,8 @@
   display: inline-block;
   padding: 3px 7px;
   border-radius: 4px;
-  background-color: #dbeafe;
-  color: #2563eb;
+  background-color: #F0EDFA;
+  color: #524B80;
   font-size: 11px;
   font-weight: 600;
   white-space: nowrap;
@@ -1883,7 +1900,7 @@
 
 /* 최종 합계 행 */
 .pj-quote-table .pj-quote-total-row td {
-  background-color: #eff6ff;
+  background-color: #F1EFF8;
   font-weight: 600;
 }
 
