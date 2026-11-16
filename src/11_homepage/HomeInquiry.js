@@ -2,7 +2,9 @@
 import HomeFooter from "./HomeFooter";
 import React, { useEffect, useRef, useState } from "react";
 import "./HomeInquiry.css";
-import useClaimData from "../context/useClaimData";
+import { useERP } from "../context/ERPContext";
+import { formatOrderNo } from "../utils/formatUtils";
+import { parseOrderNo } from "../utils/claimUtils";
 
 const emptyForm = {
     companyName: "", customerManager: "", phone: "", email: "", orderNo: "",
@@ -10,7 +12,12 @@ const emptyForm = {
 };
 
 function HomeInquiry({ isMaster = false }) {
-    const { claim: list, addClaim, updateClaim, deleteClaim, checkOrder, getPhone, getEmail } = useClaimData();
+    const {
+        claims,
+        addClaim,
+        updateClaim,
+        deleteClaim
+    } = useERP();
     const [form, setForm] = useState(emptyForm);
     const [page, setPage] = useState("list");
     const [selectedId, setSelectedId] = useState(null);
@@ -23,9 +30,14 @@ function HomeInquiry({ isMaster = false }) {
     const [sharedMaster, setSharedMaster] = useState(() => sessionStorage.getItem("homepage_master") === "true");
 
     const master = isMaster || sharedMaster;
-    const selected = list.find(post => post.id === selectedId);
-    const canSave = form.customerManager.trim() && (form.phone.trim() || form.email.trim()) &&
-        form.orderNo.trim() && form.title.trim() && form.content.trim();
+    const selected = claims.find(claim => claim.id === selectedId);
+    const canSave =
+        form.companyName.trim() &&
+        form.customerManager.trim() &&
+        (form.phone.trim() || form.email.trim()) &&
+        form.orderNo.trim() &&
+        form.title.trim() &&
+        form.content.trim();
 
     // 상단바에서 마스터 모드가 바뀌면 반영합니다.
     useEffect(() => {
@@ -70,15 +82,24 @@ function HomeInquiry({ isMaster = false }) {
         changeField("photo", "");
     }
 
-    function fillForm(post) {
+    function fillForm(claim) {
+
         removePhoto();
+
         setForm({
-            companyName: post.companyName || post.company || "",
-            customerManager: post.customerManager || post.manager || "",
-            phone: getPhone(post), email: getEmail(post), orderNo: post.orderNo || "",
-            inquiryType: post.inquiryType || post.type || "제품 불량",
-            title: post.title || "", content: post.content || "", photo: post.photo || ""
+            companyName: claim.companyName || "",
+            customerManager: claim.customerManager || "",
+            phone: claim.phone || "",
+            email: claim.email || "",
+            orderNo: claim.consultationId
+                ? formatOrderNo(claim.consultationId)
+                : "",
+            inquiryType: claim.inquiryType || "제품 불량",
+            title: claim.title || "",
+            content: claim.content || "",
+            photo: claim.photo || ""
         });
+
         setError("");
         setPage("write");
     }
@@ -106,8 +127,9 @@ function HomeInquiry({ isMaster = false }) {
             setError("JPG, PNG, WEBP 사진만 첨부할 수 있습니다.");
             return;
         }
-        if (file.size > 1024 * 1024) {
-            setError("사진은 1MB 이하만 첨부할 수 있습니다.");
+
+        if (file.size > 500 * 1024) {
+            setError("사진은 500KB 이하만 첨부할 수 있습니다.");
             return;
         }
 
@@ -133,22 +155,60 @@ function HomeInquiry({ isMaster = false }) {
         reader.readAsDataURL(file);
     }
 
-    // 입력값만 Hook으로 넘기고, 데이터 저장은 Hook에서 처리합니다.
     function save(e) {
+
         e.preventDefault();
+
         if (photoLoading) return;
+
         if (editing && (!selected || master || !verified)) {
             setError("수정 권한을 확인해 주세요.");
             return;
         }
 
-        const result = editing ? updateClaim({ ...form, id: selectedId }) : addClaim(form);
+        if (!canSave) {
+            setError("필수 항목과 연락처를 입력해 주세요.");
+            return;
+        }
+
+        // 주문번호에서 상담 ID 추출
+        const consultationId = parseOrderNo(form.orderNo);
+
+        if (consultationId === null) {
+            setError("올바른 주문번호를 입력해 주세요.");
+            return;
+        }
+
+        // orderNo를 제외한 나머지 입력값
+        const { orderNo, ...claimForm } = form;
+
+        let result;
+
+        if (editing) {
+
+            // 기존 클레임 수정
+            result = updateClaim({
+                ...claimForm,
+                id: selectedId
+            });
+
+        } else {
+
+            // 신규 클레임 등록
+            result = addClaim({
+                ...claimForm,
+                consultationId
+            });
+        }
+
         if (!result.ok) {
             setError(result.message);
             return;
         }
+
         setError("");
         setEditing(false);
+
         if (editing) {
             setPage("detail");
         } else {
@@ -181,11 +241,19 @@ function HomeInquiry({ isMaster = false }) {
     }
 
     function check(e) {
+
         e.preventDefault();
-        if (selected && checkOrder(selectedId, checkNo)) {
+
+        const consultationId = parseOrderNo(checkNo);
+
+        if (
+            selected &&
+            consultationId === selected.consultationId
+        ) {
             setVerified(true);
             setError("");
         } else {
+            setVerified(false);
             setError("주문번호가 일치하지 않습니다.");
         }
     }
@@ -222,8 +290,8 @@ function HomeInquiry({ isMaster = false }) {
                         <table className="inq-table">
                             <thead><tr><th>제목</th><th>처리 상태</th><th>등록일</th></tr></thead>
                             <tbody>
-                                {list.length === 0 && <tr><td className="inq-empty" colSpan={3}>등록된 문의가 없습니다.</td></tr>}
-                                {list.map(item => (
+                                {claims.length === 0 && <tr><td className="inq-empty" colSpan={3}>등록된 문의가 없습니다.</td></tr>}
+                                {claims.map(item => (
                                     <tr className="inq-row" key={item.id} role="button" tabIndex={0} onClick={() => open(item)}
                                         onKeyDown={e => {
                                             if (e.key === "Enter" || e.key === " ") {
@@ -255,7 +323,12 @@ function HomeInquiry({ isMaster = false }) {
                             <div className="inq-box">
                                 <h2>업체 및 주문 정보</h2>
                                 <div className="inq-two">
-                                    <label>업체명 <input value={form.companyName} onChange={e => changeField("companyName", e.target.value)} placeholder="업체명" /></label>
+                                    <label>업체명 * <input
+                                        value={form.companyName}
+                                        onChange={e => changeField("companyName", e.target.value)}
+                                        readOnly={editing}
+                                        required
+                                    /></label>
                                     <label>작성자 * <input value={form.customerManager} onChange={e => changeField("customerManager", e.target.value)} placeholder="문의글 작성자 이름" required /></label>
                                 </div>
                                 <div className="inq-two">
@@ -263,7 +336,16 @@ function HomeInquiry({ isMaster = false }) {
                                     <label>이메일 <input type="email" value={form.email} onChange={e => changeField("email", e.target.value)} placeholder="예: sample@example.com" /></label>
                                 </div>
                                 <small>전화번호와 이메일 중 하나 이상 입력해 주세요. 둘 다 입력해도 됩니다.</small>
-                                <label>주문번호 * <input value={form.orderNo} onChange={e => changeField("orderNo", e.target.value)} placeholder="예: GO-3001" required /></label>
+                                <label>
+                                    주문번호 *
+                                    <input
+                                        value={form.orderNo}
+                                        onChange={e => changeField("orderNo", e.target.value)}
+                                        placeholder="예: ERP-0003"
+                                        readOnly={editing}
+                                        required
+                                    />
+                                </label>
                                 <small>게시글 상세 열람에 사용됩니다.</small>
                             </div>
                             <div className="inq-box">
@@ -278,7 +360,7 @@ function HomeInquiry({ isMaster = false }) {
                                 </label>
                                 <label>제목 * <input value={form.title} onChange={e => changeField("title", e.target.value)} placeholder="게시글 제목" required /></label>
                                 <label>내용 * <textarea value={form.content} onChange={e => changeField("content", e.target.value)} placeholder="문제와 요청 사항을 작성해 주세요." required /></label>
-                                <label>사진 첨부 (선택, 1MB 이하) <input type="file" accept="image/jpeg,image/png,image/webp" onChange={addPhoto} /></label>
+                                <label>사진 첨부 (선택, 500KB 이하) <input type="file" accept="image/jpeg,image/png,image/webp" onChange={addPhoto} /></label>
                                 {photoLoading && <p className="inq-note">사진을 읽고 있습니다.</p>}
                                 {form.photo && (
                                     <div className="inq-photo">
@@ -319,12 +401,39 @@ function HomeInquiry({ isMaster = false }) {
                                     </span>
                                 </div>
                                 <div className="inq-detail-info">
-                                    <div><span>업체명</span><strong>{selected.companyName || selected.company || "-"}</strong></div>
-                                    <div><span>작성자</span><strong>{selected.customerManager || selected.manager || "-"}</strong></div>
-                                    <div><span>전화번호</span><strong>{getPhone(selected) || "-"}</strong></div>
-                                    <div><span>이메일</span><strong>{getEmail(selected) || "-"}</strong></div>
-                                    <div><span>주문번호</span><strong>{selected.orderNo}</strong></div>
-                                    <div><span>문의 유형</span><strong>{selected.inquiryType || selected.type || "기타 문의"}</strong></div>
+
+                                    <div>
+                                        <span>업체명</span>
+                                        <strong>{selected.companyName || "-"}</strong>
+                                    </div>
+
+                                    <div>
+                                        <span>작성자</span>
+                                        <strong>{selected.customerManager || "-"}</strong>
+                                    </div>
+
+                                    <div>
+                                        <span>전화번호</span>
+                                        <strong>{selected.phone || "-"}</strong>
+                                    </div>
+
+                                    <div>
+                                        <span>이메일</span>
+                                        <strong>{selected.email || "-"}</strong>
+                                    </div>
+
+                                    <div>
+                                        <span>주문번호</span>
+                                        <strong>
+                                            {formatOrderNo(selected.consultationId)}
+                                        </strong>
+                                    </div>
+
+                                    <div>
+                                        <span>문의 유형</span>
+                                        <strong>{selected.inquiryType}</strong>
+                                    </div>
+
                                 </div>
                                 <div className="inq-detail-body">
                                     <h3>문의 내용</h3>

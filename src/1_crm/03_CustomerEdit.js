@@ -151,7 +151,10 @@ function CustomerEdit() {
                         )}>
                         <option value="">미배정</option>
                         {employees
-                            .filter((employee) => (employee.department === "영업팀"))
+                            .filter(employee =>
+                                employee.department === "영업팀" &&
+                                employee.status === "재직"
+                            )
                             .map((employee) =>
                                 <option key={employee.id}
                                     value={employee.id}>{employee.name}</option>)}

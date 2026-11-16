@@ -1595,20 +1595,33 @@ export const initialEmployees = [
     }
 ];
 
-export const claim = [
+export const claims = [
     {
-        id: 1, companyName: "한빛굿즈", customerManager: "김민수",
-        phone: "010-0000-0001", email: "", orderNo: "GO-3001",
-        consultationId:1,
-        inquiryType: "제품 불량", title: "스테인리스 텀블러 뚜껑 불량 문의",
-        content: "납품받은 텀블러 중 일부 제품의 뚜껑이 제대로 닫히지 않습니다.\n불량 제품의 교환 가능 여부를 확인 부탁드립니다.",
-        photo: "", status: "접수", createdAt: "2026-11-10"
+        id: 1,
+        companyName: "그린컴퍼니",
+        customerManager: "정우성",
+        phone: "010-3456-7890",
+        email: "woosung@example.com",
+        consultationId: 3,
+        inquiryType: "제품 불량",
+        title: "에코백 인쇄 불량 문의",
+        content: "납품받은 에코백 중 일부 제품에 인쇄 불량이 있습니다.",
+        photo: "",
+        status: "접수",
+        createdAt: "2026-11-10"
     },
     {
-        id: 2, companyName: "새봄기획", customerManager: "이서연",
-        phone: "", email: "sample@example.com", orderNo: "GO-3002", consultationId:2,
-        inquiryType: "배송 문제", title: "주문한 상품 일부가 도착하지 않았습니다",
-        content: "주문한 굿즈 중 일부 수량이 누락되어 배송됐습니다.\n남은 상품의 배송 일정을 알려주세요.",
-        photo: "", status: "처리 중", createdAt: "2026-11-11"
+        id: 2,
+        companyName: "대한스포츠",
+        customerManager: "강태훈",
+        phone: "010-7890-1234",
+        email: "taehoon@example.com",
+        consultationId: 7,
+        inquiryType: "배송 문제",
+        title: "주문한 상품 일부가 도착하지 않았습니다.",
+        content: "주문한 티셔츠 중 일부 수량이 누락되어 배송됐습니다.",
+        photo: "",
+        status: "처리 중",
+        createdAt: "2026-11-11"
     }
 ];
