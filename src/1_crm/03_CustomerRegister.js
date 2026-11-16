@@ -1,5 +1,5 @@
 //고객 등록 화면
-import react, { useState } from "react";
+import React, { useState } from "react";
 import { useERP } from "../context/ERPContext";
 import {
     validateCustomer, formatBusinessNumber,
@@ -12,7 +12,7 @@ import {
 import "./03_CustomerForm.css";
 
 
-function CustomerRegister() {
+function CustomerRegister({ onClose }) {
 
     const { employees, addCustomer, customers } = useERP();
 
@@ -29,9 +29,6 @@ function CustomerRegister() {
         createdAt: "",
         memo: ""
     })
-
-
-
 
     function registerCustomer(e) {
         e.preventDefault();
@@ -57,7 +54,7 @@ function CustomerRegister() {
         }
 
         //사업자등록번호 10자리검사
-        if (!validateBusinessNumber(customerData.businessNumber, customers, null)) {
+        if (!validateBusinessNumber(customerData.businessNumber)) {
             return;
         }
         //전화번호 10~11자리 검사
@@ -71,25 +68,35 @@ function CustomerRegister() {
             return;
         }
 
-        //고객사명 제한 20자 검사
-
+        // 고객사명 제한 20자 검사
         if (!validateCompanyName(customerData.companyName)) {
             return;
         }
 
-        //메모 1000자 제한 검사
+        // 고객사 담당자명 제한 10자 검사
+        if (!validateCustomerManager(customerData.customerManager)) {
+            return;
+        }
+
+        // 메모 1000자 제한 검사
         if (!validateMemo(customerData.memo)) {
             return;
         }
 
-        window.opener.addCustomer({
+        // 2. 기존 부모 창 함수 호출 대신 Context 함수 직접 호출
+        const result = addCustomer({
             ...customerData,
             createdAt: createdAt,
-            registrationSource : "save"
+            registrationSource: "save"
         });
 
+        if (!result.ok) {
+            alert(result.message);
+            return;
+        }
+
         alert("고객이 등록되었습니다.");
-        window.close();
+        onClose();
     }
 
 

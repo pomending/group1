@@ -81,8 +81,7 @@ export const validateQuotation = (quotation) => {
     const hasInvalidOption = quotation.options.some(option =>
         typeof option?.name !== "string" ||
         !option.name.trim() ||
-        !Number.isFinite(option.unitPrice) ||
-        option.unitPrice < 0
+        !Number.isFinite(option.unitPrice)
     );
 
     if (hasInvalidOption) {

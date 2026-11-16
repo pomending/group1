@@ -1,5 +1,5 @@
 import React from "react";
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import "./Sidebar.css";
 import { useERP } from "../context/ERPContext";
 
@@ -7,11 +7,20 @@ function Sidebar() {
 
     const { resetAllData } = useERP();
 
+    const navigate = useNavigate();
+
     const handleResetAll = () => {
         if (!window.confirm("모든 ERP 데이터를 초기 상태로 되돌릴까요?\n등록·수정한 내용은 사라집니다.")) {
             return;
         }
-        resetAllData();
+        const result = resetAllData();
+
+        if (!result.ok) {
+            alert(result.message);
+            return;
+        }
+
+        navigate("/login");
     };
 
     const menus = [

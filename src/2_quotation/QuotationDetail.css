@@ -493,3 +493,90 @@
         flex: 1;
     }
 }
+
+/* =========================================
+   재검토 요청 - 새 담당자 선택
+========================================= */
+
+.quotation-detail .review-employee {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.quotation-detail .review-employee label {
+    color: #55516C;
+    font-size: 13px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.quotation-detail .review-employee select {
+    min-width: 200px;
+    height: 40px;
+    padding: 0 12px;
+
+    background: #FFFFFF;
+    border: 1px solid #DDD8EA;
+    border-radius: 8px;
+
+    color: #39354F;
+    font-family: inherit;
+    font-size: 13px;
+    outline: none;
+    cursor: pointer;
+
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.quotation-detail .review-employee select:focus {
+    border-color: #9C91C8;
+    box-shadow: 0 0 0 3px rgba(156, 145, 200, 0.14);
+}
+
+/* 재검토 요청 비활성화 */
+.quotation-detail .review-btn:disabled {
+    background: #E9E7EF;
+    border-color: #E9E7EF;
+    color: #9690A5;
+    cursor: not-allowed;
+}
+
+.quotation-detail .review-btn:disabled:hover {
+    background: #E9E7EF;
+}
+
+/* 반응형 */
+@media (max-width: 700px) {
+    .quotation-detail .review-employee {
+        width: 100%;
+    }
+
+    .quotation-detail .review-employee select {
+        flex: 1;
+        min-width: 0;
+    }
+}
+
+/* 재검토 담당자 변경 안내 */
+.quotation-detail .review-notice {
+    margin: 20px 0 20px;
+    padding: 14px 18px;
+
+    background: #F0EDFA;
+    border: 1px solid #DDD6EE;
+    border-radius: 10px;
+}
+
+.quotation-detail .review-notice strong {
+    color: #524B80;
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.quotation-detail .review-notice p {
+    margin: 6px 0 0;
+    color: #79738A;
+    font-size: 13px;
+    line-height: 1.6;
+}

@@ -51,14 +51,14 @@ export default function useQuotationData() {
         );
     };
 
-    
+
 
     // 견적 등록
     const addQuotation = (newQuotation) => {
 
         const result = validateQuotation(newQuotation)
 
-        if(!result.ok){
+        if (!result.ok) {
             return result;
         }
 
@@ -71,7 +71,7 @@ export default function useQuotationData() {
             { ...newQuotation, id: newId }
         ]);
 
-        return {ok: true, id: newId};
+        return { ok: true, id: newId };
     };
 
     // 견적 조회
@@ -83,25 +83,23 @@ export default function useQuotationData() {
     const updateQuotation = (updatedQuotation) => {
 
         const existing = quotations.find(
-            q => Number(q.id) === Number(updatedQuotation.id)
+            q => q.id === updatedQuotation.id
         )
 
-        if(!existing){
-            return {ok: false, message: "견적서를 찾을 수 없습니다."}
+        if (!existing) {
+            return { ok: false, message: "견적서를 찾을 수 없습니다." }
         }
-
 
         const mergedQuotation = {
             ...existing,
             ...updatedQuotation
         }
-        
+
         // 기존 상품을 유지하는 경우 기본 단가 변경 금지
         if (
             existing.productId != null &&
-            Number(existing.productId) === Number(mergedQuotation.productId) &&
-            Number(existing.baseUnitPrice > 0 ? existing.baseUnitPrice : existing.unitPrice) !==
-            Number(existing.baseUnitPrice > 0 ? mergedQuotation.baseUnitPrice : mergedQuotation.unitPrice)
+            existing.productId === mergedQuotation.productId &&
+            existing.baseUnitPrice !== mergedQuotation.baseUnitPrice
         ) {
             return {
                 ok: false,
@@ -109,33 +107,21 @@ export default function useQuotationData() {
             };
         }
 
-        const quotationToValidate = {
-            ...mergedQuotation,
-            baseUnitPrice: Number(
-                mergedQuotation.baseUnitPrice > 0
-                ? mergedQuotation.baseUnitPrice 
-                : mergedQuotation.unitPrice ?? 0
-            ),
+        const result = validateQuotation(mergedQuotation);
 
-            options: Array.isArray(mergedQuotation.options)
-            ? mergedQuotation.options : []
-        }
-
-        const result = validateQuotation(quotationToValidate)
-
-        if(!result.ok){
+        if (!result.ok) {
             return result
         }
 
         setQuotations(prev =>
             prev.map(q =>
                 Number(q.id) === Number(updatedQuotation.id)
-                ? quotationToValidate
-                : q
+                    ? mergedQuotation
+                    : q
             )
         )
 
-        return {ok: true}
+        return { ok: true }
 
     };
 
