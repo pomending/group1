@@ -1,4 +1,5 @@
 
+import HomeFooter from "./HomeFooter";
 import React, { useEffect, useRef, useState } from "react";
 import "./HomeInquiry.css";
 import { useERP } from "../context/ERPContext";
@@ -468,6 +469,7 @@ function HomeInquiry({ isMaster = false }) {
                     </section>
                 )}
             </div>
+            <HomeFooter />
         </main>
     );
 }

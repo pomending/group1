@@ -87,7 +87,7 @@ export function ScheduleEvent({ item, onSelect, compact = false, roleLabel, onTo
   else if (isProjectMilestone && !item.isTaskDeadline) helpStatus = item.projectStatus || status.label;
   const help = item.scope === "개인 일정용"
     ? `${item.title} · ${time}`
-    : `${item.title} · ${time} · ${item.project} · ${item.person} · ${helpStatus}`;
+    : [item.title, time, item.project, item.person, helpStatus].filter(Boolean).join(" · ");
   // 일정 상자를 누르면 날짜 칸 클릭은 막고, 선택한 날짜 일정 패널을 갱신합니다.
   // 카드 안의 선택 클릭이 달력 날짜 칸까지 전파되지 않게 막습니다.
   // 전체 이름 펼치기와 별표는 별도 핸들러에서 전파를 막으므로 이 선택을 실행하지 않습니다.
@@ -194,10 +194,13 @@ export function ScheduleAttendees({ item, paragraph = false }) {
 }
 
 // 즐겨찾기·선택 날짜 카드가 같은 시간 행을 사용합니다. 프로젝트 기준일에는 공유 배지를 표시하지 않습니다.
-export function ScheduleTimeRow({ item }) {
+export function ScheduleTimeRow({ item, wholePeriod = false }) {
+  const time = wholePeriod && !item.isAllDay && item.endDate > item.date
+    ? `${item.time}~${item.endTime || "17:00"}`
+    : getScheduleTime(item);
   return (
     <div className="sm-favorite-time-row">
-      <span className="sm-favorite-time"><ScheduleIcon name="clock" /><time>{getScheduleTime(item)}</time></span>
+      <span className="sm-favorite-time"><ScheduleIcon name="clock" /><time>{time}</time></span>
       {!item.isProjectMilestone && <ScheduleVisibility visibility={item.visibility} />}
     </div>
   );

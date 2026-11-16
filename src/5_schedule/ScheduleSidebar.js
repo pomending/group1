@@ -15,22 +15,13 @@
 import { ScheduleAgendaItem, ScheduleAttendees, ScheduleFavorite, ScheduleTimeRow, ScheduleIcon } from "./ScheduleItemParts";
 import React from "react";
 import { weekDays, getScheduleTime, getRepeatLabel, getScheduleInterval } from "./scheduleData";
-import ScheduleDirectory from "./ScheduleDirectory";
 
-/* directoryItems는 전체 원본, favoriteItems는 고정된 원본입니다. selectedItems는 선택 날짜·필터 결과, upcomingSchedules는 오늘 포함 7일 이내 미완료 일정 중 가까운 5건입니다. 자식 state로 복사하지 않습니다. */
+/* favoriteItems는 고정된 원본입니다. selectedItems는 선택 날짜·필터 결과, upcomingSchedules는 오늘 포함 7일 이내 미완료 일정 중 가까운 5건입니다. 자식 state로 복사하지 않습니다. */
 // 목록별 기준은 위의 props 설명을 따릅니다. 선택 날짜·즐겨찾기·다가오는 일정은 같은 목록이 아닙니다.
 // 검색·공유 구분 필터와 반복 계산은 이미 부모에서 처리되므로 여기서는 받은 배열만 표시합니다.
 // 부모가 넘겨준 선택 날짜의 일정과 가까운 미완료 일정 목록을 보여줍니다.
 // 수정·삭제·완료 여부 변경은 실제 데이터를 관리하는 부모 함수에 맡깁니다.
 export default function ScheduleSidebar({
-  directoryMode,
-  directoryItems,
-  teamMembers,
-  onAddTeamMember,
-  onRemoveTeamMember,
-  selectedProject,
-  onSelectProject,
-  onCloseDirectory,
   favoriteItems,
   onToggleFavorite,
   onSelectFavorite,
@@ -48,12 +39,6 @@ export default function ScheduleSidebar({
 }) {
   return (
     <aside className="sm-sidebar">
-      {/* key가 바뀌면 팀원 선택도 초기화됩니다. 목록의 자료는 검색과 무관한 저장 원본입니다. */}
-      {/* onSelectProject를 그대로 전달해 자식 Directory의 클릭이 Manager까지 올라가도록 연결합니다.
-          Sidebar는 프로젝트 선택을 따로 저장하지 않아 부모와 선택값이 어긋나지 않습니다. */}
-      {directoryMode && (
-        <ScheduleDirectory key={directoryMode} mode={directoryMode} items={directoryItems} teamMembers={teamMembers} onAddTeamMember={onAddTeamMember} onRemoveTeamMember={onRemoveTeamMember} selectedProject={selectedProject} onSelectProject={onSelectProject} onClose={onCloseDirectory} />
-      )}
       {/* 즐겨찾기는 검색 결과를 복사하지 않습니다. 원본 일정의 별표 상태로 매번 목록을 만듭니다.
           반복 일정은 원본 한 건만 표시해 무한히 늘어나지 않으며 수정·상태 변경은 전체 규칙에 적용됩니다. */}
         <section className="sm-card" aria-labelledby="sm-favorites-title">
@@ -73,7 +58,7 @@ export default function ScheduleSidebar({
                   </button>
                   <ScheduleFavorite item={item} onToggleFavorite={onToggleFavorite} />
                 </div>
-                <ScheduleTimeRow item={item} />
+                <ScheduleTimeRow item={item} wholePeriod />
                 {/* dl은 이름과 값의 묶음입니다. dt는 '프로젝트' 같은 설명 이름,
                     dd는 실제 값입니다. 두 줄로 나눠 제목·프로젝트·담당자가 섞이지 않게 합니다. */}
                 {item.scope !== "개인 일정용" && <dl className="sm-favorite-info">
@@ -85,7 +70,9 @@ export default function ScheduleSidebar({
                 <button type="button" className="sm-favorite-date"
                   aria-label={`${item.title} 즐겨찾기 일정으로 이동`} onClick={() => onSelectFavorite(item)}>
                   <span>
+                    {item.repeatType !== "none" && <span>반복 기준일 · </span>}
                     <time dateTime={item.date}>{item.date.replaceAll("-", ".")}</time>
+                    {item.endDate > item.date && <span> ~ {item.endDate.replaceAll("-", ".")}</span>}
                     {item.repeatType !== "none" && <span className="sm-favorite-repeat"> · {getRepeatLabel(item)}</span>}
                   </span>
                   <span className="sm-favorite-calendar-link">달력 보기 <span aria-hidden="true">↗</span></span>
@@ -166,7 +153,7 @@ export default function ScheduleSidebar({
               <strong>{item.title}</strong>
               <span className="sm-upcoming-phase">{phase}</span>
               <small>
-                {item.date.slice(5).replace("-", ".")} {getScheduleTime(item)} · {item.project}
+                {[`${item.date.slice(5).replace("-", ".")} ${getScheduleTime(item)}`, item.project].filter(Boolean).join(" · ")}
               </small>
             </div>
           </button>

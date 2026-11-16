@@ -1,9 +1,11 @@
 
+import HomeFooter from "./HomeFooter";
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { useERP } from "../context/ERPContext";
 import { productImages, findProductImage } from "../10_product/productImages";
 import "./HomeMain.css";
+import goodsHero from "./goods-hero.png";
 
 // 10번 상품 관리에서 설정한 이미지를 사용합니다.
 function getImage(item) {
@@ -55,7 +57,7 @@ function HomeMain() {
                 {/* 회사 소개 */}
                 <section className="goods-hero">
                     <div className="goods-hero-text">
-                        <p className="goods-hero-label">CUSTOM GOODS FOR BUSINESS</p>
+                        <p className="goods-hero-label">CUSTOM GOODS FOR BUSINESS +</p>
                         <h1>브랜드의 가치를<span>특별한 굿즈로.</span></h1>
                         <p className="goods-hero-description">
                             기업 홍보용 판촉물부터 행사 기념품, 단체 굿즈까지.
@@ -66,9 +68,7 @@ function HomeMain() {
                         </Link>
                     </div>
                     <div className="goods-hero-art" aria-hidden="true">
-                        <span className="goods-art-top">MADE FOR YOUR BRAND</span>
-                        <strong>G.</strong>
-                        <span className="goods-art-bottom">GOODS STUDIO / CUSTOM MADE</span>
+                        <img className="goods-hero-product-art" src={goodsHero} alt="머그컵, 텀블러, 노트, 에코백으로 구성된 GOODS 맞춤 굿즈" />
                     </div>
                 </section>
 
@@ -92,8 +92,8 @@ function HomeMain() {
                 {/* 판매 중인 상품의 앞 4개만 보여줍니다. */}
                 <section className="goods-preview">
                     <div className="goods-section-heading">
-                        <p>02 / PRODUCTS</p>
-                        <h2>제작 상품 미리보기</h2>
+                        <p>02 / OUR GOODS</p>
+                        <h2>제작 상품<br />미리보기 <span className="goods-preview-sparkle" aria-hidden="true">✧</span></h2>
                         <span>굿즈 제작에 활용할 수 있는 다양한 상품을 소개합니다.</span>
                     </div>
                     {preview.length === 0 ? (
@@ -110,7 +110,7 @@ function HomeMain() {
                                     <div className="goods-preview-info">
                                         <small>CUSTOM GOODS</small>
                                         <h3>{item.productName}</h3>
-                                        <p>{Number(item.productPrice).toLocaleString("ko-KR")}원</p>
+                                        <div className="goods-preview-bottom"><p>{Number(item.productPrice).toLocaleString("ko-KR")}원</p><span aria-hidden="true" className="goods-product-arrow">→</span></div>
                                     </div>
                                 </Link>
                             ))}
@@ -118,6 +118,7 @@ function HomeMain() {
                     )}
                 </section>
             </div>
+            <HomeFooter />
         </main>
     );
 }

@@ -75,7 +75,7 @@ function HomeTopbar({ onPageChange, onMasterChange }) {
             <header className="home-topbar">
                 <div className="home-topbar-inner">
                     <div className="home-topbar-brand">
-                        <button type="button" className="home-topbar-logo" onClick={clickLogo} aria-label="GOODS 로고">📦</button>
+                        <button type="button" className="home-topbar-logo" onClick={clickLogo} aria-label="GOODS 로고">G.</button>
                         <div className="home-topbar-name">
                             <strong>GOODS</strong>
                             <span>CUSTOM GOODS STUDIO</span>
