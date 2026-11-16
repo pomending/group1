@@ -1,4 +1,3 @@
-
 /* 고객 홈페이지 상단바 */
 .home-topbar {
     background: #faf5eb;
@@ -6,7 +5,10 @@
     border-bottom: 2px solid #29231e;
     font-family: "Pretendard", "Noto Sans KR", Arial, sans-serif;
 }
-.home-topbar * { box-sizing: border-box; }
+
+.home-topbar * {
+    box-sizing: border-box;
+}
 
 /* 로고와 마스터 버튼 */
 .home-topbar-inner {
@@ -19,7 +21,13 @@
     margin: 0 auto;
     padding: 18px 5%;
 }
-.home-topbar-brand { display: flex; align-items: center; gap: 14px; }
+
+.home-topbar-brand {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
 .home-topbar-logo {
     width: 56px;
     height: 56px;
@@ -28,27 +36,59 @@
     font-size: 27px;
     cursor: pointer;
 }
-.home-topbar-name { display: flex; flex-direction: column; gap: 4px; }
-.home-topbar-name strong { font-size: 25px; font-weight: 900; }
+
+.home-topbar-name {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.home-topbar-name strong {
+    font-size: 25px;
+    font-weight: 900;
+}
+
 .home-topbar-name span {
     font-size: 10px;
     font-weight: 800;
     letter-spacing: 1.5px;
 }
-.home-topbar-right { display: flex; align-items: center; gap: 10px; }
-.home-customer-label { color: #655c54; font-size: 13px; }
-.home-master-dashboard, .home-master-exit {
+
+.home-topbar-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.home-customer-label {
+    color: #655c54;
+    font-size: 13px;
+}
+
+.home-master-dashboard,
+.home-master-exit {
     padding: 11px 16px;
     border: 2px solid #29231e;
     font-size: 13px;
     font-weight: 700;
     cursor: pointer;
 }
-.home-master-dashboard { background: #29231e; color: #fff; }
-.home-master-exit { background: transparent; color: #29231e; }
+
+.home-master-dashboard {
+    background: #29231e;
+    color: #fff;
+}
+
+.home-master-exit {
+    background: transparent;
+    color: #29231e;
+}
 
 /* 상단 메뉴 */
-.home-topbar-nav { border-top: 1px solid #e0d2be; }
+.home-topbar-nav {
+    border-top: 1px solid #e0d2be;
+}
+
 .home-topbar-menu {
     display: flex;
     gap: 8px;
@@ -56,6 +96,7 @@
     margin: 0 auto;
     padding: 0 24px;
 }
+
 .home-menu-button {
     padding: 17px 22px;
     border: 0;
@@ -66,6 +107,7 @@
     font-weight: 700;
     cursor: pointer;
 }
+
 .home-menu-button.active {
     color: #e55e37;
     border-bottom-color: #e55e37;
@@ -81,6 +123,7 @@
     justify-content: center;
     background: rgba(39, 35, 31, 0.55);
 }
+
 .home-master-dialog {
     width: 400px;
     padding: 30px;
@@ -88,13 +131,19 @@
     background: #fffaf1;
     box-shadow: 10px 10px 0 #e55e37;
 }
-.home-master-dialog h2 { margin: 0 0 12px; font-size: 23px; }
+
+.home-master-dialog h2 {
+    margin: 0 0 12px;
+    font-size: 23px;
+}
+
 .home-master-dialog p {
     margin: 0 0 20px;
     color: #655c54;
     font-size: 14px;
     line-height: 1.7;
 }
+
 .home-master-dialog input {
     width: 100%;
     padding: 14px;
@@ -103,18 +152,25 @@
     color: #29231e;
     font-size: 15px;
 }
-.home-master-dialog input:focus { outline: none; border-color: #e55e37; }
+
+.home-master-dialog input:focus {
+    outline: none;
+    border-color: #e55e37;
+}
+
 .home-master-dialog .home-master-error {
     margin: 10px 0 0;
     color: #c43724;
     font-size: 13px;
 }
+
 .home-master-actions {
     display: flex;
     justify-content: flex-end;
     gap: 10px;
     margin-top: 24px;
 }
+
 .home-master-actions button {
     padding: 11px 22px;
     border: 2px solid #29231e;
@@ -124,37 +180,243 @@
     font-weight: 700;
     cursor: pointer;
 }
-.home-master-actions button[type="submit"] { background: #29231e; color: #fff; }
-.home-master-actions button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.home-master-actions button[type="submit"] {
+    background: #29231e;
+    color: #fff;
+}
+
+.home-master-actions button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
 
 
 /* ===== GOODS STUDIO : SOFT LAVENDER REDESIGN ===== */
-.home-topbar { background: rgba(253,250,255,.97); border-bottom: 1px solid #eadff5; color: #29243c; box-shadow: 0 3px 15px rgba(103,75,155,.035); }
-.home-topbar-inner { max-width: 1260px; min-height: 80px; padding: 14px 24px; }
-.home-topbar-logo { border: 0; border-radius: 17px; color: #fff; background: linear-gradient(135deg,#c7b0ed,#a584dd); box-shadow: 0 5px 14px #dacaf3; transition: transform .2s; }
-.home-topbar-logo:hover { transform: rotate(-8deg); }
-.home-topbar-name strong { color: #2e2940; letter-spacing: -.7px; }
-.home-topbar-name span { color: #9080ac; }
-.home-customer-label { color: #8e76b6; padding: 9px 15px; border: 1px solid #dfcdf6; border-radius: 999px; background: #fcf8ff; }
-.home-topbar-nav { border-top: 1px solid #f2eafa; }
-.home-topbar-menu { max-width: 1260px; }
-.home-menu-button { color: #756f86; border-bottom-width: 2px; transition: color .2s, background .2s; }
-.home-menu-button:hover { color: #9774ce; background: #f8f2ff; }
-.home-menu-button.active { color: #865cc7; border-bottom-color: #a787df; }
-.home-master-dashboard { border: 0; border-radius: 12px; background: #a58ad9; }
-.home-master-exit { border: 1px solid #d8c6ed; border-radius: 12px; color: #765c9d; }
-.home-master-dialog { border: 1px solid #e3d6f3; border-radius: 24px; background: #fefbff; box-shadow: 12px 12px 0 #e8dcf7; }
-.home-master-dialog input { border: 1px solid #d8c5f0; border-radius: 11px; }
-.home-master-dialog input:focus { border-color: #a88bdc; }
-.home-master-actions button { border: 1px solid #ddcdf0; border-radius: 12px; }
-.home-master-actions button[type="submit"] { border-color: #a487d7; background: #a487d7; }
+.home-topbar {
+    background: rgba(253, 250, 255, .97);
+    border-bottom: 1px solid #eadff5;
+    color: #29243c;
+    box-shadow: 0 3px 15px rgba(103, 75, 155, .035);
+}
+
+.home-topbar-inner {
+    max-width: 1260px;
+    min-height: 80px;
+    padding: 14px 24px;
+}
+
+.home-topbar-logo {
+    border: 0;
+    border-radius: 17px;
+    color: #fff;
+    background: linear-gradient(135deg, #c7b0ed, #a584dd);
+    box-shadow: 0 5px 14px #dacaf3;
+    transition: transform .2s;
+}
+
+.home-topbar-logo:hover {
+    transform: rotate(-8deg);
+}
+
+.home-topbar-name strong {
+    color: #2e2940;
+    letter-spacing: -.7px;
+}
+
+.home-topbar-name span {
+    color: #9080ac;
+}
+
+.home-customer-label {
+    color: #8e76b6;
+    padding: 9px 15px;
+    border: 1px solid #dfcdf6;
+    border-radius: 999px;
+    background: #fcf8ff;
+}
+
+.home-topbar-nav {
+    border-top: 1px solid #f2eafa;
+}
+
+.home-topbar-menu {
+    max-width: 1260px;
+}
+
+.home-menu-button {
+    color: #756f86;
+    border-bottom-width: 2px;
+    transition: color .2s, background .2s;
+}
+
+.home-menu-button:hover {
+    color: #9774ce;
+    background: #f8f2ff;
+}
+
+.home-menu-button.active {
+    color: #865cc7;
+    border-bottom-color: #a787df;
+}
+
+.home-master-dashboard {
+    border: 0;
+    border-radius: 12px;
+    background: #a58ad9;
+}
+
+.home-master-exit {
+    border: 1px solid #d8c6ed;
+    border-radius: 12px;
+    color: #765c9d;
+}
+
+.home-master-dialog {
+    border: 1px solid #e3d6f3;
+    border-radius: 24px;
+    background: #fefbff;
+    box-shadow: 12px 12px 0 #e8dcf7;
+}
+
+.home-master-dialog input {
+    border: 1px solid #d8c5f0;
+    border-radius: 11px;
+}
+
+.home-master-dialog input:focus {
+    border-color: #a88bdc;
+}
+
+.home-master-actions button {
+    border: 1px solid #ddcdf0;
+    border-radius: 12px;
+}
+
+.home-master-actions button[type="submit"] {
+    border-color: #a487d7;
+    background: #a487d7;
+}
+
 @media (max-width: 650px) {
- .home-topbar-inner { min-height: 72px; padding: 12px 15px; }
- .home-topbar-logo { width: 46px; height: 46px; }
- .home-topbar-name strong { font-size: 21px; }
- .home-topbar-name span { font-size: 8px; }
- .home-customer-label { display: none; }
- .home-topbar-menu { padding: 0 10px; gap: 0; }
- .home-menu-button { padding: 14px 12px; font-size: 13px; }
- .home-master-dialog { width: calc(100vw - 32px); }
+    .home-topbar-inner {
+        min-height: 72px;
+        padding: 12px 15px;
+    }
+
+    .home-topbar-logo {
+        width: 46px;
+        height: 46px;
+    }
+
+    .home-topbar-name strong {
+        font-size: 21px;
+    }
+
+    .home-topbar-name span {
+        font-size: 8px;
+    }
+
+    .home-customer-label {
+        display: none;
+    }
+
+    .home-topbar-menu {
+        padding: 0 10px;
+        gap: 0;
+    }
+
+    .home-menu-button {
+        padding: 14px 12px;
+        font-size: 13px;
+    }
+
+    .home-master-dialog {
+        width: calc(100vw - 32px);
+    }
+}
+
+/* ===== 2026-11-16: brand-style unified desktop header ===== */
+@media (min-width: 851px) {
+    .home-topbar {
+        position: relative;
+        min-height: 76px;
+    }
+
+    .home-topbar-inner {
+        min-height: 76px;
+        max-width: 1370px;
+        padding: 12px 22px;
+    }
+
+    .home-topbar-brand {
+        gap: 10px;
+    }
+
+    .home-topbar-logo {
+        width: 46px;
+        height: 46px;
+        border-radius: 13px;
+        font-size: 24px;
+    }
+
+    .home-topbar-name strong {
+        font-size: 23px;
+    }
+
+    .home-topbar-nav {
+        position: absolute;
+        z-index: 3;
+        top: 0;
+        left: 50%;
+        transform: translateX(-50%);
+        border: none;
+        height: 76px;
+    }
+
+    .home-topbar-menu {
+        height: 100%;
+        padding: 0;
+        align-items: center;
+        gap: 13px;
+    }
+
+    .home-menu-button {
+        padding: 12px 19px;
+        border: 0;
+        border-radius: 999px;
+        font-size: 14px;
+    }
+
+    .home-menu-button.active {
+        background: #f0e4ff;
+        color: #885ec8;
+    }
+
+    .home-topbar-right {
+        position: relative;
+        z-index: 4;
+    }
+}
+
+@media (max-width: 850px) {
+    .home-topbar-nav {
+        position: static;
+    }
+}
+
+.home-topbar-logo {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 46px;
+    height: 46px;
+    border: none;
+    border-radius: 13px;
+    background: linear-gradient(135deg, #C9B3F0, #A17ADB);
+    color: #FFFFFF;
+    font-size: 27px;
+    font-weight: 900;
+    font-style: italic;
+    box-shadow: 0 5px 14px rgba(155, 119, 214, 0.2);
 }

@@ -32,6 +32,12 @@ function ConsultationManagement() {
     //버튼을 눌러 확정한 검색기준
     const [searchTypeResult, setSearchTypeResult] = useState("companyName")
 
+    //페이지설정기준
+    const [currentPage, setCurrentPage] = useState(1)
+    //페이지당 보여질 목록개수
+    const consultationPerPage = 10;
+
+
     const editConsultation = () => {
 
         const selectedConsultation = consultations.find(
@@ -123,18 +129,25 @@ function ConsultationManagement() {
                 customerId = existingCustomer.id
                 //날짜형식 
                 const today = new Date().toLocaleDateString("sv-SE");
-                //메모형식
-                const newMemo = `${today} | ${editData.memo}`;
+                //메모형식\
+                const oldMemo = originalConsultation?.memo || "";
+                const currentMemo = editData.memo || "";
 
-                const updatedMemo = editData.memo?.trim()
-                        
+                const addedMemo = currentMemo.startsWith(oldMemo)
+                    ? currentMemo.slice(oldMemo.length).trim()
+                    : currentMemo.trim();
+
+                const newMemo = addedMemo ? `${today} | ${addedMemo}` : "";
+
+                const updatedMemo = newMemo && isMemoChanged
+
                     ? [existingCustomer.memo, newMemo].filter(Boolean).join("\n")
                     : (existingCustomer.memo || "");
 
                 if (existingCustomer.customerManager !== editData.customerManager
                     || existingCustomer.email !== (editData.email?.trim() || existingCustomer.email)
                     || existingCustomer.phone !== editData.phone
-                    || existingCustomer.memo !== editData.updatedMemo
+                    || existingCustomer.memo !== updatedMemo
                 ) {
                     saveEditedCustomer(
                         {
@@ -187,6 +200,7 @@ function ConsultationManagement() {
         }
 
         setCheckedIds([]);
+        setCurrentPage(1);
         if (checkIds.includes(editData.id)) {
             setEditData({})
         }
@@ -195,13 +209,15 @@ function ConsultationManagement() {
 
     const searchConsultation = () => {
 
-        setSearchResult(search)
-        setSearchTypeResult(searchType)
+        setSearchResult(search);
+        setSearchTypeResult(searchType);
+        setCurrentPage(1);
     }
 
     const resetConsultationSearch = () => {
         setSearch("");
         setSearchResult("");
+        setCurrentPage(1);
     }
 
     // 업체명 검색어에 일치하는 문의 목록을 필터링
@@ -216,8 +232,16 @@ function ConsultationManagement() {
         }
     })
 
+    //페이지네이션
+    const startIndex = (currentPage - 1) * consultationPerPage
+    const endIndex = startIndex + consultationPerPage
+
+    const currentConsultations = filteredConsultation.slice(startIndex, endIndex)
+    const totalPages = Math.ceil(filteredConsultation.length / consultationPerPage)
+
+
     //클레임 건수확인
-    const pendingClaims = (claim??[]).filter(claim =>
+    const pendingClaims = (claim ?? []).filter(claim =>
         claim.status === "접수" || claim.status === "처리 중"
     )
     const pendingCount = pendingClaims.length;
@@ -316,7 +340,13 @@ function ConsultationManagement() {
             </div>
             <hr />
 
-            <div className="consultation-box">
+            <form
+                className="consultation-box"
+                onSubmit={(e) => {
+                    e.preventDefault();
+                    searchConsultation();
+                }}
+            >
                 <h4>문의 목록</h4>
                 <select
                     value={searchType}
@@ -327,11 +357,11 @@ function ConsultationManagement() {
                 <input type="text"
                     value={search}
                     onChange={(e) => setSearch(e.target.value)} />
-                <button
-                    onClick={searchConsultation}>검색</button>
-                <button
-                    onClick={resetConsultationSearch}>전체목록으로</button>
-            </div>
+                <button type="submit">검색</button>
+                <button type="button" onClick={resetConsultationSearch}>
+                    전체목록으로
+                </button>
+            </form>
 
             <div>
                 <div className="consultation-table-actions">
@@ -358,7 +388,7 @@ function ConsultationManagement() {
                         </tr>
                     </thead>
                     <tbody>
-                        {filteredConsultation
+                        {currentConsultations
                             .map((item) => (
                                 <tr key={item.id}>
                                     <td><input type="checkbox"
@@ -395,7 +425,36 @@ function ConsultationManagement() {
                     </tbody>
 
 
+
                 </table>
+                <div className="consultation-pagination">
+                    <button
+                        type="button"
+                        disabled={currentPage === 1}
+                        onClick={() => setCurrentPage(currentPage - 1)}
+                    >
+                        ◀
+                    </button>
+
+                    {Array.from({ length: totalPages }, (_, index) => (
+                        <button
+                            type="button"
+                            key={index + 1}
+                            className={currentPage === index + 1 ? "active" : ""}
+                            onClick={() => setCurrentPage(index + 1)}
+                        >
+                            {index + 1}
+                        </button>
+                    ))}
+
+                    <button
+                        type="button"
+                        disabled={currentPage >= totalPages}
+                        onClick={() => setCurrentPage(currentPage + 1)}
+                    >
+                        ▶
+                    </button>
+                </div>
 
             </div>
         </div>
