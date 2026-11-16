@@ -11,6 +11,8 @@
     background: #F5F4FA;
     color: #39354F;
     font-family: Arial, sans-serif;
+    display: flex;
+    flex-direction: column;
 }
 
 .consultation-page * {
@@ -19,10 +21,42 @@
 
 /* 페이지 제목 */
 .consultation-page h2 {
+    order: 0;
+    float: none;
     margin: 0 0 22px;
     color: #39354F;
     font-size: 26px;
     font-weight: 700;
+}
+
+/* 미완료 클레임 현황 */
+.consultation-page > h3 {
+    order: 3;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    max-width: 100%;
+    margin: 0 0 16px;
+    padding: 14px 18px;
+    border: 1px solid #EADDB8;
+    border-left: 4px solid #D5A356;
+    border-radius: 8px;
+    background: #FFF8E9;
+    color: #8A682E;
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 1.4;
+}
+
+/* 미완료 상태 표시점 */
+.consultation-page > h3::before {
+    content: "";
+    width: 9px;
+    height: 9px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    background: #D5A356;
 }
 
 /* 등록 및 검색 카드 */
@@ -65,6 +99,7 @@
 
 /* 등록/수정: 이름과 입력칸은 가까이, 항목끼리는 여유 있게 배치 */
 .consultation-page > div.consultation-box:first-of-type {
+    order: 1;
     display: grid;
     grid-template-columns: repeat(4, max-content minmax(0, 1fr));
     column-gap: 8px;
@@ -111,6 +146,7 @@
 
 /* 검색과 목록 표를 이어 붙여 하나의 카드로 표시 */
 .consultation-page > form.consultation-box {
+    order: 4;
     display: flex;
     align-items: center;
     flex-wrap: wrap;
@@ -160,6 +196,7 @@
 }
 
 .consultation-page > form.consultation-box + div {
+    order: 5;
     position: relative;
     padding-bottom: 12px;
     background: #FFFFFF;
@@ -268,6 +305,7 @@
 
 /* 등록 영역과 목록 사이 구분선 */
 .consultation-page hr {
+    order: 2;
     margin: 0 0 22px;
     border: none;
     border-top: 1px solid #E6E1F0;
@@ -407,7 +445,12 @@
     }
 
     .consultation-page h2 {
+        float: none;
         font-size: 22px;
+    }
+
+    .consultation-page > h3 {
+        float: none;
     }
 
     .consultation-box {
