@@ -1,187 +1,188 @@
-import react, { useEffect, useState } from "react"
-
-const STORAGE_KEY = "home_inquiries"
-const CHANGE_EVENT = "home-inquiries-changed"
-
-const getNum = (orderNo) => {
-    const text = String(orderNo || "").trim()
-    const parts = text.split("-")
-    let digits = ""
-
-    if (parts.length === 1) {
-        digits = parts[0]
-    } else if (parts.length === 2) {
-        if (!/^[A-Za-z]+$/.test(parts[0])) return null
-        digits = parts[1]
-    } else {
-        return null
-    }
-
-    if (!/^[0-9]+$/.test(digits)) return null
-    const num = Number(digits)
-    if (!Number.isSafeInteger(num) || num < 1) return null
-    return num
-}
-
-const loadPosts = () => {
-    try {
-        const saved = localStorage.getItem(STORAGE_KEY)
-        if (saved === null) return []
-        const posts = JSON.parse(saved)
-        if (!Array.isArray(posts)) return null
-
-        for (let i = 0; i < posts.length; i++) {
-            const post = posts[i]
-            if (!post || typeof post !== "object" || Array.isArray(post)) return null
-            const num = getNum(post.orderNo)
-            if (num !== null) post.consultationId = num
-        }
-        return posts
-    } catch (error) {
-        console.error("문의글 불러오기 실패", error)
-        return null
-    }
-}
-
-const trimPost = (input) => {
-    const post = { ...input }
-    const keys = ["companyName", "customerManager", "phone", "email", "orderNo", "title", "content"]
-    for (let i = 0; i < keys.length; i++) {
-        const key = keys[i]
-        if (typeof post[key] === "string") post[key] = post[key].trim()
-    }
-    return post
-}
-
-const checkInput = (post) => {
-    if (!post) return false
-    if (!String(post.customerManager || "").trim()) return false
-    if (!String(post.phone || "").trim() && !String(post.email || "").trim()) return false
-    if (!String(post.title || "").trim()) return false
-    if (!String(post.content || "").trim()) return false
-    return true
-}
-
-const getPhone = (post) => {
-    if (typeof post.phone === "string") return post.phone
-    if (typeof post.contact === "string" && !post.contact.includes("@")) return post.contact
-    return ""
-}
-
-const getEmail = (post) => {
-    if (typeof post.email === "string") return post.email
-    if (typeof post.contact === "string" && post.contact.includes("@")) return post.contact
-    return ""
-}
+import { useEffect, useState } from "react";
+import { claims as initialClaims } from "../data/mockData";
+import { validateClaim } from "../utils/claimUtils";
 
 function useClaimData() {
-    const [claim, setClaim] = useState(() => loadPosts() || [])
+
+    const STORAGE_KEY = "erp_claims";
+    const NEXT_ID_KEY = "erp_claim_next_id";
+
+    const [claims, setClaims] = useState(() => {
+
+        try {
+            const savedClaims = localStorage.getItem(STORAGE_KEY);
+
+            if (savedClaims !== null) {
+
+                const parsedClaims = JSON.parse(savedClaims);
+
+                if (Array.isArray(parsedClaims)) {
+                    return parsedClaims;
+                }
+            }
+
+        } catch (error) {
+            console.error("클레임 데이터 불러오기 실패", error);
+        }
+
+        return initialClaims;
+    });
 
     useEffect(() => {
-        const reload = () => {
-            const posts = loadPosts()
-            if (posts === null) setClaim([])
-            else setClaim(posts)
-        }
-        const onStorage = (event) => {
-            if (event.key === STORAGE_KEY) reload()
-        }
-        reload()
-        window.addEventListener("storage", onStorage)
-        window.addEventListener(CHANGE_EVENT, reload)
-        return () => {
-            window.removeEventListener("storage", onStorage)
-            window.removeEventListener(CHANGE_EVENT, reload)
-        }
-    }, [])
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(claims));
+    }, [claims]);
 
-    const savePosts = (posts) => {
-        try {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(posts))
-            setClaim(posts)
-            window.dispatchEvent(new Event(CHANGE_EVENT))
-            return { ok: true }
-        } catch (error) {
-            console.error("문의글 저장 실패", error)
-            return { ok: false, message: "문의글을 저장하지 못했습니다." }
-        }
-    }
 
+    // 클레임 등록
     const addClaim = (newClaim) => {
-        const posts = loadPosts()
-        if (posts === null) return { ok: false, message: "저장된 글을 읽지 못했습니다." }
-        if (!checkInput(newClaim)) return { ok: false, message: "필수 항목과 연락처를 입력해 주세요." }
-        const item = trimPost(newClaim)
-        const num = getNum(item.orderNo)
-        if (num === null) return { ok: false, message: "올바른 주문번호를 입력해 주세요." }
 
-        let id = 1
-        for (let i = 0; i < posts.length; i++) {
-            if (Number(posts[i].id) >= id) id = Number(posts[i].id) + 1
+        const result = validateClaim({
+            ...newClaim,
+            status: "접수"
+        });
+        
+        if (!result.ok) {
+            return result;
         }
-        const post = {
-            ...item, id: id, consultationId: num,
-            status: "접수", createdAt: new Date().toLocaleDateString("sv-SE")
-        }
-        const result = savePosts([post, ...posts])
-        if (result.ok) return { ok: true, id: id }
-        return result
-    }
 
+        const savedNextId = Number(
+            localStorage.getItem(NEXT_ID_KEY)
+        );
+
+        const maxId = Math.max(
+            0, ...claims.map(c => Number(c.id) || 0)
+        );
+
+        const newId = Math.max(
+            maxId + 1,
+            Number.isSafeInteger(savedNextId) && savedNextId > 0
+                ? savedNextId
+                : 1
+        );
+
+        localStorage.setItem(
+            NEXT_ID_KEY,
+            String(newId + 1)
+        );
+
+        setClaims(prev => [
+            ...prev,
+            {
+                ...newClaim,
+                id: newId,
+                status: "접수",
+                createdAt: new Date().toLocaleDateString("sv-SE")
+            }
+        ]);
+
+        return { ok: true, id: newId };
+    };
+
+
+    // 클레임 수정
     const updateClaim = (updatedClaim) => {
-        if (!updatedClaim || updatedClaim.id === undefined) {
-            return { ok: false, message: "수정할 글이 없습니다." }
-        }
-        const posts = loadPosts()
-        if (posts === null) return { ok: false, message: "저장된 글을 읽지 못했습니다." }
 
-        let index = -1
-        for (let i = 0; i < posts.length; i++) {
-            if (Number(posts[i].id) === Number(updatedClaim.id)) index = i
+        if (
+            !updatedClaim ||
+            typeof updatedClaim !== "object" ||
+            !Number.isSafeInteger(updatedClaim.id) ||
+            updatedClaim.id <= 0
+        ) {
+            return {
+                ok: false,
+                message: "올바르지 않은 클레임 정보입니다."
+            };
         }
-        if (index === -1) return { ok: false, message: "수정할 글이 없습니다." }
 
-        const post = { ...posts[index] }
-        for (const key in updatedClaim) {
-            if (key !== "id" && key !== "consultationId" && updatedClaim[key] !== undefined) {
-                post[key] = updatedClaim[key]
-            }
-        }
-        const item = trimPost(post)
-        const changedInfo = updatedClaim.customerManager !== undefined || updatedClaim.phone !== undefined ||
-            updatedClaim.email !== undefined || updatedClaim.title !== undefined || updatedClaim.content !== undefined
-        if (changedInfo && !checkInput(item)) {
-            return { ok: false, message: "필수 항목과 연락처를 입력해 주세요." }
-        }
-        if (updatedClaim.orderNo !== undefined) {
-            const num = getNum(item.orderNo)
-            if (num === null) return { ok: false, message: "올바른 주문번호를 입력해 주세요." }
-            item.consultationId = num
-        }
-        posts[index] = item
-        return savePosts(posts)
-    }
+        const original = claims.find(
+            c => c.id === updatedClaim.id
+        );
 
+        if (!original) {
+            return {
+                ok: false,
+                message: "수정할 클레임이 존재하지 않습니다."
+            };
+        }
+
+        const mergedClaim = {
+            ...original,
+            ...updatedClaim
+        };
+
+        if (original.consultationId !== mergedClaim.consultationId) {
+            return {
+                ok: false,
+                message: "클레임의 주문번호는 변경할 수 없습니다."
+            };
+        }
+        
+        if (original.companyName !== mergedClaim.companyName) {
+            return {
+                ok: false,
+                message: "클레임의 업체명은 변경할 수 없습니다."
+            };
+        }
+        
+        const result = validateClaim(mergedClaim);
+        
+        if (!result.ok) {
+            return result;
+        }
+
+        setClaims(prev =>
+            prev.map(c =>
+                c.id === updatedClaim.id
+                    ? { ...c, ...updatedClaim }
+                    : c
+            )
+        );
+
+        return { ok: true };
+    };
+
+
+    // 클레임 삭제
     const deleteClaim = (id) => {
-        const posts = loadPosts()
-        if (posts === null) return { ok: false, message: "저장된 글을 읽지 못했습니다." }
-        const updated = posts.filter(post => Number(post.id) !== Number(id))
-        if (updated.length === posts.length) return { ok: false, message: "삭제할 글이 없습니다." }
-        return savePosts(updated)
-    }
 
-    const checkOrder = (id, orderNo) => {
-        const posts = loadPosts()
-        if (posts === null) return false
-        for (let i = 0; i < posts.length; i++) {
-            if (Number(posts[i].id) === Number(id)) {
-                return String(orderNo).trim() !== "" && String(orderNo).trim() === posts[i].orderNo
-            }
+        if (!claims.some(c => c.id === id)) {
+            return {
+                ok: false,
+                message: "삭제할 클레임이 존재하지 않습니다."
+            };
         }
-        return false
-    }
 
-    return { claim, addClaim, updateClaim, deleteClaim, checkOrder, getPhone, getEmail }
+        setClaims(prev =>
+            prev.filter(c => c.id !== id)
+        );
+
+        return { ok: true };
+    };
+
+
+    // 클레임 전체 초기화
+    const resetClaim = () => {
+
+        const nextId = Math.max(
+            0, ...initialClaims.map(c => Number(c.id) || 0)
+        ) + 1;
+
+        localStorage.setItem(
+            NEXT_ID_KEY,
+            String(nextId)
+        );
+
+        setClaims([...initialClaims]);
+    };
+
+
+    return {
+        claims,
+        addClaim,
+        updateClaim,
+        deleteClaim,
+        resetClaim
+    };
 }
 
-export default useClaimData
+export default useClaimData;

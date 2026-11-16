@@ -11,7 +11,7 @@ function ConsultationManagement() {
     //문의목록을 관리할 usestate
     const { consultations, addConsultation, updateConsultation,
         deleteConsultations, employees, customers, addCustomer,
-        saveEditedCustomer, claim
+        saveEditedCustomer, claims, validateConsultationEmployee
     } = useERP();
 
     //체크박스로 선택한 문의 Id를 저장할 usestate
@@ -32,6 +32,9 @@ function ConsultationManagement() {
     //버튼을 눌러 확정한 검색기준
     const [searchTypeResult, setSearchTypeResult] = useState("companyName")
 
+    const originalConsultation = consultations.find(
+        (consultation) => consultation.id === editData.id)
+
     const editConsultation = () => {
 
         const selectedConsultation = consultations.find(
@@ -47,7 +50,6 @@ function ConsultationManagement() {
         if (!validateConsultation(editData)) {
             return;
         }
-
 
         if (!validatePhone(editData.phone)) {
             return;
@@ -69,28 +71,27 @@ function ConsultationManagement() {
             return;
         }
 
-        if (editData.status === "처리 중"
-            || editData.status === "견적 요청"
-            || editData.status === "문의 종료") {
-            if (editData.employeeId === null
-                || editData.employeeId === ""
-                || editData.employeeId === undefined) {
-                alert("처리중 단계부터는 담당자를 지정해야 됩니다.")
-                return;
-            }
+        const employeeResult = validateConsultationEmployee(
+            editData,
+            originalConsultation
+        );
+
+        if (!employeeResult.ok) {
+            alert(employeeResult.message);
+            return;
         }
 
         let isNewCustomer = false;
-        const originalConsultation = consultations.find(
-            (consultation) => consultation.id === editData.id)
 
         const isMemoChanged = !originalConsultation
             || (originalConsultation.memo !== editData.memo)
 
-        if (originalConsultation &&
+        if (
+            originalConsultation &&
             originalConsultation.companyName !== editData.companyName &&
-            originalConsultation.status === "견적 요청") {
-            alert("견적 요청된 상담의 고객은 변경할 수 없습니다.")
+            ["견적 요청", "인계 완료"].includes(originalConsultation.status)
+        ) {
+            alert("견적 요청 또는 인계 완료된 상담의 고객은 변경할 수 없습니다.");
             return;
         }
 
@@ -127,7 +128,7 @@ function ConsultationManagement() {
                 const newMemo = `${today} | ${editData.memo}`;
 
                 const updatedMemo = editData.memo?.trim()
-                        
+
                     ? [existingCustomer.memo, newMemo].filter(Boolean).join("\n")
                     : (existingCustomer.memo || "");
 
@@ -155,7 +156,15 @@ function ConsultationManagement() {
                 return;
             }
         } else {
-            addConsultation({ ...editData, customerId });
+            const result = addConsultation({
+                ...editData,
+                customerId
+            });
+
+            if (!result.ok) {
+                alert(result.message);
+                return;
+            }
         }
         if (isNewCustomer) {
             alert("문의 정보가 저장되고 고객관리에 신규 등록되었습니다.");
@@ -217,7 +226,7 @@ function ConsultationManagement() {
     })
 
     //클레임 건수확인
-    const pendingClaims = (claim??[]).filter(claim =>
+    const pendingClaims = (claims ?? []).filter(claim =>
         claim.status === "접수" || claim.status === "처리 중"
     )
     const pendingCount = pendingClaims.length;
@@ -284,23 +293,46 @@ function ConsultationManagement() {
                     }>
                     <option value="">미배정</option>
                     {employees
-                        .filter((employee) => employee.department === "영업팀")
-                        .map((employee) =>
-                            <option key={employee.id}
-                                value={employee.id}>{employee.name}</option>)}
+                        .filter(employee =>
+                            (
+                                employee.department === "영업팀" &&
+                                employee.status === "재직"
+                            ) ||
+                            employee.id === originalConsultation?.employeeId
+                        )
+                        .map(employee => (
+                            <option
+                                key={employee.id}
+                                value={employee.id}
+                                disabled={
+                                    employee.status !== "재직" ||
+                                    employee.department !== "영업팀"
+                                }
+                            >
+                                {employee.name}
+                                {employee.status !== "재직" ? ` (${employee.status})` : ""}
+                            </option>
+                        ))}
                 </select>
                 <br />
 
                 <label>진행상태</label>
                 <select
                     value={editData?.status || "문의 접수"}
-                    onChange={(e) => setEditData(
-                        { ...editData, status: (e.target.value) }
-                    )}>
+                    disabled={editData?.status === "인계 완료"}
+                    onChange={(e) => setEditData({
+                        ...editData,
+                        status: e.target.value
+                    })}
+                >
                     <option>문의 접수</option>
                     <option>처리 중</option>
                     <option>견적 요청</option>
                     <option>문의 종료</option>
+
+                    <option value="인계 완료" disabled>
+                        인계 완료
+                    </option>
                 </select>
                 <br />
                 <label>문의 사항/처리 내용</label>

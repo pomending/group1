@@ -23,3 +23,7 @@ export const formatCustomerName = (customers, customerId) => {
 export const formatProductName = (products, productId) => {
     return products.find(product => product.id === Number(productId))?.productName || "";
 }
+
+export const formatOrderNo = (id) => {
+    return `ERP-${String(id).padStart(4, "0")}`;
+};

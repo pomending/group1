@@ -14,6 +14,7 @@ import useQuotationData from "./useQuotationData";
 import { deleteSchedulesByProject, deleteSchedulesByEmployee, resetStoredSchedules } from "../5_schedule/scheduleStorage";
 import { isValidDate } from "../utils/dateUtils";
 import useClaimData from "./useClaimData";
+import { validateClaim } from "../utils/claimUtils";
 
 const ERPContext = createContext(null);
 
@@ -22,7 +23,7 @@ export function ERPProvider({ children }) {
     const employeeData = useEmployeeData();
     const { resetEmployees, ...publicEmployeeData } = employeeData;
     const consultationData = useConsultationData();
-    const { resetConsultations, ...publicConsultationData } = consultationData;
+    const { resetConsultations, completeConsultationTransfer, checkConsultationTransfer, ...publicConsultationData } = consultationData;
     const customerData = useCustomerData();
     const { resetCustomers, ...publicCustomerData } = customerData;
     const quotationData = useQuotationData();
@@ -37,6 +38,7 @@ export function ERPProvider({ children }) {
     const taskData = useTaskData();
     const { resetTasks, ...publicTaskData } = taskData;
     const claimData = useClaimData();
+    const { resetClaim, ...publicClaimData } = claimData;
 
     const deleteConsultations = (ids) => {
 
@@ -74,21 +76,21 @@ export function ERPProvider({ children }) {
             };
         }
 
-        const hasQuotationRequested =
+        const hasTransferredConsultation =
             consultationData.consultations.some(
                 c => ids.includes(c.id) &&
-                    c.status === "견적 요청"
+                    ["견적 요청", "인계 완료"].includes(c.status)
             );
 
-        if (hasQuotationRequested) {
+        if (hasTransferredConsultation) {
             return {
                 ok: false,
-                message: "견적 요청된 상담은 삭제할 수 없습니다."
+                message: "견적 요청 또는 인계 완료된 상담은 삭제할 수 없습니다."
             };
         }
 
         // 클레임에서 참조 중인 상담 확인
-        const hasClaim = claimData.claim.some(
+        const hasClaim = claimData.claims.some(
             claim => ids.includes(claim.consultationId)
         );
 
@@ -172,6 +174,106 @@ export function ERPProvider({ children }) {
         return customerData.deleteCustomers(ids);
     };
 
+    const validateConsultationEmployee = (consultation, original = null) => {
+
+        const status = consultation.status || "문의 접수";
+        const employeeId = consultation.employeeId;
+
+        // 담당자가 반드시 필요한 상태
+        const requiresEmployee = [
+            "처리 중",
+            "견적 요청",
+            "문의 종료"
+        ].includes(status);
+
+        // 담당자 미배정 검사
+        if (employeeId == null || employeeId === "") {
+            if (requiresEmployee) {
+                return {
+                    ok: false,
+                    message: "담당자를 지정해주세요."
+                };
+            }
+
+            return { ok: true };
+        }
+
+        // 담당 직원 존재 확인
+        const employee = employeeData.employees.find(
+            e => e.id === employeeId
+        );
+
+        if (!employee) {
+            return {
+                ok: false,
+                message: "존재하지 않는 담당자입니다."
+            };
+        }
+
+        // 종료된 상담의 기존 담당자 기록은 유지 허용
+        const keepEmployee =
+            original &&
+            ["문의 종료", "인계 완료"].includes(original.status) &&
+            ["문의 종료", "인계 완료"].includes(status) &&
+            original.employeeId === employeeId;
+
+        if (
+            !keepEmployee &&
+            (
+                employee.status !== "재직" ||
+                employee.department !== "영업팀"
+            )
+        ) {
+            return {
+                ok: false,
+                message: "재직 중인 영업팀 직원만 담당자로 지정할 수 있습니다."
+            };
+        }
+
+        return { ok: true };
+    };
+
+    const addConsultation = (newConsultation) => {
+
+        const result = validateConsultationEmployee(newConsultation);
+    
+        if (!result.ok) {
+            return result;
+        }
+    
+        return consultationData.addConsultation(newConsultation);
+    };
+    
+    const updateConsultation = (updatedConsultation) => {
+    
+        const original = consultationData.consultations.find(
+            c => c.id === updatedConsultation.id
+        );
+    
+        if (!original) {
+            return {
+                ok: false,
+                message: "존재하지 않는 상담입니다."
+            };
+        }
+    
+        const mergedConsultation = {
+            ...original,
+            ...updatedConsultation
+        };
+    
+        const result = validateConsultationEmployee(
+            mergedConsultation,
+            original
+        );
+    
+        if (!result.ok) {
+            return result;
+        }
+    
+        return consultationData.updateConsultation(mergedConsultation);
+    };
+
     const updateEmployee = (updatedEmployee) => {
 
         if (
@@ -223,7 +325,8 @@ export function ERPProvider({ children }) {
         );
 
         const statusChanged = original.status !== mergedEmployee.status;
-        const departmentChanged = original.department !== mergedEmployee.department;
+        const departmentChanged =
+            original.department !== mergedEmployee.department;
 
         if (statusChanged || departmentChanged) {
 
@@ -232,11 +335,23 @@ export function ERPProvider({ children }) {
                 mergedEmployee.status === "재직" &&
                 mergedEmployee.department === "영업팀";
 
+            // 담당 중인 고객 확인
+            const hasCustomer = customerData.customers.some(
+                c => c.employeeId === employeeId
+            );
+
+            if (hasCustomer && !validSalesEmployee) {
+                return {
+                    ok: false,
+                    message: "담당 중인 고객이 있습니다. 담당자를 변경한 후 수정해주세요."
+                };
+            }
+
             // 진행 중인 상담 확인
             const hasActiveConsultation =
                 consultationData.consultations.some(c =>
                     c.employeeId === employeeId &&
-                    !["문의 종료", "인계 완료"].includes(c.status)
+                    ["문의 접수", "처리 중", "견적 요청"].includes(c.status)
                 );
 
             if (hasActiveConsultation && !validSalesEmployee) {
@@ -250,6 +365,7 @@ export function ERPProvider({ children }) {
             const hasActiveQuotation =
                 quotationData.quotations.some(q =>
                     q.employeeId === employeeId &&
+                    ["승인 대기", "승인 완료"].includes(q.status) &&
                     !projectData.projects.some(
                         p => p.quotationId === q.id
                     )
@@ -265,10 +381,11 @@ export function ERPProvider({ children }) {
             // 변경 후 프로젝트 담당자 자격 확인
             const validProjectManager = getProjectManagers(
                 [mergedEmployee]
-            ).some(e => Number(e.id) === employeeId);
+            ).some(e => e.id === employeeId);
 
+            // 완료되지 않은 프로젝트 확인
             const hasActiveProject = projectData.projects.some(p =>
-                Number(p.managerId) === employeeId &&
+                p.managerId === employeeId &&
                 p.status !== "완료"
             );
 
@@ -279,11 +396,11 @@ export function ERPProvider({ children }) {
                 };
             }
 
-            // 변경 후 세부 작업 담당자 자격 확인
+            // 완료되지 않은 세부 작업 담당자 자격 확인
             const hasInvalidTask = taskData.tasks.some(task => {
 
                 if (
-                    Number(task.employeeId) !== employeeId ||
+                    task.employeeId !== employeeId ||
                     task.progress === "완료"
                 ) {
                     return false;
@@ -295,7 +412,7 @@ export function ERPProvider({ children }) {
                 );
 
                 return !availableEmployees.some(
-                    e => Number(e.id) === employeeId
+                    e => e.id === employeeId
                 );
             });
 
@@ -372,17 +489,19 @@ export function ERPProvider({ children }) {
             a => a.employeeId === Number(id)
         );
 
-        if (
-            hasProject ||
-            hasQuotation ||
-            hasCustomer ||
-            hasConsultation ||
-            hasTask ||
-            hasAccount
-        ) {
+        const references = [];
+
+        if (hasProject) references.push("프로젝트");
+        if (hasQuotation) references.push("견적");
+        if (hasCustomer) references.push("고객");
+        if (hasConsultation) references.push("상담");
+        if (hasTask) references.push("세부 작업");
+        if (hasAccount) references.push("계정");
+
+        if (references.length > 0) {
             return {
                 ok: false,
-                message: "다른 데이터에서 참조 중인 직원은 삭제할 수 없습니다."
+                message: `${references.join(", ")}에서 참조 중인 직원은 삭제할 수 없습니다.`
             };
         }
 
@@ -468,8 +587,16 @@ export function ERPProvider({ children }) {
                 !original ||
                 original.employeeId !== quotation.employeeId;
 
+            // 현재 견적이 담당 업무에 해당하는지 확인
+            const isActiveQuotation =
+                ["승인 대기", "승인 완료"].includes(quotation.status) &&
+                !projectData.projects.some(
+                    p => p.quotationId === quotation.id
+                );
+
+            // 신규 담당자 지정 또는 진행 업무에 해당할 때 자격 검사
             if (
-                isNewEmployee &&
+                (isNewEmployee || isActiveQuotation) &&
                 (
                     employee.status !== "재직" ||
                     employee.department !== "영업팀"
@@ -477,7 +604,7 @@ export function ERPProvider({ children }) {
             ) {
                 return {
                     ok: false,
-                    message: "재직 중인 영업팀 직원만 선택할 수 있습니다."
+                    message: "재직 중인 영업팀 직원만 담당자로 지정할 수 있습니다."
                 };
             }
         }
@@ -485,7 +612,9 @@ export function ERPProvider({ children }) {
         return { ok: true };
     };
 
-    const addQuotation = (newQuotation) => {
+
+
+    const addQuotation = (newQuotation, consultationId) => {
 
         if (!newQuotation || typeof newQuotation !== "object") {
             return {
@@ -494,16 +623,53 @@ export function ERPProvider({ children }) {
             };
         }
 
+        const isDraft = newQuotation.status === "임시 저장";
+
+        // 정식 견적 생성 시에만 상담 관련 검사
+        if (!isDraft) {
+
+            const check =
+                consultationData.checkConsultationTransfer(consultationId);
+
+            if (!check.ok) {
+                return check;
+            }
+
+            const consultation = consultationData.consultations.find(
+                c => c.id === consultationId
+            );
+
+            if (consultation.customerId !== newQuotation.customerId) {
+                return {
+                    ok: false,
+                    message: "상담과 견적의 고객 정보가 일치하지 않습니다."
+                };
+            }
+        }
+
+        // 기존 견적 참조 데이터 유효성 검사
         const result = validateQuotationReferences(newQuotation);
 
         if (!result.ok) {
             return result;
         }
 
-        return quotationData.addQuotation(newQuotation);
+        // 견적 생성
+        const addResult = quotationData.addQuotation(newQuotation);
+
+        if (!addResult.ok) {
+            return addResult;
+        }
+
+        // 정식 견적 생성 성공 시에만 상담 인계 완료
+        if (!isDraft) {
+            consultationData.completeConsultationTransfer(consultationId);
+        }
+
+        return addResult;
     };
 
-    const updateQuotation = (updatedQuotation) => {
+    const updateQuotation = (updatedQuotation, consultationId) => {
 
         if (
             !Number.isSafeInteger(updatedQuotation?.id) ||
@@ -542,6 +708,67 @@ export function ERPProvider({ children }) {
             ...updatedQuotation
         };
 
+        // 임시 저장 견적은 승인 대기로만 정식 등록 가능
+        if (
+            original.status === "임시 저장" &&
+            !["임시 저장", "승인 대기"].includes(mergedQuotation.status)
+        ) {
+            return {
+                ok: false,
+                message: "임시 저장된 견적은 승인 대기 상태로만 등록할 수 있습니다."
+            };
+        }
+
+        // 정식 견적을 임시 저장으로 되돌리는 것 금지
+        if (
+            original.status !== "임시 저장" &&
+            mergedQuotation.status === "임시 저장"
+        ) {
+            return {
+                ok: false,
+                message: "정식 등록된 견적은 임시 저장으로 변경할 수 없습니다."
+            };
+        }
+
+        // 정식 등록된 견적의 고객 변경 금지
+        if (
+            original.status !== "임시 저장" &&
+            original.customerId !== mergedQuotation.customerId
+        ) {
+            return {
+                ok: false,
+                message: "정식 등록된 견적의 고객은 변경할 수 없습니다."
+            };
+        }
+
+        // 임시 저장에서 정식 저장으로 변경되는지 확인
+        const isDraftToSubmitted =
+            original.status === "임시 저장" &&
+            mergedQuotation.status === "승인 대기";
+
+        // 정식 저장으로 변경될 때만 상담 관련 검사
+        if (isDraftToSubmitted) {
+
+            const check =
+                consultationData.checkConsultationTransfer(consultationId);
+
+            if (!check.ok) {
+                return check;
+            }
+
+            const consultation = consultationData.consultations.find(
+                c => c.id === consultationId
+            );
+
+            if (consultation.customerId !== mergedQuotation.customerId) {
+                return {
+                    ok: false,
+                    message: "상담과 견적의 고객 정보가 일치하지 않습니다."
+                };
+            }
+        }
+
+        // 기존 견적 참조 데이터 유효성 검사
         const result =
             validateQuotationReferences(mergedQuotation, original);
 
@@ -549,7 +776,20 @@ export function ERPProvider({ children }) {
             return result;
         }
 
-        return quotationData.updateQuotation(updatedQuotation);
+        // 견적 수정
+        const updateResult =
+            quotationData.updateQuotation(updatedQuotation);
+
+        if (!updateResult.ok) {
+            return updateResult;
+        }
+
+        // 정식 저장 성공 시 상담 인계 완료
+        if (isDraftToSubmitted) {
+            consultationData.completeConsultationTransfer(consultationId);
+        }
+
+        return updateResult;
     };
 
     const deleteQuotation = (id) => {
@@ -1033,6 +1273,51 @@ export function ERPProvider({ children }) {
         return taskData.deleteTask(taskId);
     };
 
+    const addClaim = (newClaim) => {
+
+        const result = validateClaim({
+            ...newClaim,
+            status: "접수"
+        });
+
+        if (!result.ok) {
+            return result;
+        }
+
+        const consultation = consultationData.consultations.find(
+            c => c.id === newClaim.consultationId
+        );
+
+        if (!consultation) {
+            return {
+                ok: false,
+                message: "존재하지 않는 주문번호입니다."
+            };
+        }
+
+        if (consultation.status !== "인계 완료") {
+            return {
+                ok: false,
+                message: "인계 완료된 상담만 클레임을 등록할 수 있습니다."
+            };
+        }
+
+        if (
+            newClaim.companyName.trim() !==
+            consultation.companyName.trim()
+        ) {
+            return {
+                ok: false,
+                message: "업체명과 주문번호가 일치하지 않습니다."
+            };
+        }
+
+        return claimData.addClaim({
+            ...newClaim,
+            companyName: consultation.companyName
+        });
+    };
+
     // 개발/시연용: 모듈별 참조 관계를 함께 원래 상태로 되돌린다.
     // 개별 resetEmployees의 참조 제한을 거치면 전체 초기화가 막힐 수 있어
     // 각 Hook의 원본 초기화 함수를 직접 호출한다.
@@ -1052,6 +1337,7 @@ export function ERPProvider({ children }) {
         consultationData.resetConsultations();
         taskData.resetTasks();
         quotationData.resetQuotations();
+        claimData.resetClaim();
 
         authData.logout();
 
@@ -1069,8 +1355,11 @@ export function ERPProvider({ children }) {
             ...publicConsultationData,
             ...publicTaskData,
             ...publicQuotationData,
-            ...claimData,
+            ...publicClaimData,
 
+            validateConsultationEmployee,
+            addConsultation,
+            updateConsultation,
             deleteConsultations,
 
             deleteCustomers,
@@ -1089,6 +1378,8 @@ export function ERPProvider({ children }) {
             addTask,
             updateTask,
             deleteTask,
+
+            addClaim,
 
             resetAllData,
 
