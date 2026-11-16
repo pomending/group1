@@ -8,7 +8,7 @@ export const totalPrice = (quantity, price) => {
 
 export function getQuotationPriceDetails(quotation) {
 
-    const baseUnitPrice = Number(quotation.baseUnitPrice ?? quotation.unitPrice ?? 0);
+    const baseUnitPrice = Number(quotation.baseUnitPrice > 0 ? quotation.baseUnitPrice : quotation.unitPrice ?? 0);
 
     const options = Array.isArray(quotation.options)
         ? quotation.options
@@ -58,8 +58,13 @@ export const validateQuotation = (quotation) => {
         return { ok: false, message: "수량은 0보다 커야 합니다." }
     }
 
-    if (!Number.isFinite(quotation.baseUnitPrice) ||
-        quotation.baseUnitPrice <= 0) {
+    //기본 데이터의 unitprice도 허용
+    const baseUnitPrice = Number(
+        quotation.baseUnitPrice > 0 ? quotation.baseUnitPrice : quotation.unitPrice
+    );
+
+    if (!Number.isFinite(baseUnitPrice) ||
+        baseUnitPrice <= 0) {
         return {
             ok: false,
             message: "기본 단가는 0보다 커야 합니다."

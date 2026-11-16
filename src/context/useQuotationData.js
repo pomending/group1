@@ -100,8 +100,8 @@ export default function useQuotationData() {
         if (
             existing.productId != null &&
             Number(existing.productId) === Number(mergedQuotation.productId) &&
-            Number(existing.baseUnitPrice ?? existing.UnitPrice) !==
-            Number(existing.baseUnitPrice ?? mergedQuotation.UnitPrice)
+            Number(existing.baseUnitPrice > 0 ? existing.baseUnitPrice : existing.unitPrice) !==
+            Number(existing.baseUnitPrice > 0 ? mergedQuotation.baseUnitPrice : mergedQuotation.unitPrice)
         ) {
             return {
                 ok: false,
@@ -112,10 +112,13 @@ export default function useQuotationData() {
         const quotationToValidate = {
             ...mergedQuotation,
             baseUnitPrice: Number(
-                mergedQuotation.baseUnitPrice ??
-                mergedQuotation.UnitPrice ??
-                0
-            )
+                mergedQuotation.baseUnitPrice > 0
+                ? mergedQuotation.baseUnitPrice 
+                : mergedQuotation.unitPrice ?? 0
+            ),
+
+            options: Array.isArray(mergedQuotation.options)
+            ? mergedQuotation.options : []
         }
 
         const result = validateQuotation(quotationToValidate)
