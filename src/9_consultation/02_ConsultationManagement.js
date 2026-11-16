@@ -217,7 +217,7 @@ function ConsultationManagement() {
     })
 
     //클레임 건수확인
-    const pendingClaims = (claims??[]).filter(claim =>
+    const pendingClaims = (claim??[]).filter(claim =>
         claim.status === "접수" || claim.status === "처리 중"
     )
     const pendingCount = pendingClaims.length;
