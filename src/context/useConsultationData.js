@@ -52,24 +52,6 @@ export default function useConsultationData() {
     
     }, [consultations]);
 
-    // function addConsultation(editData) {
-
-    //     const newId = Math.max(
-    //         0,
-    //         ...consultations.map((item) => item.id)) + 1;
-
-    //     const newConsultation = {
-    //         ...editData,
-    //         id: newId,
-    //         status: editData.status || "문의 접수"
-    //     };
-
-    //     setConsultations(prev => [
-    //         newConsultation,
-    //         ...prev
-    //     ]);
-    // }
-
     function addConsultation(editData) {
 
         const savedNextId = Number(
@@ -100,6 +82,8 @@ export default function useConsultationData() {
             newConsultation,
             ...prev
         ]);
+
+        return { ok: true };
     }
 
     function updateConsultation(editData) {
@@ -115,23 +99,36 @@ export default function useConsultationData() {
             };
         }
     
-        if (
-            original.status === "견적 요청" &&
-            editData.status !== "견적 요청"
-        ) {
-            return {
-                ok: false,
-                message: "견적 요청된 상담의 상태는 변경할 수 없습니다."
-            };
+        const isLocked = ["견적 요청", "인계 완료"].includes(original.status);
+    
+        // 상태 및 고객 변경 제한
+        if (isLocked) {
+    
+            if (original.status !== editData.status) {
+                return {
+                    ok: false,
+                    message: `${original.status} 상태의 상담은 상태를 변경할 수 없습니다.`
+                };
+            }
+    
+            if (
+                original.customerId !== editData.customerId ||
+                original.companyName !== editData.companyName
+            ) {
+                return {
+                    ok: false,
+                    message: `${original.status} 상태의 상담은 고객을 변경할 수 없습니다.`
+                };
+            }
         }
 
         if (
-            original.status === "견적 요청" &&
-            original.customerId !== editData.customerId
+            original.status !== "인계 완료" &&
+            editData.status === "인계 완료"
         ) {
             return {
                 ok: false,
-                message: "견적 요청된 상담의 고객은 변경할 수 없습니다."
+                message: "견적이 정식 등록되면 자동으로 인계 완료됩니다."
             };
         }
     
@@ -155,7 +152,60 @@ export default function useConsultationData() {
         return { ok: true };
     }
 
-    // 전체 초기화 시 고객 목록과 다음 고객 ID도 원래 상태로 되돌린다.
+    function completeConsultationTransfer(id) {
+
+        const original = consultations.find(c => c.id === id)
+
+        if (!original) {
+            return {
+                ok: false,
+                message: "존재하지 않는 상담입니다."
+            };
+        }
+
+        if (
+            original.status !== "견적 요청"
+        ) {
+            return {
+                ok: false,
+                message: "견적 요청이 되지 않은 상담은 인계될 수 없습니다."
+            };
+        }
+
+        setConsultations(prev =>
+            prev.map( c => 
+                c.id === original.id ? {
+                    ...c, status:"인계 완료"
+                } : c
+            )
+        )
+
+        return { ok:true };
+
+    }
+
+    function checkConsultationTransfer(id) {
+
+        const original = consultations.find(c => c.id === id);
+    
+        if (!original) {
+            return {
+                ok: false,
+                message: "존재하지 않는 상담입니다."
+            };
+        }
+    
+        if (original.status !== "견적 요청") {
+            return {
+                ok: false,
+                message: "견적 요청이 되지 않은 상담은 인계될 수 없습니다."
+            };
+        }
+    
+        return { ok: true };
+    }
+
+
     function resetConsultations() {
         setConsultations([...initialConsultations]);
     }
@@ -165,6 +215,8 @@ export default function useConsultationData() {
         addConsultation,
         updateConsultation,
         deleteConsultations,
+        completeConsultationTransfer,
+        checkConsultationTransfer,
         resetConsultations
     }
 }

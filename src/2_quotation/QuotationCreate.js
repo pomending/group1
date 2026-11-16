@@ -171,15 +171,15 @@ function QuotationCreate() {
         let result;
 
         if (editQuotation) {
-            //기존 견적서 수정
-            result = updateQuotation(newQuotation)
+            // 기존 견적서 수정
+            result = updateQuotation(newQuotation, selectedConsultation?.id);
         } else {
-            //신규 견적서 등록
-            result = addQuotation(newQuotation)
+            // 신규 견적서 등록
+            result = addQuotation(newQuotation, selectedConsultation?.id);
         }
 
         if (!result.ok) {
-            alert(result.message)
+            alert(result.message);
             return;
         }
 
@@ -193,380 +193,392 @@ function QuotationCreate() {
         }
 
         if (editQuotation) {
-            navi(`/quotation/detail/${editQuotation.id}`)
+            navi(`/quotation/detail/${editQuotation.id}`);
         } else {
-            navi("/quotation")
+            navi("/quotation");
         }
     }
 
 
-    React.useEffect(() => {
+        React.useEffect(() => {
 
-        if (!editQuotation) return;
+            if (!editQuotation) return;
 
-        setConsultationId(
-            editQuotation.customerId ? "existing" : ""
-        )
+            setConsultationId(
+                editQuotation.customerId ? "existing" : ""
+            )
 
-        setProductId(editQuotation.productId || "");
-        setEmployeeId(editQuotation.employeeId || "");
+            setProductId(editQuotation.productId || "");
+            setEmployeeId(editQuotation.employeeId || "");
 
-        setEmployeeSearch(
-            employees.find(e => e.id === editQuotation.employeeId)?.name || ""
-        )
+            setEmployeeSearch(
+                employees.find(e => e.id === editQuotation.employeeId)?.name || ""
+            )
 
-        setProductSearch(
-            products.find(p => p.id === editQuotation.productId)?.productName || ""
-        )
+            setProductSearch(
+                products.find(p => p.id === editQuotation.productId)?.productName || ""
+            )
 
 
-        setQuantity(editQuotation.quantity || "");
-        setBaseUnitPrice(editQuotation.baseUnitPrice ?? editQuotation.unitPrice ?? "");
-        setOptions(
-            (editQuotation.options ?? []).map(option => ({
-                ...option,
-                id: Date.now() + Math.random()
-            }))
-        )
+            setQuantity(editQuotation.quantity || "");
+            setBaseUnitPrice(editQuotation.baseUnitPrice ?? editQuotation.unitPrice ?? "");
+            setOptions(
+                (editQuotation.options ?? []).map(option => ({
+                    ...option,
+                    id: Date.now() + Math.random()
+                }))
+            )
 
-        setCreatedAt(editQuotation.createdAt || "");
-        setValidUntil(editQuotation.validUntil || "");
-        setDeliveryDate(editQuotation.deliveryDate || "");
+            setCreatedAt(editQuotation.createdAt || "");
+            setValidUntil(editQuotation.validUntil || "");
+            setDeliveryDate(editQuotation.deliveryDate || "");
 
-        setPaymentMethod(editQuotation.paymentMethod || "");
-        setMemo(editQuotation.memo || "");
-    }, [editQuotation]);
+            setPaymentMethod(editQuotation.paymentMethod || "");
+            setMemo(editQuotation.memo || "");
+        }, [editQuotation]);
 
-    return (
-        <div className="quotation-create">
-            <header className="create-header">
+        return (
+            <div className="quotation-create">
+                <header className="create-header">
 
-                <h1>{editQuotation ? "견적서 수정" : "새 견적서 작성"}</h1>
-                <p>거래처에 전달할 견적 정보를 입력합니다.</p>
+                    <h1>{editQuotation ? "견적서 수정" : "새 견적서 작성"}</h1>
+                    <p>거래처에 전달할 견적 정보를 입력합니다.</p>
 
-            </header>
+                </header>
 
-            <main className="create-content">
+                <main className="create-content">
 
-                <section>
-                    <div className="section-header">
-                        <span className="section-number">01</span>
-                        <h2>견적 기본 정보</h2>
-                    </div>
-
-                    <div className="form-grid">
-                        <div className="form-group">
-                            {/* 견적 번호는 중복되지 않게 자동생성되게 만들기 */}
-                            <label>견적 번호</label>
-                            <input
-                                type="text"
-                                value={formatQuotationId(editQuotation ? editQuotation.id : nextId)}
-                                readOnly
-                                className="readonly-input"
-                            />
+                    <section>
+                        <div className="section-header">
+                            <span className="section-number">01</span>
+                            <h2>견적 기본 정보</h2>
                         </div>
 
-                        <div className="form-group">
-                            <label>작성일</label>
-                            <input
-                                type="date"
-                                value={createdAt}
-                                onChange={(e) => setCreatedAt(e.target.value)}
-                            />
-                        </div>
+                        <div className="form-grid">
+                            <div className="form-group">
+                                {/* 견적 번호는 중복되지 않게 자동생성되게 만들기 */}
+                                <label>견적 번호</label>
+                                <input
+                                    type="text"
+                                    value={formatQuotationId(editQuotation ? editQuotation.id : nextId)}
+                                    readOnly
+                                    className="readonly-input"
+                                />
+                            </div>
 
-                        <div className="form-group">
-                            <label>내부 담당자</label>
-                            <input
-                                type="text"
-                                placeholder="담당자 이름을 검색하세요."
-                                value={employeeSearch}
-                                onChange={(e) => {
-                                    setEmployeeSearch(e.target.value);
-                                    setEmployeeId("");
-                                    setShowEmployeeList(true);
-                                }}
-                                onFocus={() => setShowEmployeeList(true)}
-                                onBlur={() => setShowEmployeeList(false)}
-                            />
-                            {showEmployeeList && (
-                                <div className="employee-list">
-                                    {filteredEmployees.length > 0 ? (
-                                        filteredEmployees.map((employee) => (
-                                            <div
-                                                key={employee.id}
-                                                className="employee-item"
-                                                onMouseDown={(e) => e.preventDefault()}
-                                                onClick={() => {
-                                                    setEmployeeId(employee.id)
-                                                    setEmployeeSearch(employee.name)
-                                                    setShowEmployeeList(false)
-                                                }}>
+                            <div className="form-group">
+                                <label>작성일</label>
+                                <input
+                                    type="date"
+                                    value={createdAt}
+                                    onChange={(e) => setCreatedAt(e.target.value)}
+                                />
+                            </div>
 
-                                                <strong>{employee.name}</strong>
+                            <div className="form-group">
+                                <label>내부 담당자</label>
+                                <input
+                                    type="text"
+                                    placeholder="담당자 이름을 검색하세요."
+                                    value={employeeSearch}
+                                    onChange={(e) => {
+                                        setEmployeeSearch(e.target.value);
+                                        setEmployeeId("");
+                                        setShowEmployeeList(true);
+                                    }}
+                                    onFocus={() => setShowEmployeeList(true)}
+                                    onBlur={() => setShowEmployeeList(false)}
+                                />
+                                {showEmployeeList && (
+                                    <div className="employee-list">
+                                        {filteredEmployees.length > 0 ? (
+                                            filteredEmployees.map((employee) => (
+                                                <div
+                                                    key={employee.id}
+                                                    className="employee-item"
+                                                    onMouseDown={(e) => e.preventDefault()}
+                                                    onClick={() => {
+                                                        setEmployeeId(employee.id)
+                                                        setEmployeeSearch(employee.name)
+                                                        setShowEmployeeList(false)
+                                                    }}>
 
-                                                <div className="employee-info">
-                                                    <span>
-                                                        {formatEmployeeId(employee.id)}
-                                                    </span>
-                                                    <span>{employee.department}</span>
+                                                    <strong>{employee.name}</strong>
+
+                                                    <div className="employee-info">
+                                                        <span>
+                                                            {formatEmployeeId(employee.id)}
+                                                        </span>
+                                                        <span>{employee.department}</span>
+                                                    </div>
+
                                                 </div>
-
-                                            </div>
-                                        ))
-                                    ) : (
-                                        <p>검색 결과가 없습니다.</p>
-                                    )}
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                </section>
-
-                <section className="create-card">
-                    <div className="section-header">
-                        <span className="section-number">02</span>
-                        <h2>거래처 정보</h2>
-                    </div>
-
-                    <div className="form-grid">
-                        <div className="form-group">
-
-                            <label htmlFor="quotation-consultation">견적 요청 상담</label>
-                            <select
-                                id="quotation-consultation"
-                                value={consultationId}
-                                onChange={(e) => setConsultationId(e.target.value)}
-                            >
-                                <option value="">
-                                    {quotationRequests.length > 0
-                                        ? "견적 요청 상담을 선택하세요."
-                                        : "선택 가능한 견적 요청 상담이 없습니다."}
-                                </option>
-                                {existingCustomer && (
-                                    <option value="existing">
-                                        {existingCustomer.companyName} (기존 거래처)
-                                    </option>
+                                            ))
+                                        ) : (
+                                            <p>검색 결과가 없습니다.</p>
+                                        )}
+                                    </div>
                                 )}
-                                {quotationRequests.map(consultation => (
-                                    <option key={consultation.id} value={consultation.id}>
-                                        {consultation.companyName} (상담 #{consultation.id})
+                            </div>
+                        </div>
+                    </section>
+
+                    <section className="create-card">
+                        <div className="section-header">
+                            <span className="section-number">02</span>
+                            <h2>거래처 정보</h2>
+                        </div>
+
+                        <div className="form-grid">
+                            <div className="form-group">
+
+                                <label htmlFor="quotation-consultation">견적 요청 상담</label>
+                                <select
+                                    id="quotation-consultation"
+                                    value={consultationId}
+                                    onChange={(e) => setConsultationId(e.target.value)}
+                                >
+                                    <option value="">
+                                        {quotationRequests.length > 0
+                                            ? "견적 요청 상담을 선택하세요."
+                                            : "선택 가능한 견적 요청 상담이 없습니다."}
                                     </option>
-                                ))}
-                            </select>
-                        </div>
-
-                        <div className="form-group">
-                            <label>담당자</label>
-                            <input
-                                type="text"
-                                placeholder="담당자를 입력하세요."
-                                value={selectedCustomer?.customerManager || ""}
-                                readOnly
-                            />
-                        </div>
-
-                        <div className="form-group">
-                            <label>연락처</label>
-                            <input
-                                type="text"
-                                placeholder="연락처를 입력하세요."
-                                value={selectedCustomer?.phone || ""}
-                                readOnly
-                            />
-                        </div>
-                    </div>
-                </section>
-
-
-                <section className="create-card">
-                    <div className="section-header">
-                        <span className="section-number">03</span>
-                        <h2>상품 정보</h2>
-                    </div>
-
-                    <div className="product-form">
-                        <div className="form-group product-name">
-                            <label>상품명</label>
-                            <input
-                                type="text"
-                                placeholder="상품명을 입력하세요."
-                                value={productSearch}
-                                onChange={(e) => {
-                                    setProductSearch(e.target.value)
-                                    setProductId("")
-                                    setBaseUnitPrice("");
-                                    setQuantity("")
-                                    setOptions([])
-                                    setShowProductList(true)
-                                }}
-                                onFocus={() => setShowProductList(true)}
-                                onBlur={() => setShowProductList(false)}
-                            />
-                            {showProductList && (
-                                <div className="product-list">
-                                    {filteredProducts.length > 0 ? (
-                                        filteredProducts.map((product) => (
-                                            <div
-                                                key={product.id}
-                                                className="product-item"
-                                                onMouseDown={(e) => e.preventDefault()}
-                                                onClick={() => {
-                                                    setProductId(product.id);
-                                                    setProductSearch(product.productName);
-                                                    setShowProductList(false);
-
-                                                    if (editQuotation?.productId === product.id) {
-                                                        setBaseUnitPrice(editQuotation.baseUnitPrice);
-                                                    } else {
-                                                        setBaseUnitPrice(product.productPrice);
-                                                    }
-                                                }}
-                                            >
-                                                <strong>{product.productName}</strong>
-
-                                                <div>
-                                                    <span>{product.productPrice.toLocaleString()}원</span>
-                                                </div>
-                                            </div>
-                                        ))
-                                    ) : (
-                                        <p>검색 결과가 없습니다.</p>
+                                    {existingCustomer && (
+                                        <option value="existing">
+                                            {existingCustomer.companyName} (기존 거래처)
+                                        </option>
                                     )}
-                                </div>
-                            )}
+                                    {quotationRequests.map(consultation => (
+                                        <option key={consultation.id} value={consultation.id}>
+                                            {consultation.companyName} (상담 #{consultation.id})
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            <div className="form-group">
+                                <label>담당자</label>
+                                <input
+                                    type="text"
+                                    placeholder="담당자를 입력하세요."
+                                    value={selectedCustomer?.customerManager || ""}
+                                    readOnly
+                                />
+                            </div>
+
+                            <div className="form-group">
+                                <label>연락처</label>
+                                <input
+                                    type="text"
+                                    placeholder="연락처를 입력하세요."
+                                    value={selectedCustomer?.phone || ""}
+                                    readOnly
+                                />
+                            </div>
+                        </div>
+                    </section>
+
+
+                    <section className="create-card">
+                        <div className="section-header">
+                            <span className="section-number">03</span>
+                            <h2>상품 정보</h2>
                         </div>
 
-                        <div className="form-group">
-                            <label>수량</label>
-                            <input
-                                type="number"
-                                className="quantity-input"
-                                min={1}
-                                placeholder="수량을 입력하세요."
-                                value={quantity}
-                                onChange={(e) => setQuantity(e.target.value)} />
+                        <div className="product-form">
+                            <div className="form-group product-name">
+                                <label>상품명</label>
+                                <input
+                                    type="text"
+                                    placeholder="상품명을 입력하세요."
+                                    value={productSearch}
+                                    onChange={(e) => {
+                                        setProductSearch(e.target.value)
+                                        setProductId("")
+                                        setBaseUnitPrice("");
+                                        setQuantity("")
+                                        setOptions([])
+                                        setShowProductList(true)
+                                    }}
+                                    onFocus={() => setShowProductList(true)}
+                                    onBlur={() => setShowProductList(false)}
+                                />
+                                {showProductList && (
+                                    <div className="product-list">
+                                        {filteredProducts.length > 0 ? (
+                                            filteredProducts.map((product) => (
+                                                <div
+                                                    key={product.id}
+                                                    className="product-item"
+                                                    onMouseDown={(e) => e.preventDefault()}
+                                                    onClick={() => {
+                                                        setProductId(product.id);
+                                                        setProductSearch(product.productName);
+                                                        setShowProductList(false);
+
+                                                        if (editQuotation?.productId === product.id) {
+                                                            setBaseUnitPrice(editQuotation.baseUnitPrice);
+                                                        } else {
+                                                            setBaseUnitPrice(product.productPrice);
+                                                        }
+                                                    }}
+                                                >
+                                                    <strong>{product.productName}</strong>
+
+                                                    <div>
+                                                        <span>{product.productPrice.toLocaleString()}원</span>
+                                                    </div>
+                                                </div>
+                                            ))
+                                        ) : (
+                                            <p>검색 결과가 없습니다.</p>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="form-group">
+                                <label>수량</label>
+                                <input
+                                    type="number"
+                                    className="quantity-input"
+                                    min={1}
+                                    placeholder="수량을 입력하세요."
+                                    value={quantity}
+                                    onChange={(e) => setQuantity(e.target.value)} />
+                            </div>
+
+                            <div className="form-group">
+                                <label>기본 단가 (원)</label>
+                                <input
+                                    type="number"
+                                    className="readonly-input"
+                                    placeholder="상품 선택 시 자동 입력"
+                                    value={baseUnitPrice}
+                                    readOnly />
+                            </div>
+
+                            <div className="form-group">
+                                <p>상품 총 금액 (원)</p>
+                                <input
+                                    type="number"
+                                    placeholder="자동 계산"
+                                    value={totalPrice}
+                                    readOnly
+                                    className="readonly-input"
+                                />
+                            </div>
+
+                            <div className="option-section">
+                                <button className="option-add-btn" onClick={handleAddOption}>
+                                    + 옵션 추가
+                                </button>
+
+                                {options.map((option) => (
+                                    <div className="option-row" key={option.id}>
+                                        <input
+                                            className="option-name-input"
+                                            type="text"
+                                            placeholder="옵션명 입력"
+                                            value={option.name}
+                                            onChange={(e) =>
+                                                handleChangeOption(option.id, "name", e.target.value)
+                                            }
+                                        />
+
+                                        <input
+                                            className="option-price-input"
+                                            type="number"
+                                            placeholder="추가 단가 입력"
+                                            value={option.unitPrice}
+                                            onChange={(e) =>
+                                                handleChangeOption(option.id, "unitPrice", e.target.value)
+                                            }
+                                        />
+
+                                        <button className="option-delete-btn" onClick={() => handleDeleteOption(option.id)}>
+                                            삭제
+                                        </button>
+
+                                    </div>
+                                ))}
+                            </div>
+
+                        </div>
+                    </section>
+
+                    <section className="create-card">
+                        <div className="section-header">
+                            <span className="section-number">04</span>
+                            <h2>견적 금액</h2>
                         </div>
 
-                        <div className="form-group">
-                            <label>기본 단가 (원)</label>
-                            <input
-                                type="number"
-                                className="readonly-input"
-                                placeholder="상품 선택 시 자동 입력"
-                                value={baseUnitPrice}
-                                readOnly />
+                        <div className="amount-grid">
+                            <div className="amount-item">
+                                <span>공급가액</span>
+                                <strong>{totalPrice.toLocaleString()}원</strong>
+                            </div>
+
+                            <div className="amount-item">
+                                <span>부가세 (10%)</span>
+                                <strong>{vat.toLocaleString()}원</strong>
+                            </div>
+
+                            <div className="amount-item total-amount">
+                                <span>최종 견적 금액</span>
+                                <strong>{finalPrice.toLocaleString()}원</strong>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section className="create-card">
+                        <div className="section-header">
+                            <span className="section-number">05</span>
+                            <h2>거래 조건</h2>
                         </div>
 
-                        <div className="form-group">
-                            <p>상품 총 금액 (원)</p>
-                            <input
-                                type="number"
-                                placeholder="자동 계산"
-                                value={totalPrice}
-                                readOnly
-                                className="readonly-input"
-                            />
+                        <div className="form-grid">
+                            <div className="form-group">
+                                {/* 유효기간이 지나면 원자재 가격이나 제작비 변동 등을 이유로 견적을 다시 산정 가능 */}
+                                <label>견적 유효 기간</label>
+                                <input
+                                    type="date"
+                                    placeholder="예: 발행일로부터 30일"
+                                    value={validUntil}
+                                    onChange={(e) => setValidUntil(e.target.value)} />
+                            </div>
+
+                            <div className="form-group">
+                                {/* 거래처가 주문한 상품을 언제까지 전달할 예정인지 */}
+                                <label>납품 예정일</label>
+                                <input type="date"
+                                    value={deliveryDate}
+                                    onChange={(e) => setDeliveryDate(e.target.value)} />
+                            </div>
+
+                            <div className="form-group">
+                                <label>결제 방법</label>
+                                <select
+                                    value={paymentMethod}
+                                    onChange={(e) => setPaymentMethod(e.target.value)}>
+                                    <option value="" disabled>결제방법을 선택하세요.</option>
+                                    <option value="계좌이체">계좌이체</option>
+                                    <option value="카드결제">카드결제</option>
+                                    <option value="현금결제">현금결제</option>
+                                </select>
+                            </div>
+
+                            <div className="form-group">
+                                <label>특이사항</label>
+                                <input
+                                    type="text"
+                                    placeholder="특이사항을 입력하세요."
+                                    value={memo}
+                                    onChange={(e) => setMemo(e.target.value)} />
+                            </div>
                         </div>
-
-                        <div className="option-section">
-                            <button className="option-add-btn" onClick={handleAddOption}>
-                                + 옵션 추가
-                            </button>
-
-                            {options.map((option) => (
-                                <div className="option-row" key={option.id}>
-                                    <input
-                                        className="option-name-input"
-                                        type="text"
-                                        placeholder="옵션명 입력"
-                                        value={option.name}
-                                        onChange={(e) =>
-                                            handleChangeOption(option.id, "name", e.target.value)
-                                        }
-                                    />
-
-                                    <input
-                                    className="option-price-input"
-                                        type="number"
-                                        placeholder="추가 단가 입력"
-                                        value={option.unitPrice}
-                                        onChange={(e) =>
-                                            handleChangeOption(option.id, "unitPrice", e.target.value)
-                                        }
-                                    />
-
-                                    <button className="option-delete-btn" onClick={() => handleDeleteOption(option.id)}>
-                                        삭제
-                                    </button>
-
-                                </div>
-                            ))}
-                        </div>
-
-                    </div>
-                </section>
-
-                <section className="create-card">
-                    <div className="section-header">
-                        <span className="section-number">04</span>
-                        <h2>견적 금액</h2>
-                    </div>
-
-                    <div className="amount-grid">
-                        <div className="amount-item">
-                            <span>공급가액</span>
-                            <strong>{totalPrice.toLocaleString()}원</strong>
-                        </div>
-
-                        <div className="amount-item">
-                            <span>부가세 (10%)</span>
-                            <strong>{vat.toLocaleString()}원</strong>
-                        </div>
-
-                        <div className="amount-item total-amount">
-                            <span>최종 견적 금액</span>
-                            <strong>{finalPrice.toLocaleString()}원</strong>
-                        </div>
-                    </div>
-                </section>
-
-                <section className="create-card">
-                    <div className="section-header">
-                        <span className="section-number">05</span>
-                        <h2>거래 조건</h2>
-                    </div>
-
-                    <div className="form-grid">
-                        <div className="form-group">
-                            {/* 유효기간이 지나면 원자재 가격이나 제작비 변동 등을 이유로 견적을 다시 산정 가능 */}
-                            <label>견적 유효 기간</label>
-                            <input
-                                type="date"
-                                placeholder="예: 발행일로부터 30일"
-                                value={validUntil}
-                                onChange={(e) => setValidUntil(e.target.value)} />
-                        </div>
-
-                        <div className="form-group">
-                            {/* 거래처가 주문한 상품을 언제까지 전달할 예정인지 */}
-                            <label>납품 예정일</label>
-                            <input type="date"
-                                value={deliveryDate}
-                                onChange={(e) => setDeliveryDate(e.target.value)} />
-                        </div>
-
-                        <div className="form-group">
-                            <label>결제 방법</label>
-                            <select
-                                value={paymentMethod}
-                                onChange={(e) => setPaymentMethod(e.target.value)}>
-                                <option value="" disabled>결제방법을 선택하세요.</option>
-                                <option value="계좌이체">계좌이체</option>
-                                <option value="카드결제">카드결제</option>
-                                <option value="현금결제">현금결제</option>
-                            </select>
-                        </div>
+                    </section>
+                </main>
 
                         <div className="form-group">
                             <label>특이사항</label>
@@ -588,20 +600,26 @@ function QuotationCreate() {
                 </button>
                 {!fromDetail && (
                     <button
-                        className="temp-save-btn"
-                        onClick={handleTempSave}>
-                        임시저장
+                        className="cancel-btn"
+                        onClick={() => navi("/quotation")}>
+                        취소
                     </button>
-                )}
-                <button
-                    className="save-btn"
-                    onClick={handleSave}>
-                    견적서 저장
-                </button>
+                    {!fromDetail && (
+                        <button
+                            className="temp-save-btn"
+                            onClick={handleTempSave}>
+                            임시저장
+                        </button>
+                    )}
+                    <button
+                        className="save-btn"
+                        onClick={handleSave}>
+                        견적서 저장
+                    </button>
+                </div>
+
             </div>
+        )
+    }
 
-        </div>
-    )
-}
-
-export default QuotationCreate
+    export default QuotationCreate

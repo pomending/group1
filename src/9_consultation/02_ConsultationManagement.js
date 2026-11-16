@@ -11,7 +11,7 @@ function ConsultationManagement() {
     //문의목록을 관리할 usestate
     const { consultations, addConsultation, updateConsultation,
         deleteConsultations, employees, customers, addCustomer,
-        saveEditedCustomer, claim
+        saveEditedCustomer, claims, validateConsultationEmployee
     } = useERP();
 
     //체크박스로 선택한 문의 Id를 저장할 usestate
@@ -32,6 +32,14 @@ function ConsultationManagement() {
     //버튼을 눌러 확정한 검색기준
     const [searchTypeResult, setSearchTypeResult] = useState("companyName")
 
+    const originalConsultation = consultations.find(
+        (consultation) => consultation.id === editData.id)
+    //페이지설정기준
+    const [currentPage, setCurrentPage] = useState(1)
+    //페이지당 보여질 목록개수
+    const consultationPerPage = 10;
+
+
     const editConsultation = () => {
 
         const selectedConsultation = consultations.find(
@@ -47,7 +55,6 @@ function ConsultationManagement() {
         if (!validateConsultation(editData)) {
             return;
         }
-
 
         if (!validatePhone(editData.phone)) {
             return;
@@ -69,28 +76,27 @@ function ConsultationManagement() {
             return;
         }
 
-        if (editData.status === "처리 중"
-            || editData.status === "견적 요청"
-            || editData.status === "문의 종료") {
-            if (editData.employeeId === null
-                || editData.employeeId === ""
-                || editData.employeeId === undefined) {
-                alert("처리중 단계부터는 담당자를 지정해야 됩니다.")
-                return;
-            }
+        const employeeResult = validateConsultationEmployee(
+            editData,
+            originalConsultation
+        );
+
+        if (!employeeResult.ok) {
+            alert(employeeResult.message);
+            return;
         }
 
         let isNewCustomer = false;
-        const originalConsultation = consultations.find(
-            (consultation) => consultation.id === editData.id)
 
         const isMemoChanged = !originalConsultation
             || (originalConsultation.memo !== editData.memo)
 
-        if (originalConsultation &&
+        if (
+            originalConsultation &&
             originalConsultation.companyName !== editData.companyName &&
-            originalConsultation.status === "견적 요청") {
-            alert("견적 요청된 상담의 고객은 변경할 수 없습니다.")
+            ["견적 요청", "인계 완료"].includes(originalConsultation.status)
+        ) {
+            alert("견적 요청 또는 인계 완료된 상담의 고객은 변경할 수 없습니다.");
             return;
         }
 
@@ -123,18 +129,24 @@ function ConsultationManagement() {
                 customerId = existingCustomer.id
                 //날짜형식 
                 const today = new Date().toLocaleDateString("sv-SE");
-                //메모형식
-                const newMemo = `${today} | ${editData.memo}`;
+                //메모형식\
+                const oldMemo = originalConsultation?.memo || "";
+                const currentMemo = editData.memo || "";
 
-                const updatedMemo = editData.memo?.trim()
-                        
+                const addedMemo = currentMemo.startsWith(oldMemo)
+                    ? currentMemo.slice(oldMemo.length).trim()
+                    : currentMemo.trim();
+
+                const newMemo = addedMemo ? `${today} | ${addedMemo}` : "";
+
+                const updatedMemo = newMemo && isMemoChanged
                     ? [existingCustomer.memo, newMemo].filter(Boolean).join("\n")
                     : (existingCustomer.memo || "");
 
                 if (existingCustomer.customerManager !== editData.customerManager
                     || existingCustomer.email !== (editData.email?.trim() || existingCustomer.email)
                     || existingCustomer.phone !== editData.phone
-                    || existingCustomer.memo !== editData.updatedMemo
+                    || existingCustomer.memo !== updatedMemo
                 ) {
                     saveEditedCustomer(
                         {
@@ -155,7 +167,15 @@ function ConsultationManagement() {
                 return;
             }
         } else {
-            addConsultation({ ...editData, customerId });
+            const result = addConsultation({
+                ...editData,
+                customerId
+            });
+
+            if (!result.ok) {
+                alert(result.message);
+                return;
+            }
         }
         if (isNewCustomer) {
             alert("문의 정보가 저장되고 고객관리에 신규 등록되었습니다.");
@@ -187,6 +207,7 @@ function ConsultationManagement() {
         }
 
         setCheckedIds([]);
+        setCurrentPage(1);
         if (checkIds.includes(editData.id)) {
             setEditData({})
         }
@@ -195,13 +216,15 @@ function ConsultationManagement() {
 
     const searchConsultation = () => {
 
-        setSearchResult(search)
-        setSearchTypeResult(searchType)
+        setSearchResult(search);
+        setSearchTypeResult(searchType);
+        setCurrentPage(1);
     }
 
     const resetConsultationSearch = () => {
         setSearch("");
         setSearchResult("");
+        setCurrentPage(1);
     }
 
     // 업체명 검색어에 일치하는 문의 목록을 필터링
@@ -216,8 +239,16 @@ function ConsultationManagement() {
         }
     })
 
+    //페이지네이션
+    const startIndex = (currentPage - 1) * consultationPerPage
+    const endIndex = startIndex + consultationPerPage
+
+    const currentConsultations = filteredConsultation.slice(startIndex, endIndex)
+    const totalPages = Math.ceil(filteredConsultation.length / consultationPerPage)
+
+
     //클레임 건수확인
-    const pendingClaims = (claim??[]).filter(claim =>
+    const pendingClaims = (claims ?? []).filter(claim =>
         claim.status === "접수" || claim.status === "처리 중"
     )
     const pendingCount = pendingClaims.length;
@@ -284,23 +315,46 @@ function ConsultationManagement() {
                     }>
                     <option value="">미배정</option>
                     {employees
-                        .filter((employee) => employee.department === "영업팀")
-                        .map((employee) =>
-                            <option key={employee.id}
-                                value={employee.id}>{employee.name}</option>)}
+                        .filter(employee =>
+                            (
+                                employee.department === "영업팀" &&
+                                employee.status === "재직"
+                            ) ||
+                            employee.id === originalConsultation?.employeeId
+                        )
+                        .map(employee => (
+                            <option
+                                key={employee.id}
+                                value={employee.id}
+                                disabled={
+                                    employee.status !== "재직" ||
+                                    employee.department !== "영업팀"
+                                }
+                            >
+                                {employee.name}
+                                {employee.status !== "재직" ? ` (${employee.status})` : ""}
+                            </option>
+                        ))}
                 </select>
                 <br />
 
                 <label>진행상태</label>
                 <select
                     value={editData?.status || "문의 접수"}
-                    onChange={(e) => setEditData(
-                        { ...editData, status: (e.target.value) }
-                    )}>
+                    disabled={editData?.status === "인계 완료"}
+                    onChange={(e) => setEditData({
+                        ...editData,
+                        status: e.target.value
+                    })}
+                >
                     <option>문의 접수</option>
                     <option>처리 중</option>
                     <option>견적 요청</option>
                     <option>문의 종료</option>
+
+                    <option value="인계 완료" disabled>
+                        인계 완료
+                    </option>
                 </select>
                 <br />
                 <label>문의 사항/처리 내용</label>
@@ -316,7 +370,13 @@ function ConsultationManagement() {
             </div>
             <hr />
 
-            <div className="consultation-box">
+            <form
+                className="consultation-box"
+                onSubmit={(e) => {
+                    e.preventDefault();
+                    searchConsultation();
+                }}
+            >
                 <h4>문의 목록</h4>
                 <select
                     value={searchType}
@@ -327,11 +387,11 @@ function ConsultationManagement() {
                 <input type="text"
                     value={search}
                     onChange={(e) => setSearch(e.target.value)} />
-                <button
-                    onClick={searchConsultation}>검색</button>
-                <button
-                    onClick={resetConsultationSearch}>전체목록으로</button>
-            </div>
+                <button type="submit">검색</button>
+                <button type="button" onClick={resetConsultationSearch}>
+                    전체목록으로
+                </button>
+            </form>
 
             <div>
                 <div className="consultation-table-actions">
@@ -358,7 +418,7 @@ function ConsultationManagement() {
                         </tr>
                     </thead>
                     <tbody>
-                        {filteredConsultation
+                        {currentConsultations
                             .map((item) => (
                                 <tr key={item.id}>
                                     <td><input type="checkbox"
@@ -395,7 +455,36 @@ function ConsultationManagement() {
                     </tbody>
 
 
+
                 </table>
+                <div className="consultation-pagination">
+                    <button
+                        type="button"
+                        disabled={currentPage === 1}
+                        onClick={() => setCurrentPage(currentPage - 1)}
+                    >
+                        ◀
+                    </button>
+
+                    {Array.from({ length: totalPages }, (_, index) => (
+                        <button
+                            type="button"
+                            key={index + 1}
+                            className={currentPage === index + 1 ? "active" : ""}
+                            onClick={() => setCurrentPage(index + 1)}
+                        >
+                            {index + 1}
+                        </button>
+                    ))}
+
+                    <button
+                        type="button"
+                        disabled={currentPage >= totalPages}
+                        onClick={() => setCurrentPage(currentPage + 1)}
+                    >
+                        ▶
+                    </button>
+                </div>
 
             </div>
         </div>

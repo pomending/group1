@@ -1,15 +1,21 @@
 import React from "react";
 import { render, screen } from "@testing-library/react";
-import { createEmptyForm, getScheduleFormError } from "./scheduleData";
+import { createEmptyForm, createScheduleForm, getScheduleFormError } from "./scheduleData";
 import ScheduleFormModal from "./ScheduleFormModal";
 
 const validForm = () => ({ ...createEmptyForm(), scope: "업무용", category: "업무", title: "검증 일정", person: "담당자", date: "2028-02-29" });
 
+test("이전 프로젝트 분류는 업무로 수정하며 프로젝트 연결은 유지한다", () => {
+  const form = createScheduleForm({ ...validForm(), category: "프로젝트", project: "기존 프로젝트", projectId: 7 });
+  expect(form).toMatchObject({ category: "업무", project: "기존 프로젝트", projectId: 7 });
+  expect(getScheduleFormError(form)).toBeNull();
+});
+
 // 저장 직전의 검사입니다. DOM의 maxLength·선택 목록을 우회한 값도 같은 규칙으로 막습니다.
 test.each([
   [{ title: " " }, "title"], [{ title: "가".repeat(81) }, "title"],
-  [{ title: null }, "title"], [{ category: "프로젝트", project: " " }, "project"],
-  [{ category: "프로젝트", project: "가".repeat(61) }, "project"], [{ project: null }, "project"],
+  [{ title: null }, "title"], [{ category: "프로젝트" }, "category"],
+  [{ category: "업무", project: "가".repeat(61) }, "project"], [{ project: null }, "project"],
   [{ description: "가".repeat(3001) }, "description"], [{ description: null }, "description"],
   [{ person: " " }, "person"], [{ person: "가".repeat(31) }, "person"],
   [{ category: "회의", attendees: "가".repeat(31) }, "attendees"],
@@ -50,7 +56,7 @@ test.each([null, undefined, 5, "bad"])("폼 자체가 손상돼도 예외 대신
 
 test.each([
   {}, { title: "가".repeat(80), description: "가".repeat(3000), person: "가".repeat(30) },
-  { category: "프로젝트", project: "가".repeat(60) },
+  { category: "업무", project: "가".repeat(60) },
   { category: "회의", attendees: "가".repeat(30) },
   { endDate: "2028-03-01", time: "23:00", endTime: "01:00" },
   { isAllDay: true, time: "17:00", endTime: "09:00" },

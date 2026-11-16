@@ -31,7 +31,7 @@ function CustomerManagement() {
     const [currentPage, setCurrentPage] = useState(1);
     //한 페이지에 보여줄 고객목록 수
     const customerCountPerPage = 10;
-    //math.ceil() : 소수점이하를 올림하여 정수로 만드는 함수
+    //math.ceil() :q 소수점이하를 올림하여 정수로 만드는 함수
     //totalPageCount :전체 페이지수  currentPagecustomers:현재목록에 표시할 고개목록
     const totalPageCount = Math.ceil(searchList.length / customerCountPerPage);
     const currentPageCustomer = searchList.slice(
