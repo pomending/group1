@@ -7,6 +7,7 @@
 /* 고객관리 전체 영역 */
 .crm-page {
     min-height: 100vh;
+    position: relative;
     padding: 28px 30px 40px;
     background: #F5F4FA;
     color: #39354F;
@@ -19,7 +20,7 @@
 
 /* 페이지 상단 */
 .crm-header {
-    margin-bottom: 24px;
+    margin-bottom: 20px;
 }
 
 .crm-path {
@@ -47,29 +48,27 @@
    고객 현황 요약 카드
 ========================================= */
 
+/* 별도 전체 고객사 통계 영역은 화면에 표시하지 않음 */
 .crm-summary {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 16px;
-    margin-bottom: 24px;
+    display: none;
 }
 
+/* 별도 카드 대신 간결한 숫자 정보로 표현 */
 .crm-summary-card {
     display: flex;
-    flex-direction: column;
-    gap: 12px;
-
-    padding: 24px;
-    background: #FFFFFF;
-    border: 1px solid #E6E1F0;
-    border-radius: 14px;
-
-    box-shadow: 0 3px 12px rgba(65, 55, 95, 0.035);
+    align-items: baseline;
+    justify-content: flex-start;
+    gap: 8px;
+    padding: 0;
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
 }
 
 .crm-summary-card:nth-child(2) {
-    background: #F0EDFA;
-    border-color: #D6CEEA;
+    background: transparent;
+    border: 0;
 }
 
 .crm-summary-card span {
@@ -79,15 +78,18 @@
 
 .crm-summary-card strong {
     color: #524B80;
-    font-size: 28px;
+    font-size: 18px;
     font-weight: 700;
+    white-space: nowrap;
 }
 
 /* =========================================
    고객 목록 카드
 ========================================= */
 
+/* 고객 검색·관리·테이블을 하나의 작업 카드로 유지 */
 .crm-content {
+    min-width: 0;
     padding: 26px 28px;
     background: #FFFFFF;
     border: 1px solid #E6E1F0;
@@ -111,9 +113,10 @@
     font-weight: 700;
 }
 
+/* 목록 오른쪽의 총 건수는 글자 크기와 색상만 강조 */
 .crm-content-header span {
-    color: #827A98;
-    font-size: 13px;
+    color: #524B80;
+    font-size: 16px;
 }
 
 /* =========================================
@@ -125,6 +128,7 @@
     align-items: center;
     gap: 10px;
     margin-bottom: 20px;
+    max-width: 720px;
 }
 
 .crm-search input {
@@ -249,6 +253,13 @@
     align-items: center;
     flex-wrap: wrap;
     gap: 8px;
+}
+
+/* 고객 등록 버튼만 페이지 상단 오른쪽으로 이동 */
+.crm-page .crm-actions > button:first-child {
+    position: absolute;
+    top: 43px;
+    right: 30px;
 }
 
 /* =========================================
@@ -394,12 +405,10 @@
         font-size: 22px;
     }
 
-    .crm-summary {
-        grid-template-columns: 1fr;
-    }
-
-    .crm-summary-card {
-        padding: 18px;
+    /* 작은 화면에서도 고객 등록 버튼을 상단 오른쪽에 유지 */
+    .crm-page .crm-actions > button:first-child {
+        top: 29px;
+        right: 14px;
     }
 
     .crm-content {
