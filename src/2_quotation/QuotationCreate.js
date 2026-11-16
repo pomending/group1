@@ -65,13 +65,19 @@ function QuotationCreate() {
     //수량 상태값
     const [quantity, setQuantity] = useState("");
 
-    //옵션 추가
+    //기본 단가 + 제작 옵션 가격 계산
     const [options, setOptions] = useState([]);
 
-    const finalUnitPrice = getQuotationPriceDetails({
+    const priceDetails = getQuotationPriceDetails({
         baseUnitPrice,
         options
-    }).finalUnitPrice;
+    });
+
+    //옵션 추가 단가
+    const optionUnitPrice =priceDetails.optionUnitPrice;
+
+    //옵션 포함 최종 단가
+    const finalUnitPrice = priceDetails.finalUnitPrice;
 
     const totalPrice = calculateTotalPrice(quantity, finalUnitPrice);
 
@@ -456,6 +462,26 @@ function QuotationCreate() {
                                 placeholder="상품 선택 시 자동 입력"
                                 value={baseUnitPrice}
                                 readOnly />
+                        </div>
+
+                        <div className="form-group">
+                            <label>옵션 추가 단가 (원)</label>
+                            <input
+                                type="number"
+                                value={optionUnitPrice}
+                                readOnly
+                                className="readonly-input"
+                            />
+                        </div>
+
+                        <div className="form-group">
+                            <label>옵션 포함 최종 단가 (원)</label>
+                            <input
+                                type="number"
+                                value={finalUnitPrice}
+                                readOnly
+                                className="readonly-input"
+                            />
                         </div>
 
                         <div className="form-group">

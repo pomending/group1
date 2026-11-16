@@ -39,12 +39,17 @@ function QuotationDetail() {
         return <div>견적서를 찾을 수 없습니다.</div>;
     }
 
-    //옵션 포함 개당 단가 계산
-    const optionUnitPrice =
-        getQuotationPriceDetails(quotation).finalUnitPrice;
+    //옵션 포함 단가 계산
+    const priceDetails = getQuotationPriceDetails(quotation);
+
+    //옵션 추가 단가
+    const optionUnitPrice = priceDetails.optionUnitPrice;
+
+    //옵션 포함 최종 단가
+    const finalUnitPrice = priceDetails.finalUnitPrice;
 
     //공급가액 계산
-    const supplyAmount = Number(quotation.quantity || 0) * optionUnitPrice;
+    const supplyAmount = Number(quotation.quantity || 0) * finalUnitPrice;
 
     //부가세 및 최종 금액
     const vat = supplyAmount * 0.1;
@@ -231,7 +236,7 @@ function QuotationDetail() {
 
                         <div className="detail-item">
                             <span>기본 단가</span>
-                            <strong>{formatPrice(quotation.baseUnitPrice ?? quotation.unitPrice ?? 0)}</strong>
+                            <strong>{formatPrice(priceDetails.baseUnitPrice)}</strong>
                         </div>
 
                         <div className="detail-item option-detail-item">
@@ -254,6 +259,11 @@ function QuotationDetail() {
                                 )}
                             </div>
 
+                        </div>
+
+                        <div className="detail-item">
+                            <span>옵션 포함 최종 단가</span>
+                            <strong>{formatPrice(finalUnitPrice)}</strong>
                         </div>
 
                     </div>

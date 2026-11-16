@@ -224,16 +224,29 @@ body {
     }
 }
 
+/* ERP 관리 화면 모바일 좌우 여백 통일 */
+@media (max-width: 768px) {
+    .erp-layout .erp-main :is(
+        .dashboard, .community, .mypage, .crm-page,
+        .quotation-menu, .quotation-detail, .quotation-create,
+        .pj-page, .task-page, .task-detail-page,
+        .schedule-app, .hr-app, .am-page, .consultation-page, .pd-app
+    ) {
+        padding-left: 21px;
+        padding-right: 21px;
+    }
+}
+
 /* ========================================
    데스크톱 페이지별 본문 너비 통일
 ======================================== */
 @media (min-width: 769px) {
 
-    /* 대시보드와 일정 관리 좌우 여백 */
-    .erp-layout .erp-main .dashboard,
-    .erp-layout .erp-main .schedule-app {
-        padding-left: 24px;
-        padding-right: 24px;
+    /* ERP 관리 화면 좌우 여백 */
+    .erp-layout .erp-main :is(.dashboard, .community, .mypage, .crm-page, .quotation-menu, .quotation-detail, .quotation-create,
+        .pj-page, .task-page, .task-detail-page, .schedule-app, .hr-app, .am-page, .consultation-page, .pd-app) {
+        padding-left: 45px;
+        padding-right: 45px;
     }
 
     /* 프로젝트 관리와 일정 관리 너비 */
@@ -248,13 +261,31 @@ body {
         margin-right: 0;
     }
 
+    /* 인사·계정·작업·마이페이지도 같은 좌우 간격 사용 */
+    .erp-layout .erp-main .hr-app,
+    .erp-layout .erp-main .am-page,
+    .erp-layout .erp-main .task-page,
+    .erp-layout .erp-main .mypage {
+        padding-left: 45px;
+        padding-right: 45px;
+    }
+
+    /* 인사·계정 목록의 고정 최대 너비 해제 */
+    .erp-layout .erp-main .hr-shell,
+    .erp-layout .erp-main .am-shell {
+        width: 100%;
+        max-width: none;
+        margin-left: 0;
+        margin-right: 0;
+    }
+
     /* 견적 및 상품 관리 너비 */
     .erp-layout .erp-main .quotation-menu {
         width: 100%;
         max-width: none;
         margin-left: 0;
         margin-right: 0;
-        padding-left: 24px;
-        padding-right: 24px;
+        padding-left: 45px;
+        padding-right: 45px;
     }
 }
