@@ -11,8 +11,7 @@ import { ScheduleAgendaItem, ScheduleFavorite, ScheduleAttendees, ScheduleVisibi
 import {
   compareSchedules,
   getScheduleTime,
-  getNextScheduleDate,
-  getTodayKey,
+  getUpcomingSchedules,
   getRepeatLabel,
   getRepeatEndLabel,
   getRepeatSummary,
@@ -163,11 +162,11 @@ export default function ScheduleFormModal({
           </div>
         </div>}
         <ScheduleFieldError error={fieldError} fields={["category"]} />
-        {form.scope === "업무용" && form.category === "프로젝트" && (
+        {form.scope === "업무용" && form.category === "업무" && (
           <div className="sm-project-fields sm-form-wide">
             <label>프로젝트
               <input list="sm-project-suggestions" name="project" value={form.project} onChange={onChange} autoComplete="off"
-                placeholder="프로젝트명 입력" maxLength={60} required {...fieldErrorProps(fieldError, "project")} />
+                placeholder="연결할 프로젝트명 (선택)" maxLength={60} {...fieldErrorProps(fieldError, "project")} />
             </label>
             <datalist id="sm-project-suggestions">
               {projectSuggestions.map(name => <option key={name} value={name} />)}
@@ -438,6 +437,7 @@ function ScheduleFieldError({ error, fields }) {
 // totalCount는 전체 원본 건수이고 items는 현재 목록 범위입니다. 상태 필터 후의 페이지 건수는 별도로 계산합니다.
 export function ScheduleListModal({
   items,
+  holidayDates = {},
   filterDate,
   totalCount,
   hasActiveFilter = false,
@@ -467,37 +467,34 @@ export function ScheduleListModal({
   useLayoutEffect(() => { setPage(current => Math.min(current, pageCount)); }, [pageCount]);
   useLayoutEffect(() => { setPage(1); }, [filterDate, statusFilter]);
   useLayoutEffect(() => { if (listContentRef.current) listContentRef.current.scrollTop = 0; }, [currentPage, sortOrder, filterDate, statusFilter]);
-  // 한 회차를 수정하면 원본 반복 규칙과 분리된 일반 일정이 생깁니다.
-  // 일반 일정의 원본 ID·발생일을 모아, 목록에서 해당 반복 규칙의 다음 발생일을 표시합니다.
-
-  const getReplacementKey = (scheduleId, date) => `${scheduleId}:${date}`;
-  const replacementKeys = new Set();
-  // ID만 비교하면 다른 날짜의 회차까지 섞이므로 '원본 ID:원래 발생일'을 한 쌍으로 사용합니다.
-  for (const candidate of items) {
-    if (candidate.repeatType !== "none") continue;
-    const { replacesScheduleId, replacesOccurrenceDate } = candidate;
-    if (!replacesScheduleId || !replacesOccurrenceDate) continue;
-    replacementKeys.add(getReplacementKey(replacesScheduleId, replacesOccurrenceDate));
-  }
-  const todayKey = getTodayKey();
+  // 전체 목록은 실제 다음 회차를 표시하고, 기준일은 별도로 안내합니다.
+  // 날짜 더보기는 이미 펼쳐진 회차를 받으므로 해당 날짜를 그대로 표시합니다.
   const createListEntry = (item) => {
     const isRecurring = ["weekly", "monthly"].includes(item.repeatType);
-    const replacesRecurringOccurrence = isRecurring
-      && (item.excludedDates || []).some((date) =>
-        replacementKeys.has(getReplacementKey(item.id, date))
-      );
-    const displayDate = replacesRecurringOccurrence
-      ? getNextScheduleDate([item], todayKey) || item.date
-      : item.date;
-
-    const dateLabel = `${replacesRecurringOccurrence ? "다음 회차 · " : ""}${displayDate.replaceAll("-", ".")} · ${getScheduleTime(item)}`;
+    // 완료 상태여도 반복 날짜는 계산합니다. 복사한 객체만 사용해 원본 상태는 바꾸지 않습니다.
+    const nextOccurrence = isRecurring && !filterDate
+      ? getUpcomingSchedules([{ ...item, status: "pending" }], Date.now(), 1, undefined, holidayDates)[0]
+      : null;
+    const displayDate = nextOccurrence?.date || item.date;
+    let dateLabel = `${displayDate.replaceAll("-", ".")} · ${getScheduleTime(nextOccurrence || item)}`;
+    let basisLabel = "";
+    if (isRecurring && !filterDate) {
+      dateLabel = `${nextOccurrence ? "다음 회차" : "남은 회차 없음 · 기준일"} · ${dateLabel}`;
+      if (nextOccurrence) basisLabel = `반복 기준일 · ${item.date.replaceAll("-", ".")}`;
+    } else if (!filterDate && item.endDate > item.date) {
+      const start = item.date.replaceAll("-", ".");
+      const end = item.endDate.replaceAll("-", ".");
+      dateLabel = item.isAllDay
+        ? `${start} ~ ${end} · 종일`
+        : `${start} ${item.time} ~ ${end} ${item.endTime || "17:00"}`;
+    }
     // 표시 문구를 여기서 완성해 JSX에서는 배치만 담당하도록 합니다.
-    const category = item.category || (item.project ? "프로젝트" : "업무");
+    const category = item.category === "프로젝트" ? "업무" : item.category || "업무";
     const detailLabel = item.scope === "개인 일정용"
       ? "개인 일정용"
-      : `${category} · ${item.project || item.person}`;
+      : [category, item.project || item.person].filter(Boolean).join(" · ");
 
-    return { item, displayDate, dateLabel, detailLabel };
+    return { item, displayDate, dateLabel, basisLabel, detailLabel };
   };
   // 날짜 계산 결과를 항목에 함께 담아 정렬과 화면 표시에서 재사용합니다.
   const sortedItems = matchingItems
@@ -560,7 +557,7 @@ export function ScheduleListModal({
         {statusFilter !== "all" && <p className="sm-form-note">진행 상태는 업무 일정과 세부 작업에 적용됩니다. 개인 일정과 견적은 전체에서 확인하세요.</p>}
         {sortedItems.length ? (
           sortedItems.slice((currentPage - 1) * pageSize, currentPage * pageSize).map(
-            ({ item, dateLabel, detailLabel }) => (
+            ({ item, dateLabel, basisLabel, detailLabel }) => (
               item.isProjectMilestone
               ? <ScheduleAgendaItem key={item.id} item={item} />
               :
@@ -576,6 +573,7 @@ export function ScheduleListModal({
                     {dateLabel}
                   </span>
                   <strong>{item.title}</strong>
+                  {basisLabel && <small>{basisLabel}</small>}
                   <ScheduleVisibility visibility={item.visibility} />
                   {!item.isProjectMilestone && item.scope !== "개인 일정용" && <ScheduleStatus status={item.status} />}
                   {item.repeatType !== "none" && (

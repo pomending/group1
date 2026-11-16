@@ -83,7 +83,6 @@ export default function ScheduleManager() {
   const [filterNotice, setFilterNotice] = useState("");
   const [showQuotationExpiry, setShowQuotationExpiry] = useState(false);
   const [deadlineView, setDeadlineView] = useState("upcoming");
-  const [directoryMode, setDirectoryMode] = useState(null);
   const [selectedProject, setSelectedProject] = useState(null);
 
   // 계정이 달라지면 이전 직원의 조회 선택을 해제합니다.
@@ -122,7 +121,6 @@ export default function ScheduleManager() {
     excludedTeamMembers,
     teamStorageUnavailable,
     addTeamMember,
-    removeTeamMember,
   } = useScheduleTeam();
 
   // 모달·알림·수정 중인 일정의 상태입니다.
@@ -357,9 +355,6 @@ export default function ScheduleManager() {
         return {
           ...current,
           category: value,
-          project: current.category === "프로젝트" && value !== "프로젝트" ? "" : current.project,
-          projectId: current.category === "프로젝트" && value !== "프로젝트" ? null : current.projectId,
-          projectReference: current.category === "프로젝트" && value !== "프로젝트" ? "" : current.projectReference,
           attendees: current.category === "회의" && value !== "회의" ? "" : current.attendees,
           attendeeEmployees: value === "회의" ? current.attendeeEmployees : [],
         };
@@ -696,28 +691,12 @@ export default function ScheduleManager() {
     clearScheduleFilters();
     selectDate(date);
     setView(nextView);
-    setDirectoryMode(null);
   };
 
   // 다른 화면 아래에서 프로젝트나 다가오는 일정을 눌러도 결과가 있는 메인 달력을 바로 보여줍니다.
   const focusCalendar = () => {
     calendarRef.current?.scrollIntoView?.({ behavior: "smooth", block: "start" });
     calendarRef.current?.focus({ preventScroll: true });
-  };
-
-  // 프로젝트 목록과 팀원의 담당 프로젝트가 같은 이동 함수를 공유합니다.
-  // 필터 때문에 선택한 일정이 숨지 않게 초기화하고, 반복을 포함한 가까운 발생일로 이동합니다.
-  const showProjectSchedules = (project) => {
-    const projectItems = displayItems.filter((item) => item.project === project);
-    const date = getScheduleFocusDate(projectItems, Date.now(), holidayDates);
-    // 목록이 열린 뒤 데이터가 바뀌어 프로젝트 일정이 없어졌다면 잘못된 날짜로 이동하지 않습니다.
-    if (!date) return;
-    // 가까운 일정이 있는 날짜를 일별 화면으로 열면 월별 칸의 말줄임 없이 바로 확인할 수 있습니다.
-    // 목록을 접어 오른쪽 날짜 정보도 위로 올리고, 작은 화면에서는 메인 달력으로 이동합니다.
-    showCurrentPeriod("daily", date);
-    // 공통 이동이 필터를 먼저 해제한 뒤, 이번에 고른 프로젝트 조건만 다시 적용합니다.
-    setSelectedProject(project);
-    focusCalendar();
   };
 
   // 통계는 검색과 무관합니다.
@@ -728,9 +707,6 @@ export default function ScheduleManager() {
   // 다가오는 목록은 검색과 무관하게 오늘 포함 7일 이내의 미완료 발생 일정 중 가까운 5건을 보여줍니다.
   const upcomingSchedules = getUpcomingSchedules(staffFilteredItems, currentTime, 5, 7, holidayDates);
   const favoriteItems = staffFilteredItems.filter((item) => item.isFavorite);
-  // 상태별 진행 수가 아니라 일정에 입력된 서로 다른 프로젝트명 개수입니다.
-  // 이름을 처음 만났을 때만 배열에 넣습니다. 배열 길이가 중복을 뺀 프로젝트 수입니다.
-  const projectNames = [...new Set(displayItems.map((item) => item.project).filter(Boolean))];
   const projectSuggestions = projects.map(
     project => project.name
 );
@@ -825,10 +801,11 @@ export default function ScheduleManager() {
           </div>
         </section>
 
-        <p className="sm-form-note">상단의 오늘·전체 일정 건수는 직접 등록한 일정 기준입니다. 프로젝트·작업 마감·견적 유효기간은 달력에 함께 표시됩니다.</p>
-        <p className="sm-muted" role="status" aria-label="일정 저장 상태" aria-live="polite">
-          {saveStatusLabels[saveStatus]}
-        </p>
+        <div className="sm-display-info">
+          <p className="sm-muted" role="status" aria-label="일정 저장 상태" aria-live="polite">
+            {saveStatusLabels[saveStatus]}
+          </p>
+        </div>
         {projectWarnings.length > 0 && <details className="sm-storage-warning">
           <summary>프로젝트 연결 확인 필요 · {projectWarnings.length}건</summary>
           {projectWarnings.map(({ item, message }) => <p key={item.id}>
@@ -861,17 +838,6 @@ export default function ScheduleManager() {
           <p className="sm-storage-warning" role="alert">팀원 목록을 저장하거나 읽지 못했습니다. 기존 자료를 보호하기 위해 저장소를 확인해 주세요.</p>
         )}
 
-        {/* 현재 일정 데이터에서 요약 숫자를 만들어 표시합니다. */}
-        <section className="sm-stats">
-          {/* 직접 등록한 일정의 프로젝트명 개수입니다. 3번 프로젝트 전체 개수와는 다릅니다. */}
-          <button type="button" className="sm-stat" aria-label="일정 등록 프로젝트 목록 보기"
-            aria-expanded={directoryMode === "projects"}
-            onClick={() => setDirectoryMode(current => current === "projects" ? null : "projects")}>
-            <ScheduleIcon name="projects" />
-            <span>일정 등록 프로젝트</span><strong>{projectNames.length}</strong>
-          </button>
-        </section>
-
         <div className="sm-integration-filters">
           <label className="sm-form-note"><input type="checkbox" checked={mySchedulesOnly && currentEmployeeId != null}
             disabled={currentEmployeeId == null} onChange={event => setMySchedulesOnly(event.target.checked)} /> 내 담당·참석 일정</label>
@@ -884,6 +850,10 @@ export default function ScheduleManager() {
           </label>
           <label className="sm-form-note"><input type="checkbox" checked={showQuotationExpiry}
             onChange={event => setShowQuotationExpiry(event.target.checked)} /> 견적 유효기간 표시</label>
+          <label className="sm-form-note">
+            <input type="checkbox" checked={hideCompletedTasks}
+              onChange={event => setHideCompletedTasks(event.target.checked)} /> 완료된 세부 작업 숨기기
+          </label>
           {hasStaffFilter && <button type="button" className="sm-secondary-btn" onClick={clearScheduleFilters}>담당·부서 필터 초기화</button>}
         </div>
         {filterNotice && <p className="sm-form-note" role="status">{filterNotice}</p>}
@@ -899,10 +869,6 @@ export default function ScheduleManager() {
             {item.date} · {item.title} · {item.projectManager}
           </button></p>)}
         </details>
-        <label className="sm-form-note">
-          <input type="checkbox" checked={hideCompletedTasks}
-            onChange={event => setHideCompletedTasks(event.target.checked)} /> 완료된 세부 작업 숨기기
-        </label>
         {/* 달력과 오른쪽 일정 패널을 각각 별도 컴포넌트로 표시합니다. */}
         <div className="sm-layout">
           {/* 부모의 값과 함수를 props로 전달합니다. 자식은 함수를 호출해 부모 state 변경을 요청합니다. */}
@@ -937,17 +903,7 @@ export default function ScheduleManager() {
             onSelectDate={selectDate}
             onShowMore={showScheduleList}
           />
-          {/* 원본 items는 전체 프로젝트·팀원 목록용, visibleItems는 현재 기간의 검색 결과용입니다.
-              selectedProject는 선택 표시용 값, onSelectProject는 클릭 시 상태를 바꾸는 함수입니다. */}
           <ScheduleSidebar
-            directoryMode={directoryMode}
-            directoryItems={displayItems}
-            teamMembers={teamMembers}
-            onAddTeamMember={addTeamMember}
-            onRemoveTeamMember={removeTeamMember}
-            selectedProject={selectedProject}
-            onSelectProject={showProjectSchedules}
-            onCloseDirectory={() => setDirectoryMode(null)}
             favoriteItems={favoriteItems}
             onToggleFavorite={toggleFavorite}
             onSelectFavorite={(item) => {
@@ -1002,6 +958,7 @@ export default function ScheduleManager() {
       {/* 전체 보기는 원본 규칙을 한 번씩, 날짜 더보기는 해당 날짜에 펼친 결과를 넘깁니다. */}
       {listOpen && (
         <ScheduleListModal
+          holidayDates={holidayDates}
           items={
             listDateFilter
               ? [
