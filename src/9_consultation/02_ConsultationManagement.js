@@ -11,7 +11,7 @@ function ConsultationManagement() {
     //문의목록을 관리할 usestate
     const { consultations, addConsultation, updateConsultation,
         deleteConsultations, employees, customers, addCustomer,
-        saveEditedCustomer, claims
+        saveEditedCustomer, claim
     } = useERP();
 
     //체크박스로 선택한 문의 Id를 저장할 usestate

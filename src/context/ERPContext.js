@@ -88,7 +88,7 @@ export function ERPProvider({ children }) {
         }
 
         // 클레임에서 참조 중인 상담 확인
-        const hasClaim = claimData.claims.some(
+        const hasClaim = claimData.claim.some(
             claim => ids.includes(claim.consultationId)
         );
 
