@@ -1,4 +1,5 @@
 
+import HomeFooter from "./HomeFooter";
 import React, { useLayoutEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { useERP } from "../context/ERPContext";
@@ -116,6 +117,7 @@ function HomeProduct() {
                     </div>
                 )}
             </div>
+            <HomeFooter />
         </main>
     );
 }

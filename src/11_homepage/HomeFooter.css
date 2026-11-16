@@ -1,0 +1,29 @@
+/* GOODS 홈페이지 공통 푸터 - 간결한 3줄형 기업 정보 */
+.goods-footer {
+    width: 100%;
+    margin-top: 65px;
+    padding: 29px 24px 24px;
+    background: #f5effb;
+    border-top: 1px solid #e6d9f3;
+    color: #4c4161;
+    font-family: "Pretendard", "Noto Sans KR", Arial, sans-serif;
+}
+.goods-footer *, .goods-footer *::before, .goods-footer *::after { box-sizing: border-box; }
+.goods-footer-inner { max-width: 1260px; margin: 0 auto; }
+.goods-footer-compact-brand { display: flex; flex-wrap: wrap; gap: 10px; align-items: baseline; margin-bottom: 15px; }
+.goods-footer-compact-brand strong { color: #392d55; font-size: 20px; font-weight: 900; letter-spacing: -.5px; }
+.goods-footer-compact-brand span { color: #9982bb; font-size: 10px; font-weight: 800; letter-spacing: 1px; }
+.goods-footer-details { display: flex; flex-direction: column; gap: 6px; }
+.goods-footer-details p { margin: 0; color: #786b8c; font-size: 12px; line-height: 1.7; word-break: keep-all; }
+.goods-footer-sep { display: inline-block; padding: 0 8px; color: #c1b0d7; }
+.goods-footer-copyright { display: flex; flex-wrap: wrap; gap: 12px; margin: 17px 0 0; padding-top: 12px; border-top: 1px solid #e5d9f2; color: #a08cb6; font-size: 11px; }
+/* 현재 세 페이지는 각각 자체 padding을 가지고 있어 이를 보정 */
+.goods-home > .goods-footer, .shop > .goods-footer, .inq > .goods-footer { width: calc(100% + 48px); margin-left: -24px; margin-bottom: -110px; }
+.shop > .goods-footer, .inq > .goods-footer { margin-bottom: -90px; }
+@media (max-width: 730px) {
+    .goods-footer { margin-top: 45px; padding: 24px 16px; }
+    .goods-footer-details p { font-size: 11px; }
+    .goods-footer-sep { padding: 0 4px; }
+    .goods-home > .goods-footer { width: calc(100% + 28px); margin-left: -14px; margin-bottom: -60px; }
+    .shop > .goods-footer, .inq > .goods-footer { width: calc(100% + 32px); margin-left: -16px; margin-bottom: -70px; }
+}

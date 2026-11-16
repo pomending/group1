@@ -295,3 +295,53 @@
     }
 
 }
+
+/* 버튼 */
+.consultation-pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 5px;
+    width: 100%;
+    margin: 22px auto;
+}
+
+.consultation-pagination button {
+    min-width: 30px;
+    height: 35px;
+    padding: 0 9px;
+    border: 1px solid #ded8eb;
+    border-radius: 6px;
+    background: #faf9ff;
+    color: #625a86;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.consultation-pagination button.active {
+    background: #69609b;
+    border-color: #69609b;
+    color: white;
+    font-weight: 700;
+}
+
+.consultation-pagination button:hover:not(:disabled):not(.active) {
+    background: #eeeaf7;
+}
+
+.consultation-pagination button:disabled {
+    background: #e9e7ef;
+    color: #a6a1b7;
+    cursor: not-allowed;
+}
+
+.consultation-page .consultation-pagination {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+    margin: 22px auto;
+}
+
+.consultation-page .consultation-pagination button {
+    margin: 0;
+}
