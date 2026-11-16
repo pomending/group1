@@ -1595,7 +1595,7 @@ export const initialEmployees = [
     }
 ];
 
-export const claims = [
+export const claim = [
     {
         id: 1, companyName: "한빛굿즈", customerManager: "김민수",
         phone: "010-0000-0001", email: "", orderNo: "GO-3001",
