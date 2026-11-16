@@ -64,7 +64,7 @@
 }
 
 /* 등록/수정: 이름과 입력칸은 가까이, 항목끼리는 여유 있게 배치 */
-.consultation-page > .consultation-box:first-of-type {
+.consultation-page > div.consultation-box:first-of-type {
     display: grid;
     grid-template-columns: repeat(4, max-content minmax(0, 1fr));
     column-gap: 8px;
@@ -73,44 +73,48 @@
 }
 
 /* 첫 줄의 2~4번째 항목과 둘째 줄의 2~3번째 항목 간격 */
-.consultation-page > .consultation-box:first-of-type > label:nth-of-type(2),
-.consultation-page > .consultation-box:first-of-type > label:nth-of-type(3),
-.consultation-page > .consultation-box:first-of-type > label:nth-of-type(4),
-.consultation-page > .consultation-box:first-of-type > label:nth-of-type(6),
-.consultation-page > .consultation-box:first-of-type > label:nth-of-type(7) {
+.consultation-page > div.consultation-box:first-of-type > label:nth-of-type(2),
+.consultation-page > div.consultation-box:first-of-type > label:nth-of-type(3),
+.consultation-page > div.consultation-box:first-of-type > label:nth-of-type(4),
+.consultation-page > div.consultation-box:first-of-type > label:nth-of-type(6),
+.consultation-page > div.consultation-box:first-of-type > label:nth-of-type(7) {
     margin-left: 20px;
 }
 
-.consultation-page > .consultation-box:first-of-type > h6,
-.consultation-page > .consultation-box:first-of-type > h4 {
+.consultation-page > div.consultation-box:first-of-type > h6,
+.consultation-page > div.consultation-box:first-of-type > h4 {
     grid-column: 1 / -1;
     margin-bottom: 0;
 }
 
 /* 기존 줄바꿈 대신 그리드로 입력 항목을 배치 */
-.consultation-page > .consultation-box:first-of-type > br {
+.consultation-page > div.consultation-box:first-of-type > br {
     display: none;
 }
 
 /* 문의 사항/처리 내용은 다른 입력 항목 아래에 가로 전체 폭으로 배치 */
-.consultation-page > .consultation-box:first-of-type > label:last-of-type {
+.consultation-page > div.consultation-box:first-of-type > label:last-of-type {
     grid-column: 1 / -1;
     margin-top: 8px;
 }
 
-.consultation-page > .consultation-box:first-of-type > textarea {
+.consultation-page > div.consultation-box:first-of-type > textarea {
     grid-column: 1 / -1;
 }
 
 /* 저장 버튼은 문의 내용 아래 오른쪽에 유지 */
-.consultation-page > .consultation-box:first-of-type > button {
+.consultation-page > div.consultation-box:first-of-type > button {
     grid-column: 1 / -1;
     justify-self: end;
     margin: 0;
 }
 
 /* 검색과 목록 표를 이어 붙여 하나의 카드로 표시 */
-.consultation-page > .consultation-box:nth-of-type(2) {
+.consultation-page > form.consultation-box {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
     position: relative;
     margin-bottom: 0;
     padding-bottom: 14px;
@@ -119,17 +123,43 @@
     box-shadow: none;
 }
 
-.consultation-page > .consultation-box:nth-of-type(2) > select {
+/* 검색 조건과 버튼은 같은 줄에, 제목은 위쪽에 배치 */
+.consultation-page > form.consultation-box > h4 {
+    width: 100%;
+    margin-bottom: 8px;
+}
+
+.consultation-page > form.consultation-box > select {
+    flex: 0 0 190px;
     width: 190px;
-    margin-right: 14px;
+    margin-right: 0;
 }
 
-.consultation-page > .consultation-box:nth-of-type(2) > input[type="text"] {
+.consultation-page > form.consultation-box > input[type="text"] {
+    flex: 0 1 220px;
     width: 220px;
-    margin-right: 14px;
+    margin-right: 0;
 }
 
-.consultation-page > .consultation-box:nth-of-type(2) + div {
+.consultation-page > form.consultation-box > button {
+    min-height: 39px;
+    margin: 0;
+    box-shadow: none;
+}
+
+/* 전체목록으로는 보조 버튼으로 구분 */
+.consultation-page > form.consultation-box > button[type="button"] {
+    background: #F0EDFA;
+    border-color: #C8C0E5;
+    color: #524B80;
+}
+
+.consultation-page > form.consultation-box > button[type="button"]:hover:not(:disabled) {
+    background: #E3DCF5;
+    border-color: #ADA2D3;
+}
+
+.consultation-page > form.consultation-box + div {
     position: relative;
     padding-bottom: 12px;
     background: #FFFFFF;
@@ -139,7 +169,7 @@
     box-shadow: 0 3px 12px rgba(65, 55, 95, 0.035);
 }
 
-.consultation-page > .consultation-box:nth-of-type(2) + div > table {
+.consultation-page > form.consultation-box + div > table {
     margin-top: 0;
     border: 0;
     border-top: 1px solid #E6E1F0;
@@ -310,10 +340,9 @@
     justify-content: flex-end;
     align-items: center;
     gap: 10px;
-    position: absolute;
-    top: -119px;
-    right: 28px;
+    position: static;
     margin: 0;
+    padding: 0 28px 12px;
 }
 
 /* 상세보기 버튼 */
@@ -353,13 +382,13 @@
 ========================================= */
 /* 중간 너비에서는 입력 항목을 두 칸씩 배치 */
 @media (max-width: 1280px) {
-    .consultation-page > .consultation-box:first-of-type {
+    .consultation-page > div.consultation-box:first-of-type {
         grid-template-columns: repeat(2, max-content minmax(0, 1fr));
     }
 
     /* 두 칸 배치에서 각 줄의 첫 항목은 왼쪽 여백 없이 표시 */
-    .consultation-page > .consultation-box:first-of-type > label:nth-of-type(3),
-    .consultation-page > .consultation-box:first-of-type > label:nth-of-type(7) {
+    .consultation-page > div.consultation-box:first-of-type > label:nth-of-type(3),
+    .consultation-page > div.consultation-box:first-of-type > label:nth-of-type(7) {
         margin-left: 0;
     }
 }
@@ -385,31 +414,33 @@
         padding: 18px;
     }
 
-    .consultation-page > .consultation-box:first-of-type {
+    .consultation-page > div.consultation-box:first-of-type {
         grid-template-columns: 1fr;
         row-gap: 8px;
     }
 
-    .consultation-page > .consultation-box:first-of-type > label,
-    .consultation-page > .consultation-box:first-of-type > label:last-of-type,
-    .consultation-page > .consultation-box:first-of-type > textarea,
-    .consultation-page > .consultation-box:first-of-type > button {
+    .consultation-page > div.consultation-box:first-of-type > label,
+    .consultation-page > div.consultation-box:first-of-type > label:last-of-type,
+    .consultation-page > div.consultation-box:first-of-type > textarea,
+    .consultation-page > div.consultation-box:first-of-type > button {
         grid-column: 1;
     }
 
-    .consultation-page > .consultation-box:first-of-type > h6,
-    .consultation-page > .consultation-box:first-of-type > h4 {
+    .consultation-page > div.consultation-box:first-of-type > h6,
+    .consultation-page > div.consultation-box:first-of-type > h4 {
         grid-column: 1;
     }
 
     /* 한 칸 배치에서는 이름과 입력칸을 붙이고 항목 사이만 띄움 */
-    .consultation-page > .consultation-box:first-of-type > label {
+    .consultation-page > div.consultation-box:first-of-type > label {
         margin-left: 0;
         margin-top: 12px;
     }
 
-    .consultation-page > .consultation-box:nth-of-type(2) > select,
-    .consultation-page > .consultation-box:nth-of-type(2) > input[type="text"] {
+    .consultation-page > form.consultation-box > select,
+    .consultation-page > form.consultation-box > input[type="text"] {
+        flex: 1 1 100%;
+        width: 100%;
         max-width: 100%;
     }
 
@@ -418,55 +449,4 @@
         overflow-x: auto;
         white-space: nowrap;
     }
-
-}
-
-/* 버튼 */
-.consultation-pagination {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 5px;
-    width: 100%;
-    margin: 22px auto;
-}
-
-.consultation-pagination button {
-    min-width: 30px;
-    height: 35px;
-    padding: 0 9px;
-    border: 1px solid #ded8eb;
-    border-radius: 6px;
-    background: #faf9ff;
-    color: #625a86;
-    font-size: 12px;
-    cursor: pointer;
-}
-
-.consultation-pagination button.active {
-    background: #69609b;
-    border-color: #69609b;
-    color: white;
-    font-weight: 700;
-}
-
-.consultation-pagination button:hover:not(:disabled):not(.active) {
-    background: #eeeaf7;
-}
-
-.consultation-pagination button:disabled {
-    background: #e9e7ef;
-    color: #a6a1b7;
-    cursor: not-allowed;
-}
-
-.consultation-page .consultation-pagination {
-    display: flex;
-    justify-content: center;
-    width: 100%;
-    margin: 22px auto;
-}
-
-.consultation-page .consultation-pagination button {
-    margin: 0;
 }
