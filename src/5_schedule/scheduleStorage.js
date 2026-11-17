@@ -244,6 +244,12 @@ export function resetStoredSchedules() {
           "made-mate-schedules",
           serializeSchedules([], Date.now() + "-" + Math.random())
       );
+      try {
+        const draftKeys = Object.keys(sessionStorage).filter(key => key === "made-mate-schedule-draft" || key.startsWith("made-mate-schedule-draft:"));
+        for (const key of draftKeys) sessionStorage.removeItem(key);
+      } catch {
+        // 직접 삭제할 수 없는 초안도 저장한 resetId가 달라 다음 로드에서 복원되지 않습니다.
+      }
 
       window.dispatchEvent(
           new Event("made-mate-schedules-reset")

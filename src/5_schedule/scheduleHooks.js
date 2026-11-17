@@ -373,13 +373,22 @@ export function useScheduleTeam() {
 // 새 일정의 알려진 폼 필드만 sessionStorage의 made-mate-schedule-draft에 보관합니다. 같은 탭의 새로고침 후 복구용입니다.
 // 기존 일정 수정은 제외하며 원본 일정·프로젝트·팀원 저장소에는 쓰지 않습니다. 영구 보관이나 탭 간 동기화는 하지 않습니다.
 // 선택 날짜를 제외한 값이 모두 기본 상태로 돌아오면 임시 내용을 지웁니다. 오류가 있으면 자동 쓰기를 멈춥니다.
-export function useScheduleDraft(form, isEditing) {
-  const key = "made-mate-schedule-draft";
+export function useScheduleDraft(form, isEditing, accountKey = "", allowPrivate = true) {
+  // 일정 화면은 계정이 바뀌면 새로 마운트합니다. 계정별 키로 이전 사람의 초안도 분리합니다.
+  const key = "made-mate-schedule-draft" + (accountKey ? ":" + accountKey : "");
   const [initial] = useState(() => {
     try {
       const raw = sessionStorage.getItem(key);
       if (raw === null) return { draft: null, error: "" };
       const saved = JSON.parse(raw);
+      const loaded = loadSchedules();
+      if (loaded.readError) throw new Error("일정 초기화 정보를 읽지 못했습니다.");
+      const resetId = loaded.resetId ?? null;
+      // 탭이 닫힌 동안 초기화됐어도 예전 계정 초안을 되살리지 않습니다.
+      if ((saved?.resetId ?? null) !== resetId || (!allowPrivate && (saved?.form?.scope === "개인 일정용" || saved?.form?.visibility === "private"))) {
+        sessionStorage.removeItem(key);
+        return { draft: null, error: "" };
+      }
       const defaults = createEmptyForm();
       if (saved?.version !== 1 || !saved.form) throw new Error("Invalid draft");
       const draft = {};
@@ -411,15 +420,44 @@ export function useScheduleDraft(form, isEditing) {
       values[name] = form[name];
     }
     try {
+      if (!allowPrivate && (form.scope === "개인 일정용" || form.visibility === "private")) {
+        sessionStorage.removeItem(key);
+        setDraft(null);
+        return;
+      }
       if (JSON.stringify(values) === JSON.stringify({ ...defaults, date: form.date })) {
         sessionStorage.removeItem(key);
         setDraft(null);
         return;
       }
-      sessionStorage.setItem(key, JSON.stringify({ version: 1, form: values }));
+      const loaded = loadSchedules();
+      if (loaded.readError) throw new Error("일정 초기화 정보를 읽지 못했습니다.");
+      sessionStorage.setItem(key, JSON.stringify({ version: 1, resetId: loaded.resetId ?? null, form: values }));
       setDraft(values);
     } catch { setDraftError("작성 내용을 임시 보관하지 못했습니다. 창을 닫기 전에 일정을 저장해 주세요."); }
-  }, [form, isEditing, draftError]);
+  }, [form, isEditing, draftError, key, allowPrivate]);
+  useEffect(() => {
+    let resetId = loadSchedules().resetId;
+    function checkReset(event) {
+      if (event.type === "storage" && event.key !== "made-mate-schedules" && event.key !== null) return;
+      const loaded = loadSchedules();
+      if (loaded.readError) return;
+      const nextResetId = loaded.resetId;
+      if (nextResetId === resetId) return;
+      resetId = nextResetId;
+      try {
+        sessionStorage.removeItem(key);
+        setDraft(null);
+        setDraftError("");
+      } catch { setDraftError("초기화된 임시 보관을 삭제하지 못했습니다."); }
+    }
+    window.addEventListener("made-mate-schedules-reset", checkReset);
+    window.addEventListener("storage", checkReset);
+    return () => {
+      window.removeEventListener("made-mate-schedules-reset", checkReset);
+      window.removeEventListener("storage", checkReset);
+    };
+  }, [key]);
   // 새 일정 등록·닫기 승인 또는 사용자의 임시 보관 삭제·초기화에서 호출합니다. 삭제 실패도 화면에 알립니다.
   function clearDraft() {
     try {

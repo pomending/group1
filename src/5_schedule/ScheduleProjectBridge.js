@@ -4,7 +4,35 @@
  * createProjectMilestones: 시작일·마감일을 읽기 전용 달력 항목으로 변환
  */
 
-import { getScheduleProjectId, isValidScheduleDate, typeColors } from "./scheduleData";
+import { getScheduleProjectId, isValidScheduleDate, normalizeAttendeeEmployees, typeColors } from "./scheduleData";
+
+// 로그인 계정 번호가 아니라 계정에 연결된 직원 번호로 비교합니다.
+// 이름만 있는 과거 일정은 동명이인을 추측하지 않고 전체 조회에 남깁니다.
+export function matchesScheduleEmployee(item, employeeId) {
+  if (employeeId == null) return false;
+  const id = String(employeeId);
+  if (item.ownerEmployeeId != null && (item.isProjectMilestone || item.scope === "개인 일정용")) {
+    return String(item.ownerEmployeeId) === id;
+  }
+  if (item.employeeId != null && String(item.employeeId) === id) return true;
+  return normalizeAttendeeEmployees(item.attendeeEmployees)
+    .some(person => String(person.id) === id);
+}
+
+export function isPrivateSchedule(item) {
+  return item.scope === "개인 일정용" || item.visibility === "private";
+}
+
+// 개인 일정은 조회 필터와 관계없이 작성 계정과 연결 직원이 모두 같아야 표시합니다.
+// 소유 정보가 없는 과거 개인 일정도 임의 계정에 배정하지 않고 저장소에 보존합니다.
+export function canViewSchedule(item, account, employee) {
+  if (!isPrivateSchedule(item)) return true;
+  return Boolean(account?.status === "활성" && employee
+    && account.employeeId === employee.id
+    && Number.isSafeInteger(item.ownerAccountId) && item.ownerAccountId > 0
+    && Number.isSafeInteger(item.ownerEmployeeId) && item.ownerEmployeeId > 0
+    && item.ownerAccountId === account.id && item.ownerEmployeeId === employee.id);
+}
 
 // 저장 당시 이름은 보존하고 HR의 현재 정보와 다른 연결만 안내합니다.
 export function getScheduleEmployeeWarning(item, employees) {
@@ -97,6 +125,7 @@ export function createProjectMilestones(projects, employees = []) {
         title: project.name + " · " + entry.milestoneType,
         project: project.name,
         projectManager: manager?.name || "미지정",
+        ownerEmployeeId: project.managerId ?? null,
         person: "프로젝트 일정",
         type: "기획",
         category: "프로젝트",
@@ -129,6 +158,7 @@ export function createTaskMilestones(tasks, projects, employees) {
       title: project.name + " · " + (task.taskType || "세부 작업") + " 마감",
       project: project.name,
       projectManager: employee?.name || "미지정",
+      ownerEmployeeId: task.employeeId ?? null,
       person: "프로젝트 일정",
       scope: "업무용",
       category: "프로젝트",

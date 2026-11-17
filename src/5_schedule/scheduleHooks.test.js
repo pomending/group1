@@ -1,9 +1,35 @@
 import { act, renderHook, waitFor } from "@testing-library/react";
-import { useScheduleHolidays, useScheduleStorage, useScheduleTeam } from "./scheduleHooks";
+import { useScheduleHolidays, useScheduleStorage, useScheduleTeam, useScheduleDraft } from "./scheduleHooks";
+import { createEmptyForm } from "./scheduleData";
 import { loadSchedules, resetStoredSchedules, serializeSchedules } from "./scheduleStorage";
 
 afterEach(() => jest.restoreAllMocks());
-beforeEach(() => localStorage.clear());
+beforeEach(() => { localStorage.clear(); sessionStorage.clear(); });
+
+test("비로그인 개인 초안은 새로 쓰거나 기존 공용 초안에서 복구하지 않는다", () => {
+  const form = { ...createEmptyForm(), scope: "개인 일정용", title: "비로그인 초안" };
+  sessionStorage.setItem("made-mate-schedule-draft:guest", JSON.stringify({ version: 1, form }));
+  const { result } = renderHook(() => useScheduleDraft(form, false, "guest", false));
+  expect(result.current.draft).toBeNull();
+  expect(sessionStorage.getItem("made-mate-schedule-draft:guest")).toBeNull();
+});
+
+test("일정 초기화는 현재 탭의 모든 계정 초안을 지우고 다른 탭의 오래된 초안도 무효화한다", () => {
+  const form = { ...createEmptyForm(), scope: "개인 일정용", title: "계정 초안" };
+  const { result, unmount } = renderHook(() => useScheduleDraft(form, false, "1:10"));
+  const stale = sessionStorage.getItem("made-mate-schedule-draft:1:10");
+  sessionStorage.setItem("made-mate-schedule-draft:2:20", stale);
+  act(() => { expect(resetStoredSchedules().ok).toBe(true); });
+  expect(result.current.draft).toBeNull();
+  expect(sessionStorage.getItem("made-mate-schedule-draft:1:10")).toBeNull();
+  expect(sessionStorage.getItem("made-mate-schedule-draft:2:20")).toBeNull();
+  unmount();
+  // 다른 탭에서 남아 있던 초기화 이전 자료를 재현합니다.
+  sessionStorage.setItem("made-mate-schedule-draft:2:20", stale);
+  const restored = renderHook(() => useScheduleDraft(null, false, "2:20"));
+  expect(restored.result.current.draft).toBeNull();
+  expect(sessionStorage.getItem("made-mate-schedule-draft:2:20")).toBeNull();
+});
 
 test.each([true, false])("초기화 전에 대기 중이던 일정 저장이 빈 목록을 덮어쓰지 않는다 (같은 탭: %s)", sameTab => {
   const descriptor = Object.getOwnPropertyDescriptor(navigator, "locks");

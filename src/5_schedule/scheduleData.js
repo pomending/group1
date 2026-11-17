@@ -372,7 +372,11 @@ export const normalizeAttendees = (value) => {
 };
 
 // 직원 번호가 없는 과거 기록도 이름으로 비교할 수 있게 유지합니다.
-export function getScheduleParticipants(item) {
+export function getScheduleParticipants(item, employees = []) {
+  if (item.scope === "개인 일정용" && item.ownerEmployeeId != null) {
+    const owner = employees.find(employee => employee.id === item.ownerEmployeeId);
+    if (owner) return [{ id: owner.id, name: owner.name }];
+  }
   const attendees = normalizeAttendeeEmployees(item.attendeeEmployees);
   const legacy = normalizeAttendees(item.legacyAttendees ?? normalizeAttendees(item.attendees)
     .filter(name => !attendees.some(attendee => attendee.name === name)));
@@ -382,8 +386,9 @@ export function getScheduleParticipants(item) {
 }
 
 // 이름 검색과 팀원 목록에 사용할 담당자·참석자 이름을 중복 없이 반환합니다.
-export const getSchedulePeople = (item) =>
+export const getSchedulePeople = (item, employees = []) =>
   normalizeAttendees([
+    ...getScheduleParticipants(item, employees).map(person => person.name),
     // 담당자가 비어 있거나 문자열이 아니어도 normalizeAttendees가 알아서 건너뜁니다.
     item.person,
     // ...가 없으면 [담당자, [참석자들]]로 중첩됩니다. 펼쳐야 이름들이 한 배열에 나란히 들어갑니다.
@@ -557,6 +562,27 @@ export const getNextScheduleDate = (items, fromKey, holidays = {}) => {
   // 빈 목록이면 두 값 모두 undefined입니다.
   return nextDate || latestDate;
 };
+
+// 원본 전체를 보여 주는 목록에서는 하루 분량 시간이 아닌 전체 기간·실제 다음 회차를 표시합니다.
+export function getScheduleListDate(item, fromKey = getTodayKey(), holidays = {}) {
+  const recurring = ["weekly", "monthly"].includes(item.repeatType) && !item.occurrenceDate;
+  if (recurring) {
+    const next = expandSchedules([item], fromKey, getScheduleLookaheadEnd(item, fromKey, 1), holidays)[0];
+    return {
+      displayDate: next?.date || item.date,
+      dateLabel: next ? `다음 회차 · ${next.date.replaceAll("-", ".")} · ${getScheduleTime(next)}` : "남은 회차 없음",
+      basisLabel: `반복 기준일 · ${item.date.replaceAll("-", ".")}`,
+    };
+  }
+  let dateLabel = `${item.date.replaceAll("-", ".")} · ${getScheduleTime(item)}`;
+  if (item.endDate > item.date && !item.multiDayOccurrence) {
+    const start = item.date.replaceAll("-", ".");
+    const end = item.endDate.replaceAll("-", ".");
+    dateLabel = item.isAllDay ? `${start} ~ ${end} · 종일`
+      : `${start} ${item.time} ~ ${end} ${item.endTime || "17:00"}`;
+  }
+  return { displayDate: item.date, dateLabel, basisLabel: "" };
+}
 
 /* '다가오는 일정'은 시작 전 작업과 아직 끝나지 않은 작업을 함께 보여줍니다.
  * now는 밀리초 숫자입니다. YYYY-MM-DDTHH:mm을 Date로 바꾸면 브라우저의 현지 시각이 됩니다.

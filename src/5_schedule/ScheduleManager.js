@@ -10,7 +10,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useScheduleClock, useScheduleHolidays, useScheduleStorage, useScheduleTeam, useScheduleDraft } from "./scheduleHooks";
 import { loadSchedules } from "./scheduleStorage";
-import { createProjectMilestones, createTaskMilestones, resolveScheduleProject, getScheduleProjectWarning, getScheduleEmployeeWarning } from "./ScheduleProjectBridge";
+import { createProjectMilestones, createTaskMilestones, resolveScheduleProject, getScheduleProjectWarning, getScheduleEmployeeWarning, matchesScheduleEmployee, isPrivateSchedule, canViewSchedule } from "./ScheduleProjectBridge";
 import ScheduleCalendar from "./ScheduleCalendar";
 import ScheduleFormModal, { ScheduleListModal } from "./ScheduleFormModal";
 import ScheduleSidebar from "./ScheduleSidebar";
@@ -52,6 +52,16 @@ const createScheduleId = () =>
 
 /* 화면과 일정 관리 훅을 연결하는 조정 컴포넌트입니다. */
 export default function ScheduleManager() {
+  const erp = useERP();
+  const account = erp.currentUser;
+  const employee = account?.status === "활성" && Number.isSafeInteger(account.id) && Number.isSafeInteger(account.employeeId)
+    ? erp.employees?.find(person => person.id === account.employeeId)
+    : null;
+  // 계정을 바꾸면 열려 있던 수정창·삭제 기록·알림까지 이전 계정과 분리합니다.
+  return <ScheduleManagerContent key={employee ? `${account.id}:${employee.id}` : "guest"} />;
+}
+
+function ScheduleManagerContent() {
   // [1. 상태 준비] 프로젝트·직원·일정·팀원·선택 날짜를 준비합니다.
   // 실제 화면은 ERPProvider 내부에서 실행해야 합니다. useERP는 Provider가 없으면 오류를 던집니다.
   // 아래 선택적 접근과 빈 배열은 누락된 필드에 대한 보완이며 Provider 없이 실행할 수 있다는 뜻은 아닙니다.
@@ -61,6 +71,13 @@ export default function ScheduleManager() {
   // HR 직원 목록으로 일정 담당자를 선택합니다. 부서 제한 없이 재직 직원만 새로 선택할 수 있습니다.
   // 참석자·담당자별 일정표의 이름 기반 팀원 목록은 기존대로 유지합니다.
   const employees = erp.employees || [];
+  // account.id와 employee.id는 서로 다릅니다. 실제 로그인 계정의 employeeId로 HR 직원을 찾습니다.
+  const currentEmployee = erp.currentUser?.status === "활성" && Number.isSafeInteger(erp.currentUser.id) && Number.isSafeInteger(erp.currentUser.employeeId)
+    ? employees.find(employee => String(employee.id) === String(erp.currentUser.employeeId))
+    : null;
+  const accountKey = currentEmployee ? `${erp.currentUser.id}:${currentEmployee.id}` : "";
+  const [myScheduleAccountKey, setMyScheduleAccountKey] = useState("");
+  const mySchedulesOnly = Boolean(accountKey && myScheduleAccountKey === accountKey);
 
   // 월간 달력의 기준 월과 현재 선택 날짜입니다.
   const [month, setMonth] = useState(() => {
@@ -97,6 +114,11 @@ export default function ScheduleManager() {
     ...item,
     ...resolveScheduleProject(item, projects),
   }));
+  // 검색과 별도로 계정 기준 목록을 먼저 만들어 모든 조회 영역에서 함께 사용합니다.
+  const accessibleItems = displayItems.filter(item => canViewSchedule(item, erp.currentUser, currentEmployee));
+  const accountItems = mySchedulesOnly
+    ? accessibleItems.filter(item => matchesScheduleEmployee(item, currentEmployee.id))
+    : accessibleItems;
   const {
     teamMembers,
     excludedTeamMembers,
@@ -113,10 +135,28 @@ export default function ScheduleManager() {
   const [formError, setFormError] = useState("");
   const [reminderNotice, setReminderNotice] = useState(null);
   const firedReminders = useRef(new Set());
+  useEffect(() => {
+    // 계정 전환·로그아웃 뒤 이전 계정의 조회 선택과 화면 알림이 남지 않게 합니다.
+    setMyScheduleAccountKey("");
+    setReminderNotice(null);
+    firedReminders.current.clear();
+  }, [accountKey]);
   const [editing, setEditing] = useState(null);
-  const { draft, draftError, clearDraft } = useScheduleDraft(form, editing !== null);
+  const { draft, draftError, clearDraft } = useScheduleDraft(form, editing !== null, accountKey || "guest", Boolean(currentEmployee));
   // 삭제 기록은 메모리에만 15초 보관합니다. 연속 삭제 시 가장 최근 한 건으로 교체합니다.
   const [deletionNotice, setDeletionNotice] = useState(null);
+  const previousResetId = useRef(loadedSchedules.resetId);
+  useEffect(() => {
+    if (previousResetId.current === loadedSchedules.resetId) return;
+    previousResetId.current = loadedSchedules.resetId;
+    setForm(null);
+    setEditing(null);
+    setFormError("");
+    setListOpen(false);
+    setDeletionNotice(null);
+    setReminderNotice(null);
+    firedReminders.current.clear();
+  }, [loadedSchedules.resetId]);
   useEffect(() => {
     if (!deletionNotice) return;
     const timer = window.setTimeout(() => setDeletionNotice(null), Math.max(0, deletionNotice.expiresAt - Date.now()));
@@ -125,9 +165,9 @@ export default function ScheduleManager() {
 
   const calendarYear = month.getFullYear();
   const holidayInfo = useScheduleHolidays(calendarYear);
-  const projectWarnings = items.map(item => ({ item, message: getScheduleProjectWarning(item, projects) }))
+  const projectWarnings = accountItems.map(item => ({ item, message: getScheduleProjectWarning(item, projects) }))
     .filter(entry => entry.message);
-  const employeeWarnings = items.map(item => ({ item, message: getScheduleEmployeeWarning(item, employees) }))
+  const employeeWarnings = accountItems.map(item => ({ item, message: getScheduleEmployeeWarning(item, employees) }))
     .filter(entry => entry.message);
 
   
@@ -180,7 +220,7 @@ export default function ScheduleManager() {
     if (reminderNotice) return;
     const now = new Date(currentTime);
     const end = new Date(now); end.setDate(end.getDate() + 2);
-    const occurrences = expandSchedules(items, dateKey(now), dateKey(end), holidayDates);
+    const occurrences = expandSchedules(accountItems, dateKey(now), dateKey(end), holidayDates);
     for (const item of occurrences) {
       if (!item.reminderMinutes || item.status === "completed" || item.multiDayOccurrence) continue;
       // 종일 일정은 표시 발생일 자정을 기준으로 알림 시각을 계산합니다.
@@ -193,16 +233,16 @@ export default function ScheduleManager() {
         firedReminders.current.add(key); setReminderNotice(item); break;
       }
     }
-  }, [items, currentTime, holidayDates, reminderNotice]);
+  }, [accountItems, currentTime, holidayDates, reminderNotice]);
 
   // 검색어, 프로젝트, 공유 구분 조건으로 저장된 일정을 먼저 거릅니다.
   // [2. 표시 데이터 계산] 원본 items → 검색·공유 구분 필터 → 반복 발생일 → 달력·선택 날짜 목록
   const keyword = query.trim().toLowerCase();
   const filteredItems = [];
-  for (const item of displayItems) {
+  for (const item of accountItems) {
     if (selectedProject && item.project !== selectedProject) continue;
     if (scopeFilter !== "all" && item.visibility !== scopeFilter) continue;
-    const people = getSchedulePeople(item).join(" ");
+    const people = getSchedulePeople(item, employees).join(" ");
     const searchText = `${item.title} ${item.project} ${people}`.toLowerCase();
     if (!searchText.includes(keyword)) continue;
     filteredItems.push(item);
@@ -225,6 +265,7 @@ export default function ScheduleManager() {
     ...createProjectMilestones(projects, employees),
     ...createTaskMilestones(erp.tasks || [], projects, employees),
   ].filter((item) => {
+    if (mySchedulesOnly && !matchesScheduleEmployee(item, currentEmployee.id)) return false;
     if (hideCompletedTasks && item.isTaskDeadline && item.taskProgress === "완료") return false;
     if (selectedProject && item.project !== selectedProject) return false;
     if (scopeFilter === "private") return false;
@@ -348,6 +389,7 @@ export default function ScheduleManager() {
   // 상단 일정 등록은 인자 없이, 상세 패널의 수정은 item을 전달해 이 함수를 호출합니다.
   // 새 등록과 수정이 같은 폼을 사용하되 수정 대상과 최초 저장 버전을 별도로 기억합니다.
   const openScheduleForm = (item) => {
+    if (item && !canViewSchedule(item, erp.currentUser, currentEmployee)) return;
     restoringDraftRef.current = !item && Boolean(draft);
     setFormError("");
     setEditing(item || null);
@@ -383,8 +425,11 @@ export default function ScheduleManager() {
   // 달력·상세·전체 목록의 별표가 모두 이 함수로 연결됩니다.
   // 원본 항목의 isFavorite만 변경하므로 일정 날짜나 입력 내용은 바뀌지 않습니다.
   function toggleFavorite(item) {
+    if (!canViewSchedule(item, erp.currentUser, currentEmployee)) return;
     setItems((current) => current.map((schedule) => {
-      if (schedule.id === item.id) return { ...schedule, isFavorite: !schedule.isFavorite };
+      if (schedule.id === item.id && canViewSchedule(schedule, erp.currentUser, currentEmployee)) {
+        return { ...schedule, isFavorite: !schedule.isFavorite };
+      }
       return schedule;
     }));
   }
@@ -394,6 +439,14 @@ export default function ScheduleManager() {
   const addSchedule = (event) => {
     // 브라우저는 form 제출 시 페이지 이동을 시도합니다. preventDefault로 막고 아래 state 갱신으로 처리합니다.
     event.preventDefault();
+    if (editing && !canViewSchedule(editing, erp.currentUser, currentEmployee)) {
+      setFormError("이 계정에서 수정할 수 없는 개인 일정입니다.");
+      return;
+    }
+    if (isPrivateSchedule(form) && !currentEmployee) {
+      setFormError("개인 일정은 로그인한 계정에서 등록할 수 있습니다.");
+      return;
+    }
     // 수정 시작: 편집창을 열어 둔 사이 다른 탭에서 바뀐 원본도 검사합니다.
     if (editing) {
       const remote = loadSchedules();
@@ -458,6 +511,7 @@ export default function ScheduleManager() {
       // 폼의 원본 값은 복사하고, 공백 정리·참석자 배열 변환 등이 끝난 값으로 덮어씁니다.
       // 이 객체를 충돌 검사와 실제 저장에서 함께 사용해 서로 다른 값이 검사되는 것을 막습니다.
       ...form,
+      visibility: form.scope === "개인 일정용" ? "private" : form.visibility,
       endDate: form.endDate || "",
       isAllDay: Boolean(form.isAllDay),
       title,
@@ -468,6 +522,9 @@ export default function ScheduleManager() {
       attendeeEmployees,
       legacyAttendees,
       ...projectFields,
+      // 소유 정보는 입력 폼에서 받지 않습니다. 기존 소유자는 유지하고 새 개인 일정만 현재 계정에 연결합니다.
+      ownerAccountId: isPrivateSchedule(form) ? (editing?.ownerAccountId ?? erp.currentUser.id) : null,
+      ownerEmployeeId: isPrivateSchedule(form) ? (editing?.ownerEmployeeId ?? currentEmployee.id) : null,
     };
     // 반복 규칙은 다음 1년을 확인하고, 휴일 이동 설정은 범위 끝에서 밀릴 날짜도 포함합니다.
     let conflictEndKey = form.endDate || form.date;
@@ -479,7 +536,7 @@ export default function ScheduleManager() {
     // 현재 편집 중인 전체 일정 또는 한 회차만 비교 목록에서 제외합니다.
     const overlaps = findScheduleConflicts(
       candidate,
-      items,
+      accessibleItems,
       form.date,
       conflictEndKey,
       holidayDates,
@@ -557,6 +614,7 @@ export default function ScheduleManager() {
   // 원본 규칙의 status를 바꾸지 않아 다음 주/다음 달의 업무까지 완료되지 않습니다.
   // [5. 저장된 일정 변경] 상태·삭제는 원본 전체인지 한 회차인지 구분한 뒤 setItems로 반영합니다.
   const changeScheduleStatus = (item, value) => {
+    if (!canViewSchedule(item, erp.currentUser, currentEmployee)) return;
     const status = normalizeStatus(value);
     if (status === item.status) return;
     setItems((current) => {
@@ -587,6 +645,7 @@ export default function ScheduleManager() {
   // 삭제 버튼 → 삭제 범위 문구 확인 → 승인한 경우에만 목록 변경 순서입니다.
   // 취소하면 false를 돌려주므로 호출한 수정 창도 그대로 유지할 수 있습니다.
   const deleteSchedule = (item) => {
+    if (!canViewSchedule(item, erp.currentUser, currentEmployee)) return false;
     const repeated =
       item.repeatType === "weekly" || item.repeatType === "monthly";
     let label = "일정";
@@ -608,10 +667,15 @@ export default function ScheduleManager() {
   };
   function undoDeletion() {
     if (!deletionNotice?.record || saveStatus !== "saved") return;
+    if (!canViewSchedule(deletionNotice.record.before, erp.currentUser, currentEmployee)) return;
     if (Date.now() >= deletionNotice.expiresAt) { setDeletionNotice(null); return; }
     const record = deletionNotice.record;
     // 다른 탭의 같은 ID 변경도 확인합니다. 최종 쓰기는 기존 저장 훅의 충돌 검사를 그대로 거칩니다.
     const remote = loadSchedules();
+    if (remote.resetId !== loadedSchedules.resetId) {
+      setDeletionNotice(null);
+      return;
+    }
     const error = remote.readError ? "저장된 일정을 읽지 못해 되돌릴 수 없습니다."
       : restoreDeletedSchedule(remote.items, record).error || restoreDeletedSchedule(items, record).error;
     if (error) {
@@ -655,7 +719,7 @@ export default function ScheduleManager() {
   // 프로젝트 목록과 팀원의 담당 프로젝트가 같은 이동 함수를 공유합니다.
   // 필터 때문에 선택한 일정이 숨지 않게 초기화하고, 반복을 포함한 가까운 발생일로 이동합니다.
   const showProjectSchedules = (project) => {
-    const projectItems = displayItems.filter((item) => item.project === project);
+    const projectItems = accountItems.filter((item) => item.project === project);
     const date = getScheduleFocusDate(projectItems, Date.now(), holidayDates);
     // 목록이 열린 뒤 데이터가 바뀌어 프로젝트 일정이 없어졌다면 잘못된 날짜로 이동하지 않습니다.
     if (!date) return;
@@ -671,13 +735,13 @@ export default function ScheduleManager() {
   // 오늘 작업은 해당 날짜의 실제 발생 횟수이므로 반복 일정도 포함됩니다.
   // 직접 저장한 개인·업무 일정의 오늘 발생 건수를 셉니다. 프로젝트에서 읽어 온 시작일·마감일 표시는 포함하지 않습니다.
   // [7. 요약·부가 표시] 통계·즐겨찾기·다가오는 일정 등 각 화면에 전달할 값을 만듭니다.
-  const todayWorkCount = expandSchedules(items, todayKey, todayKey, holidayDates).length;
+  const todayWorkCount = expandSchedules(accountItems, todayKey, todayKey, holidayDates).length;
   // 다가오는 목록은 검색과 무관하게 오늘 포함 7일 이내의 미완료 발생 일정 중 가까운 5건을 보여줍니다.
-  const upcomingSchedules = getUpcomingSchedules(displayItems, currentTime, 5, 7, holidayDates);
-  const favoriteItems = displayItems.filter((item) => item.isFavorite);
+  const upcomingSchedules = getUpcomingSchedules(accountItems, currentTime, 5, 7, holidayDates);
+  const favoriteItems = accountItems.filter((item) => item.isFavorite);
   // 상태별 진행 수가 아니라 일정에 입력된 서로 다른 프로젝트명 개수입니다.
   // 이름을 처음 만났을 때만 배열에 넣습니다. 배열 길이가 중복을 뺀 프로젝트 수입니다.
-  const projectNames = [...new Set(displayItems.map((item) => item.project).filter(Boolean))];
+  const projectNames = [...new Set(accountItems.map((item) => item.project).filter(Boolean))];
   const projectSuggestions = projects.map(
     project => project.name
 );
@@ -698,6 +762,16 @@ export default function ScheduleManager() {
   let staffPeople = visibleProjectMilestones.length > 0
     ? [...teamMembers, "프로젝트 일정"]
     : teamMembers;
+  const personalOwners = visibleItems.filter(item => item.scope === "개인 일정용")
+    .flatMap(item => getSchedulePeople(item, employees));
+  staffPeople = [...new Set([...staffPeople, ...personalOwners])];
+  if (mySchedulesOnly) {
+    // 내 일정 보기에서는 관련 없는 직원의 빈 행도 함께 감춥니다.
+    const people = visibleItems.flatMap(item => getSchedulePeople(item, employees));
+    staffPeople = staffPeople.filter(person => people.includes(person));
+    // HR에서 선택한 직원이 예전 팀원 명단에 없어도 연결 일정의 이름은 표시합니다.
+    staffPeople = [...new Set([...staffPeople, ...people])];
+  }
   // 이름을 검색했다면 함께 참석한 다른 사람의 행까지 늘어나지 않게 검색한 사람만 남깁니다.
   // 이름과 일치하는 팀원이 없으면 일정 검색 결과에 담당·참석으로 연결된 등록 팀원만 남깁니다.
   let staffPersonSearch = "";
@@ -753,7 +827,7 @@ export default function ScheduleManager() {
             <button className="sm-secondary-btn" aria-label="오늘의 작업 일별 보기" onClick={() => showCurrentPeriod("daily")}>오늘 일정 {todayWorkCount}건</button>
             <button className="sm-secondary-btn" onClick={() => showScheduleList()}>
               <ScheduleIcon name="calendar" />
-              전체 일정 ({items.length})
+              전체 일정 ({accountItems.length})
             </button>
             <button className="sm-btn" onClick={() => openScheduleForm()}>
               <ScheduleIcon name="plus" /> 일정 등록
@@ -796,6 +870,20 @@ export default function ScheduleManager() {
           <p className="sm-storage-warning" role="alert">팀원 목록을 저장하거나 읽지 못했습니다. 기존 자료를 보호하기 위해 저장소를 확인해 주세요.</p>
         )}
 
+        <section className="sm-account-filter" aria-label="로그인 계정 일정 조회">
+          <label className="sm-form-note">
+            <input type="checkbox" checked={mySchedulesOnly} disabled={!currentEmployee}
+              onChange={event => {
+                setMyScheduleAccountKey(event.target.checked ? accountKey : "");
+                setReminderNotice(null);
+              }} /> 내 담당·참석 일정
+          </label>
+          <span className="sm-form-note">{currentEmployee
+            ? `현재 계정: ${currentEmployee.name}${currentEmployee.email ? ` (${currentEmployee.email})` : ""}`
+            : "내 일정은 로그인 후 조회할 수 있습니다."}</span>
+          <span className="sm-form-note">개인 일정·개인 표시는 작성 계정에서만 확인할 수 있습니다.</span>
+        </section>
+
         {/* 현재 일정 데이터에서 요약 숫자를 만들어 표시합니다. */}
         <section className="sm-stats">
           {/* 직접 등록한 일정의 프로젝트명 개수입니다. 3번 프로젝트 전체 개수와는 다릅니다. */}
@@ -837,6 +925,7 @@ export default function ScheduleManager() {
             calendarDays={calendarDays}
             visibleItems={visibleItems}
             staffPeople={staffPeople}
+            employees={employees}
             staffPersonSearch={staffPersonSearch}
             selectedDate={selectedDate}
             todayKey={todayKey}
@@ -847,7 +936,7 @@ export default function ScheduleManager() {
               selectedProject는 선택 표시용 값, onSelectProject는 클릭 시 상태를 바꾸는 함수입니다. */}
           <ScheduleSidebar
             directoryMode={directoryMode}
-            directoryItems={displayItems}
+            directoryItems={accountItems}
             teamMembers={teamMembers}
             onAddTeamMember={addTeamMember}
             onRemoveTeamMember={removeTeamMember}
@@ -866,7 +955,7 @@ export default function ScheduleManager() {
             selectedDateObject={selectedDateObject}
             selectedHoliday={selectedHoliday}
             selectedItems={selectedItems}
-            hasActiveFilter={Boolean(query.trim() || selectedProject || scopeFilter !== "all")}
+            hasActiveFilter={Boolean(mySchedulesOnly || query.trim() || selectedProject || scopeFilter !== "all")}
             upcomingSchedules={upcomingSchedules}
             currentTime={currentTime}
             onSelectUpcoming={(date) => {
@@ -886,6 +975,7 @@ export default function ScheduleManager() {
         <ScheduleFormModal
           key={editing ? `${editing.id}:${editing.occurrenceDate || "series"}` : "new"}
           form={form}
+          canCreatePrivate={Boolean(currentEmployee)}
           saving={isSubmitting}
           projectWarning={getScheduleProjectWarning(form, projects)}
           isRestoredDraft={restoringDraftRef.current}
@@ -911,11 +1001,12 @@ export default function ScheduleManager() {
           items={
             listDateFilter
               ? expandSchedules(filteredItems, listDateFilter, listDateFilter, holidayDates)
-              : displayItems
+              : accountItems
           }
           filterDate={listDateFilter}
           hasActiveFilter={Boolean(listDateFilter && (query.trim() || selectedProject || scopeFilter !== "all"))}
-          totalCount={items.length}
+          totalCount={accountItems.length}
+          holidayDates={holidayDates}
           onToggleFavorite={toggleFavorite}
           onClearDateFilter={() => setListDateFilter(null)}
           onEdit={openScheduleForm}

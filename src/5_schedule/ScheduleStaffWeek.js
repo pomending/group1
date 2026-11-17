@@ -23,6 +23,7 @@ import { ScheduleEvent } from "./ScheduleItemParts";
 /* 사람은 행, 날짜는 열입니다. 담당자와 참석자에게 같은 일정을 표시하되 저장 원본은 복제하지 않습니다. 관련 일정이 없는 팀원도 빈 행을 표시합니다. */
 export default function ScheduleStaffWeek({
   people,
+  employees = [],
   personSearch,
   hasActiveFilter = false,
   weekDates,
@@ -34,7 +35,7 @@ export default function ScheduleStaffWeek({
   onToggleFavorite,
 }) {
   const rows = [];
-  const entries = items.map(item => ({ item, participants: getScheduleParticipants(item) }));
+  const entries = items.map(item => ({ item, participants: getScheduleParticipants(item, employees) }));
   for (const name of people) {
     const matching = entries.flatMap(entry => entry.participants.filter(person => person.name === name));
     const ids = [...new Set(matching.map(person => person.id).filter(id => id != null))];

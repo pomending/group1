@@ -2880,6 +2880,32 @@
 .schedule-app .sm-directory-project-button { background: #FBFAFE; border-color: #E6E1F0; }
 .schedule-app .sm-calendar-filters { background: #F1EFF8; }
 .schedule-app .sm-calendar-filters select { color: #39354F; }
+/* 필터 초기화도 선택창과 같은 높이의 박스 버튼으로 표시합니다. */
+.schedule-app .sm-filter-reset-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  margin: 0;
+  padding: 0 14px;
+  border: 1px solid #D5CDE7;
+  border-radius: 8px;
+  background: #FFFFFF;
+  color: #5D557A;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.schedule-app .sm-filter-reset-btn:hover {
+  border-color: #A89ACB;
+  background: #EAE5F5;
+  color: #524B80;
+}
+.schedule-app .sm-filter-reset-btn:focus-visible {
+  outline: 2px solid #9384BC;
+  outline-offset: 2px;
+}
 .schedule-app .sm-month-view,
 .schedule-app .sm-staff-scroll { border-color: #E6E1F0; }
 .schedule-app .sm-weekday { background: #F1EFF8; color: #5D557A; }
@@ -2921,3 +2947,24 @@
 .schedule-app .sm-modal { border-color: #E6E1F0; background: #FFFFFF; }
 .schedule-app .sm-close { color: #827A98; }
 /* Preserve event-category, deadline, completion, weekend and holiday colors. */
+.schedule-app .sm-account-filter {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px 20px;
+  margin: 16px 0;
+  padding: 14px 18px;
+  background: #fff;
+  border: 1px solid #e5dff0;
+  border-radius: 12px;
+}
+
+.schedule-app .sm-account-filter label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.schedule-app .sm-account-filter input {
+  accent-color: #71639e;
+}
