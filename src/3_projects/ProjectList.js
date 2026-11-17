@@ -7,6 +7,8 @@ function ProjectList(props) {
     const { projects, tasks, quotations } = useERP()
 
     const [sort, setSort] = useState('dueAsc')
+    const [page, setPage] = useState(1);
+    const PAGE_SIZE = 8;
 
     const sorted = (a, b) => {
 
@@ -47,6 +49,23 @@ function ProjectList(props) {
     );
 
     const pendingCount = pendingQuotations.length;
+
+    const filteredProjects = projects
+        .filter(project =>
+            (props.searchstat === "" ||
+                props.searchstat === getProjectStatus(project)) &&
+            project.name.toLowerCase().includes(props.search.toLowerCase())
+        )
+        .sort(sorted);
+
+    const totalPages = Math.ceil(filteredProjects.length / PAGE_SIZE);
+
+    const currentPage = Math.min(page, Math.max(1, totalPages));
+
+    const pagedProjects = filteredProjects.slice(
+        (currentPage - 1) * PAGE_SIZE,
+        currentPage * PAGE_SIZE
+    );
 
     return (
         <div className="project-app pj-page">
@@ -100,7 +119,11 @@ function ProjectList(props) {
                 <div className="pm-card pj-card">
                     <div className="pm-card-header">
                         <h3>프로젝트 목록</h3>
-                        <span>총 {projects.length}개</span>
+                        <span>
+                            총 {projects.length}개
+                            {(props.search || props.searchstat) &&
+                                ` · 검색 결과 ${filteredProjects.length}개`}
+                        </span>
                     </div>
 
                     {/* 검색 및 상태 필터 */}
@@ -146,10 +169,7 @@ function ProjectList(props) {
                                 </tr>
                             </thead>
                             <tbody>
-                                {projects.filter(project =>
-                                    (props.searchstat === '' || props.searchstat === getProjectStatus(project)) &&
-                                    project.name.toLowerCase().includes(props.search.toLowerCase())
-                                ).sort(sorted).map(project => (
+                                {pagedProjects.map(project => (
                                     <tr key={project.id}>
                                         <td>
                                             <div className="pm-project-name">{project.name}</div>
@@ -185,6 +205,34 @@ function ProjectList(props) {
                                 ))}
                             </tbody>
                         </table>
+                        {totalPages > 1 && (
+                            <div className="pm-pagination">
+                                <button
+                                    disabled={currentPage === 1}
+                                    onClick={() => setPage(currentPage - 1)}
+                                >
+                                    이전
+                                </button>
+
+                                {Array.from({ length: totalPages }, (_, i) => i + 1)
+                                    .map(num => (
+                                        <button
+                                            key={num}
+                                            className={currentPage === num ? "active" : ""}
+                                            onClick={() => setPage(num)}
+                                        >
+                                            {num}
+                                        </button>
+                                    ))}
+
+                                <button
+                                    disabled={currentPage === totalPages}
+                                    onClick={() => setPage(currentPage + 1)}
+                                >
+                                    다음
+                                </button>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>

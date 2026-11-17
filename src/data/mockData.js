@@ -1,86 +1,97 @@
 // ============================================================
-// 공통 ERP 더미 데이터
+// 공통 ERP 더미 데이터 — 굿즈 제작·판매 회사
 // ============================================================
-
+// 프론트엔드 시연용 초기 데이터이며 모든 PK/FK는 양의 정수입니다.
+// 기존 localStorage 데이터가 있으면 초기 데이터보다 우선 적용됩니다.
+// 새 데이터 확인 시 ERP의 전체 초기화 기능 또는 저장 데이터 초기화가 필요합니다.
+//
 // [상품 관리]
-// products.id                    : 상품 고유 ID
-// products.productPrice          : 상품 기본 판매 단가
-// products.productStatus         : "판매 중" / "판매중지"
-
+// products.id                     : 상품 고유 ID
+// products.productPrice           : 상품 기본 판매 단가 (견적 시점에 별도 보존)
+// products.productStatus          : "판매 중" / "판매중지"
+// products.productImageUrl        : 상품 사진 파일명
+// 판매중지 상품도 기존 견적에서 참조할 수 있지만 신규 선택은 제한됩니다.
+//
 // [고객 관리]
-// customers.id                   : 고객 고유 ID
-// customers.employeeId           -> initialEmployees.id (영업팀)
-
+// customers.id                    : 고객 고유 ID
+// customers.employeeId            -> initialEmployees.id (재직 중인 영업팀 직원)
+// 고객 담당자 변경, 휴직·퇴사·부서 이동 시 참조 관계는 ERPContext에서 검사합니다.
+//
 // [상담 관리]
-// consultations.id               : 상담 고유 ID
-// consultations.customerId       -> customers.id (null 허용, 고객 미등록 가능)
-// consultations.employeeId       -> initialEmployees.id (영업팀, null 허용)
-// consultations.inquiryChannel   : 상담 접수 경로
-// consultations.status           : "문의 접수" / "처리 중" / "견적 요청" / "문의 종료"
-// 상담은 고객 등록 여부와 관계없이 생성할 수 있습니다.
-// 고객 미등록 또는 담당 직원 미배정 상태에서는 해당 ID를 null로 저장합니다.
-
+// consultations.id                : 상담 고유 ID
+// consultations.customerId        -> customers.id (null 허용: 고객 미등록 상담)
+// consultations.employeeId        -> initialEmployees.id (영업팀, null 허용)
+// consultations.inquiryChannel    : 상담 접수 경로
+// consultations.status            : "문의 접수" / "처리 중" / "견적 요청" /
+//                                  "문의 종료" / "인계 완료"
+// 정식 견적 등록에 사용된 상담은 "인계 완료" 상태입니다.
+// 새 견적을 만들 수 있도록 "견적 요청" 상태인 상담도 별도로 남겨 두었습니다.
+//
 // [견적 관리]
-// quotations.customerId          -> customers.id
-// quotations.productId           -> products.id
-// quotations.employeeId          -> initialEmployees.id (영업팀)
-// quotations.quantity            : 상품 주문 수량
-// quotations.baseUnitPrice : 견적 작성 당시 상품 기본 단가
-// quotations.options       : 추가 옵션 배열 (없으면 [])
-// options[].name           : 옵션 이름
-// options[].unitPrice      : 개당 옵션 금액 (음수는 할인)
-// quotations.deliveryDate        : 고객 납품 예정일
-// quotations.status              : "승인 대기" / "승인 완료" / "반려"
-// 견적 하나에는 상품 한 종류만 포함합니다.
-// 최종 단가 = baseUnitPrice + 옵션 단가 합계
-// 공급가액 = quantity * 최종 단가
-
-// [상담 및 견적 연계]
-// 상담과 견적은 각각 별도의 데이터로 관리합니다.
-// 상담에서 고객 등록 및 연결 시 consultations.customerId를 사용합니다.
-// 견적은 quotations.customerId를 통해 고객 데이터를 참조합니다.
-// 현재 quotations에는 consultationId가 없어 개별 상담과 견적의 직접 참조 관계는 없습니다.
-// 동일 고객의 상담과 견적은 customerId로 연관 조회할 수 있지만,
-// 특정 상담에서 생성된 견적인지 1:1로 식별할 수는 없습니다.
-
+// quotations.id                   : 견적 고유 ID
+// quotations.customerId           -> customers.id
+// quotations.productId            -> products.id
+// quotations.employeeId           -> initialEmployees.id (재직 영업팀)
+// quotations.consultationId       -> consultations.id (시연 데이터에서는 전부 연결)
+// quotations.quantity             : 주문 수량 (양의 정수)
+// quotations.baseUnitPrice        : 견적 작성 당시 상품 기본 단가
+// quotations.options              : 추가 옵션 배열 (없으면 [])
+// options[].name                  : 옵션명
+// options[].unitPrice             : 개당 옵션 금액 (음수면 할인)
+// quotations.deliveryDate         : 견적 납품 예정일
+// quotations.status               : "승인 대기" / "승인 완료" / "반려"
+// 견적 하나에는 상품 한 종류만 포함하며 최종 단가 = 기본 단가 + 옵션 단가 합계.
+// 주문 공급가액 = quantity × 최종 단가. 프로젝트와 연결된 견적의 수정/삭제는 제한.
+// 상담은 견적과 별도 상태로 관리됩니다. 같은 고객의 문의가 여러 건일 수 있습니다.
+//
 // [프로젝트 관리]
-// initialProjects.quotationId    -> quotations.id (승인 완료 견적)
-// initialProjects.customerId     -> customers.id
-// initialProjects.managerId      -> initialEmployees.id (경영지원팀)
-// initialProjects.dueDate        : 견적의 deliveryDate를 초기값으로 사용
-// initialProjects.status         : "대기" / "진행 중" / "완료" / "지연"
-
+// initialProjects.quotationId     -> quotations.id ("승인 완료" 견적만)
+// initialProjects.customerId      -> 해당 견적의 customerId
+// initialProjects.managerId       -> initialEmployees.id (재직 경영지원팀)
+// initialProjects.startDate       : 프로젝트 시작 예정일
+// initialProjects.dueDate         : 해당 견적 deliveryDate를 프로젝트 생성 시 사용
+// initialProjects.completedDate   : 실제 완료일. 완료 상태에서만 날짜 기록
+// initialProjects.status          : "대기" / "진행 중" / "완료" (저장 상태)
+// 화면상의 "지연"은 완료되지 않은 프로젝트의 dueDate 초과 시 계산되는 표시 상태입니다.
+// 상태는 대기 → 진행 중 → 완료의 단방향 전환. 작업 시작 시 자동 진행 중,
+// 배송 작업 완료 시 자동 완료되며 완료 프로젝트는 수정/삭제가 제한됩니다.
+// 승인 완료지만 아직 프로젝트에 연결되지 않은 견적 1건을 남겨 두었습니다.
+//
 // [세부 작업 관리]
-// tasks.projectId                -> initialProjects.id
-// tasks.employeeId               -> initialEmployees.id (생산팀 / 물류팀)
-// tasks.taskType               : "제작 관리" / "검수 관리" / "포장 관리" / "배송 관리"
-// tasks.taskDeadline             : 세부 작업별 마감 예정일
-// tasks.progress                 : "대기중" / "작업중" / "완료"
-
+// tasks.projectId                 -> initialProjects.id
+// tasks.employeeId                -> initialEmployees.id
+// tasks.taskType                  : "제작 관리" / "검수 관리" / "포장 관리" / "배송 관리"
+// tasks.taskDeadline              : 세부 작업별 예정 마감일
+// tasks.progress                  : "대기중" / "작업중" / "완료"
+// 프로젝트별 동일 작업 단계는 한 건만 등록할 수 있습니다.
+// 작업 담당자: 제작·검수·포장은 재직 생산팀, 배송은 재직 물류팀 직원.
+// 신규 작업은 대기중으로 등록하고 작업중 상태는 여러 단계에서 동시에 가능합니다.
+// 마감일은 프로젝트 기간 안에서 제작 ≤ 검수 ≤ 포장 ≤ 배송 순서로 설정합니다.
+// 완료는 앞 단계가 모두 완료된 경우에만 가능하고, 뒷 단계가 완료된 경우
+// 앞 단계 완료 취소 및 삭제가 금지됩니다. 배송 완료 시 프로젝트도 자동 완료됩니다.
+// 일부 프로젝트는 미등록 작업, 부분 진행, 전체 작업 완료의 사례를 포함합니다.
+//
 // [직원 관리]
-// initialEmployees.id            : 직원 고유 ID
-// initialEmployees.department    : "인사팀" / "영업팀" / "경영지원팀" / "물류팀" / "생산팀"
-// initialEmployees.status        : "재직" / "휴직" / "퇴사"
-
+// initialEmployees.id             : 직원 고유 ID
+// initialEmployees.department     : "인사팀" / "영업팀" / "경영지원팀" / "물류팀" / "생산팀"
+// initialEmployees.status         : "재직" / "휴직" / "퇴사"
+//
+// [계정 및 인증]
+// 계정 초기 데이터는 mockAccounts.js의 initialAccounts에서 별도 관리합니다.
+// accounts.employeeId             -> initialEmployees.id (직원 ID와 계정 ID는 별개)
+// 계정 역할: EMPLOYEE / MANAGER / ADMIN; 계정 상태: 활성 / 비활성.
+// 활성 계정도 직원 상태가 퇴사이면 로그인할 수 없습니다.
+//
 // [데이터 참조 및 관리 규칙]
-// 1. 모든 데이터는 id를 고유 식별자로 사용합니다.
-// 2. 다른 데이터와 연결할 때는 해당 데이터의 ID를 참조합니다.
-// 3. 상담은 고객 등록 전에도 생성할 수 있으며 customerId는 null을 허용합니다.
-// 4. 상담 담당 직원이 배정되지 않은 경우 employeeId는 null을 허용합니다.
-// 5. 상담과 견적은 별도 데이터이며 현재 직접적인 상담 ID 참조는 없습니다.
-// 6. 프로젝트는 승인 완료 견적을 기준으로 생성합니다.
-// 7. 하나의 견적은 최대 하나의 프로젝트에 연결할 수 있습니다.
-// 8. 프로젝트 생성 시 견적의 deliveryDate를 dueDate에 저장합니다.
-// 9. 프로젝트별 동일한 taskType의 세부 작업은 중복 등록하지 않습니다.
-// 10. 작업 담당 부서: 제작·검수·포장 = 생산팀, 배송 = 물류팀
-// 11. 다른 데이터에서 참조 중인 항목의 삭제 제한은 ERPContext에서 관리합니다.
-//     (모듈별 통합 CRUD 규칙은 단계적으로 적용 예정)
-
-// [참고]
-// 계정 초기 데이터는 mockAccounts.js의 initialAccounts에서 관리합니다.
-// 계정의 employeeId는 initialEmployees.id를 참조합니다.
-// 직원 정보와 로그인 계정 정보는 별도로 관리합니다.
-
+// 1. 모든 ID는 숫자이며, FK는 존재하는 초기 데이터를 참조합니다.
+// 2. 하나의 견적은 최대 한 프로젝트에만 연결됩니다.
+// 3. 프로젝트의 dueDate와 실제 완료일 completedDate는 서로 다른 값입니다.
+// 4. 프로젝트 기간을 수정할 때 기존 작업 마감일이 벗어나면 수정 거부됩니다.
+// 5. 직원 상태/담당자 자격, 참조 중 데이터 삭제, 완료 프로젝트 잠금 등은
+//    ERPContext와 각 데이터 Hook의 CRUD 함수에서 검증합니다.
+// 6. 완료 프로젝트의 초기 상태는 시연용으로 미리 기록한 데이터입니다.
+//    실제 사용자 작업에서는 배송 완료 처리 시 completedDate와 이력이 생성됩니다.
+//
 export const products = [
     {
         id: 1,
@@ -180,11 +191,18 @@ export const quotations = [
         customerId: 1,
         productId: 1,
         employeeId: 2,
+        consultationId: 21,
         quantity: 300,
         baseUnitPrice: 8000,
         options: [
-            { name: "글씨 인쇄", unitPrice: 500 },
-            { name: "개별 포장", unitPrice: 300 }
+            {
+                name: "글씨 인쇄",
+                unitPrice: 500
+            },
+            {
+                name: "개별 포장",
+                unitPrice: 300
+            }
         ],
         createdAt: "2026-10-15",
         validUntil: "2026-11-15",
@@ -198,10 +216,14 @@ export const quotations = [
         customerId: 2,
         productId: 2,
         employeeId: 4,
+        consultationId: 22,
         quantity: 500,
         baseUnitPrice: 5000,
         options: [
-            { name: "학교 로고 인쇄", unitPrice: 400 }
+            {
+                name: "학교 로고 인쇄",
+                unitPrice: 400
+            }
         ],
         createdAt: "2026-10-20",
         validUntil: "2026-11-20",
@@ -215,11 +237,18 @@ export const quotations = [
         customerId: 3,
         productId: 3,
         employeeId: 11,
+        consultationId: 23,
         quantity: 400,
         baseUnitPrice: 6000,
         options: [
-            { name: "로고 인쇄", unitPrice: 500 },
-            { name: "선물 상자 포장", unitPrice: 700 }
+            {
+                name: "로고 인쇄",
+                unitPrice: 500
+            },
+            {
+                name: "선물 상자 포장",
+                unitPrice: 700
+            }
         ],
         createdAt: "2026-10-22",
         validUntil: "2026-11-22",
@@ -233,6 +262,7 @@ export const quotations = [
         customerId: 1,
         productId: 4,
         employeeId: 2,
+        consultationId: 24,
         quantity: 1000,
         baseUnitPrice: 2500,
         options: [],
@@ -248,10 +278,14 @@ export const quotations = [
         customerId: 4,
         productId: 1,
         employeeId: 4,
+        consultationId: 25,
         quantity: 100,
         baseUnitPrice: 8000,
         options: [
-            { name: "맞춤 색상 인쇄", unitPrice: 500 }
+            {
+                name: "맞춤 색상 인쇄",
+                unitPrice: 500
+            }
         ],
         createdAt: "2026-10-29",
         validUntil: "2026-11-29",
@@ -265,10 +299,14 @@ export const quotations = [
         customerId: 4,
         productId: 4,
         employeeId: 11,
+        consultationId: 26,
         quantity: 800,
         baseUnitPrice: 2500,
         options: [
-            { name: "대량 주문 할인", unitPrice: -200 }
+            {
+                name: "대량 주문 할인",
+                unitPrice: -200
+            }
         ],
         createdAt: "2026-10-30",
         validUntil: "2026-11-30",
@@ -282,10 +320,14 @@ export const quotations = [
         customerId: 3,
         productId: 2,
         employeeId: 2,
+        consultationId: 3,
         quantity: 200,
         baseUnitPrice: 5000,
         options: [
-            { name: "친환경 잉크 인쇄", unitPrice: 300 }
+            {
+                name: "친환경 잉크 인쇄",
+                unitPrice: 300
+            }
         ],
         createdAt: "2026-11-01",
         validUntil: "2026-12-01",
@@ -299,10 +341,14 @@ export const quotations = [
         customerId: 5,
         productId: 6,
         employeeId: 4,
+        consultationId: 27,
         quantity: 1000,
         baseUnitPrice: 1300,
         options: [
-            { name: "학교명 각인", unitPrice: 200 }
+            {
+                name: "학교명 각인",
+                unitPrice: 200
+            }
         ],
         createdAt: "2026-11-02",
         validUntil: "2026-12-02",
@@ -316,29 +362,43 @@ export const quotations = [
         customerId: 7,
         productId: 5,
         employeeId: 11,
+        consultationId: 7,
         quantity: 800,
         baseUnitPrice: 12000,
         options: [
-            { name: "앞면 로고 인쇄", unitPrice: 500 },
-            { name: "뒷면 문구 인쇄", unitPrice: 400 }
+            {
+                name: "앞면 로고 인쇄",
+                unitPrice: 500
+            },
+            {
+                name: "뒷면 문구 인쇄",
+                unitPrice: 400
+            }
         ],
         createdAt: "2026-11-03",
         validUntil: "2026-12-03",
         deliveryDate: "2026-12-18",
         paymentMethod: "계좌이체",
         memo: "행사 단체 티셔츠 제작 문의",
-        status: "승인 대기"
+        status: "승인 완료"
     },
     {
         id: 10,
         customerId: 8,
         productId: 7,
         employeeId: 2,
+        consultationId: 8,
         quantity: 300,
         baseUnitPrice: 7000,
         options: [
-            { name: "로고 자수", unitPrice: 600 },
-            { name: "개별 포장", unitPrice: 200 }
+            {
+                name: "로고 자수",
+                unitPrice: 600
+            },
+            {
+                name: "개별 포장",
+                unitPrice: 200
+            }
         ],
         createdAt: "2026-11-01",
         validUntil: "2026-12-01",
@@ -346,10 +406,123 @@ export const quotations = [
         paymentMethod: "카드결제",
         memo: "재활용 소재 파우치 주문",
         status: "승인 완료"
+    },
+    {
+        id: 11,
+        customerId: 9,
+        productId: 8,
+        employeeId: 20,
+        consultationId: 28,
+        quantity: 500,
+        baseUnitPrice: 3500,
+        options: [
+            {
+                name: "행사 문양 레이저 각인",
+                unitPrice: 400
+            },
+            {
+                name: "개별 케이스",
+                unitPrice: 300
+            }
+        ],
+        createdAt: "2026-10-14",
+        validUntil: "2026-11-14",
+        deliveryDate: "2026-10-22",
+        paymentMethod: "계좌이체",
+        memo: "문화행사 기념 금속 배지 500개, 행사 종료 전 납품",
+        status: "승인 완료"
+    },
+    {
+        id: 12,
+        customerId: 10,
+        productId: 9,
+        employeeId: 19,
+        consultationId: 29,
+        quantity: 300,
+        baseUnitPrice: 4500,
+        options: [
+            {
+                name: "표지 로고 인쇄",
+                unitPrice: 350
+            }
+        ],
+        createdAt: "2026-10-13",
+        validUntil: "2026-11-13",
+        deliveryDate: "2026-11-08",
+        paymentMethod: "카드결제",
+        memo: "스타트업 행사 배포용 홍보 노트",
+        status: "승인 완료"
+    },
+    {
+        id: 13,
+        customerId: 15,
+        productId: 4,
+        employeeId: 20,
+        consultationId: 30,
+        quantity: 600,
+        baseUnitPrice: 2500,
+        options: [
+            {
+                name: "양면 캐릭터 인쇄",
+                unitPrice: 500
+            },
+            {
+                name: "고급 연결고리",
+                unitPrice: 100
+            }
+        ],
+        createdAt: "2026-10-25",
+        validUntil: "2026-11-25",
+        deliveryDate: "2026-11-29",
+        paymentMethod: "계좌이체",
+        memo: "연말 행사 캐릭터 키링 제작",
+        status: "승인 완료"
+    },
+    {
+        id: 14,
+        customerId: 20,
+        productId: 6,
+        employeeId: 4,
+        consultationId: 31,
+        quantity: 1200,
+        baseUnitPrice: 1300,
+        options: [
+            {
+                name: "팬 사인 각인",
+                unitPrice: 180
+            }
+        ],
+        createdAt: "2026-11-01",
+        validUntil: "2026-12-01",
+        deliveryDate: "2026-12-15",
+        paymentMethod: "카드결제",
+        memo: "팬미팅 참가자 증정용 로고 볼펜",
+        status: "승인 완료"
+    },
+    {
+        id: 15,
+        customerId: 23,
+        productId: 5,
+        employeeId: 11,
+        consultationId: 32,
+        quantity: 150,
+        baseUnitPrice: 12000,
+        options: [
+            {
+                name: "행사 로고 전사 인쇄",
+                unitPrice: 650
+            }
+        ],
+        createdAt: "2026-11-04",
+        validUntil: "2026-12-04",
+        deliveryDate: "2026-12-22",
+        paymentMethod: "계좌이체",
+        memo: "차량 전시회 스태프 티셔츠 150벌",
+        status: "승인 완료"
     }
 ];
 
-// 상담 샘플 20건. 고객과 연결된 상담의 customerId는 customers.id를 참조합니다.
+// 상담 샘플 32건. 인계 완료 상담은 기존/신규 견적과 consultationId로 연결됩니다.
 export const consultations = [
     {
         id: 1,
@@ -383,9 +556,9 @@ export const consultations = [
         customerManager: "정우성",
         phone: "010-3456-7890",
         email: "woosung@example.com",
-        employeeId: 11,
+        employeeId: 2,
         status: "인계 완료",
-        memo: "친환경 에코백 300개 제작 상담"
+        memo: "친환경 에코백 추가 제작 200개 상담"
     },
     {
         id: 4,
@@ -443,7 +616,7 @@ export const consultations = [
         customerManager: "윤하늘",
         phone: "010-8901-2345",
         email: "haneul@example.com",
-        employeeId: 4,
+        employeeId: 2,
         status: "인계 완료",
         memo: "재활용 소재 파우치 제작"
     },
@@ -590,6 +763,150 @@ export const consultations = [
         employeeId: 4,
         status: "문의 종료",
         memo: "팬미팅 굿즈 키링 1000개"
+    },
+    {
+        id: 21,
+        customerId: 1,
+        companyName: "삼성전자",
+        inquiryChannel: "이메일",
+        customerManager: "김민수",
+        phone: "010-1234-5678",
+        email: "minsu@example.com",
+        employeeId: 2,
+        status: "인계 완료",
+        memo: "텀블러 300개 창립기념 인쇄 및 개별 포장 상담"
+    },
+    {
+        id: 22,
+        customerId: 2,
+        companyName: "한국대학교",
+        inquiryChannel: "전화",
+        customerManager: "박지현",
+        phone: "010-2345-6789",
+        email: "jihyun@example.com",
+        employeeId: 4,
+        status: "인계 완료",
+        memo: "대학 홍보용 캔버스 에코백 500개 상담"
+    },
+    {
+        id: 23,
+        customerId: 3,
+        companyName: "그린컴퍼니",
+        inquiryChannel: "방문",
+        customerManager: "정우성",
+        phone: "010-3456-7890",
+        email: "woosung@example.com",
+        employeeId: 11,
+        status: "인계 완료",
+        memo: "행사용 세라믹 머그컵 400개 제작 상담"
+    },
+    {
+        id: 24,
+        customerId: 1,
+        companyName: "삼성전자",
+        inquiryChannel: "이메일",
+        customerManager: "김민수",
+        phone: "010-1234-5678",
+        email: "minsu@example.com",
+        employeeId: 2,
+        status: "인계 완료",
+        memo: "사내 판촉용 아크릴 키링 1000개 견적 요청"
+    },
+    {
+        id: 25,
+        customerId: 4,
+        companyName: "미래테크",
+        inquiryChannel: "전화",
+        customerManager: "이서연",
+        phone: "010-4567-8901",
+        email: "seoyeon@example.com",
+        employeeId: 4,
+        status: "인계 완료",
+        memo: "텀블러 소량 제작 가격 협의 후 견적 반려"
+    },
+    {
+        id: 26,
+        customerId: 4,
+        companyName: "미래테크",
+        inquiryChannel: "방문",
+        customerManager: "이서연",
+        phone: "010-4567-8901",
+        email: "seoyeon@example.com",
+        employeeId: 11,
+        status: "인계 완료",
+        memo: "홍보용 아크릴 키링 800개 대량 주문 상담"
+    },
+    {
+        id: 27,
+        customerId: 5,
+        companyName: "한빛교육",
+        inquiryChannel: "전화",
+        customerManager: "최현우",
+        phone: "010-5678-9012",
+        email: "hyunwoo@example.com",
+        employeeId: 4,
+        status: "인계 완료",
+        memo: "교육용 로고 볼펜 1000개 견적 상담"
+    },
+    {
+        id: 28,
+        customerId: 9,
+        companyName: "서울문화재단",
+        inquiryChannel: "이메일",
+        customerManager: "오세진",
+        phone: "010-9012-3456",
+        email: "sejin@example.com",
+        employeeId: 20,
+        status: "인계 완료",
+        memo: "문화행사 기념 금속 배지 500개 제작 상담"
+    },
+    {
+        id: 29,
+        customerId: 10,
+        companyName: "스타트업허브",
+        inquiryChannel: "전화",
+        customerManager: "송지아",
+        phone: "010-1122-3344",
+        email: "jia@example.com",
+        employeeId: 19,
+        status: "인계 완료",
+        memo: "스타트업 행사 배포용 홍보 노트 300권 상담"
+    },
+    {
+        id: 30,
+        customerId: 15,
+        companyName: "코리아이벤트",
+        inquiryChannel: "방문",
+        customerManager: "장도현",
+        phone: "010-6677-8899",
+        email: "dohyun@example.com",
+        employeeId: 20,
+        status: "인계 완료",
+        memo: "연말 행사 캐릭터 아크릴 키링 600개 제작 상담"
+    },
+    {
+        id: 31,
+        customerId: 20,
+        companyName: "라온엔터테인먼트",
+        inquiryChannel: "이메일",
+        customerManager: "고은별",
+        phone: "010-2323-4545",
+        email: "eunbyeol@example.com",
+        employeeId: 4,
+        status: "인계 완료",
+        memo: "팬미팅 증정용 로고 볼펜 1200개 제작 상담"
+    },
+    {
+        id: 32,
+        customerId: 23,
+        companyName: "에이스모빌리티",
+        inquiryChannel: "전화",
+        customerManager: "차현석",
+        phone: "010-5656-7878",
+        email: "hyunseok@example.com",
+        employeeId: 11,
+        status: "인계 완료",
+        memo: "전시회 스태프용 단체 티셔츠 150벌 제작 상담"
     }
 ];
 
@@ -604,7 +921,7 @@ export const customers = [
         phone: "010-1234-5678",
         email: "minsu@example.com",
         address: "경기도 수원시 영통구",
-        createdAt: "2026-10-21",
+        createdAt: "2026-10-14",
         memo: "텀블러 500개 제작 문의"
     },
     {
@@ -1295,6 +1612,166 @@ export const tasks = [
         employeeId: 14,
         taskDeadline: "2026-11-14",
         progress: "대기중"
+    },
+    {
+        id: 13,
+        projectId: 3,
+        taskType: "배송 관리",
+        employeeId: 9,
+        taskDeadline: "2026-11-02",
+        progress: "완료"
+    },
+    {
+        id: 14,
+        projectId: 6,
+        taskType: "제작 관리",
+        employeeId: 6,
+        taskDeadline: "2026-11-09",
+        progress: "완료"
+    },
+    {
+        id: 15,
+        projectId: 6,
+        taskType: "검수 관리",
+        employeeId: 7,
+        taskDeadline: "2026-11-12",
+        progress: "작업중"
+    },
+    {
+        id: 16,
+        projectId: 6,
+        taskType: "포장 관리",
+        employeeId: 14,
+        taskDeadline: "2026-11-18",
+        progress: "작업중"
+    },
+    {
+        id: 17,
+        projectId: 6,
+        taskType: "배송 관리",
+        employeeId: 15,
+        taskDeadline: "2026-12-12",
+        progress: "대기중"
+    },
+    {
+        id: 18,
+        projectId: 7,
+        taskType: "제작 관리",
+        employeeId: 1,
+        taskDeadline: "2026-10-16",
+        progress: "완료"
+    },
+    {
+        id: 19,
+        projectId: 7,
+        taskType: "검수 관리",
+        employeeId: 7,
+        taskDeadline: "2026-10-18",
+        progress: "완료"
+    },
+    {
+        id: 20,
+        projectId: 7,
+        taskType: "포장 관리",
+        employeeId: 13,
+        taskDeadline: "2026-10-19",
+        progress: "완료"
+    },
+    {
+        id: 21,
+        projectId: 7,
+        taskType: "배송 관리",
+        employeeId: 16,
+        taskDeadline: "2026-10-21",
+        progress: "완료"
+    },
+    {
+        id: 22,
+        projectId: 8,
+        taskType: "제작 관리",
+        employeeId: 14,
+        taskDeadline: "2026-10-16",
+        progress: "완료"
+    },
+    {
+        id: 23,
+        projectId: 8,
+        taskType: "검수 관리",
+        employeeId: 6,
+        taskDeadline: "2026-10-23",
+        progress: "완료"
+    },
+    {
+        id: 24,
+        projectId: 8,
+        taskType: "포장 관리",
+        employeeId: 1,
+        taskDeadline: "2026-10-30",
+        progress: "완료"
+    },
+    {
+        id: 25,
+        projectId: 8,
+        taskType: "배송 관리",
+        employeeId: 9,
+        taskDeadline: "2026-11-05",
+        progress: "완료"
+    },
+    {
+        id: 26,
+        projectId: 9,
+        taskType: "제작 관리",
+        employeeId: 13,
+        taskDeadline: "2026-11-05",
+        progress: "완료"
+    },
+    {
+        id: 27,
+        projectId: 9,
+        taskType: "검수 관리",
+        employeeId: 7,
+        taskDeadline: "2026-11-12",
+        progress: "완료"
+    },
+    {
+        id: 28,
+        projectId: 9,
+        taskType: "포장 관리",
+        employeeId: 14,
+        taskDeadline: "2026-11-24",
+        progress: "작업중"
+    },
+    {
+        id: 29,
+        projectId: 11,
+        taskType: "제작 관리",
+        employeeId: 6,
+        taskDeadline: "2026-11-20",
+        progress: "작업중"
+    },
+    {
+        id: 30,
+        projectId: 11,
+        taskType: "검수 관리",
+        employeeId: 1,
+        taskDeadline: "2026-11-26",
+        progress: "작업중"
+    },
+    {
+        id: 31,
+        projectId: 11,
+        taskType: "포장 관리",
+        employeeId: 13,
+        taskDeadline: "2026-12-06",
+        progress: "대기중"
+    },
+    {
+        id: 32,
+        projectId: 11,
+        taskType: "배송 관리",
+        employeeId: 15,
+        taskDeadline: "2026-12-19",
+        progress: "대기중"
     }
 ];
 
@@ -1331,8 +1808,8 @@ export const initialProjects = [
         managerId: 17,
         startDate: "2026-10-23",
         dueDate: "2026-12-02",
-        completedDate: null,
-        status: "진행 중",
+        completedDate: "2026-11-04",
+        status: "완료",
         description: "행사용 세라믹 머그컵 400개 제작 및 출고 작업"
     },
     {
@@ -1358,6 +1835,78 @@ export const initialProjects = [
         completedDate: null,
         status: "진행 중",
         description: "친환경 에코백 200개 추가 제작"
+    },
+    {
+        id: 6,
+        name: "대한스포츠 행사 티셔츠 제작",
+        quotationId: 9,
+        customerId: 7,
+        managerId: 22,
+        startDate: "2026-11-05",
+        dueDate: "2026-12-18",
+        completedDate: null,
+        status: "진행 중",
+        description: "마라톤 행사 스태프 및 참가자용 단체 티셔츠 800벌 제작"
+    },
+    {
+        id: 7,
+        name: "서울문화재단 기념 금속 배지 제작",
+        quotationId: 11,
+        customerId: 9,
+        managerId: 5,
+        startDate: "2026-10-15",
+        dueDate: "2026-10-22",
+        completedDate: "2026-10-24",
+        status: "완료",
+        description: "문화행사 기념 배지 500개 납품 완료 (납기일 대비 2일 지연)"
+    },
+    {
+        id: 8,
+        name: "스타트업허브 홍보 노트 제작",
+        quotationId: 12,
+        customerId: 10,
+        managerId: 17,
+        startDate: "2026-10-14",
+        dueDate: "2026-11-08",
+        completedDate: "2026-11-06",
+        status: "완료",
+        description: "스타트업 네트워킹 행사 홍보 노트 300권 조기 납품 완료"
+    },
+    {
+        id: 9,
+        name: "코리아이벤트 캐릭터 키링 제작",
+        quotationId: 13,
+        customerId: 15,
+        managerId: 3,
+        startDate: "2026-10-27",
+        dueDate: "2026-11-29",
+        completedDate: null,
+        status: "진행 중",
+        description: "연말 행사 기념 양면 캐릭터 아크릴 키링 600개 제작"
+    },
+    {
+        id: 10,
+        name: "라온엔터테인먼트 팬미팅 볼펜 제작",
+        quotationId: 14,
+        customerId: 20,
+        managerId: 12,
+        startDate: "2026-11-10",
+        dueDate: "2026-12-15",
+        completedDate: null,
+        status: "대기",
+        description: "팬미팅 참가자 대상 로고 볼펜 1200개 제작 예정, 담당 작업 미배정"
+    },
+    {
+        id: 11,
+        name: "에이스모빌리티 전시회 티셔츠 제작",
+        quotationId: 15,
+        customerId: 23,
+        managerId: 23,
+        startDate: "2026-11-07",
+        dueDate: "2026-12-22",
+        completedDate: null,
+        status: "진행 중",
+        description: "자동차 전시회 스태프 단체 티셔츠 150벌 제작"
     }
 ];
 
