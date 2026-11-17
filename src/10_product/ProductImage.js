@@ -10,10 +10,13 @@ const isImageAddress = value => typeof value === "string"
 export default function ProductImage({ product }) {
   const storageKey = "erp_product_image:" + product.id;
   const [selectedImage, setImage] = useState(() => {
+    if (product.id == null) return null;
     try {
-      const saved = product.id != null && localStorage.getItem(storageKey);
-      if (typeof saved === "string" && (saved === "" || saved.startsWith("catalog:") || isImageAddress(saved))) return saved;
-    } catch { /* 저장소 접근이 막혀도 화면에서 이미지를 선택할 수 있습니다. */ }
+      const saved = localStorage.getItem(storageKey);
+      if (typeof saved !== "string") return null;
+      if (saved === "") return "";
+      if (saved.startsWith("catalog:") || isImageAddress(saved)) return saved;
+    } catch { /* 읽기 실패 시 상품의 기본 이미지를 사용하며, 적용 시 저장 실패를 별도로 안내합니다. */ }
     return null;
   });
   // 직접 고른 값이 없을 때만 상품에 저장된 주소를 사용합니다. 빈 문자열은 제거한 상태입니다.

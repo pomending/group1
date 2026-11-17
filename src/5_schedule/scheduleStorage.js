@@ -25,7 +25,12 @@ import {
 
 // 일정 저장소의 로컬 변경과 다른 탭의 변경을 ID별로 비교해 합칩니다.
 export function mergeScheduleChanges(base, local, remote) {
-  const toMap = schedules => new Map(schedules.map(item => [String(item.id), item]));
+  // 숫자 ID와 문자열 ID를 같은 기준으로 비교합니다.
+  function toMap(schedules) {
+    const result = new Map();
+    for (const item of schedules) result.set(String(item.id), item);
+    return result;
+  }
   const original = toMap(base);
   const current = toMap(local);
   const otherTab = toMap(remote);
@@ -262,15 +267,21 @@ export function serializeSchedules(items, resetId) {
 export function resetStoredSchedules() {
   const keys = ["made-mate-schedule-team", "made-mate-excluded-team", "made-mate-schedules"];
   const previous = [];
+  const scopedDrafts = [];
   let previousDraft;
   try {
       for (const key of keys) previous.push(localStorage.getItem(key));
       previousDraft = sessionStorage.getItem("made-mate-schedule-draft");
+      for (const key of Object.keys(sessionStorage)) {
+        if (key.startsWith("made-mate-schedule-draft:")) scopedDrafts.push([key, sessionStorage.getItem(key)]);
+      }
       localStorage.setItem(keys[0], "[]");
       localStorage.setItem(keys[1], "[]");
       sessionStorage.removeItem("made-mate-schedule-draft");
+      for (const [key] of scopedDrafts) sessionStorage.removeItem(key);
       // 초기화 번호를 마지막에 기록해 열린 탭의 이전 저장을 구분합니다.
       localStorage.setItem(keys[2], serializeSchedules([], Date.now() + "-" + Math.random()));
+
 
       window.dispatchEvent(
           new Event("made-mate-schedules-reset")
@@ -286,6 +297,7 @@ export function resetStoredSchedules() {
           else localStorage.setItem(keys[index], previous[index]);
         }
         if (previousDraft != null) sessionStorage.setItem("made-mate-schedule-draft", previousDraft);
+        for (const [key, value] of scopedDrafts) sessionStorage.setItem(key, value);
       } catch (restoreError) {
         console.error("일정 초기화 원본 복원 실패", restoreError);
       }

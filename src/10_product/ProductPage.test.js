@@ -1,9 +1,10 @@
 import React from "react";
-import { act, fireEvent, render, renderHook, screen, within } from "@testing-library/react";
+import { act, fireEvent, render, renderHook, screen, within, waitFor } from "@testing-library/react";
+import ExcelJS from "exceljs";
 import ProductPage from "./ProductPage";
 import { useERP } from "../context/ERPContext";
 import { saveAs } from "file-saver";
-import { createProductCsv, getProductInput } from "./productData";
+import { createProductExcel, getProductInput } from "./productData";
 import useProductData from "../context/useProductData";
 
 // 조작만 공통화합니다. 검증과 시나리오의 순서는 각 테스트에 남깁니다.
@@ -13,6 +14,21 @@ function clickButton(name) {
 
 function changeInput(label, value) {
   fireEvent.change(screen.getByLabelText(label), { target: { value } });
+}
+
+// 확장자만 확인하지 않고 실제 XLSX 파일을 다시 열어 셀 값과 자료형을 검사합니다.
+async function readExportedSheet() {
+  await waitFor(() => expect(saveAs).toHaveBeenCalledTimes(1));
+  const [blob] = saveAs.mock.calls[0];
+  expect(blob.type).toBe("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+  const buffer = await new Promise(resolve => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.readAsArrayBuffer(blob);
+  });
+  const workbook = new ExcelJS.Workbook();
+  await workbook.xlsx.load(buffer);
+  return workbook.getWorksheet("상품 목록");
 }
 
 test("전달 필드는 입력 세 개로 제한하고 원본 메타데이터와 화면 상태를 제외한다", () => {
@@ -278,16 +294,11 @@ test("번호 검색은 전체 번호로 비교하고 이름 부분 검색과 상
   expect(screen.getByRole("status", { name: "상품 조회 결과" })).toHaveTextContent("조회 0건");
   changeInput("최소 단가 (원)", "5000");
   expect(screen.getByRole("status", { name: "상품 조회 결과" })).toHaveTextContent("조회 1건");
-  clickButton("CSV 내보내기");
-  const [blob] = saveAs.mock.calls[0];
-  const text = await new Promise(resolve => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result);
-    reader.readAsText(blob);
-  });
-  expect(text).toContain('"12","에코백"');
-  expect(text).not.toContain('"123","머그컵"');
-  expect(text).not.toContain("행사12 상품");
+  clickButton("엑셀 내보내기");
+  const sheet = await readExportedSheet();
+  expect(sheet.rowCount).toBe(2);
+  expect(sheet.getCell("A2").value).toBe(12);
+  expect(sheet.getCell("B2").value).toBe("에코백");
   changeInput("상품명·번호 검색", "에코");
   expect(screen.getByRole("button", { name: "에코백 수정" })).toBeInTheDocument();
   expect(JSON.stringify(currentContext.products)).toBe(before);
@@ -440,15 +451,15 @@ test.each([
   ["-1", "", "단가는 0 이상의 정수로 입력해 주세요."],
   ["", "1.5", "단가는 0 이상의 정수로 입력해 주세요."],
   ["9007199254740992", "", "단가는 0 이상의 정수로 입력해 주세요."],
-])("잘못된 단가 범위 %s~%s는 안내하고 CSV를 차단하며 조건 초기화로 복구된다", (min, max, message) => {
+])("잘못된 단가 범위 %s~%s는 안내하고 엑셀 내보내기를 차단하며 조건 초기화로 복구된다", (min, max, message) => {
   render(<ProductPage />);
   changeInput("최소 단가 (원)", min);
   changeInput("최대 단가 (원)", max);
   expect(screen.getByRole("alert")).toHaveTextContent(message);
-  expect(screen.getByRole("button", { name: "CSV 내보내기" })).toBeDisabled();
+  expect(screen.getByRole("button", { name: "엑셀 내보내기" })).toBeDisabled();
   clickButton("검색 조건 초기화");
   expect(screen.queryByRole("alert")).not.toBeInTheDocument();
-  expect(screen.getByRole("button", { name: "CSV 내보내기" })).toBeEnabled();
+  expect(screen.getByRole("button", { name: "엑셀 내보내기" })).toBeEnabled();
   expect(currentContext.products).toEqual(initialProducts);
 });
 
@@ -474,23 +485,17 @@ test("0원과 한쪽 경계·같은 경계를 처리하고 신규 등록 시 단
   expect(screen.getByRole("button", { name: "[테스트] 범위 밖 신규 수정" })).toBeInTheDocument();
 });
 
-test("CSV는 단가 범위와 정렬이 적용된 결과만 내보낸다", async () => {
+test("엑셀은 단가 범위와 정렬이 적용된 결과만 내보낸다", async () => {
   initialProducts = makeProducts(23);
   render(<ProductPage />);
   changeInput("최소 단가 (원)", "300");
   changeInput("최대 단가 (원)", "500");
   changeInput("정렬", "priceDesc");
-  clickButton("CSV 내보내기");
-  const [blob] = saveAs.mock.calls[0];
-  const text = await new Promise(resolve => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result);
-    reader.readAsText(blob);
-  });
-  expect(text.trim().split("\r\n")).toHaveLength(4);
-  expect(text.indexOf("상품05")).toBeLessThan(text.indexOf("상품03"));
-  expect(text).not.toContain("상품02");
-  expect(text).not.toContain("상품06");
+  clickButton("엑셀 내보내기");
+  const sheet = await readExportedSheet();
+  expect(sheet.rowCount).toBe(4);
+  expect(sheet.getCell("B2").value).toBe("상품05");
+  expect(sheet.getCell("B4").value).toBe("상품03");
   expect(currentContext.products).toEqual(initialProducts);
 });
 
@@ -590,7 +595,7 @@ test.each([
   expect(JSON.stringify(currentContext.products)).toBe(before);
 });
 
-test("CSV 내보내기는 현재 페이지가 아닌 필터 결과 전체를 정렬순으로 내려받는다", async () => {
+test("엑셀 내보내기는 현재 페이지가 아닌 필터 결과 전체를 정렬순으로 내려받는다", async () => {
   initialProducts = makeProducts(23);
   render(<ProductPage />);
   changeInput("상품명·번호 검색", "상품");
@@ -598,41 +603,48 @@ test("CSV 내보내기는 현재 페이지가 아닌 필터 결과 전체를 정
   changeInput("정렬", "priceAsc");
   fireEvent.click(screen.getByRole("button", { name: "다음", exact: true }));
   const before = JSON.stringify(currentContext.products);
-  clickButton("CSV 내보내기");
-  expect(saveAs).toHaveBeenCalledTimes(1);
+  clickButton("엑셀 내보내기");
+  expect(screen.getByRole("button", { name: "엑셀 생성 중…" })).toBeDisabled();
+  const sheet = await readExportedSheet();
   const [blob, filename] = saveAs.mock.calls[0];
-  expect(filename).toMatch(/^상품목록_\d{4}-\d{2}-\d{2}\.csv$/);
-  const text = await new Promise(resolve => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result);
-    reader.readAsText(blob);
-  });
-  expect(text.trim().split("\r\n")).toHaveLength(13);
-  expect(text.indexOf("상품01")).toBeLessThan(text.indexOf("상품23"));
-  expect(text).not.toContain("상품02");
+  expect(blob.size).toBeGreaterThan(0);
+  expect(filename).toMatch(/^상품목록_\d{4}-\d{2}-\d{2}\.xlsx$/);
+  expect(sheet.rowCount).toBe(13);
+  expect(sheet.getCell("B2").value).toBe("상품01");
+  expect(sheet.getCell("B13").value).toBe("상품23");
+  expect(sheet.getColumn(2).values).not.toContain("상품02");
   expect(screen.getByRole("status", { name: "현재 상품 페이지" })).toHaveTextContent("2 / 2 페이지");
   expect(JSON.stringify(currentContext.products)).toBe(before);
 });
 
-test("CSV는 한글·따옴표·줄바꿈과 계산식처럼 보이는 상품명을 문자로 보존한다", () => {
-  const csv = createProductCsv([
+test("엑셀은 한글·따옴표·줄바꿈·수식처럼 보이는 이름을 문자로 보존하고 단가는 숫자로 저장한다", async () => {
+  const buffer = await createProductExcel([
     { ...initialProducts[0], productName: '이름, "따옴표"\n다음줄' },
     { ...initialProducts[1], productName: "=1+1" },
+    { ...initialProducts[0], id: 3, productName: "무료 상품", productPrice: 0, productCreatedAt: "2026-11-16T18:00:00.000Z" },
   ]);
-  expect(csv.charCodeAt(0)).toBe(0xFEFF);
-  expect(csv).toContain('"이름, ""따옴표""\n다음줄"');
-  expect(csv).toContain('"\'=1+1"');
-  expect(csv).toContain('"8000"');
+  const workbook = new ExcelJS.Workbook();
+  await workbook.xlsx.load(buffer);
+  const sheet = workbook.getWorksheet("상품 목록");
+  expect(sheet.getCell("B2").value).toBe('이름, "따옴표"\n다음줄');
+  expect(sheet.getCell("B3").value).toBe("=1+1");
+  expect(sheet.getCell("B3").type).toBe(ExcelJS.ValueType.String);
+  expect(sheet.getCell("B3").formula).toBeUndefined();
+  expect(sheet.getCell("C2").value).toBe(8000);
+  expect(sheet.getCell("C2").type).toBe(ExcelJS.ValueType.Number);
+  expect(sheet.getCell("C2").numFmt).toBe("#,##0");
+  expect(sheet.getCell("C4").value).toBe(0);
+  expect(sheet.getCell("E4").value).toBe("2026-11-17 03:00:00");
 });
 
-test("빈 결과에서는 내보내기를 막고 다운로드 실패 시 목록을 유지한다", () => {
+test("빈 결과에서는 내보내기를 막고 다운로드 실패 시 목록을 유지한다", async () => {
   render(<ProductPage />);
   changeInput("상품명·번호 검색", "없음");
-  expect(screen.getByRole("button", { name: "CSV 내보내기" })).toBeDisabled();
+  expect(screen.getByRole("button", { name: "엑셀 내보내기" })).toBeDisabled();
   clickButton("초기화");
   saveAs.mockImplementation(() => { throw new Error("download failed"); });
-  clickButton("CSV 내보내기");
-  expect(screen.getByRole("status", { name: "상품 처리 결과" })).toHaveTextContent("다운로드를 시작하지 못했습니다");
+  clickButton("엑셀 내보내기");
+  await waitFor(() => expect(screen.getByRole("status", { name: "상품 처리 결과" })).toHaveTextContent("다운로드를 시작하지 못했습니다"));
   expect(currentContext.products).toHaveLength(2);
 });
 

@@ -7,11 +7,14 @@
 /* beforeEach에서 저장소·공휴일 응답을 준비하고 사용자 동작 후 화면과 저장 결과를 검증합니다. */
 import React from "react";
 import userEvent from "@testing-library/user-event";
-import { act, fireEvent, render, screen, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, within, waitFor } from "@testing-library/react";
 import ScheduleManager from "./ScheduleManager";
 import ScheduleStaffWeek from "./ScheduleStaffWeek";
 import { useERP } from "../context/ERPContext";
-import { loadSchedules, mergeScheduleChanges } from "./scheduleStorage";
+import useAuthData from "../context/useAuthData";
+import { initialAccounts } from "../data/mockAccounts";
+import { initialEmployees } from "../data/mockData";
+import { loadSchedules, mergeScheduleChanges, serializeSchedules } from "./scheduleStorage";
 import ScheduleFormModal, { ScheduleListModal } from "./ScheduleFormModal";
 import { ScheduleAgendaItem, ScheduleEvent, ScheduleTimeRow } from "./ScheduleItemParts";
 import { createScheduleCopyForm, validateScheduleForm, createEmptyForm } from "./scheduleData";
@@ -19,7 +22,7 @@ import { getScheduleProjectId, findScheduleConflicts, getScheduleInterval } from
 import {
   dateKey, getTodayKey, getNextScheduleDate, getUpcomingSchedules,
   normalizeAttendees, createScheduleForm, excludeOccurrence, expandSchedules,
-  getSchedulePeople, getRepeatLabel, getScheduleTime, getRepeatSummary, getScheduleDurationFields, restoreDeletedSchedule,
+  getSchedulePeople, getRepeatLabel, getScheduleTime, getRepeatSummary, getScheduleDurationFields, restoreDeletedSchedule, getScheduleListDate,
 } from "./scheduleData";
 
 test("손상된 참석자 연결이 저장돼 있어도 회의 조회와 편집에서 오류 없이 이름을 보존한다", async () => {
@@ -153,22 +156,22 @@ test("날짜 더보기는 연동 항목을 읽기 전용으로 표시하고 견�
 
 test("내 일정 선택은 계정 전환과 로그아웃 시 해제되고 없는 부서 선택은 안내 후 초기화된다", async () => {
   const employees = [{ id: 1, name: "영업 직원", department: "영업팀" }, { id: 2, name: "생산 직원", department: "생산팀" }];
-  const erp = { employees, projects: [], currentEmployee: employees[0] };
+  const erp = { employees, projects: [], currentEmployee: employees[0], currentUser: { id: 1, employeeId: 1, status: "활성" } };
   useERP.mockReturnValue(erp);
   const view = render(<ScheduleManager />);
   const myFilter = () => screen.getByRole("checkbox", { name: "내 담당·참석 일정" });
   fireEvent.click(myFilter());
   expect(myFilter()).toBeChecked();
-  useERP.mockReturnValue({ ...erp, currentEmployee: employees[1] });
+  useERP.mockReturnValue({ ...erp, currentEmployee: employees[1], currentUser: { id: 2, employeeId: 2, status: "활성" } });
   view.rerender(<ScheduleManager />);
   expect(myFilter()).not.toBeChecked();
   fireEvent.click(myFilter());
-  useERP.mockReturnValue({ ...erp, currentEmployee: null });
+  useERP.mockReturnValue({ ...erp, currentEmployee: null, currentUser: null });
   view.rerender(<ScheduleManager />);
   expect(myFilter()).not.toBeChecked();
   expect(myFilter()).toBeDisabled();
   fireEvent.change(screen.getByRole("combobox", { name: "일정 부서 필터" }), { target: { value: "영업팀" } });
-  useERP.mockReturnValue({ ...erp, employees: [employees[1]], currentEmployee: null });
+  useERP.mockReturnValue({ ...erp, employees: [employees[1]], currentEmployee: null, currentUser: null });
   view.rerender(<ScheduleManager />);
   expect(screen.getByRole("combobox", { name: "일정 부서 필터" })).toHaveValue("");
   expect(screen.getByText("선택한 부서가 직원 목록에 없어 전체 부서로 변경했습니다.")).toBeInTheDocument();
@@ -180,7 +183,7 @@ test("로그인 직원의 담당·참석 일정과 부서 필터를 적용하고
     { id: 1, name: "영업 직원", department: "영업팀", status: "재직" },
     { id: 2, name: "생산 직원", department: "생산팀", status: "재직" },
   ];
-  useERP.mockReturnValue({ employees, projects: [], currentEmployee: employees[0] });
+  useERP.mockReturnValue({ employees, projects: [], currentEmployee: employees[0], currentUser: { id: 1, employeeId: 1, status: "활성" } });
   saveSchedules([
     makeStoredSchedule({ id: "mine", date: getTodayKey(), title: "내 담당 일정", scope: "업무용", person: "영업 직원", employeeId: 1 }),
     makeStoredSchedule({ id: "meeting", date: getTodayKey(), title: "내 참석 회의", scope: "업무용", person: "생산 직원", employeeId: 2,
@@ -466,7 +469,7 @@ test("새 일정은 새로고침 후 임시 내용을 복구하며 실제 저장
   fireEvent.change(screen.getByLabelText("일정 이름"), { target: { value: "[테스트] 새로고침 복구" } });
   fireEvent.change(screen.getByLabelText("날짜"), { target: { value: "2026-11-04" } });
   fireEvent.change(screen.getByLabelText("시작 시간"), { target: { value: "10:00" } });
-  expect(JSON.parse(sessionStorage.getItem("made-mate-schedule-draft")).form.title).toBe("[테스트] 새로고침 복구");
+  expect(JSON.parse(sessionStorage.getItem("made-mate-schedule-draft:900:802")).form.title).toBe("[테스트] 새로고침 복구");
   expect(localStorage.getItem(storageKey)).toBe(before);
   view.unmount();
   render(<ScheduleManager />);
@@ -477,9 +480,9 @@ test("새 일정은 새로고침 후 임시 내용을 복구하며 실제 저장
   const confirm = jest.spyOn(window, "confirm").mockReturnValue(false);
   fireEvent.click(screen.getByRole("button", { name: "취소", exact: true }));
   expect(confirm).toHaveBeenCalled();
-  expect(sessionStorage.getItem("made-mate-schedule-draft")).not.toBeNull();
+  expect(sessionStorage.getItem("made-mate-schedule-draft:900:802")).not.toBeNull();
   fireEvent.submit(screen.getByRole("form"));
-  expect(sessionStorage.getItem("made-mate-schedule-draft")).toBeNull();
+  expect(sessionStorage.getItem("made-mate-schedule-draft:900:802")).toBeNull();
   expect(JSON.parse(localStorage.getItem(storageKey))).toHaveLength(1);
   await act(async () => { expect(fetch).toHaveBeenCalled(); });
 });
@@ -490,24 +493,24 @@ test("닫기 확인을 취소하면 임시 보관을 유지하고 닫기를 승�
   fireEvent.click(screen.getByRole("button", { name: "일정 등록", exact: true }));
   fireEvent.change(screen.getByLabelText("일정 이름"), { target: { value: "[테스트] 임시 보관 취소" } });
   fireEvent.click(screen.getByRole("button", { name: "취소", exact: true }));
-  expect(sessionStorage.getItem("made-mate-schedule-draft")).not.toBeNull();
+  expect(sessionStorage.getItem("made-mate-schedule-draft:900:802")).not.toBeNull();
   confirm.mockReturnValue(true);
   fireEvent.click(screen.getByRole("button", { name: "취소", exact: true }));
-  expect(sessionStorage.getItem("made-mate-schedule-draft")).toBeNull();
+  expect(sessionStorage.getItem("made-mate-schedule-draft:900:802")).toBeNull();
   await act(async () => { expect(fetch).toHaveBeenCalled(); });
 });
 
 test("손상된 임시 보관은 자동 덮어쓰기 없이 안내하고 기존 일정 수정은 임시 저장하지 않는다", async () => {
-  sessionStorage.setItem("made-mate-schedule-draft", "{broken");
+  sessionStorage.setItem("made-mate-schedule-draft:900:802", "{broken");
   saveSchedules([makeSchedule({ title: "[테스트] 기존 원본" })]);
   render(<ScheduleManager />);
   expect(screen.getByRole("alert")).toHaveTextContent("임시 작성 내용을 읽지 못했습니다");
-  expect(sessionStorage.getItem("made-mate-schedule-draft")).toBe("{broken");
+  expect(sessionStorage.getItem("made-mate-schedule-draft:900:802")).toBe("{broken");
   fireEvent.click(screen.getByRole("button", { name: "임시 보관 초기화" }));
   fireEvent.click(screen.getByRole("button", { name: "전체 일정 (1)" }));
   fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "[테스트] 기존 원본 일정 수정" }));
   fireEvent.change(screen.getByLabelText("일정 이름"), { target: { value: "[테스트] 수정 중" } });
-  expect(sessionStorage.getItem("made-mate-schedule-draft")).toBeNull();
+  expect(sessionStorage.getItem("made-mate-schedule-draft:900:802")).toBeNull();
   expect(JSON.parse(localStorage.getItem(storageKey))[0].title).toBe("[테스트] 기존 원본");
   await act(async () => { expect(fetch).toHaveBeenCalled(); });
 });
@@ -695,7 +698,9 @@ test("업무의 달력·목록·상세는 같은 완료 배지를 사용하고 �
 });
 
 function makeStoredSchedule(overrides = {}) {
-  return { ...createEmptyForm(), attendees: [], id: "fixture-schedule", scope: "개인 일정용", title: "[테스트] 일정", date: "2026-11-04", ...overrides };
+  return { ...createEmptyForm(), attendees: [], id: "fixture-schedule", scope: "개인 일정용",
+    ownerAccountId: 900, ownerEmployeeId: 802,
+    title: "[테스트] 일정", date: "2026-11-04", ...overrides };
 }
 
 test("겹침 경고를 취소하면 입력과 기존 저장 자료를 유지한다", async () => {
@@ -840,11 +845,11 @@ test("회의 등록은 저장 잠금이 풀릴 때까지 폼과 초안을 유지
     fireEvent.click(screen.getByRole("button", { name: "일정 저장", exact: true }));
     expect(screen.getByRole("dialog")).toHaveTextContent("일정을 저장하는 중입니다.");
     expect(loadSchedules().items).toEqual([]);
-    expect(sessionStorage.getItem("made-mate-schedule-draft")).toContain("저장 대기 회의");
+    expect(sessionStorage.getItem("made-mate-schedule-draft:900:802")).toContain("저장 대기 회의");
     await act(async () => { jobs.shift()(); });
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     expect(loadSchedules().items[0]).toMatchObject({ title: "저장 대기 회의", attendees: ["이언우"] });
-    expect(sessionStorage.getItem("made-mate-schedule-draft")).toBeNull();
+    expect(sessionStorage.getItem("made-mate-schedule-draft:900:802")).toBeNull();
   } finally {
     if (original) Object.defineProperty(navigator, "locks", original);
     else delete navigator.locks;
@@ -1076,7 +1081,7 @@ test.each([
   const projects = mode === "삭제된 프로젝트"
     ? [{ id: 2, name: "이전 이름" }]
     : [{ id: 1, name: "새 이름" }, { id: 2, name: "다른 이름" }];
-  useERP.mockReturnValue({ projects, employees: [] });
+  useERP.mockReturnValue({ ...useERP(), projects });
   const originalProjects = JSON.stringify(projects);
   saveSchedules([makeSchedule({ scope: "업무용", category: "프로젝트", project: "이전 이름", projectId: 1 })]);
   render(<ScheduleManager />);
@@ -1148,7 +1153,11 @@ test.each(["input", "change"])("날짜·시간 %s 이벤트 후 포커스를 옮
 // 테스트 준비에서 일정의 담당자·참석자를 팀원 목록에도 미리 등록합니다.
 // 실제 앱은 기존 일정 불러오기만으로 팀원을 만들지는 않으며, 새 업무일정 저장 시 새 이름을 등록합니다.
 function saveSchedules(schedules) {
-  localStorage.setItem(storageKey, JSON.stringify(schedules));
+  // 기존 기능 검사는 로그인한 테스트 작성자의 개인 일정을 준비합니다.
+  // 소유자 미상 검사는 ownerAccountId:null을 명시해 이 기본 연결을 사용하지 않습니다.
+  const owned = schedules.map(item => item.scope === "개인 일정용" || item.visibility === "private"
+    ? { ownerAccountId: 900, ownerEmployeeId: 802, ...item } : item);
+  localStorage.setItem(storageKey, JSON.stringify(owned));
   const members = [];
   for (const schedule of schedules) {
     for (const name of getSchedulePeople(schedule)) {
@@ -1306,8 +1315,319 @@ test("monthly weekday rules repeat on the chosen ordinal weekday", () => {
     .toEqual(["2026-10-30", "2026-11-27"]);
 });
 
+test("실제 로그인 함수가 초기 계정의 이메일을 직원 일정 조회에 연결한다", async () => {
+  const base = useERP();
+  const firstAccount = initialAccounts.find(account => account.employeeId === 1);
+  const secondAccount = initialAccounts.find(account => account.employeeId === 4);
+  const firstEmployee = initialEmployees.find(employee => employee.id === firstAccount.employeeId);
+  const secondEmployee = initialEmployees.find(employee => employee.id === secondAccount.employeeId);
+  function AccountSchedule() {
+    const auth = useAuthData(initialAccounts, initialEmployees);
+    // 화면 Context만 대체하고 이메일·비밀번호 확인과 세션 갱신은 실제 로그인 훅을 사용합니다.
+    useERP.mockReturnValue({ ...base, ...auth, employees: initialEmployees });
+    return <>
+      <button onClick={() => auth.login(firstEmployee.email, firstAccount.password)}>첫 계정 로그인 검사</button>
+      <button onClick={() => auth.login(secondEmployee.email, secondAccount.password)}>둘째 계정 로그인 검사</button>
+      <button onClick={auth.logout}>계정 로그아웃 검사</button>
+      <ScheduleManager />
+    </>;
+  }
+  saveSchedules([
+    makeStoredSchedule({ id: "first", scope: "업무용", title: "첫 계정 연결 업무", date: getTodayKey(), person: firstEmployee.name, employeeId: firstEmployee.id }),
+    makeStoredSchedule({ id: "second", scope: "업무용", title: "둘째 계정 연결 업무", date: getTodayKey(), person: secondEmployee.name, employeeId: secondEmployee.id }),
+  ]);
+  render(<AccountSchedule />);
+  fireEvent.click(screen.getByRole("button", { name: "첫 계정 로그인 검사" }));
+  expect(sessionStorage.getItem("erp_current_user_id")).toBe(String(firstAccount.id));
+  fireEvent.click(screen.getByRole("checkbox", { name: "내 담당·참석 일정" }));
+  const calendar = screen.getByRole("region", { name: "일정 달력" });
+  expect(within(calendar).getAllByText("첫 계정 연결 업무").length).toBeGreaterThan(0);
+  expect(within(calendar).queryByText("둘째 계정 연결 업무")).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "둘째 계정 로그인 검사" }));
+  expect(sessionStorage.getItem("erp_current_user_id")).toBe(String(secondAccount.id));
+  expect(screen.getByRole("checkbox", { name: "내 담당·참석 일정" })).not.toBeChecked();
+  fireEvent.click(screen.getByRole("checkbox", { name: "내 담당·참석 일정" }));
+  const secondCalendar = screen.getByRole("region", { name: "일정 달력" });
+  expect(within(secondCalendar).getAllByText("둘째 계정 연결 업무").length).toBeGreaterThan(0);
+  expect(within(secondCalendar).queryByText("첫 계정 연결 업무")).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "계정 로그아웃 검사" }));
+  expect(sessionStorage.getItem("erp_current_user_id")).toBeNull();
+  expect(screen.getByRole("checkbox", { name: "내 담당·참석 일정" })).toBeDisabled();
+  await act(async () => {});
+});
+
+test("로그인 계정의 직원 번호로 달력·즐겨찾기·전체 목록을 함께 조회한다", async () => {
+  const erp = useERP();
+  // 계정 ID 999와 직원 ID 802를 다르게 두어 연결 기준을 검사합니다.
+  useERP.mockReturnValue({ ...erp, currentUser: { id: 999, employeeId: 802, status: "활성" } });
+  saveSchedules([
+    makeStoredSchedule({ id: "mine", title: "내 담당 업무", date: getTodayKey(), scope: "업무용", person: "이전 이름", employeeId: 802, isFavorite: true }),
+    makeStoredSchedule({ id: "meeting", title: "내 참석 회의", date: getTodayKey(), scope: "업무용", person: "이언우", employeeId: 803,
+      attendeeEmployees: [{ id: 802, name: "김담당" }], attendees: ["김담당"], isFavorite: true }),
+    makeStoredSchedule({ id: "other", title: "다른 직원 업무", date: getTodayKey(), scope: "업무용", person: "김담당", employeeId: 803, isFavorite: true }),
+    makeStoredSchedule({ id: "legacy", title: "이름만 있는 일정", date: getTodayKey(), scope: "업무용", person: "김담당", employeeId: null }),
+  ]);
+  render(<ScheduleManager />);
+  const raw = localStorage.getItem(storageKey);
+  fireEvent.click(screen.getByRole("checkbox", { name: "내 담당·참석 일정" }));
+  const calendar = screen.getByRole("region", { name: "일정 달력" });
+  expect(within(calendar).getAllByText("내 담당 업무").length).toBeGreaterThan(0);
+  expect(within(calendar).getAllByText("내 참석 회의").length).toBeGreaterThan(0);
+  expect(within(calendar).queryByText("다른 직원 업무")).not.toBeInTheDocument();
+  expect(within(calendar).queryByText("이름만 있는 일정")).not.toBeInTheDocument();
+  const favorites = screen.getByRole("heading", { name: "★ 즐겨찾기" }).closest("section");
+  expect(within(favorites).queryByText("다른 직원 업무")).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "전체 일정 (2)" }));
+  const list = screen.getByRole("dialog", { name: "전체 일정" });
+  expect(within(list).getByText("내 담당 업무")).toBeInTheDocument();
+  expect(within(list).getByText("내 참석 회의")).toBeInTheDocument();
+  expect(within(list).queryByText("다른 직원 업무")).not.toBeInTheDocument();
+  await act(async () => {});
+  expect(localStorage.getItem(storageKey)).toBe(raw);
+});
+
+test("계정 전환·로그아웃 시 이전 직원의 내 일정 선택을 해제한다", async () => {
+  const erp = useERP();
+  useERP.mockReturnValue({ ...erp, currentUser: { id: 1, employeeId: 802, status: "활성" } });
+  saveSchedules([
+    makeStoredSchedule({ id: "a", scope: "업무용", title: "첫 직원 업무", date: getTodayKey(), person: "김담당", employeeId: 802 }),
+    makeStoredSchedule({ id: "b", scope: "업무용", title: "둘째 직원 업무", date: getTodayKey(), person: "이언우", employeeId: 803 }),
+  ]);
+  const { rerender } = render(<ScheduleManager />);
+  fireEvent.click(screen.getByRole("checkbox", { name: "내 담당·참석 일정" }));
+  useERP.mockReturnValue({ ...erp, currentUser: { id: 2, employeeId: 803, status: "활성" } });
+  rerender(<ScheduleManager />);
+  expect(screen.getByRole("checkbox", { name: "내 담당·참석 일정" })).not.toBeChecked();
+  expect(screen.getByText(/현재 계정: 이언우/)).toBeInTheDocument();
+  fireEvent.click(screen.getByRole("checkbox", { name: "내 담당·참석 일정" }));
+  const calendar = screen.getByRole("region", { name: "일정 달력" });
+  expect(within(calendar).getAllByText("둘째 직원 업무").length).toBeGreaterThan(0);
+  expect(within(calendar).queryByText("첫 직원 업무")).not.toBeInTheDocument();
+  useERP.mockReturnValue({ ...erp, currentUser: null });
+  rerender(<ScheduleManager />);
+  expect(screen.getByRole("checkbox", { name: "내 담당·참석 일정" })).toBeDisabled();
+  expect(screen.getByRole("checkbox", { name: "내 담당·참석 일정" })).not.toBeChecked();
+  useERP.mockReturnValue({ ...erp, currentUser: { id: 1, employeeId: 802, status: "활성" } });
+  rerender(<ScheduleManager />);
+  expect(screen.getByRole("checkbox", { name: "내 담당·참석 일정" })).not.toBeChecked();
+  await act(async () => {});
+});
+
+test("로그인하지 않았거나 HR 연결이 끊긴 계정에서는 내 일정 선택을 막는다", async () => {
+  const erp = useERP();
+  useERP.mockReturnValue({ ...erp, currentUser: null });
+  const { rerender } = render(<ScheduleManager />);
+  expect(screen.getByRole("checkbox", { name: "내 담당·참석 일정" })).toBeDisabled();
+  useERP.mockReturnValue({ ...erp, currentUser: { id: 1, employeeId: 9999, status: "활성" } });
+  rerender(<ScheduleManager />);
+  expect(screen.getByRole("checkbox", { name: "내 담당·참석 일정" })).toBeDisabled();
+  await act(async () => {});
+});
+
+test("내 일정의 날짜 이동은 조회 기준을 유지하고 연동 날짜도 담당 직원으로 거른다", async () => {
+  const erp = useERP();
+  useERP.mockReturnValue({ ...erp, currentUser: { id: 1, employeeId: 802, status: "활성" },
+    projects: [
+      { id: 1, name: "내 프로젝트", managerId: 802, startDate: getTodayKey() },
+      { id: 2, name: "다른 프로젝트", managerId: 803, startDate: getTodayKey() },
+    ], tasks: [{ id: 1, projectId: 2, employeeId: 802, taskType: "검수", taskDeadline: getTodayKey() }] });
+  saveSchedules([makeStoredSchedule({ id: "own", scope: "업무용", title: "날짜 이동 업무", date: getTodayKey(), person: "김담당", employeeId: 802, isFavorite: true })]);
+  render(<ScheduleManager />);
+  fireEvent.click(screen.getByRole("checkbox", { name: "내 담당·참석 일정" }));
+  const calendar = screen.getByRole("region", { name: "일정 달력" });
+  expect(within(calendar).getAllByText("내 프로젝트 · 시작일").length).toBeGreaterThan(0);
+  expect(within(calendar).queryByText("다른 프로젝트 · 시작일")).not.toBeInTheDocument();
+  expect(within(calendar).getAllByText("다른 프로젝트 · 검수 마감").length).toBeGreaterThan(0);
+  fireEvent.click(screen.getByRole("button", { name: "날짜 이동 업무 즐겨찾기 일정으로 이동" }));
+  expect(screen.getByRole("checkbox", { name: "내 담당·참석 일정" })).toBeChecked();
+  expect(screen.getByRole("tab", { name: "일별" })).toHaveAttribute("aria-selected", "true");
+  await act(async () => {});
+});
+
+test("내 일정 필터를 꺼도 다른 계정과 소유자 미상의 개인 일정은 모든 목록에서 숨긴다", async () => {
+  saveSchedules([
+    makeStoredSchedule({ id: "mine", title: "본인 개인 약속", date: getTodayKey(), isFavorite: true }),
+    makeStoredSchedule({ id: "other", title: "다른 계정 비공개 약속", date: getTodayKey(), ownerAccountId: 901, ownerEmployeeId: 803, isFavorite: true }),
+    makeStoredSchedule({ id: "unknown", title: "소유자 미상 약속", date: getTodayKey(), ownerAccountId: null, ownerEmployeeId: null }),
+    makeStoredSchedule({ id: "private-work", title: "타 계정 개인 표시 업무", date: getTodayKey(), scope: "업무용", visibility: "private", ownerAccountId: 901, ownerEmployeeId: 803 }),
+    makeStoredSchedule({ id: "shared", title: "회사 공유 업무", date: getTodayKey(), scope: "업무용", visibility: "shared" }),
+  ]);
+  render(<ScheduleManager />);
+  expect(screen.getByRole("checkbox", { name: "내 담당·참석 일정" })).not.toBeChecked();
+  expect(screen.getAllByText("본인 개인 약속").length).toBeGreaterThan(0);
+  expect(screen.queryByText("다른 계정 비공개 약속")).not.toBeInTheDocument();
+  expect(screen.queryByText("소유자 미상 약속")).not.toBeInTheDocument();
+  expect(screen.queryByText("타 계정 개인 표시 업무")).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "전체 일정 (2)" }));
+  const list = screen.getByRole("dialog", { name: "전체 일정" });
+  expect(within(list).getByText("본인 개인 약속")).toBeInTheDocument();
+  expect(within(list).getByText("회사 공유 업무")).toBeInTheDocument();
+  expect(within(list).queryByText("다른 계정 비공개 약속")).not.toBeInTheDocument();
+  await act(async () => {});
+  expect(loadSchedules().items).toHaveLength(5);
+});
+
+test("부서 필터와 초기화를 함께 사용해도 타 계정 개인 일정은 공개하지 않는다", async () => {
+  saveSchedules([
+    makeStoredSchedule({ id: "mine-dept", title: "내 부서 개인 약속", date: getTodayKey() }),
+    makeStoredSchedule({ id: "other-dept", title: "타 계정 숨긴 약속", date: getTodayKey(), ownerAccountId: 901, ownerEmployeeId: 803 }),
+    makeStoredSchedule({ id: "shared-dept", scope: "업무용", title: "다른 부서 공유 업무", date: getTodayKey(), person: "이언우", employeeId: 803 }),
+  ]);
+  render(<ScheduleManager />);
+  fireEvent.change(screen.getByRole("combobox", { name: "일정 부서 필터" }), { target: { value: "영업팀" } });
+  expect(screen.getAllByText("내 부서 개인 약속").length).toBeGreaterThan(0);
+  expect(screen.queryByText("타 계정 숨긴 약속")).not.toBeInTheDocument();
+  expect(within(screen.getByRole("region", { name: "일정 달력" })).queryByText("다른 부서 공유 업무")).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "담당·부서 필터 초기화" }));
+  expect(screen.queryByText("타 계정 숨긴 약속")).not.toBeInTheDocument();
+  expect(screen.getAllByText("다른 부서 공유 업무").length).toBeGreaterThan(0);
+  await act(async () => {});
+  expect(loadSchedules().items).toHaveLength(3);
+});
+
+test("개인 일정 저장 시 작성 계정을 기록하고 계정 전환·복원 후에도 해당 소유자에게만 표시한다", async () => {
+  const base = useERP();
+  const { rerender, unmount } = render(<ScheduleManager />);
+  fireEvent.click(screen.getByRole("button", { name: "일정 등록", exact: true }));
+  fireEvent.click(screen.getByRole("button", { name: "개인 일정용", exact: true }));
+  fireEvent.change(screen.getByLabelText("일정 이름"), { target: { value: "작성자 전용 일정" } });
+  fireEvent.submit(screen.getByRole("form"));
+  await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+  expect(loadSchedules().items[0]).toMatchObject({ ownerAccountId: 900, ownerEmployeeId: 802 });
+  useERP.mockReturnValue({ ...base, currentUser: { id: 901, employeeId: 803, status: "활성" } });
+  rerender(<ScheduleManager />);
+  expect(screen.queryByText("작성자 전용 일정")).not.toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "전체 일정 (0)" })).toBeInTheDocument();
+  useERP.mockReturnValue(base);
+  rerender(<ScheduleManager />);
+  expect(screen.getAllByText("작성자 전용 일정").length).toBeGreaterThan(0);
+  // 수정 창이 열린 중에도 계정 변경 시 이전 내용이 즉시 닫힙니다.
+  fireEvent.click(screen.getByRole("button", { name: "전체 일정 (1)" }));
+  fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "작성자 전용 일정 일정 수정" }));
+  useERP.mockReturnValue({ ...base, currentUser: { id: 901, employeeId: 803, status: "활성" } });
+  rerender(<ScheduleManager />);
+  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  unmount();
+  useERP.mockReturnValue(base);
+  const remounted = render(<ScheduleManager />);
+  expect(screen.getAllByText("작성자 전용 일정").length).toBeGreaterThan(0);
+  useERP.mockReturnValue({ ...base, currentUser: null });
+  remounted.rerender(<ScheduleManager />);
+  expect(screen.queryByText("작성자 전용 일정")).not.toBeInTheDocument();
+  await act(async () => {});
+});
+
+test("계정을 바꾸면 작성 초안이 섞이지 않고 본인 계정으로 돌아와야 복구할 수 있다", async () => {
+  const base = useERP();
+  const { rerender } = render(<ScheduleManager />);
+  fireEvent.click(screen.getByRole("button", { name: "일정 등록", exact: true }));
+  fireEvent.click(screen.getByRole("button", { name: "개인 일정용", exact: true }));
+  fireEvent.change(screen.getByLabelText("일정 이름"), { target: { value: "첫 계정 비공개 초안" } });
+  useERP.mockReturnValue({ ...base, currentUser: { id: 901, employeeId: 803, status: "활성" } });
+  rerender(<ScheduleManager />);
+  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  expect(screen.queryByRole("complementary", { name: "임시 작성 일정" })).not.toBeInTheDocument();
+  expect(sessionStorage.getItem("made-mate-schedule-draft:900:802")).toContain("첫 계정 비공개 초안");
+  expect(sessionStorage.getItem("made-mate-schedule-draft:901:803")).toBeNull();
+  useERP.mockReturnValue(base);
+  rerender(<ScheduleManager />);
+  fireEvent.click(screen.getByRole("button", { name: "이어서 작성" }));
+  expect(screen.getByLabelText("일정 이름")).toHaveValue("첫 계정 비공개 초안");
+  await act(async () => {});
+});
+
+test("로그아웃 상태에서는 개인 일정의 등록을 차단한다", async () => {
+  useERP.mockReturnValue({ ...useERP(), currentUser: null });
+  render(<ScheduleManager />);
+  fireEvent.click(screen.getByRole("button", { name: "일정 등록", exact: true }));
+  expect(screen.getByRole("button", { name: "개인 일정용", exact: true })).toBeDisabled();
+  expect(sessionStorage.getItem("made-mate-schedule-draft:guest")).toBeNull();
+  expect(loadSchedules().items).toHaveLength(0);
+  await act(async () => {});
+});
+
+test("다른 계정의 개인 일정 알림은 표시하지 않고 해당 계정으로 로그인해야 표시한다", async () => {
+  jest.useFakeTimers("modern");
+  jest.setSystemTime(new Date("2026-11-16T08:55:00"));
+  const base = useERP();
+  saveSchedules([makeStoredSchedule({ title: "타 계정 개인 알림", date: getTodayKey(), time: "09:00", endTime: "10:00",
+    reminderMinutes: 10, ownerAccountId: 901, ownerEmployeeId: 803 })]);
+  const { rerender } = render(<ScheduleManager />);
+  expect(screen.queryByText("일정 알림", { exact: true })).not.toBeInTheDocument();
+  expect(screen.queryByText("타 계정 개인 알림", { exact: true })).not.toBeInTheDocument();
+  useERP.mockReturnValue({ ...base, currentUser: { id: 901, employeeId: 803, status: "활성" } });
+  rerender(<ScheduleManager />);
+  expect(screen.getByText("일정 알림", { exact: true })).toBeInTheDocument();
+  useERP.mockReturnValue(base);
+  rerender(<ScheduleManager />);
+  expect(screen.queryByText("일정 알림", { exact: true })).not.toBeInTheDocument();
+  await act(async () => {});
+});
+
+test("숨겨진 타 계정 개인 일정은 중복 경고에 노출하지 않고 새 저장에서도 보존한다", async () => {
+  saveSchedules([makeStoredSchedule({ id: "hidden", title: "동일 개인 일정", date: getTodayKey(), ownerAccountId: 901, ownerEmployeeId: 803 })]);
+  const confirm = jest.spyOn(window, "confirm");
+  render(<ScheduleManager />);
+  fireEvent.click(screen.getByRole("button", { name: "일정 등록", exact: true }));
+  fireEvent.click(screen.getByRole("button", { name: "개인 일정용", exact: true }));
+  fireEvent.change(screen.getByLabelText("일정 이름"), { target: { value: "동일 개인 일정" } });
+  fireEvent.submit(screen.getByRole("form"));
+  await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+  expect(confirm).not.toHaveBeenCalled();
+  expect(loadSchedules().items).toEqual(expect.arrayContaining([
+    expect.objectContaining({ id: "hidden", ownerAccountId: 901, ownerEmployeeId: 803 }),
+    expect.objectContaining({ ownerAccountId: 900, ownerEmployeeId: 802 }),
+  ]));
+});
+
+test("다른 탭 초기화는 작성창·현재 초안·삭제 되돌리기 기록을 함께 정리한다", async () => {
+  saveSchedules([makeStoredSchedule({ title: "초기화 전 삭제 일정", date: getTodayKey() })]);
+  jest.spyOn(window, "confirm").mockReturnValue(true);
+  render(<ScheduleManager />);
+  fireEvent.click(screen.getByRole("button", { name: "초기화 전 삭제 일정 일정 삭제" }));
+  await waitFor(() => expect(screen.getByRole("button", { name: "삭제 되돌리기" })).toBeEnabled());
+  fireEvent.click(screen.getByRole("button", { name: "일정 등록", exact: true }));
+  fireEvent.click(screen.getByRole("button", { name: "개인 일정용", exact: true }));
+  fireEvent.change(screen.getByLabelText("일정 이름"), { target: { value: "초기화 전 초안" } });
+  act(() => {
+    localStorage.setItem(storageKey, serializeSchedules([], "다른탭-초기화"));
+    window.dispatchEvent(new StorageEvent("storage", { key: storageKey }));
+  });
+  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: "삭제 되돌리기" })).not.toBeInTheDocument();
+  expect(screen.queryByRole("complementary", { name: "임시 작성 일정" })).not.toBeInTheDocument();
+  expect(sessionStorage.getItem("made-mate-schedule-draft:900:802")).toBeNull();
+  expect(loadSchedules().items).toHaveLength(0);
+  await act(async () => {});
+});
+
+test("담당자별 주간 보기는 본인 개인 일정을 소유 직원 행에서 보여준다", async () => {
+  saveSchedules([makeStoredSchedule({ title: "본인 주간 개인 일정", date: getTodayKey() })]);
+  render(<ScheduleManager />);
+  fireEvent.click(screen.getByRole("checkbox", { name: "내 담당·참석 일정" }));
+  fireEvent.click(screen.getByRole("tab", { name: "담당자별 주간" }));
+  const staff = screen.getByRole("region", { name: "담당자별 주간 일정표" });
+  fireEvent.click(within(staff).getByRole("button", { name: "김담당 일정 펼치기" }));
+  expect(within(staff).getAllByText("본인 주간 개인 일정").length).toBeGreaterThan(0);
+  await act(async () => {});
+});
+
+test("전체 목록 날짜는 전체 기간과 실제 다음 반복 회차·종료 여부를 구분한다", () => {
+  const item = { ...createEmptyForm(), title: "기간", date: "2026-11-30", endDate: "2026-12-01", time: "23:30", endTime: "00:30" };
+  expect(getScheduleListDate(item).dateLabel).toBe("2026.11.30 23:30 ~ 2026.12.01 00:30");
+  expect(getScheduleListDate({ ...item, isAllDay: true }).dateLabel).toBe("2026.11.30 ~ 2026.12.01 · 종일");
+  const recurring = { ...item, date: "2026-11-02", endDate: "", repeatType: "weekly", repeatInterval: 1, endTime: "23:45",
+    excludedDates: ["2026-11-16"], holidayRule: "nextWorkday" };
+  const next = getScheduleListDate(recurring, "2026-11-16", { "2026-11-23": "휴일" });
+  expect(next.displayDate).toBe("2026-11-24");
+  expect(next.basisLabel).toBe("반복 기준일 · 2026.11.02");
+  expect(getScheduleListDate({ ...recurring, repeatEndType: "count", repeatCount: 2 }, "2026-11-16").dateLabel).toBe("남은 회차 없음");
+  const morning = { ...recurring, time: "09:00", endTime: "10:00", excludedDates: [], holidayRule: "keep" };
+  expect(getScheduleListDate(morning, "2026-11-16", {}, new Date("2026-11-16T12:00:00").getTime()).displayDate).toBe("2026-11-23");
+});
+
 beforeEach(() => {
-  useERP.mockReturnValue({ projects: [], employees: [
+  useERP.mockReturnValue({ projects: [], currentUser: { id: 900, employeeId: 802, status: "활성" }, employees: [
     { id: 801, name: "담당자", department: "생산관리팀", position: "사원", status: "재직" },
     { id: 802, name: "김담당", department: "영업팀", position: "대리", status: "재직" },
     { id: 803, name: "이언우", department: "경영지원팀", position: "과장", status: "재직" },
@@ -2196,7 +2516,8 @@ test("남은 회차가 없는 반복은 기준 날짜를 다음 회차로 표시
   const item = makeSchedule({ title: "종료된 반복", date: "2026-11-01", repeatType: "weekly", repeatEndType: "count", repeatCount: 1 });
   render(<ScheduleListModal items={[item]} totalCount={1} onClose={() => {}} />);
   const row = screen.getByRole("button", { name: "종료된 반복 일정 수정" });
-  expect(row).toHaveTextContent("남은 회차 없음 · 기준일 · 2026.11.01");
+  expect(row).toHaveTextContent("남은 회차 없음");
+  expect(row).toHaveTextContent("반복 기준일 · 2026.11.01");
   expect(row).not.toHaveTextContent("다음 회차");
 });
 

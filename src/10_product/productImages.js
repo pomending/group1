@@ -55,7 +55,11 @@ const previousImageFiles = {
 
 export function findProductImage(value) {
   if (typeof value !== "string") return undefined;
-  const savedId = value.startsWith("catalog:") ? value.slice("catalog:".length) : value;
-  const id = value.startsWith("catalog:") ? (previousImageFiles[savedId] || savedId) : savedId;
+  let id = value;
+  if (value.startsWith("catalog:")) {
+    id = value.slice("catalog:".length);
+    // 이전 선택 이름만 파일명으로 바꿉니다. 기본 이미지 파일명은 그대로 찾습니다.
+    id = previousImageFiles[id] || id;
+  }
   return productImages.find(item => item.id === id);
 }

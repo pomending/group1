@@ -17,7 +17,7 @@ export function getQuotationPriceDetails(quotation) {
         : [];
 
     const optionUnitPrice = options.reduce(
-        (sum, option) => sum + Number(option.unitPrice ?? 0),
+        (sum, option) => sum + Number(option.unitPrice || 0),
         0
     );
 
