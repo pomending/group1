@@ -417,7 +417,7 @@
 
 /* 등록된 작업 목록 */
 .td-task-list {
-  margin-top: 80px;
+  margin: 40px 25px 0px 25px;
   padding-top: 25px;
   border-top: 1px solid #e5e7eb;
 }
@@ -427,6 +427,7 @@
   justify-content: space-between;
   align-items: center;
   margin-bottom: 18px;
+ 
 }
 
 .td-task-list-header h4 {
@@ -775,4 +776,131 @@
   color: #9690A5;
   cursor: not-allowed;
   background: #E9E7EF;
+}
+
+
+
+/* 아코디언 전체 */
+.task-accordion-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* 프로젝트 영역 */
+.task-accordion {
+  border: 1px solid #e5e5ef;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #fff;
+}
+
+/* 프로젝트 제목 버튼 */
+.task-accordion-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 20px;
+  border: none;
+  background: #f8f8fc;
+  cursor: pointer;
+  text-align: left;
+}
+
+.task-accordion-header:hover {
+  background: #f0eff9;
+}
+
+/* 프로젝트 정보 */
+.task-project-info {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.task-project-number {
+  color: #5266bd;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.task-project-info strong {
+  font-size: 14px;
+  color: #333;
+}
+
+.task-count {
+  color: #888;
+  font-size: 12px;
+}
+
+.accordion-arrow {
+  color: #666;
+  font-size: 12px;
+}
+
+/* 펼쳐지는 영역 */
+.task-accordion-content {
+  padding: 15px 20px;
+}
+
+/* 항목 제목 */
+.task-accordion-label {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 12px;
+  padding: 8px 0;
+  color: #777;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* 개별 작업 */
+.task-accordion-item {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 12px;
+  padding: 9px 0;
+  border-top: 1px solid #eee;
+}
+
+/* 선택 박스 */
+.task-accordion-item select {
+  width: 100%;
+  min-width: 0;
+  padding: 9px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  background: #fff;
+  font-size: 13px;
+  color: #333;
+}
+
+.task-accordion-item select:focus {
+  outline: none;
+  border-color: #647ff5;
+}
+
+/* 작업 없음 */
+.task-empty {
+  padding: 40px;
+  text-align: center;
+  color: #888;
+}
+
+@media (max-width: 600px) {
+  .task-project-info {
+      flex-wrap: wrap;
+      gap: 8px;
+  }
+
+  .task-accordion-content {
+      padding: 10px;
+  }
+
+  .task-accordion-item,
+  .task-accordion-label {
+      gap: 5px;
+  }
 }
