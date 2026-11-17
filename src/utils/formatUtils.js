@@ -7,7 +7,7 @@ export const formatProjectId = (id) => {
 }
 
 export const formatPrice = (price) => {
-    return `${price.toLocaleString()}원`;
+    return `${Number(price || 0).toLocaleString()}원`;
 }
 
 export function formatEmployeeId(id) {

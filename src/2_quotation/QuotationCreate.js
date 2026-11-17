@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import "./QuotationCreate.css"
 import { useLocation, useNavigate } from "react-router-dom";
 import { useERP } from "../context/ERPContext";
-import { formatQuotationId, formatEmployeeId } from "../utils/formatUtils";
+import { formatPrice, formatQuotationId, formatEmployeeId } from "../utils/formatUtils";
 import { totalPrice as calculateTotalPrice, getQuotationPriceDetails } from "../utils/quotationUtils";
 
 function QuotationCreate() {
@@ -47,11 +47,20 @@ function QuotationCreate() {
         employee.department === "영업팀" &&
         employee.name.includes(employeeSearch))
 
+    //기존 견적서 수정
+    const editId = location.state?.editId;
+    const editQuotation = quotations.find(q => q.id === Number(editId));
 
     const quotationRequests = consultations.filter(consultation =>
         consultation.status === "견적 요청" &&
-        customers.some(customer => customer.id === consultation.customerId)
-    );
+        customers.some(customer => Number(customer.id) === Number(consultation.customerId))
+        &&
+        !quotations.some(quotation =>
+            quotation.consultationId != null &&
+            Number(quotation.consultationId) === Number(consultation.id) &&
+            Number(quotation.id) !== Number(editQuotation?.id)
+        ));
+
 
     //판매중인 상품 검색
     const filteredProducts = products.filter((product) =>
@@ -74,7 +83,7 @@ function QuotationCreate() {
     });
 
     //옵션 추가 단가
-    const optionUnitPrice =priceDetails.optionUnitPrice;
+    const optionUnitPrice = priceDetails.optionUnitPrice;
 
     //옵션 포함 최종 단가
     const finalUnitPrice = priceDetails.finalUnitPrice;
@@ -93,12 +102,13 @@ function QuotationCreate() {
 
 
     const fromDetail = location.state?.fromDetail;
-    const editId = location.state?.editId;
-    const editQuotation = quotations.find(q => q.id === Number(editId));
+
     const existingCustomer = customers.find(c => c.id === editQuotation?.customerId);
-    const selectedConsultation = quotationRequests.find(
+
+    const selectedConsultation = consultations.find(
         consultation => consultation.id === Number(consultationId)
     );
+
     const selectedCustomer = consultationId === "existing"
         ? existingCustomer
         : customers.find(customer => customer.id === selectedConsultation?.customerId);
@@ -156,11 +166,11 @@ function QuotationCreate() {
 
         const newQuotation = {
             ...(editQuotation ? { id: editQuotation.id } : {}),
+            consultationId: selectedConsultation?.id ?? editQuotation?.consultationId ?? null,
             customerId: selectedCustomer ? Number(selectedCustomer.id) : null,
             productId: productId ? Number(productId) : null,
             employeeId: employeeId ? Number(employeeId) : null,
             quantity: quantity === "" ? 0 : Number(quantity),
-            // unitPrice: unitPrice === "" ? 0 : Number(unitPrice),
             baseUnitPrice: baseUnitPrice === "" ? 0 : Number(baseUnitPrice),
             options: options.map(option => ({
                 name: option.name,
@@ -211,7 +221,9 @@ function QuotationCreate() {
         if (!editQuotation) return;
 
         setConsultationId(
-            editQuotation.customerId ? "existing" : ""
+            editQuotation.consultationId != null
+                ? String(editQuotation.consultationId)
+                : editQuotation.customerId ? "existing" : ""
         )
 
         setProductId(editQuotation.productId || "");
@@ -381,6 +393,16 @@ function QuotationCreate() {
                                 readOnly
                             />
                         </div>
+
+                        <div className="form-group">
+                            <label>상담 요청 메모</label>
+                            <textarea
+                                value={selectedConsultation?.memo || ""}
+                                placeholder="상담 신청을 선택하면 메모가 표시됩니다."
+                                readOnly
+                            />
+                        </div>
+
                     </div>
                 </section>
 
@@ -457,18 +479,18 @@ function QuotationCreate() {
                         <div className="form-group">
                             <label>기본 단가 (원)</label>
                             <input
-                                type="number"
+                                type="text"
                                 className="readonly-input"
                                 placeholder="상품 선택 시 자동 입력"
-                                value={baseUnitPrice}
+                                value={formatPrice(baseUnitPrice)}
                                 readOnly />
                         </div>
 
                         <div className="form-group">
                             <label>옵션 추가 단가 (원)</label>
                             <input
-                                type="number"
-                                value={optionUnitPrice}
+                                type="text"
+                                value={formatPrice(optionUnitPrice)}
                                 readOnly
                                 className="readonly-input"
                             />
@@ -477,8 +499,8 @@ function QuotationCreate() {
                         <div className="form-group">
                             <label>옵션 포함 최종 단가 (원)</label>
                             <input
-                                type="number"
-                                value={finalUnitPrice}
+                                type="text"
+                                value={formatPrice(finalUnitPrice)}
                                 readOnly
                                 className="readonly-input"
                             />
@@ -487,9 +509,9 @@ function QuotationCreate() {
                         <div className="form-group">
                             <p>상품 총 금액 (원)</p>
                             <input
-                                type="number"
+                                type="text"
                                 placeholder="자동 계산"
-                                value={totalPrice}
+                                value={formatPrice(totalPrice)}
                                 readOnly
                                 className="readonly-input"
                             />

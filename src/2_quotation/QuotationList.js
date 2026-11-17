@@ -11,7 +11,8 @@ function QuotationList() {
         quotations,
         customers,
         products,
-        deleteQuotation
+        deleteQuotation,
+        consultations
     } = useERP()
 
     const navi = useNavigate();
@@ -48,7 +49,7 @@ function QuotationList() {
         setCurrentPage(1);
     }
 
-    //초기화 버튼 클릭
+    //검색 초기화 버튼 클릭
     const handleReset = () => {
         setSearch("");
         setStartDate("");
@@ -62,6 +63,8 @@ function QuotationList() {
 
         setCurrentPage(1);
     }
+
+    
 
     const [sortOrder, setSortOrder] = useState("latest");
 
