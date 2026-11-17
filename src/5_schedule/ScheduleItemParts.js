@@ -1,5 +1,5 @@
 /* [파일 안내] 일정 카드·배지·즐겨찾기·동작 버튼 공통 부품
- * 사용처: Calendar·Sidebar·FormModal·StaffWeek·Directory
+ * 사용처: Calendar·Sidebar·FormModal·StaffWeek
  * 입력: 일정 item과 부모에서 받은 콜백
  * 출력: 선택·즐겨찾기·수정·삭제·상태 변경 요청을 부모로 전달합니다.
  * 화면 모양은 scheduleStyles.css의 같은 sm- 클래스에서 수정합니다.

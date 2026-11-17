@@ -3,12 +3,12 @@ import "./02_ConsultationManagement.css";
 import { useERP } from "../context/ERPContext";
 import {
     validateCompanyName, validateConsultation, validateCustomerManager, validateDuplicateConsultation,
-    validateEmail, validateMemo, validatePhone, formatPhone
+    validateEmail, validatePhone, formatPhone
 } from "../utils/consultationUtils";
 
 
 function ConsultationManagement() {
-    //문의목록을 관리할 usestate
+    
     const { consultations, addConsultation, updateConsultation,
         deleteConsultations, employees, customers, addCustomer,
         saveEditedCustomer, claims, validateConsultationEmployee
@@ -47,7 +47,6 @@ function ConsultationManagement() {
         setEditData(selectedConsultation);
         alert("문의 상세정보를 불러왔습니다.\n상단에서 내용을 확인하거나 수정할 수 있습니다.");
 
-
     }
 
     const saveConsultation = () => {
@@ -67,9 +66,6 @@ function ConsultationManagement() {
             return;
         }
         if (!validateCustomerManager(editData.customerManager)) {
-            return;
-        }
-        if (!validateMemo(editData.memo)) {
             return;
         }
         if (!validateDuplicateConsultation(editData, consultations)) {

@@ -1,10 +1,45 @@
-import { createProjectMilestones, createQuotationMilestones, matchesScheduleStaff, resolveScheduleProject, getScheduleProjectWarning } from "./ScheduleProjectBridge";
+import { createProjectMilestones, createTaskMilestones, createQuotationMilestones, matchesScheduleStaff, resolveScheduleProject, getScheduleProjectWarning, matchesScheduleEmployee, canViewSchedule } from "./ScheduleProjectBridge";
+
 import { createScheduleForm } from "./scheduleData";
 
 const projects = [{
   id: 1, name: "표시 확인", managerId: 20,
   startDate: "2026-11-04", dueDate: "2026-11-06",
 }];
+
+test("개인 일정은 작성 계정·직원 연결이 모두 같아야 조회하고 소유자 미상은 숨긴다", () => {
+  const account = { id: 7, employeeId: 20, status: "활성" };
+  const employee = { id: 20 };
+  const item = { scope: "개인 일정용", visibility: "shared", ownerAccountId: 7, ownerEmployeeId: 20 };
+  expect(canViewSchedule(item, account, employee)).toBe(true);
+  expect(canViewSchedule(item, { ...account, id: 8 }, employee)).toBe(false);
+  expect(canViewSchedule(item, account, { id: 21 })).toBe(false);
+  expect(canViewSchedule(item, null, null)).toBe(false);
+  expect(canViewSchedule({ scope: "개인 일정용" }, account, employee)).toBe(false);
+  expect(canViewSchedule({ ...item, ownerAccountId: "7" }, account, employee)).toBe(false);
+  expect(canViewSchedule({ ...item, scope: "업무용", visibility: "private" }, account, employee)).toBe(true);
+  expect(canViewSchedule({ ...item, scope: "업무용", visibility: "private" }, { ...account, id: 8 }, employee)).toBe(false);
+  expect(canViewSchedule({ scope: "업무용", visibility: "shared" }, null, null)).toBe(true);
+  expect(matchesScheduleEmployee(item, 20)).toBe(true);
+});
+
+test("내 일정은 이름 대신 담당자·참석자 직원 번호로 확인한다", () => {
+  expect(matchesScheduleEmployee({ employeeId: 20, person: "변경 전 이름" }, "20")).toBe(true);
+  expect(matchesScheduleEmployee({ employeeId: 21, person: "동일 이름" }, 20)).toBe(false);
+  expect(matchesScheduleEmployee({ employeeId: 21, attendeeEmployees: [{ id: 20, name: "참석자" }] }, 20)).toBe(true);
+  expect(matchesScheduleEmployee({ person: "동일 이름", attendees: ["동일 이름"] }, 20)).toBe(false);
+  expect(matchesScheduleEmployee({ attendeeEmployees: {} }, 20)).toBe(false);
+  expect(matchesScheduleEmployee({ employeeId: 20 }, null)).toBe(false);
+});
+
+test("읽기 전용 프로젝트·작업 마감은 각 원본 담당 직원 번호로 내 일정과 연결한다", () => {
+  const projectDates = createProjectMilestones(projects, [{ id: 20, name: "담당자" }]);
+  expect(projectDates.every(item => matchesScheduleEmployee(item, 20))).toBe(true);
+  expect(projectDates.every(item => !matchesScheduleEmployee(item, 21))).toBe(true);
+  const task = createTaskMilestones([{ id: 1, projectId: 1, employeeId: 21, taskDeadline: "2026-11-06" }], projects, []);
+  expect(matchesScheduleEmployee(task[0], 21)).toBe(true);
+  expect(matchesScheduleEmployee(task[0], 20)).toBe(false);
+});
 
 test("프로젝트 완료 상태는 읽기 전용 일정에도 반영하고 원본을 보존한다", () => {
   const source = [{ ...projects[0], status: "완료" }, { ...projects[0], id: 2, status: "진행 중" }];
@@ -35,6 +70,7 @@ test("견적 유효기간은 잘못된 날짜를 제외하고 고객과 담당�
   expect(result[0]).toMatchObject({ date: "2026-11-15", employeeId: 2, isQuotationExpiry: true });
   expect(result[0].title).toContain("테스트 고객");
   expect(JSON.stringify(quotes)).toBe(before);
+
 });
 
 test("끊긴 ID·재사용된 ID·동명 연결만 안내하고 원본은 바꾸지 않는다", () => {

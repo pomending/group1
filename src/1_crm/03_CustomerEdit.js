@@ -3,14 +3,9 @@ import "./03_CustomerForm.css";
 import React, { useState } from "react";
 import { useERP } from "../context/ERPContext";
 import {
-    formatBusinessNumber, validateBusinessNumber,
-    validateCustomer, validateDuplicateBusinessNumber
+    formatBusinessNumber
 } from "../utils/customerUtils";
-import {
-    validatePhone, formatPhone,
-    validateEmail, validateCompanyName,
-    validateCustomerManager, validateMemo
-} from "../utils/consultationUtils";
+import { formatPhone } from "../utils/consultationUtils";
 
 function CustomerEdit({ customerId, onClose }) {
 
@@ -34,50 +29,17 @@ function CustomerEdit({ customerId, onClose }) {
         );
     }
 
-
     function updateCustomer(e) {
         e.preventDefault();
-
-        if (!validateBusinessNumber(EditingCustomerData.businessNumber)) {
-            return;
-        }
-        if (!validateDuplicateBusinessNumber(EditingCustomerData.businessNumber, customers, EditingCustomerData.id)) {
-            return;
-        }
-
-        if (!validateCustomer(EditingCustomerData)) {
-            return;
-        }
-
-        if (EditingCustomerData.employeeId == null || EditingCustomerData.employeeId === "") {
-            alert(" 담당자를 확인해주세요.");
-            return;
-        }
-        if (!validatePhone(EditingCustomerData.phone)) {
-            return;
-
-        }
-
-        if (!validateEmail(EditingCustomerData.email)) {
-            return;
-        }
-        if (!validateCompanyName(EditingCustomerData.companyName)) {
-            return;
-        }
-        if (!validateCustomerManager(EditingCustomerData.customerManager)) {
-            return;
-        }
-        if (!validateMemo(EditingCustomerData.memo)) {
-            return;
-        }
-
+    
+        // ERPContext에서 고객 정보 유효성 검사
         const result = saveEditedCustomer(EditingCustomerData);
-
+    
         if (!result.ok) {
             alert(result.message);
             return;
         }
-
+    
         alert("고객의 정보가 수정되었습니다.");
         onClose();
     }

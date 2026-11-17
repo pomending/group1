@@ -289,3 +289,8 @@ body {
         padding-right: 45px;
     }
 }
+/* 상품 등록·수정 카드만 가운데 정렬 */
+.pd-app .pd-panel:has(> .pd-form) {
+    max-width: 724px;
+    margin: 0 auto;
+}

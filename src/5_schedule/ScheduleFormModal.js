@@ -10,8 +10,9 @@ import React, { useLayoutEffect, useRef, useState } from "react";
 import { ScheduleAgendaItem, ScheduleFavorite, ScheduleAttendees, ScheduleVisibility, ScheduleStatus } from "./ScheduleItemParts";
 import {
   compareSchedules,
-  getScheduleTime,
-  getUpcomingSchedules,
+  getScheduleListDate,
+  getTodayKey,
+
   getRepeatLabel,
   getRepeatEndLabel,
   getRepeatSummary,
@@ -30,6 +31,7 @@ import {
 export default function ScheduleFormModal({
   form,
   saving = false,
+  canCreatePrivate = true,
   employees = [],
   originalAssignee = null,
   onSelectAssignee,
@@ -59,7 +61,9 @@ export default function ScheduleFormModal({
     if (details) details.open = true;
   }, [fieldError]);
   function canDiscardChanges() {
-    return (!isRestoredDraft && JSON.stringify(form) === initialFormRef.current) || window.confirm("작성 중인 변경 내용을 저장하지 않고 닫을까요?");
+    const unchanged = JSON.stringify(form) === initialFormRef.current;
+    if (!isRestoredDraft && unchanged) return true;
+    return window.confirm("작성 중인 변경 내용을 저장하지 않고 닫을까요?");
   }
   // 입력이 처음 값과 다르거나 임시 보관을 복구한 폼이면 폐기를 확인합니다. 복구한 내용은 변경하지 않았어도 확인합니다.
   // 실제 저장·삭제와 폼 닫기는 부모 콜백에서 처리합니다.
@@ -76,12 +80,16 @@ export default function ScheduleFormModal({
 
   const selectedAttendees = normalizeAttendees(form.attendees);
   const selectedStaff = form.attendeeEmployees || [];
-  const attendeeDepartments = new Map();
+  const attendeeDepartments = [];
   for (const employee of employees) {
     if (employee.status !== "재직") continue;
     const department = employee.department || "부서 미지정";
-    if (!attendeeDepartments.has(department)) attendeeDepartments.set(department, []);
-    attendeeDepartments.get(department).push(employee);
+    let group = attendeeDepartments.find(group => group.department === department);
+    if (!group) {
+      group = { department, staff: [] };
+      attendeeDepartments.push(group);
+    }
+    group.staff.push(employee);
   }
   const unavailableAttendees = selectedStaff.filter(person =>
     !employees.some(employee => employee.id === person.id && employee.status === "재직")
@@ -130,6 +138,7 @@ export default function ScheduleFormModal({
           <div className="sm-category-tabs" role="group" aria-label="일정 종류" {...fieldErrorProps(fieldError, "scope")}>
             {scheduleScopes.map(scope => (
               <button type="button" key={scope}
+                disabled={scope === "개인 일정용" && !canCreatePrivate}
                 aria-pressed={form.scope === scope}
                 className={form.scope === scope ? "sm-category-tab active" : "sm-category-tab"}
                 onClick={() => selectScope(scope)}>
@@ -139,6 +148,7 @@ export default function ScheduleFormModal({
           </div>
         </div>
         <ScheduleFieldError error={fieldError} fields={["scope"]} />
+        {!canCreatePrivate && <p className="sm-form-note sm-form-wide">개인 일정과 개인 표시는 로그인 후 사용할 수 있습니다.</p>}
         <label className="sm-form-wide">
           일정 이름
           <input name="title" value={form.title} onChange={onChange} autoFocus required maxLength={80} {...fieldErrorProps(fieldError, "title")} />
@@ -214,7 +224,7 @@ export default function ScheduleFormModal({
           <fieldset className="sm-team-options sm-form-wide sm-meeting-attendees">
             <legend>참석자 추가</legend>
             <p className="sm-form-note">부서별로 재직 직원을 선택하세요.</p>
-            {[...attendeeDepartments].map(([department, staff]) => (
+            {attendeeDepartments.map(({ department, staff }) => (
               <fieldset className="sm-team-options" key={department}>
                 <legend>{department} · {staff.length}명</legend>
                 {staff.map(employee => (
@@ -239,7 +249,7 @@ export default function ScheduleFormModal({
                 {employee.name} · 기존 직원
               </label>
             ))}
-            {attendeeDepartments.size === 0 && <p className="sm-form-note">선택할 수 있는 재직 직원이 없습니다.</p>}
+            {attendeeDepartments.length === 0 && <p className="sm-form-note">선택할 수 있는 재직 직원이 없습니다.</p>}
           </fieldset>
         )}
         {form.scope === "업무용" && <label className="sm-form-wide">일정 상태
@@ -266,7 +276,7 @@ export default function ScheduleFormModal({
         </label>
         <ScheduleFieldError error={fieldError} fields={["description"]} />
         {/* 기본 입력 뒤에 선택 설정을 둡니다. 공유 구분·종일·알림은 신규와 수정에서 변경할 수 있습니다. */}
-        <ScheduleExtraSettings form={form} onChange={onChange} isOccurrence={isOccurrence} fieldError={fieldError} />
+        <ScheduleExtraSettings form={form} onChange={onChange} isOccurrence={isOccurrence} fieldError={fieldError} canCreatePrivate={canCreatePrivate} />
         {!isOccurrence && form.repeatType !== "none" && <p className="sm-repeat-summary sm-form-wide" aria-label="반복 설정 요약">{getRepeatSummary(form)}</p>}
         {isOccurrence && <p className="sm-form-note sm-form-wide">선택한 날짜의 일정만 수정합니다. 다른 반복 일정은 유지됩니다.</p>}
         {/* 취소는 type=button이라 제출하지 않습니다. 저장은 submit이라 form의 onSubmit을 실행합니다.
@@ -321,7 +331,7 @@ function ScheduleDateTimeFields({ form, onChange, fieldError }) {
 }
 
 // 종일·기간·알림·공유 구분·반복 규칙을 한 구역에서 관리합니다. 별도 상태를 복제하지 않습니다.
-function ScheduleExtraSettings({ form, onChange, isOccurrence, fieldError }) {
+function ScheduleExtraSettings({ form, onChange, isOccurrence, fieldError, canCreatePrivate }) {
   const repeatValue = form.repeatType + ":" + form.repeatInterval;
   // 사용자 지정 간격을 수정 없이 저장해도 기존 규칙이 바뀌지 않도록 선택지에 남깁니다.
   const commonRepeat = ["none:1", "weekly:1", "weekly:2", "monthly:1"].includes(repeatValue);
@@ -344,8 +354,9 @@ function ScheduleExtraSettings({ form, onChange, isOccurrence, fieldError }) {
         </select>
       </label>
       <label>공유 구분
-        <select name="visibility" value={form.visibility} onChange={onChange} {...fieldErrorProps(fieldError, "visibility")}>
-          <option value="shared">회사 공유</option><option value="private">개인 표시</option>
+        <select name="visibility" value={form.scope === "개인 일정용" ? "private" : form.visibility}
+          disabled={form.scope === "개인 일정용"} onChange={onChange} {...fieldErrorProps(fieldError, "visibility")}>
+          <option value="shared">회사 공유</option><option value="private" disabled={!canCreatePrivate}>개인 표시</option>
         </select>
       </label>
       {!isOccurrence && <label className={form.repeatType === "none" ? "sm-extra-field-wide" : ""}>반복 설정
@@ -410,7 +421,8 @@ function ScheduleExtraSettings({ form, onChange, isOccurrence, fieldError }) {
       )}
     </div>
     <ScheduleFieldError error={fieldError} fields={["endDate", "repeatInterval", "repeatEndDate", "repeatCount", "isAllDay", "reminderMinutes", "visibility", "repeatEndType", "holidayRule", "monthlyRule", "monthlyOrdinal", "monthlyWeekday"]} />
-    <p className="sm-form-note">일정 종류와 공유 구분은 별개입니다. 공유 구분은 표시·필터 용도이며 현재 열람 권한을 제한하지 않습니다.</p>
+    <p className="sm-form-note">개인 일정과 개인 표시는 작성 계정에서만 확인할 수 있습니다.</p>
+    {!canCreatePrivate && <p className="sm-form-note">개인 일정을 등록하려면 로그인해 주세요.</p>}
     {form.repeatType !== "none" && form.repeatEndType === "count" && <p className="sm-form-note">횟수는 규칙상 발생 횟수입니다. 휴일로 건너뛰거나 삭제한 회차도 포함합니다.</p>}
     {form.repeatType !== "none" && form.repeatEndType === "until" && <p className="sm-form-note">이동 전 규칙 날짜가 종료일 이내인 회차까지 포함합니다. 휴일 이동 결과는 종료일을 넘을 수 있습니다.</p>}
     {form.repeatType === "monthly" && form.monthlyRule === "weekday" && (
@@ -467,34 +479,18 @@ export function ScheduleListModal({
   useLayoutEffect(() => { setPage(current => Math.min(current, pageCount)); }, [pageCount]);
   useLayoutEffect(() => { setPage(1); }, [filterDate, statusFilter]);
   useLayoutEffect(() => { if (listContentRef.current) listContentRef.current.scrollTop = 0; }, [currentPage, sortOrder, filterDate, statusFilter]);
-  // 전체 목록은 실제 다음 회차를 표시하고, 기준일은 별도로 안내합니다.
-  // 날짜 더보기는 이미 펼쳐진 회차를 받으므로 해당 날짜를 그대로 표시합니다.
+  const todayKey = getTodayKey();
   const createListEntry = (item) => {
-    const isRecurring = ["weekly", "monthly"].includes(item.repeatType);
-    // 완료 상태여도 반복 날짜는 계산합니다. 복사한 객체만 사용해 원본 상태는 바꾸지 않습니다.
-    const nextOccurrence = isRecurring && !filterDate
-      ? getUpcomingSchedules([{ ...item, status: "pending" }], Date.now(), 1, undefined, holidayDates)[0]
-      : null;
-    const displayDate = nextOccurrence?.date || item.date;
-    let dateLabel = `${displayDate.replaceAll("-", ".")} · ${getScheduleTime(nextOccurrence || item)}`;
-    let basisLabel = "";
-    if (isRecurring && !filterDate) {
-      dateLabel = `${nextOccurrence ? "다음 회차" : "남은 회차 없음 · 기준일"} · ${dateLabel}`;
-      if (nextOccurrence) basisLabel = `반복 기준일 · ${item.date.replaceAll("-", ".")}`;
-    } else if (!filterDate && item.endDate > item.date) {
-      const start = item.date.replaceAll("-", ".");
-      const end = item.endDate.replaceAll("-", ".");
-      dateLabel = item.isAllDay
-        ? `${start} ~ ${end} · 종일`
-        : `${start} ${item.time} ~ ${end} ${item.endTime || "17:00"}`;
-    }
+    const dateInfo = getScheduleListDate(item, todayKey, holidayDates, filterDate ? null : Date.now());
+
     // 표시 문구를 여기서 완성해 JSX에서는 배치만 담당하도록 합니다.
     const category = item.category === "프로젝트" ? "업무" : item.category || "업무";
     const detailLabel = item.scope === "개인 일정용"
       ? "개인 일정용"
       : [category, item.project || item.person].filter(Boolean).join(" · ");
 
-    return { item, displayDate, dateLabel, basisLabel, detailLabel };
+    return { item, ...dateInfo, detailLabel };
+
   };
   // 날짜 계산 결과를 항목에 함께 담아 정렬과 화면 표시에서 재사용합니다.
   const sortedItems = matchingItems
@@ -561,6 +557,7 @@ export function ScheduleListModal({
               item.isProjectMilestone
               ? <ScheduleAgendaItem key={item.id} item={item} />
               :
+
               <article className="sm-list-item" key={item.id}>
                 {/* 목록 제목은 item을 그대로 전달해 수정 창을 엽니다. 별 버튼은 즐겨찾기만 바꿉니다. */}
                 <button

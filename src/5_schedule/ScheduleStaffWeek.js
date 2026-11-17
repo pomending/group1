@@ -35,7 +35,7 @@ export default function ScheduleStaffWeek({
   onToggleFavorite,
 }) {
   const rows = [];
-  const entries = items.map(item => ({ item, participants: getScheduleParticipants(item) }));
+  const entries = items.map(item => ({ item, participants: getScheduleParticipants(item, employees) }));
   for (const name of people) {
     const matching = [];
     for (const entry of entries) {
@@ -79,13 +79,12 @@ export default function ScheduleStaffWeek({
   }
 
   if (!people.length) {
+    let emptyMessage = "등록된 팀원이 없습니다. 팀원 목록에서 먼저 등록해 주세요.";
+    if (personSearch) emptyMessage = "검색한 이름과 일치하는 팀원이 없습니다. 검색어를 변경해 주세요.";
+    else if (hasActiveFilter) emptyMessage = "현재 조건에 표시할 팀원이 없습니다. 검색어나 필터를 변경해 주세요.";
     return (
       <p className="sm-empty">
-        {personSearch
-          ? "검색한 이름과 일치하는 팀원이 없습니다. 검색어를 변경해 주세요."
-          : hasActiveFilter
-            ? "현재 조건에 표시할 팀원이 없습니다. 검색어나 필터를 변경해 주세요."
-            : "등록된 팀원이 없습니다. 팀원 목록에서 먼저 등록해 주세요."}
+        {emptyMessage}
       </p>
     );
   }

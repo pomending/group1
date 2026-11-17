@@ -1,3 +1,5 @@
+import { isValidDate } from "./dateUtils";
+
 //견적 상태
 export const QUOTATION_STATUS = ["승인 대기", "승인 완료", "반려"]
 
@@ -15,7 +17,7 @@ export function getQuotationPriceDetails(quotation) {
         : [];
 
     const optionUnitPrice = options.reduce(
-        (sum, option) => sum + Number(option.unitPrice ?? 0),
+        (sum, option) => sum + Number(option.unitPrice || 0),
         0
     );
 
@@ -110,21 +112,41 @@ export const validateQuotation = (quotation) => {
         return { ok: false, message: "견적 유효기간을 입력해주세요." }
     }
 
-    //견적 유효기간 날짜 검사
-    if (quotation.validUntil < quotation.createdAt) {
-        return { ok: false, message: "견적 유효기간은 작성일 이후여야 합니다." }
-    }
+    
 
     //납품 예정일 필수 입력 검사
     if (!quotation.deliveryDate) {
         return { ok: false, message: "납품 예정일을 입력해주세요." }
     }
 
+    const dateFields = [
+        { key: "createdAt", label: "작성일" },
+        { key: "validUntil", label: "유효기간" },
+        { key: "deliveryDate", label: "납품일" }
+    ];
+    
+    const invalidDate = dateFields.find(
+        field => !isValidDate(quotation[field.key])
+    );
+    
+    if (invalidDate) {
+        return {
+            ok: false,
+            message: `${invalidDate.label}을(를) 확인해주세요.`
+        };
+    }
+
+    //견적 유효기간 날짜 검사
+    if (quotation.validUntil < quotation.createdAt) {
+        return { ok: false, message: "견적 유효기간은 작성일 이후여야 합니다." }
+    }
+
+
     //납품 예정일 날짜 검사
     if (quotation.deliveryDate < quotation.createdAt) {
         return { ok: false, message: "납품 예정일은 작성일 이후여야 합니다." };
     }
-
+    
     return { ok: true };
 
 }

@@ -1,20 +1,13 @@
 //고객 등록 화면
 import React, { useState } from "react";
 import { useERP } from "../context/ERPContext";
-import {
-    validateCustomer, formatBusinessNumber,
-    validateBusinessNumber, validateDuplicateBusinessNumber,
-} from "../utils/customerUtils";
-import {
-    validatePhone, formatPhone, validateEmail,
-    validateCompanyName, validateCustomerManager, validateMemo
-} from "../utils/consultationUtils";
+import { formatBusinessNumber } from "../utils/customerUtils";
+import { formatPhone } from "../utils/consultationUtils";
 import "./03_CustomerForm.css";
-
 
 function CustomerRegister({ onClose }) {
 
-    const { employees, addCustomer, customers } = useERP();
+    const { employees, addCustomer } = useERP();
 
 
     //고객정보를 저장할 state
@@ -32,74 +25,24 @@ function CustomerRegister({ onClose }) {
 
     function registerCustomer(e) {
         e.preventDefault();
-
-        //.toLocaleDateString("sv-SE"); 문자열 형태의 날짜로 변환하는 메서드 ,괄호안에 코드를 쓰면 국가나 언어별 형식으로 가져올수있게 함
+    
         const createdAt = new Date().toLocaleDateString("sv-SE");
-
-        //필수입력값 유효성검사
-        if (!validateCustomer(customerData)) {
-            return;
-        }
-        if (customerData.employeeId == null || customerData.employeeId === "") {
-            alert("담당자를 확인해주세요.");
-            return;
-        }
-
-        if (!validateDuplicateBusinessNumber(
-            customerData.businessNumber,
-            customers,
-            null
-        )) {
-            return;
-        }
-
-        //사업자등록번호 10자리검사
-        if (!validateBusinessNumber(customerData.businessNumber)) {
-            return;
-        }
-        //전화번호 10~11자리 검사
-        if (!validatePhone(customerData.phone)) {
-
-            return;
-        }
-
-        //이메일 유효성 검사
-        if (!validateEmail(customerData.email)) {
-            return;
-        }
-
-        // 고객사명 제한 20자 검사
-        if (!validateCompanyName(customerData.companyName)) {
-            return;
-        }
-
-        // 고객사 담당자명 제한 10자 검사
-        if (!validateCustomerManager(customerData.customerManager)) {
-            return;
-        }
-
-        // 메모 1000자 제한 검사
-        if (!validateMemo(customerData.memo)) {
-            return;
-        }
-
-        // 2. 기존 부모 창 함수 호출 대신 Context 함수 직접 호출
+    
+        // ERPContext에서 나머지 고객 정보 검증
         const result = addCustomer({
             ...customerData,
             createdAt: createdAt,
             registrationSource: "save"
         });
-
+    
         if (!result.ok) {
             alert(result.message);
             return;
         }
-
+    
         alert("고객이 등록되었습니다.");
         onClose();
     }
-
-
 
     return (
         <div className="crm-form-page">
