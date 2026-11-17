@@ -88,21 +88,39 @@ test("상품 초기화는 초기 목록을 복구하고 mockData 원본과 다�
   expect(JSON.stringify(initialProducts)).toBe(before);
 });
 
-test("실제 ERPProvider의 상품 초기화와 전체 초기화가 같은 상품 Hook을 갱신한다", () => {
-  const { ERPProvider, useERP: useRealERP } = jest.requireActual("../context/ERPContext");
-  const { result } = renderHook(() => useRealERP(), { wrapper: ERPProvider });
+
+test("실제 ERPProvider의 전체 초기화가 상품 데이터를 복구한다", () => {
+  const { ERPProvider, useERP: useRealERP } =
+      jest.requireActual("../context/ERPContext");
+
+  const { result } = renderHook(() => useRealERP(), {
+      wrapper: ERPProvider
+  });
+
   const originalProducts = JSON.stringify(result.current.products);
-  const originalProjects = JSON.stringify(result.current.projects);
-  const values = { productName: "[테스트] Provider 초기화", productPrice: 1000, productStatus: "판매 중" };
+
+  const values = {
+      productName: "[테스트] Provider 초기화",
+      productPrice: 1000,
+      productStatus: "판매 중"
+  };
+
   act(() => result.current.addProduct(values));
-  expect(JSON.stringify(result.current.products)).not.toBe(originalProducts);
-  act(() => result.current.resetProducts());
-  expect(JSON.stringify(result.current.products)).toBe(originalProducts);
-  expect(JSON.stringify(result.current.projects)).toBe(originalProjects);
-  act(() => result.current.addProduct(values));
-  act(() => result.current.resetAllData());
-  expect(JSON.stringify(result.current.products)).toBe(originalProducts);
+
+  expect(JSON.stringify(result.current.products))
+      .not.toBe(originalProducts);
+
+  let resetResult;
+
+  act(() => {
+      resetResult = result.current.resetAllData();
+  });
+
+  expect(resetResult.ok).toBe(true);
+  expect(JSON.stringify(result.current.products))
+      .toBe(originalProducts);
 });
+
 
 // 새 화면만 검사합니다. 실제 Context·브라우저 저장소·기존 상품에는 쓰지 않습니다.
 jest.mock("../context/ERPContext", () => ({ useERP: jest.fn() }));

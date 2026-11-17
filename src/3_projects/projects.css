@@ -291,7 +291,7 @@
 
 .pm-stats {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(3, 1fr);
   gap: 14px;
   margin-bottom: 18px;
 }
@@ -1914,4 +1914,37 @@
     margin-top: 10px;
     font-size: 13px;
     color: #64748b;
+}
+
+/* 프로젝트 생성 대기 견적 안내 */
+.pm-pending-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  width: 100%;
+  margin: 0 0 16px;
+  padding: 14px 18px;
+
+  border: 1px solid #EADDB8;
+  border-left: 4px solid #D5A356;
+  border-radius: 8px;
+
+  background: #FFF8E9;
+  color: #8A682E;
+
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+/* 왼쪽 강조 표시점 */
+.pm-pending-banner::before {
+  content: "";
+  width: 9px;
+  height: 9px;
+  flex-shrink: 0;
+
+  border-radius: 50%;
+  background: #D5A356;
 }

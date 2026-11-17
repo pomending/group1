@@ -1,6 +1,3 @@
-import { validateCompanyName } from "./consultationUtils";
-
-
 //고객정보 등록시 필수입력 해야 될값 검사
 export function validateCustomer(customerData) {
 
@@ -64,6 +61,58 @@ export function validateDuplicateBusinessNumber(businessNumber, customers, custo
     return true;
 }
 
+export function validateCustomerData(customer, customers, excludeId = null) {
+    const companyName = String(customer.companyName ?? "").trim();
+    const customerManager = String(customer.customerManager ?? "").trim();
+    const phone = String(customer.phone ?? "").replace(/\D/g, "");
+    const email = String(customer.email ?? "").trim();
+    const businessNumber = String(customer.businessNumber ?? "").replace(/-/g, "");
 
+    if (!companyName || !customerManager || !phone) {
+        return {
+            ok: false,
+            message: "필수 고객 정보를 확인해주세요."
+        };
+    }
+
+    if (companyName.length > 20 || customerManager.length > 10) {
+        return {
+            ok: false,
+            message: "고객사명 또는 고객사 담당자명의 길이를 확인해주세요."
+        };
+    }
+
+    const validPhone = phone.startsWith("02")
+        ? [9, 10].includes(phone.length)
+        : phone.startsWith("010")
+            ? phone.length === 11
+            : ["011", "016", "017", "018", "019",
+               "031", "032", "033", "041", "042", "043", "044",
+               "051", "052", "053", "054", "055",
+               "061", "062", "063", "064"].some(prefix =>
+                phone.startsWith(prefix)
+            ) && [10, 11].includes(phone.length);
+
+    if (!validPhone) {
+        return { ok: false, message: "전화번호 형식이 올바르지 않습니다." };
+    }
+
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        return { ok: false, message: "이메일 형식이 올바르지 않습니다." };
+    }
+
+    if (businessNumber && !/^\d{10}$/.test(businessNumber)) {
+        return { ok: false, message: "사업자등록번호를 확인해주세요." };
+    }
+
+    if (businessNumber && customers.some(c =>
+        c.id !== excludeId &&
+        String(c.businessNumber ?? "").replace(/-/g, "") === businessNumber
+    )) {
+        return { ok: false, message: "이미 등록된 사업자등록번호입니다." };
+    }
+
+    return { ok: true };
+}
 
 

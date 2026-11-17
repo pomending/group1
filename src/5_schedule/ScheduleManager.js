@@ -48,8 +48,20 @@ const saveStatusLabels = {
   error: "저장 실패 · 아래 안내를 확인하세요",
   blocked: "저장 중지 · 아래 안내를 확인하세요",
 };
-const createScheduleId = () =>
-  `schedule-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+const createScheduleId = (schedules) => {
+  const existingIds = new Set(schedules.map(item => String(item.id)));
+
+  let id;
+
+  do {
+      const values = new Uint32Array(2);
+      window.crypto.getRandomValues(values);
+
+      id = (values[0] & 0x1fffff) * 2 ** 32 + values[1];
+  } while (id === 0 || existingIds.has(String(id)));
+
+  return id;
+};
 
 /* 화면과 일정 관리 훅을 연결하는 조정 컴포넌트입니다. */
 export default function ScheduleManager() {
@@ -564,7 +576,7 @@ export default function ScheduleManager() {
       endDate: form.repeatType === "none" ? (form.endDate || "") : "",
       reminderMinutes: Number(form.reminderMinutes) || 0,
       status: form.scope === "업무용" ? form.status : "pending",
-      id: createScheduleId(),
+      id: createScheduleId(items),
       color: typeColors[form.type],
       excludedDates: [],
       isFavorite: false,
@@ -612,7 +624,7 @@ export default function ScheduleManager() {
       // 그날 일정만 복사해 일반 일정으로 저장합니다. occurrenceDate는 화면용 표시라 제거합니다.
       const singleSchedule = { ...item };
       delete singleSchedule.occurrenceDate;
-      singleSchedule.id = createScheduleId();
+      singleSchedule.id = createScheduleId(current);
       singleSchedule.status = status;
       singleSchedule.repeatType = "none";
       singleSchedule.repeatInterval = 1;
