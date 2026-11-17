@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useERP } from "../context/ERPContext";
 import {
@@ -8,6 +8,7 @@ import {
     formatPrice
 } from "../utils/formatUtils";
 import "./QuotationDetail.css"
+import { getQuotationPriceDetails } from "../utils/quotationUtils";
 
 function QuotationDetail() {
 
@@ -23,7 +24,11 @@ function QuotationDetail() {
         employees
     } = useERP();
 
+    const [newEmployeeId, setNewEmployeeId] = useState("");
 
+    useEffect(() => {
+        setNewEmployeeId("");
+    }, [id]);
 
     // URL의 견적 ID와 일치하는 견적서 찾기
     const quotation = quotations.find(
@@ -34,15 +39,36 @@ function QuotationDetail() {
         return <div>견적서를 찾을 수 없습니다.</div>;
     }
 
-    //견적 금액 계산
-    const supplyAmount = Number(quotation.quantity || 0)
-        * Number(quotation.unitPrice || 0);
+    //옵션 포함 단가 계산
+    const priceDetails = getQuotationPriceDetails(quotation);
+
+    //옵션 추가 단가
+    const optionUnitPrice = priceDetails.optionUnitPrice;
+
+    //옵션 포함 최종 단가
+    const finalUnitPrice = priceDetails.finalUnitPrice;
+
+    //공급가액 계산
+    const supplyAmount = Number(quotation.quantity || 0) * finalUnitPrice;
+
+    //부가세 및 최종 금액
     const vat = supplyAmount * 0.1;
     const finalPrice = supplyAmount + vat;
 
     // 담당자 이름 찾기
     const employee = employees.find(
         e => e.id === quotation.employeeId
+    );
+
+    // 기존 담당자의 업무 수행 가능 여부
+    const isValidEmployee =
+        employee?.status === "재직" &&
+        employee?.department === "영업팀";
+
+    // 새로 선택할 수 있는 담당자
+    const availableEmployees = employees.filter(e =>
+        e.status === "재직" &&
+        e.department === "영업팀"
     );
 
     //거래처 찾는 코드
@@ -80,24 +106,38 @@ function QuotationDetail() {
         alert("견적서가 반려되었습니다.");
     };
 
-    //재검토 요청 처리
+    // 재검토 요청 처리
     const handleReview = () => {
+
+        // 기존 담당자가 유효하지 않으면 새 담당자 선택 필수
+        if (!isValidEmployee && !newEmployeeId) {
+            alert("새로운 담당자를 선택해주세요.");
+            return;
+        }
 
         const result = updateQuotation({
             id: quotation.id,
+            employeeId: isValidEmployee
+                ? quotation.employeeId
+                : Number(newEmployeeId),
             status: "승인 대기"
-        })
+        });
 
         if (!result.ok) {
-            alert(result.message)
-            return
+            alert(result.message);
+            return;
         }
 
-        alert("재검토 요청이 완료되었습니다.")
-    }
+        setNewEmployeeId("");
+        alert("재검토 요청이 완료되었습니다.");
+    };
 
     //견적서 수정
     const handleEdit = () => {
+
+        if (!window.confirm("견적서를 수정하시겠습니까?")) {
+            return;
+        }
 
         if (quotation.status === "승인 완료" ||
             quotation.status === "반려"
@@ -117,19 +157,19 @@ function QuotationDetail() {
     //견적서 삭제
     const handleDelete = () => {
 
-        if(quotation.status === "승인 완료"){
-            alert("승인 완료된 견적서는 삭제할 수 없습니다.")
-            return;
-        }
-
         if (!window.confirm("이 견적서를 삭제하시겠습니까?\n삭제한 견적서는 복구할 수 없습니다.")) {
             return;
         }
 
-        deleteQuotation(quotation.id)
+        const result = deleteQuotation(quotation.id);
 
-        alert("견적서가 삭제되었습니다.")
-        navi("/quotation")
+        if (!result.ok) {
+            alert(result.message);
+            return;
+        }
+
+        alert("견적서가 삭제되었습니다.");
+        navi("/quotation");
 
     }
 
@@ -195,9 +235,37 @@ function QuotationDetail() {
                         </div>
 
                         <div className="detail-item">
-                            <span>단가</span>
-                            <strong>{formatPrice(quotation.unitPrice)}</strong>
+                            <span>기본 단가</span>
+                            <strong>{formatPrice(priceDetails.baseUnitPrice)}</strong>
                         </div>
+
+                        <div className="detail-item option-detail-item">
+                            <span>제작 옵션</span>
+
+                            <div className="detail-option-list">
+                                {(quotation.options ?? []).length === 0 ? (
+                                    <strong>없음</strong>
+                                ) : (
+                                    quotation.options.map((option, index) => (
+                                        <div className="detail-option-item" key={index}>
+                                            <span className="option-name" >
+                                                {option.name}
+                                            </span>
+                                            <strong className="option-price">
+                                                {Number(option.unitPrice ?? 0).toLocaleString()}원
+                                            </strong>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+
+                        </div>
+
+                        <div className="detail-item">
+                            <span>옵션 포함 최종 단가</span>
+                            <strong>{formatPrice(finalUnitPrice)}</strong>
+                        </div>
+
                     </div>
                 </section>
 
@@ -241,6 +309,16 @@ function QuotationDetail() {
 
             </main>
 
+            {quotation.status === "반려" && !isValidEmployee && (
+                <div className="review-notice">
+                    <strong>담당자 변경이 필요합니다.</strong>
+                    <p>
+                        기존 담당자가 업무를 수행할 수 없는 상태입니다.
+                        새로운 담당자를 지정한 후 재검토를 요청해주세요.
+                    </p>
+                </div>
+            )}
+
             <div className="detail-actions">
 
                 <div className="detail-process">
@@ -256,17 +334,38 @@ function QuotationDetail() {
                         </>
                     )}
 
-                    {quotation.status === "승인 완료" && (
-                        <button className="review-btn" onClick={handleReview}>
-                            재검토 요청
-                        </button>
-                    )}
+                    {(quotation.status === "승인 완료" ||
+                        quotation.status === "반려") && (
+                            <>
+                                {quotation.status === "반려" && !isValidEmployee && (
+                                    <div className="review-employee">
+                                        <label>새 담당자</label>
 
-                    {quotation.status === "반려" && (
-                        <button className="review-btn" onClick={handleReview}>
-                            승인 대기
-                        </button>
-                    )}
+                                        <select
+                                            value={newEmployeeId}
+                                            onChange={(e) => setNewEmployeeId(e.target.value)}
+                                        >
+                                            <option value="">담당자를 선택해주세요</option>
+
+                                            {availableEmployees.map(e => (
+                                                <option key={e.id} value={e.id}>
+                                                    {e.name}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                )}
+
+                                <button
+                                    className="review-btn"
+                                    onClick={handleReview}
+                                    disabled={!isValidEmployee && !newEmployeeId}
+                                >
+                                    재검토 요청
+                                </button>
+                            </>
+                        )}
+
                 </div>
 
                 <div className="detail-manage">

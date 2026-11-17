@@ -32,7 +32,7 @@ function useAuthData(accounts, employees) {
 
         const user = employees.find( e => e.email?.toLowerCase() === email.trim().toLowerCase() )
 
-        if( !user ){
+        if (!user || user.status === "퇴사") {
             return false;
         }
 

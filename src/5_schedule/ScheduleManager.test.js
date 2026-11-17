@@ -16,7 +16,7 @@ import { initialAccounts } from "../data/mockAccounts";
 import { initialEmployees } from "../data/mockData";
 import { loadSchedules, mergeScheduleChanges, serializeSchedules } from "./scheduleStorage";
 import ScheduleFormModal, { ScheduleListModal } from "./ScheduleFormModal";
-import { ScheduleAgendaItem, ScheduleEvent } from "./ScheduleItemParts";
+import { ScheduleAgendaItem, ScheduleEvent, ScheduleTimeRow } from "./ScheduleItemParts";
 import { createScheduleCopyForm, validateScheduleForm, createEmptyForm } from "./scheduleData";
 import { getScheduleProjectId, findScheduleConflicts, getScheduleInterval } from "./scheduleData";
 import {
@@ -24,6 +24,229 @@ import {
   normalizeAttendees, createScheduleForm, excludeOccurrence, expandSchedules,
   getSchedulePeople, getRepeatLabel, getScheduleTime, getRepeatSummary, getScheduleDurationFields, restoreDeletedSchedule, getScheduleListDate,
 } from "./scheduleData";
+
+test("손상된 참석자 연결이 저장돼 있어도 회의 조회와 편집에서 오류 없이 이름을 보존한다", async () => {
+  saveSchedules([makeStoredSchedule({ date: getTodayKey(), scope: "업무용", category: "회의",
+    person: "김담당", employeeId: 802, title: "참석자 복원 회의", attendees: ["외부 참석자"],
+    attendeeEmployees: {}, legacyAttendees: null })]);
+  render(<ScheduleManager />);
+  expect(screen.getByText("참석자: 외부 참석자")).toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "참석자 복원 회의 일정 수정" }));
+  expect(screen.getByRole("dialog", { name: "일정 수정" })).toBeInTheDocument();
+  expect(screen.getByRole("checkbox", { name: "외부 참석자", exact: true })).toBeChecked();
+  fireEvent.click(screen.getByRole("button", { name: "수정 저장" }));
+  expect(loadSchedules().items[0].attendees).toEqual(["외부 참석자"]);
+  await act(async () => { expect(fetch).toHaveBeenCalled(); });
+});
+
+test("주간표는 연결 없는 캐시 이름만 숨기고 HR 직원과 과거 일정 이름은 유지한다", async () => {
+  saveSchedules([makeStoredSchedule({ date: "2025-01-01", scope: "업무용", person: "과거 이름" })]);
+  localStorage.setItem("made-mate-schedule-team", JSON.stringify(["버려진 이름", "김담당", "과거 이름"]));
+  render(<ScheduleManager />);
+  fireEvent.click(screen.getByRole("tab", { name: "담당자별 주간" }));
+  expect(screen.queryByRole("button", { name: "버려진 이름 일정 펼치기" })).not.toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "김담당 일정 펼치기" })).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "과거 이름 일정 펼치기" })).toBeInTheDocument();
+  await act(async () => { expect(fetch).toHaveBeenCalled(); });
+});
+
+test.each([["옛 이름", "현재 이름"], ["현재 이름", "옛 이름"]])("개명 전후 팀원 이름의 순서와 관계없이 빈 중복 행을 만들지 않는다: %j", (first, second) => {
+  const date = getTodayKey();
+  const item = { ...createEmptyForm(), id: "rename-only", date, person: "옛 이름", employeeId: 1, title: "이전 기록" };
+  render(<ScheduleStaffWeek people={[first, second]} employees={[{ id: 1, name: "현재 이름" }]}
+    items={[item]} weekDates={[{ key: date }]} selectedDate={date} holidayDates={{}} />);
+  expect(screen.getAllByRole("button", { name: /일정 펼치기$/ })).toHaveLength(1);
+  expect(screen.getByRole("button", { name: "현재 이름 일정 펼치기" })).toBeInTheDocument();
+});
+
+test("주간표를 연 뒤 현재 이름으로 검색하면 이전 기록을 찾고 검색한 직원 행을 펼친다", async () => {
+  const employees = [{ id: 1, name: "현재 이름" }, { id: 2, name: "다른 직원" }];
+  useERP.mockReturnValue({ employees, projects: [] });
+  saveSchedules([
+    makeStoredSchedule({ id: "old", date: getTodayKey(), scope: "업무용", person: "옛 이름", employeeId: 1, title: "개명 전 기록" }),
+    makeStoredSchedule({ id: "other", date: getTodayKey(), scope: "업무용", person: "다른 직원", employeeId: 2, title: "다른 직원 기록" }),
+  ]);
+  localStorage.setItem("made-mate-schedule-team", JSON.stringify(["옛 이름", "현재 이름", "다른 직원"]));
+  render(<ScheduleManager />);
+  const before = localStorage.getItem(storageKey);
+  fireEvent.click(screen.getByRole("tab", { name: "담당자별 주간" }));
+  fireEvent.change(screen.getByRole("textbox", { name: "일정 검색" }), { target: { value: "현재 이름" } });
+  const week = within(screen.getByRole("region", { name: "담당자별 주간 일정표" }));
+  expect(week.getByRole("button", { name: "현재 이름 일정 접기" })).toHaveAttribute("aria-expanded", "true");
+  expect(week.getByText("개명 전 기록")).toBeInTheDocument();
+  fireEvent.change(screen.getByRole("textbox", { name: "일정 검색" }), { target: { value: "다른 직원" } });
+  expect(week.getByRole("button", { name: "다른 직원 일정 접기" })).toBeInTheDocument();
+  expect(week.getByText("다른 직원 기록")).toBeInTheDocument();
+  fireEvent.change(screen.getByRole("textbox", { name: "일정 검색" }), { target: { value: "옛 이름" } });
+  expect(week.getByRole("button", { name: "현재 이름 일정 접기" })).toBeInTheDocument();
+  expect(week.getByText("개명 전 기록")).toBeInTheDocument();
+  fireEvent.change(screen.getByRole("textbox", { name: "일정 검색" }), { target: { value: "" } });
+  expect(week.getByRole("button", { name: "현재 이름 일정 펼치기" })).toBeInTheDocument();
+  expect(localStorage.getItem(storageKey)).toBe(before);
+  expect(getSchedulePeople({ person: "옛 이름", employeeId: 1 }, employees)).toEqual(["옛 이름", "현재 이름"]);
+  expect(getSchedulePeople({ person: "옛 이름" }, employees)).toEqual(["옛 이름"]);
+  await act(async () => { expect(fetch).toHaveBeenCalled(); });
+});
+
+test("개명 전후 담당·참석 일정은 현재 직원 이름의 한 행에 모으고 동명이인은 구분한다", () => {
+  const date = getTodayKey();
+  const base = { ...createEmptyForm(), date, scope: "업무용" };
+  const items = [
+    { ...base, id: "old", person: "이전 이름", employeeId: 1, title: "개명 전 담당" },
+    { ...base, id: "new", person: "현재 이름", employeeId: 1, title: "개명 후 담당" },
+    { ...base, id: "meeting", person: "다른 담당", title: "개명 전 참석",
+      attendeeEmployees: [{ id: 1, name: "이전 이름" }], legacyAttendees: [] },
+    { ...base, id: "other", person: "현재 이름", employeeId: 2, title: "동명이인 담당" },
+  ];
+  const before = JSON.stringify(items);
+  render(<ScheduleStaffWeek people={["이전 이름", "현재 이름"]}
+    employees={[{ id: 1, name: "현재 이름" }, { id: 2, name: "현재 이름" }]}
+    items={items} weekDates={[{ key: date }]} selectedDate={date} holidayDates={{}} />);
+  expect(screen.getAllByRole("button", { name: /일정 펼치기$/ })).toHaveLength(2);
+  fireEvent.click(screen.getByRole("button", { name: "현재 이름 (직원 1) 일정 펼치기" }));
+  const row = screen.getByRole("button", { name: "현재 이름 (직원 1) 일정 접기" }).closest("tr");
+  expect(within(row).getByText("개명 전 담당")).toBeInTheDocument();
+  expect(within(row).getByText("개명 후 담당")).toBeInTheDocument();
+  expect(within(row).getByText("개명 전 참석")).toBeInTheDocument();
+  expect(within(row).queryByText("동명이인 담당")).not.toBeInTheDocument();
+  expect(JSON.stringify(items)).toBe(before);
+});
+
+test("견적과 완료 프로젝트의 설명·달력·상세는 원본 상태를 표시한다", async () => {
+  useERP.mockReturnValue({
+    employees: [], customers: [{ id: 1, companyName: "상태 고객" }],
+    projects: [{ id: 1, name: "완료 프로젝트", startDate: getTodayKey(), status: "완료" }],
+    quotations: [{ id: 1, customerId: 1, validUntil: getTodayKey(), status: "승인 완료" }],
+  });
+  render(<ScheduleManager />);
+  fireEvent.click(screen.getByRole("checkbox", { name: "견적 유효기간 표시" }));
+  const project = screen.getByRole("button", { name: /완료 프로젝트 · 시작일 선택한 날짜/ });
+  expect(project).toHaveAttribute("title", expect.stringContaining("· 완료"));
+  const quote = screen.getByRole("button", { name: /견적 #1 유효기간 선택한 날짜/ });
+  expect(quote).toHaveAttribute("title", expect.stringContaining("· 승인 완료"));
+  expect(screen.getByText("프로젝트 시작일 · 완료")).toBeInTheDocument();
+  expect(screen.getByText("프로젝트 상태 · 완료")).toBeInTheDocument();
+  expect(screen.queryByText(/상단의 오늘·전체 일정 건수는 직접 등록한 일정 기준/)).not.toBeInTheDocument();
+  await act(async () => { expect(fetch).toHaveBeenCalled(); });
+});
+
+test("날짜 더보기는 연동 항목을 읽기 전용으로 표시하고 견적 상태와 작업 완료 필터를 유지한다", async () => {
+  useERP.mockReturnValue({
+    projects: [{ id: 1, name: "더보기 프로젝트", startDate: getTodayKey() }],
+    employees: [], customers: [{ id: 1, companyName: "더보기 고객" }],
+    tasks: [{ id: 1, projectId: 1, taskDeadline: getTodayKey(), taskType: "완료 작업", progress: "완료" }],
+    quotations: [{ id: 1, customerId: 1, validUntil: getTodayKey(), status: "승인 완료" }],
+  });
+  render(<ScheduleManager />);
+  const before = localStorage.getItem(storageKey);
+  fireEvent.click(screen.getByRole("checkbox", { name: "견적 유효기간 표시" }));
+  fireEvent.click(screen.getByRole("button", { name: "+ 더보기", exact: true }));
+  const dialog = within(screen.getByRole("dialog"));
+  expect(dialog.getByRole("status", { name: "목록 표시 건수" })).toHaveTextContent("표시 3건");
+  expect(dialog.getByText("견적 상태 · 승인 완료")).toBeInTheDocument();
+  expect(dialog.getByRole("link", { name: "견적 관리로 이동" })).toHaveAttribute("href", "/quotation");
+  expect(dialog.queryByRole("button", { name: /일정 수정/ })).not.toBeInTheDocument();
+  expect(dialog.queryByRole("button", { name: /즐겨찾기/ })).not.toBeInTheDocument();
+  fireEvent.change(dialog.getByRole("combobox", { name: "목록 진행 상태" }), { target: { value: "completed" } });
+  expect(dialog.getByText("작업 상태 · 완료")).toBeInTheDocument();
+  expect(dialog.getByRole("status", { name: "목록 표시 건수" })).toHaveTextContent("표시 1건");
+  expect(localStorage.getItem(storageKey)).toBe(before);
+  await act(async () => { expect(fetch).toHaveBeenCalled(); });
+});
+
+test("내 일정 선택은 계정 전환과 로그아웃 시 해제되고 없는 부서 선택은 안내 후 초기화된다", async () => {
+  const employees = [{ id: 1, name: "영업 직원", department: "영업팀" }, { id: 2, name: "생산 직원", department: "생산팀" }];
+  const erp = { employees, projects: [], currentEmployee: employees[0], currentUser: { id: 1, employeeId: 1, status: "활성" } };
+  useERP.mockReturnValue(erp);
+  const view = render(<ScheduleManager />);
+  const myFilter = () => screen.getByRole("checkbox", { name: "내 담당·참석 일정" });
+  fireEvent.click(myFilter());
+  expect(myFilter()).toBeChecked();
+  useERP.mockReturnValue({ ...erp, currentEmployee: employees[1], currentUser: { id: 2, employeeId: 2, status: "활성" } });
+  view.rerender(<ScheduleManager />);
+  expect(myFilter()).not.toBeChecked();
+  fireEvent.click(myFilter());
+  useERP.mockReturnValue({ ...erp, currentEmployee: null, currentUser: null });
+  view.rerender(<ScheduleManager />);
+  expect(myFilter()).not.toBeChecked();
+  expect(myFilter()).toBeDisabled();
+  fireEvent.change(screen.getByRole("combobox", { name: "일정 부서 필터" }), { target: { value: "영업팀" } });
+  useERP.mockReturnValue({ ...erp, employees: [employees[1]], currentEmployee: null, currentUser: null });
+  view.rerender(<ScheduleManager />);
+  expect(screen.getByRole("combobox", { name: "일정 부서 필터" })).toHaveValue("");
+  expect(screen.getByText("선택한 부서가 직원 목록에 없어 전체 부서로 변경했습니다.")).toBeInTheDocument();
+  await act(async () => { expect(fetch).toHaveBeenCalled(); });
+});
+
+test("로그인 직원의 담당·참석 일정과 부서 필터를 적용하고 초기화한다", async () => {
+  const employees = [
+    { id: 1, name: "영업 직원", department: "영업팀", status: "재직" },
+    { id: 2, name: "생산 직원", department: "생산팀", status: "재직" },
+  ];
+  useERP.mockReturnValue({ employees, projects: [], currentEmployee: employees[0], currentUser: { id: 1, employeeId: 1, status: "활성" } });
+  saveSchedules([
+    makeStoredSchedule({ id: "mine", date: getTodayKey(), title: "내 담당 일정", scope: "업무용", person: "영업 직원", employeeId: 1 }),
+    makeStoredSchedule({ id: "meeting", date: getTodayKey(), title: "내 참석 회의", scope: "업무용", person: "생산 직원", employeeId: 2,
+      attendees: ["영업 직원"], attendeeEmployees: [{ id: 1, name: "영업 직원" }], legacyAttendees: [] }),
+    makeStoredSchedule({ id: "other", date: getTodayKey(), title: "다른 직원 일정", scope: "업무용", person: "생산 직원", employeeId: 2 }),
+  ]);
+  render(<ScheduleManager />);
+  const before = localStorage.getItem(storageKey);
+  const calendar = within(screen.getByRole("region", { name: "일정 달력" }));
+  fireEvent.click(screen.getByRole("tab", { name: "일별" }));
+  fireEvent.click(screen.getByRole("checkbox", { name: "내 담당·참석 일정" }));
+  expect(calendar.getByRole("button", { name: /내 참석 회의 선택한 날짜/ })).toBeInTheDocument();
+  expect(calendar.queryByRole("button", { name: /다른 직원 일정 선택한 날짜/ })).not.toBeInTheDocument();
+  fireEvent.change(screen.getByRole("combobox", { name: "일정 부서 필터" }), { target: { value: "생산팀" } });
+  expect(calendar.queryByRole("button", { name: /내 담당 일정 선택한 날짜/ })).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "담당·부서 필터 초기화" }));
+  expect(calendar.getByRole("button", { name: /다른 직원 일정 선택한 날짜/ })).toBeInTheDocument();
+  expect(localStorage.getItem(storageKey)).toBe(before);
+  await act(async () => { expect(fetch).toHaveBeenCalled(); });
+});
+
+test("미완료 마감 조회는 지연·오늘·7일 경계를 구분하고 완료 작업을 제외한다", async () => {
+  const day = offset => { const date = new Date(getTodayKey() + "T12:00:00"); date.setDate(date.getDate() + offset); return dateKey(date); };
+  useERP.mockReturnValue({ employees: [], projects: [{ id: 1, name: "마감 검증" }],
+    tasks: [-1, 0, 6, 7].map((offset, index) => ({ id: index, projectId: 1, taskType: "작업" + offset, taskDeadline: day(offset), progress: "대기중" }))
+      .concat({ id: 10, projectId: 1, taskType: "끝난 작업", taskDeadline: day(0), progress: "완료" }) });
+  render(<ScheduleManager />);
+  fireEvent.click(screen.getByText("미완료 작업 마감 모아보기"));
+  const panel = screen.getByRole("combobox", { name: "작업 마감 조회 기간" }).closest("details");
+  expect(within(panel).getAllByRole("button")).toHaveLength(2);
+  expect(within(panel).queryByText(/끝난 작업/)).not.toBeInTheDocument();
+  fireEvent.change(screen.getByRole("combobox", { name: "작업 마감 조회 기간" }), { target: { value: "overdue" } });
+  expect(within(panel).getByRole("button")).toHaveTextContent("작업-1");
+  fireEvent.change(screen.getByRole("combobox", { name: "작업 마감 조회 기간" }), { target: { value: "today" } });
+  expect(within(panel).getByRole("button")).toHaveTextContent("작업0");
+  fireEvent.click(within(panel).getByRole("button"));
+  expect(screen.getByRole("tab", { name: "일별" })).toHaveAttribute("aria-selected", "true");
+  await act(async () => { expect(fetch).toHaveBeenCalled(); });
+});
+
+test("견적 유효기간 표시와 담당자별 작업 행은 저장 일정을 추가하지 않는다", async () => {
+  const employees = [{ id: 1, name: "동명", department: "영업팀" }, { id: 2, name: "동명", department: "생산팀" }];
+  useERP.mockReturnValue({ employees, projects: [{ id: 1, name: "주간 검증" }],
+    tasks: employees.map(employee => ({ id: employee.id, projectId: 1, employeeId: employee.id,
+      taskType: "담당 작업" + employee.id, taskDeadline: getTodayKey() })),
+    quotations: [{ id: 7, validUntil: getTodayKey(), customerId: 3, employeeId: 1 }],
+    customers: [{ id: 3, companyName: "견적 고객" }] });
+  render(<ScheduleManager />);
+  expect(screen.getByRole("checkbox", { name: "내 담당·참석 일정" })).toBeDisabled();
+  fireEvent.click(screen.getByRole("tab", { name: "일별" }));
+  expect(screen.queryByRole("button", { name: /견적 #7 유효기간 선택한 날짜/ })).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole("checkbox", { name: "견적 유효기간 표시" }));
+  expect(screen.getByRole("button", { name: /견적 #7 유효기간 선택한 날짜/ })).toBeInTheDocument();
+  expect(screen.getByRole("link", { name: "견적 관리로 이동" })).toHaveAttribute("href", "/quotation");
+  fireEvent.click(screen.getByRole("checkbox", { name: "견적 유효기간 표시" }));
+  fireEvent.click(screen.getByRole("tab", { name: "담당자별 주간" }));
+  fireEvent.click(screen.getByRole("button", { name: "동명 (직원 1) 일정 펼치기" }));
+  const row = screen.getByRole("button", { name: "동명 (직원 1) 일정 접기" }).closest("tr");
+  expect(within(row).getByText("주간 검증 · 담당 작업1 마감")).toBeInTheDocument();
+  expect(within(row).queryByText("주간 검증 · 담당 작업2 마감")).not.toBeInTheDocument();
+  expect(loadSchedules().items).toEqual([]);
+  await act(async () => { expect(fetch).toHaveBeenCalled(); });
+});
 
 test("세부 작업 마감은 달력과 선택 날짜에 표시하고 일정 원본에 복제하지 않는다", async () => {
   useERP.mockReturnValue({
@@ -851,7 +1074,7 @@ test.each([
   ["이름 변경", null, "새 이름", 1],
   ["다른 프로젝트", "다른 이름", "다른 이름", 2],
   ["직접 입력", "자유 입력", "자유 입력", null],
-  ["업무 분류 변경", "업무", "", null],
+  ["업무 분류 변경", "업무", "새 이름", 1],
   ["개인 전환", "개인 일정용", "", null],
   ["삭제된 프로젝트", null, "이전 이름", 1],
 ])("프로젝트 연결을 저장까지 유지하거나 명시적으로 변경한다: %s", async (mode, value, expectedName, expectedId) => {
@@ -1244,6 +1467,24 @@ test("내 일정 필터를 꺼도 다른 계정과 소유자 미상의 개인 �
   expect(loadSchedules().items).toHaveLength(5);
 });
 
+test("부서 필터와 초기화를 함께 사용해도 타 계정 개인 일정은 공개하지 않는다", async () => {
+  saveSchedules([
+    makeStoredSchedule({ id: "mine-dept", title: "내 부서 개인 약속", date: getTodayKey() }),
+    makeStoredSchedule({ id: "other-dept", title: "타 계정 숨긴 약속", date: getTodayKey(), ownerAccountId: 901, ownerEmployeeId: 803 }),
+    makeStoredSchedule({ id: "shared-dept", scope: "업무용", title: "다른 부서 공유 업무", date: getTodayKey(), person: "이언우", employeeId: 803 }),
+  ]);
+  render(<ScheduleManager />);
+  fireEvent.change(screen.getByRole("combobox", { name: "일정 부서 필터" }), { target: { value: "영업팀" } });
+  expect(screen.getAllByText("내 부서 개인 약속").length).toBeGreaterThan(0);
+  expect(screen.queryByText("타 계정 숨긴 약속")).not.toBeInTheDocument();
+  expect(within(screen.getByRole("region", { name: "일정 달력" })).queryByText("다른 부서 공유 업무")).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "담당·부서 필터 초기화" }));
+  expect(screen.queryByText("타 계정 숨긴 약속")).not.toBeInTheDocument();
+  expect(screen.getAllByText("다른 부서 공유 업무").length).toBeGreaterThan(0);
+  await act(async () => {});
+  expect(loadSchedules().items).toHaveLength(3);
+});
+
 test("개인 일정 저장 시 작성 계정을 기록하고 계정 전환·복원 후에도 해당 소유자에게만 표시한다", async () => {
   const base = useERP();
   const { rerender, unmount } = render(<ScheduleManager />);
@@ -1381,6 +1622,8 @@ test("전체 목록 날짜는 전체 기간과 실제 다음 반복 회차·종�
   expect(next.displayDate).toBe("2026-11-24");
   expect(next.basisLabel).toBe("반복 기준일 · 2026.11.02");
   expect(getScheduleListDate({ ...recurring, repeatEndType: "count", repeatCount: 2 }, "2026-11-16").dateLabel).toBe("남은 회차 없음");
+  const morning = { ...recurring, time: "09:00", endTime: "10:00", excludedDates: [], holidayRule: "keep" };
+  expect(getScheduleListDate(morning, "2026-11-16", {}, new Date("2026-11-16T12:00:00").getTime()).displayDate).toBe("2026-11-23");
 });
 
 beforeEach(() => {
@@ -1407,71 +1650,13 @@ afterEach(() => {
 });
 
 // 현재 입력 목록은 '프로젝트' 한 가지이므로 프로젝트 목록의 이동 경로를 검사합니다. 팀원 경로까지 검사하는 것은 아닙니다.
-test.each(["프로젝트"])("%s 목록에서 프로젝트를 누르면 가까운 날짜의 해당 일정과 상세 정보를 확인한다", async (source) => {
-  jest.useFakeTimers("modern");
-  jest.setSystemTime(new Date("2026-10-22T12:00:00"));
-  saveSchedules([
-    makeSchedule({ id: "past", date: "2026-10-01", project: "test", title: "지난 작업" }),
-    makeSchedule({ id: "next", date: "2026-10-25", project: "test", person: "김담당", title: "선택 작업", description: "준비물과 전달 사항" }),
-    makeSchedule({ id: "other", date: "2026-10-25", project: "test2", title: "다른 프로젝트 작업" }),
-  ]);
-  render(<ScheduleManager />);
-  fireEvent.click(screen.getByRole("button", { name: source === "프로젝트" ? "일정 등록 프로젝트 목록 보기" : "등록된 팀원 목록 보기" }));
-  if (source === "팀원") fireEvent.click(screen.getByRole("button", { name: "김담당" }));
-  fireEvent.click(screen.getByRole("button", { name: "test 프로젝트 일정 보기" }));
-  // 프로젝트 선택 결과는 메인 일별 달력에도 적용하고, 펼쳤던 목록은 닫아 결과를 가리지 않습니다.
-  expect(screen.getByRole("tab", { name: "일별" })).toHaveAttribute("aria-selected", "true");
-  expect(screen.queryByRole("region", { name: /^(프로젝트|팀원) 목록$/ })).not.toBeInTheDocument();
-  const calendar = screen.getByRole("region", { name: "일정 달력" });
-  expect(within(calendar).getByRole("button", { name: /선택 작업 선택한 날짜 일정에서 보기/ })).toBeInTheDocument();
-  expect(within(calendar).queryByRole("button", { name: /다른 프로젝트 작업 선택한 날짜 일정에서 보기/ })).not.toBeInTheDocument();
-  // 주별·월별로 바꿔도 같은 프로젝트 조건을 유지합니다.
-  for (const view of ["주별", "월별", "일별"]) {
-    fireEvent.click(within(calendar).getByRole("tab", { name: view }));
-    expect(within(calendar).getByRole("button", { name: /선택 작업 선택한 날짜 일정에서 보기/ })).toBeInTheDocument();
-    expect(within(calendar).queryByRole("button", { name: /다른 프로젝트 작업 선택한 날짜 일정에서 보기/ })).not.toBeInTheDocument();
-  }
-  const selected = screen.getByRole("region", { name: "선택한 날짜 일정" });
-  expect(selected).toHaveTextContent("2026.10.25");
-  expect(within(selected).getByText("test", { selector: "dd" })).toBeInTheDocument();
-  expect(within(selected).getByText("선택 작업")).toBeInTheDocument();
-  expect(within(selected).getByText("준비물과 전달 사항")).toBeInTheDocument();
-  // test와 test2를 함께 준비해 부분 검색이 아니라 정확한 프로젝트 선택인지 확인합니다.
-  expect(within(selected).queryByText("다른 프로젝트 작업")).not.toBeInTheDocument();
-  fireEvent.click(within(selected).getByRole("button", { name: "선택 작업 일정 수정" }));
-  // 같은 제목이 달력에도 있으므로 상세 입력 검사는 dialog 안으로 조회 범위를 제한합니다.
-  expect(within(screen.getByRole("dialog")).getByRole("textbox", { name: /상세 내용/ })).toHaveValue("준비물과 전달 사항");
-  fireEvent.click(screen.getByRole("button", { name: "닫기" }));
-  fireEvent.click(within(calendar).getByRole("button", { name: "전체 프로젝트 보기" }));
-  expect(within(selected).getByText("다른 프로젝트 작업")).toBeInTheDocument();
-  expect(within(calendar).getByRole("button", { name: /다른 프로젝트 작업 선택한 날짜 일정에서 보기/ })).toBeInTheDocument();
-  await act(async () => { expect(fetch).toHaveBeenCalled(); });
-});
+
 
 test("프로젝트 이동 날짜는 반복 제외일을 건너뛰고 미래 일정이 없으면 최근 과거로 정한다", () => {
   // 주간 제외일 두 건, 연간 간격의 월간 반복, 모두 과거인 일반 일정을 각각 확인합니다.
   expect(getNextScheduleDate([makeSchedule({ date: "2026-10-01", repeatType: "weekly", excludedDates: ["2026-10-22", "2026-10-29"] })], "2026-10-22")).toBe("2026-11-05");
   expect(getNextScheduleDate([makeSchedule({ date: "2025-01-31", repeatType: "monthly", repeatInterval: 12, excludedDates: ["2027-01-31"] })], "2026-10-22")).toBe("2028-01-31");
   expect(getNextScheduleDate([makeSchedule({ date: "2026-10-01" }), makeSchedule({ date: "2026-10-15" })], "2026-10-22")).toBe("2026-10-15");
-});
-
-test("프로젝트 아이콘은 검색·기간과 무관하게 중복 없는 프로젝트 목록을 열고 닫는다", async () => {
-  saveSchedules([
-    makeSchedule({ id: "a", project: "가 프로젝트" }),
-    makeSchedule({ id: "b", project: "가 프로젝트" }),
-    makeSchedule({ id: "c", date: "2025-01-01", project: "나 프로젝트" }),
-  ]);
-  render(<ScheduleManager />);
-  fireEvent.change(screen.getByRole("textbox", { name: "일정 검색" }), { target: { value: "없는 검색" } });
-  const icon = screen.getByRole("button", { name: "일정 등록 프로젝트 목록 보기" });
-  fireEvent.click(icon);
-  const directory = screen.getByRole("region", { name: "프로젝트 목록" });
-  expect(within(directory).getAllByRole("listitem")).toHaveLength(2);
-  expect(within(directory).getByText("나 프로젝트")).toBeInTheDocument();
-  expect(icon).toHaveAttribute("aria-expanded", "true");
-  fireEvent.click(within(directory).getByRole("button", { name: "목록 닫기" }));
-  expect(screen.queryByRole("region", { name: "프로젝트 목록" })).not.toBeInTheDocument();
-  await act(async () => { expect(fetch).toHaveBeenCalled(); });
 });
 
 test.each([
@@ -1498,14 +1683,6 @@ test("팀원 목록 진입점은 숨기고 담당자별 일정에는 일정에 �
   fireEvent.click(screen.getByRole("tab", { name: "담당자별 주간" }));
   expect(screen.getByRole("button", { name: "김담당 일정 펼치기" })).toBeInTheDocument();
   expect(screen.getByRole("button", { name: "이참석 일정 펼치기" })).toBeInTheDocument();
-  await act(async () => { expect(fetch).toHaveBeenCalled(); });
-});
-
-test("프로젝트 목록의 빈 상태를 표시하고 팀원 목록 진입점은 숨긴다", async () => {
-  render(<ScheduleManager />);
-  fireEvent.click(screen.getByRole("button", { name: "일정 등록 프로젝트 목록 보기" }));
-  expect(screen.getByText("일정에 등록된 프로젝트가 없습니다. 업무 일정의 프로젝트 분류에서 추가해 주세요.")).toBeInTheDocument();
-  expect(screen.queryByRole("button", { name: "등록된 팀원 목록 보기" })).not.toBeInTheDocument();
   await act(async () => { expect(fetch).toHaveBeenCalled(); });
 });
 
@@ -1662,7 +1839,7 @@ test("월 이동 후 모든 보기와 신규 등록은 이동한 날짜를 사�
     expect(screen.getByRole("button", { name: `${nextKey} 09:00~17:00 검증용 마감 선택한 날짜 일정에서 보기` })).toBeInTheDocument();
   }
   fireEvent.click(screen.getByRole("button", { name: "일정 등록", exact: true }));
-  chooseWorkSchedule("프로젝트");
+  chooseWorkSchedule("업무");
   expect(screen.getByLabelText("날짜")).toHaveValue(nextKey);
   fireEvent.change(screen.getByLabelText("일정 이름"), { target: { value: "새 작업" } });
   fireEvent.change(screen.getByLabelText("프로젝트"), { target: { value: "새 프로젝트" } });
@@ -1738,24 +1915,6 @@ test("다가오는 일정은 시작 시 예정에서 진행 중으로 바뀌고 
   jest.setSystemTime(new Date("2026-10-22T14:01:00"));
   fireEvent(document, new Event("visibilitychange"));
   expect(within(upcoming).getByText("오늘부터 7일 이내에 진행 중이거나 시작할 미완료 일정이 없습니다.")).toBeInTheDocument();
-});
-
-test("프로젝트를 선택한 상태에서도 다른 프로젝트의 다가오는 일정을 메인에서 열 수 있다", async () => {
-  jest.useFakeTimers("modern");
-  jest.setSystemTime(new Date("2026-10-22T12:00:00"));
-  saveSchedules([
-    makeSchedule({ id: "a", date: "2026-10-22", time: "13:00", project: "가 프로젝트", title: "가 작업" }),
-    makeSchedule({ id: "b", date: "2026-10-23", time: "14:00", project: "나 프로젝트", title: "나 작업", type: "기타" }),
-  ]);
-  render(<ScheduleManager />);
-  fireEvent.click(screen.getByRole("button", { name: "일정 등록 프로젝트 목록 보기" }));
-  fireEvent.click(screen.getByRole("button", { name: "가 프로젝트 프로젝트 일정 보기" }));
-  const upcoming = screen.getByRole("region", { name: "다가오는 일정" });
-  fireEvent.click(within(upcoming).getByRole("button", { name: /나 작업/ }));
-  const calendar = screen.getByRole("region", { name: "일정 달력" });
-  expect(within(calendar).getByRole("button", { name: "2026-10-23 14:00~17:00 나 작업 선택한 날짜 일정에서 보기" })).toBeInTheDocument();
-  expect(within(calendar).queryByRole("button", { name: "전체 프로젝트 보기" })).not.toBeInTheDocument();
-  await act(async () => { expect(fetch).toHaveBeenCalled(); });
 });
 
 test("등록 폼은 고유명사 맞춤법 검사를 끄고 이름 입력값은 그대로 유지한다", async () => {
@@ -2053,26 +2212,7 @@ test("월간 일정 박스의 별은 상세창이나 선택 날짜를 바꾸지 
   await act(async () => { expect(fetch).toHaveBeenCalled(); });
 });
 
-test("프로젝트·공개 필터가 적용된 일정도 수정 저장 후 바로 확인할 수 있다", async () => {
-  saveSchedules([makeSchedule({ project: "기존 프로젝트", status: "completed", visibility: "shared" })]);
-  render(<ScheduleManager />);
-  fireEvent.click(screen.getByRole("button", { name: "일정 등록 프로젝트 목록 보기" }));
-  fireEvent.click(screen.getByRole("button", { name: "기존 프로젝트 프로젝트 일정 보기" }));
-  fireEvent.change(screen.getByRole("combobox", { name: "공유 구분 필터" }), { target: { value: "shared" } });
-  const selected = screen.getByRole("region", { name: "선택한 날짜 일정" });
-  fireEvent.click(within(selected).getByRole("button", { name: "검증용 마감 일정 수정" }));
-  fireEvent.change(screen.getByLabelText("프로젝트"), { target: { value: "바뀐 프로젝트" } });
-  fireEvent.change(screen.getByLabelText("일정 상태"), { target: { value: "pending" } });
-  expect(screen.getByLabelText("공유 구분")).not.toBeVisible();
-  fireEvent.click(screen.getByRole("button", { name: "수정 저장" }));
-  expect(within(screen.getByRole("region", { name: "일정 달력" })).getByRole("button", { name: /검증용 마감 선택한 날짜 일정에서 보기/ })).toBeInTheDocument();
-  expect(screen.getByRole("combobox", { name: "공유 구분 필터" })).toHaveValue("all");
-  expect(screen.queryByRole("combobox", { name: "업무 상태 필터" })).not.toBeInTheDocument();
-  expect(within(selected).getByText("검증용 마감")).toBeInTheDocument();
-  await act(async () => { expect(fetch).toHaveBeenCalled(); });
-});
-
-test("공백 이름은 막고 프로젝트는 비워 저장할 수 있다", async () => {
+test("공백 이름은 막고 업무 분류의 프로젝트 연결은 보존·수정할 수 있다", async () => {
   saveSchedules([makeSchedule()]);
   render(<ScheduleManager />);
   const selected = screen.getByRole("region", { name: "선택한 날짜 일정" });
@@ -2083,26 +2223,21 @@ test("공백 이름은 막고 프로젝트는 비워 저장할 수 있다", asyn
   fireEvent.click(within(screen.getByRole("group", { name: "일정 분류" })).getByRole("button", { name: "업무", exact: true }));
   fireEvent.change(screen.getByLabelText("일정 이름"), { target: { value: "  새 이름  " } });
   fireEvent.click(screen.getByRole("button", { name: "수정 저장" }));
-  expect(JSON.parse(localStorage.getItem(storageKey))[0]).toMatchObject({ title: "새 이름", project: "", category: "업무" });
+  expect(JSON.parse(localStorage.getItem(storageKey))[0]).toMatchObject({ title: "새 이름", project: "테스트 프로젝트", category: "업무" });
   fireEvent.click(within(selected).getByRole("button", { name: "새 이름 일정 수정" }));
-  fireEvent.click(within(screen.getByRole("group", { name: "일정 분류" })).getByRole("button", { name: "프로젝트", exact: true }));
+  fireEvent.click(within(screen.getByRole("group", { name: "일정 분류" })).getByRole("button", { name: "업무", exact: true }));
   fireEvent.change(screen.getByLabelText("프로젝트"), { target: { value: "  새 프로젝트  " } });
   fireEvent.click(screen.getByRole("button", { name: "수정 저장" }));
-  expect(JSON.parse(localStorage.getItem(storageKey))[0]).toMatchObject({ title: "새 이름", project: "새 프로젝트", category: "프로젝트" });
+  expect(JSON.parse(localStorage.getItem(storageKey))[0]).toMatchObject({ title: "새 이름", project: "새 프로젝트", category: "업무" });
   await act(async () => { expect(fetch).toHaveBeenCalled(); });
 });
 
-test.each(["프로젝트", "즐겨찾기"])("%s 이동은 이미 끝난 오늘 일정 대신 다음 유효 일정 날짜를 연다", async (source) => {
+test.each(["즐겨찾기"])("%s 이동은 이미 끝난 오늘 일정 대신 다음 유효 일정 날짜를 연다", async (source) => {
   jest.useFakeTimers("modern");
   jest.setSystemTime(new Date("2026-10-22T18:00:00"));
   saveSchedules([makeSchedule({ date: "2026-10-22", time: "09:00", endTime: "17:00", repeatType: "weekly", isFavorite: true })]);
   render(<ScheduleManager />);
-  if (source === "프로젝트") {
-    fireEvent.click(screen.getByRole("button", { name: "일정 등록 프로젝트 목록 보기" }));
-    fireEvent.click(screen.getByRole("button", { name: "테스트 프로젝트 프로젝트 일정 보기" }));
-  } else {
-    fireEvent.click(screen.getByRole("button", { name: "검증용 마감 즐겨찾기 일정으로 이동" }));
-  }
+  fireEvent.click(screen.getByRole("button", { name: "검증용 마감 즐겨찾기 일정으로 이동" }));
   expect(screen.getByRole("region", { name: "선택한 날짜 일정" })).toHaveTextContent("2026.10.29");
   await act(async () => { expect(fetch).toHaveBeenCalled(); });
 });
@@ -2124,20 +2259,6 @@ test("잘못된 날짜·시간은 백업 후 제외하고 손상된 반복 제�
   await act(async () => { expect(fetch).toHaveBeenCalled(); });
 });
 
-test("프로젝트의 마지막 일정을 삭제하면 없어진 프로젝트 선택을 자동 해제한다", async () => {
-  saveSchedules([makeSchedule()]);
-  jest.spyOn(window, "confirm").mockReturnValue(true);
-  render(<ScheduleManager />);
-  fireEvent.click(screen.getByRole("button", { name: "일정 등록 프로젝트 목록 보기" }));
-  fireEvent.click(screen.getByRole("button", { name: "테스트 프로젝트 프로젝트 일정 보기" }));
-  const selected = screen.getByRole("region", { name: "선택한 날짜 일정" });
-  fireEvent.click(within(selected).getByRole("button", { name: "검증용 마감 일정 삭제" }));
-  expect(screen.queryByRole("button", { name: "전체 프로젝트 보기" })).not.toBeInTheDocument();
-  expect(screen.queryByRole("button", { name: "프로젝트 선택 해제" })).not.toBeInTheDocument();
-  expect(JSON.parse(localStorage.getItem(storageKey))).toEqual([]);
-  await act(async () => { expect(fetch).toHaveBeenCalled(); });
-});
-
 // 기능을 줄인 뒤에도 과거 상태를 읽고 상세 창에서 삭제를 취소·확정할 수 있어야 합니다.
 test("단순화한 화면은 기존 상태를 예정으로 읽고 관리 기능을 상세 창에서 제공한다", async () => {
   saveSchedules([makeSchedule({ status: "in_progress", isFavorite: true })]);
@@ -2146,14 +2267,14 @@ test("단순화한 화면은 기존 상태를 예정으로 읽고 관리 기능�
   expect(screen.queryByRole("tab", { name: "시간대별" })).not.toBeInTheDocument();
   expect(screen.getAllByRole("tab")).toHaveLength(4);
   expect(screen.queryByRole("button", { name: "이번 주 마감 주별 보기" })).not.toBeInTheDocument();
-  expect(screen.getAllByRole("button", { name: "일정 등록 프로젝트 목록 보기" })).toHaveLength(1);
+  expect(screen.queryByRole("button", { name: "일정 등록 프로젝트 목록 보기" })).not.toBeInTheDocument();
   expect(JSON.parse(localStorage.getItem(storageKey))[0].status).toBe("pending");
   const favorites = screen.getByRole("region", { name: "★ 즐겨찾기" });
   expect(within(favorites).queryByRole("combobox")).not.toBeInTheDocument();
   fireEvent.click(within(favorites).getByRole("button", { name: "검증용 마감 일정 수정" }));
   const dialog = screen.getByRole("dialog");
   expect(within(dialog).queryByLabelText("새 팀원 이름")).not.toBeInTheDocument();
-  expect(within(dialog).getByLabelText("프로젝트")).toBeRequired();
+  expect(within(dialog).getByLabelText("프로젝트")).not.toBeRequired();
   expect(within(within(dialog).getByLabelText("일정 상태")).getAllByRole("option").map(option => option.textContent)).toEqual(["예정", "완료"]);
   fireEvent.click(within(dialog).getByRole("button", { name: "일정 삭제" }));
   expect(dialog).toBeInTheDocument();
@@ -2358,4 +2479,52 @@ test("기존 퇴사 담당자의 일정은 이름·ID를 유지한 채 다른 �
   fireEvent.click(screen.getByRole("button", { name: "수정 저장" }));
   expect(JSON.parse(localStorage.getItem(storageKey))[0]).toMatchObject({ person: "김기존", employeeId: 20, title: "예전 일정 수정" });
   await act(async () => { expect(fetch).toHaveBeenCalled(); });
+});
+
+
+test("전체 목록은 여러 날 일정의 전체 날짜와 시간을 표시하고 원본을 편집한다", () => {
+  const timed = makeSchedule({ id: "night", title: "야간 점검", date: "2026-12-04", time: "23:30", endDate: "2026-12-05", endTime: "00:30" });
+  const allDay = makeSchedule({ id: "leave", title: "종일 휴가", date: "2026-11-30", endDate: "2026-12-02", isAllDay: true });
+  const items = [timed, allDay];
+  const original = JSON.stringify(items);
+  const onEdit = jest.fn();
+  render(<ScheduleListModal items={items} totalCount={2} onEdit={onEdit} onClose={() => {}} />);
+  expect(screen.getByRole("button", { name: "야간 점검 일정 수정" })).toHaveTextContent("2026.12.04 23:30 ~ 2026.12.05 00:30");
+  expect(screen.getByRole("button", { name: "종일 휴가 일정 수정" })).toHaveTextContent("2026.11.30 ~ 2026.12.02 · 종일");
+  fireEvent.click(screen.getByRole("button", { name: "야간 점검 일정 수정" }));
+  expect(onEdit.mock.calls[0][0]).toBe(timed);
+  expect(JSON.stringify(items)).toBe(original);
+});
+
+test("전체 반복 목록은 마지막 요일과 휴일 이동을 반영한 다음 회차를 기준일과 구분한다", () => {
+  jest.useFakeTimers("modern");
+  jest.setSystemTime(new Date("2026-11-16T12:00:00"));
+  const monthly = makeSchedule({ id: "last-weekday", title: "월간 정리", date: "2026-11-18", repeatType: "monthly", monthlyRule: "weekday", monthlyOrdinal: -1, monthlyWeekday: 3 });
+  const weekly = makeSchedule({ id: "holiday-shift", title: "휴일 이동", date: "2026-11-21", repeatType: "weekly", holidayRule: "nextWorkday", repeatEndType: "count", repeatCount: 1 });
+  render(<ScheduleListModal items={[monthly, weekly]} totalCount={2} holidayDates={{ "2026-11-23": "검증 휴일" }} onClose={() => {}} />);
+  const monthlyRow = screen.getByRole("button", { name: "월간 정리 일정 수정" });
+  expect(monthlyRow).toHaveTextContent("다음 회차 · 2026.11.25");
+  expect(monthlyRow).toHaveTextContent("반복 기준일 · 2026.11.18");
+  const weeklyRow = screen.getByRole("button", { name: "휴일 이동 일정 수정" });
+  expect(weeklyRow).toHaveTextContent("다음 회차 · 2026.11.24");
+  expect(weeklyRow).toHaveTextContent("반복 기준일 · 2026.11.21");
+});
+
+test("남은 회차가 없는 반복은 기준 날짜를 다음 회차로 표시하지 않는다", () => {
+  jest.useFakeTimers("modern");
+  jest.setSystemTime(new Date("2026-11-16T12:00:00"));
+  const item = makeSchedule({ title: "종료된 반복", date: "2026-11-01", repeatType: "weekly", repeatEndType: "count", repeatCount: 1 });
+  render(<ScheduleListModal items={[item]} totalCount={1} onClose={() => {}} />);
+  const row = screen.getByRole("button", { name: "종료된 반복 일정 수정" });
+  expect(row).toHaveTextContent("남은 회차 없음");
+  expect(row).toHaveTextContent("반복 기준일 · 2026.11.01");
+  expect(row).not.toHaveTextContent("다음 회차");
+});
+
+test("전체 기간 시간 행은 야간 종료 시각을 표시하고 날짜별 시간 행은 분할을 유지한다", () => {
+  const item = makeSchedule({ date: "2026-12-04", time: "23:30", endDate: "2026-12-05", endTime: "00:30" });
+  const { rerender } = render(<ScheduleTimeRow item={item} wholePeriod />);
+  expect(screen.getByText("23:30~00:30")).toBeInTheDocument();
+  rerender(<ScheduleTimeRow item={item} />);
+  expect(screen.getByText("23:30~24:00")).toBeInTheDocument();
 });

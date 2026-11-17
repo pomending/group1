@@ -24,7 +24,7 @@ import Sidebar from "./components/Sidebar";
 import { ERPProvider, useERP } from "./context/ERPContext";
 
 
-const REQUIRE_LOGIN = false;
+const REQUIRE_LOGIN = true;
 
 function ERPContent() {
 
@@ -133,11 +133,7 @@ function App() {
             <ERPProvider>
                 <ERPContent />
             </ERPProvider>
-
-
         </BrowserRouter>
-
-
     );
 }
 

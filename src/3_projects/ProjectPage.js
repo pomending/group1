@@ -1,13 +1,18 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import './projects.css';
 import ProjectList from "./ProjectList";
 import ProjectForm from "./ProjectForm";
 import ProjectDetail from "./ProjectDetail";
 import ProjectEdit from "./ProjectEdit";
 import NotFoundPage from "../components/NotFoundPage";
-import { Route, Routes } from "react-router-dom";
+import { Route, Routes, useLocation, useNavigate } from "react-router-dom";
+import { useERP } from "../context/ERPContext";
 
 function ProjectPage() {
+
+    const { projects } = useERP();
+
+    const navigate = useNavigate();
 
     // 검색어 변수
     const [search, setSearch] = useState('');
@@ -17,6 +22,29 @@ function ProjectPage() {
     const [page, setPage] = useState('list');
     // 상세 보기를 하려는 프로젝트의 ID
     const [selectedProjectId, setSelectedProjectId] = useState('');
+
+    const location = useLocation();
+
+    useEffect(() => {
+
+        const projectId = location.state?.openProjectId;
+    
+        if (projectId == null) return;
+    
+        const exists = projects.some(p => p.id === projectId);
+    
+        if (exists) {
+            setSelectedProjectId(projectId);
+            setPage("detail");
+        }
+    
+        // 대시보드에서 전달받은 state 제거
+        navigate(location.pathname, {
+            replace: true,
+            state: null
+        });
+    
+    }, [location, projects, navigate]);
 
     return (
 

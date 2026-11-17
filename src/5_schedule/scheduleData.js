@@ -23,16 +23,18 @@ export const scheduleTypes = [
   "출고",
   "기타",
 ];
-export const scheduleCategories = ["회의", "프로젝트", "업무", "외근", "휴가", "기타"];
+export const scheduleCategories = ["회의", "업무", "외근", "휴가", "기타"];
 export const scheduleScopes = ["업무용", "개인 일정용"];
 export function getScheduleScope(item = {}) {
   return scheduleScopes.includes(item.scope) ? item.scope : "업무용";
 }
 export function getScheduleCategory(item = {}) {
+  // 예전 프로젝트 분류는 업무로 표시하되 프로젝트 연결 정보는 보존합니다.
+  if (item.category === "프로젝트") return "업무";
   if (scheduleCategories.includes(item.category)) return item.category;
   if (item.scope === "개인 일정용") return "";
   if (normalizeAttendees(item.attendees).length) return "회의";
-  return typeof item.project === "string" && item.project.trim() ? "프로젝트" : "업무";
+  return "업무";
 }
 export const MAX_REPEAT_INTERVAL = 120;
 // 기존 biweekly=true 데이터도 2주 간격으로 읽습니다. 새 데이터의 숫자 간격을 우선합니다.
@@ -386,15 +388,24 @@ export function getScheduleParticipants(item, employees = []) {
 }
 
 // 이름 검색과 팀원 목록에 사용할 담당자·참석자 이름을 중복 없이 반환합니다.
-export const getSchedulePeople = (item, employees = []) =>
-  normalizeAttendees([
+export function getSchedulePeople(item, employees = []) {
+  const names = [
     ...getScheduleParticipants(item, employees).map(person => person.name),
+
     // 담당자가 비어 있거나 문자열이 아니어도 normalizeAttendees가 알아서 건너뜁니다.
     item.person,
     // ...가 없으면 [담당자, [참석자들]]로 중첩됩니다. 펼쳐야 이름들이 한 배열에 나란히 들어갑니다.
     // normalizeAttendees가 누락값도 배열로 보장하므로 펼치기를 안전하게 사용할 수 있습니다.
     ...normalizeAttendees(item.attendees),
-  ]);
+  ];
+  // 직원 번호로 현재 이름을 더해 개명 전후 이름을 모두 검색할 수 있게 합니다.
+  for (const person of getScheduleParticipants(item)) {
+    if (person.id == null) continue;
+    const employee = employees.find(entry => String(entry.id) === String(person.id));
+    if (employee) names.push(employee.name);
+  }
+  return normalizeAttendees(names);
+}
 
 // 반복 일정은 규칙 하나만 저장하고, 보고 있는 기간에 해당하는 날짜만 계산합니다.
 // 이렇게 하면 종료일 없이 먼 미래의 달로 이동해도 같은 규칙을 적용할 수 있습니다.
@@ -564,10 +575,12 @@ export const getNextScheduleDate = (items, fromKey, holidays = {}) => {
 };
 
 // 원본 전체를 보여 주는 목록에서는 하루 분량 시간이 아닌 전체 기간·실제 다음 회차를 표시합니다.
-export function getScheduleListDate(item, fromKey = getTodayKey(), holidays = {}) {
+export function getScheduleListDate(item, fromKey = getTodayKey(), holidays = {}, now = null) {
   const recurring = ["weekly", "monthly"].includes(item.repeatType) && !item.occurrenceDate;
   if (recurring) {
-    const next = expandSchedules([item], fromKey, getScheduleLookaheadEnd(item, fromKey, 1), holidays)[0];
+    const next = now === null
+      ? expandSchedules([item], fromKey, getScheduleLookaheadEnd(item, fromKey, 1), holidays)[0]
+      : getUpcomingSchedules([{ ...item, status: "pending" }], now, 1, undefined, holidays)[0];
     return {
       displayDate: next?.date || item.date,
       dateLabel: next ? `다음 회차 · ${next.date.replaceAll("-", ".")} · ${getScheduleTime(next)}` : "남은 회차 없음",
@@ -762,15 +775,11 @@ export function isNumericInput(value) {
 export function getScheduleFormError(form) {
   if (!form || typeof form !== "object") return { field: "scope", message: "일정 입력 내용을 확인해 주세요." };
   const title = typeof form.title === "string" ? form.title.trim() : "";
-  const project = typeof form.project === "string" ? form.project.trim() : "";
   if (!scheduleScopes.includes(form.scope)) {
     return { field: "scope", message: "업무용 또는 개인 일정용을 먼저 선택해 주세요." };
   }
   if (form.scope === "업무용" && !scheduleCategories.includes(form.category)) {
     return { field: "category", message: "일정 분류를 선택해 주세요." };
-  }
-  if (form.scope === "업무용" && form.category === "프로젝트" && !project) {
-    return { field: "project", message: "프로젝트 분류에는 프로젝트명을 입력해 주세요." };
   }
   if (typeof form.project !== "string") return { field: "project", message: "프로젝트명은 글자로 입력해 주세요." };
   if (!title) {
@@ -779,7 +788,7 @@ export function getScheduleFormError(form) {
   // 입력창의 maxLength와 같은 제한을 저장 전에도 검사합니다.
   // 임시 보관 복구나 직접 제출로 브라우저 제한을 건너뛰어도 잘못된 값을 저장하지 않습니다.
   if (form.title.length > 80) return { field: "title", message: "일정 이름은 80자 이내로 입력해 주세요." };
-  if (form.scope === "업무용" && form.category === "프로젝트" && form.project.length > 60) {
+  if (form.scope === "업무용" && form.project.length > 60) {
     return { field: "project", message: "프로젝트명은 60자 이내로 입력해 주세요." };
   }
   if (typeof form.description !== "string" || form.description.length > 3000) {
@@ -833,8 +842,17 @@ export function getScheduleFormError(form) {
   }
   if (form.scope === "업무용") {
     if (!scheduleStatuses.some(status => status.value === form.status)) return { field: "status", message: "일정 상태를 선택해 주세요." };
-    if (form.category === "회의" && normalizeAttendees(form.attendees).some(name => name.length > 30)) {
-      return { field: "attendees", message: "참석자 이름은 30자 이내로 입력해 주세요." };
+    if (form.category === "회의") {
+      const linkedAttendees = normalizeAttendeeEmployees(form.attendeeEmployees);
+      if (form.attendeeEmployees !== undefined &&
+        (!Array.isArray(form.attendeeEmployees) || linkedAttendees.length !== form.attendeeEmployees.length)) {
+        return { field: "attendees", message: "참석자 직원 정보를 다시 선택해 주세요." };
+      }
+      if (typeof form.attendees !== "string" && !Array.isArray(form.attendees)) {
+        return { field: "attendees", message: "참석자 이름을 확인해 주세요." };
+      }
+      const names = [...normalizeAttendees(form.attendees), ...linkedAttendees.map(employee => employee.name)];
+      if (names.some(name => name.length > 30)) return { field: "attendees", message: "참석자 이름은 30자 이내로 입력해 주세요." };
     }
   }
   return null;

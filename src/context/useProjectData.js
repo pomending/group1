@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import { initialProjects } from "../data/mockData"
 import { validateProject } from "../utils/projectUtils"
 
-export function useProjectData(employees) {
+export function useProjectData() {
 
     const STORAGE_KEY = 'erp_projects'
     const NEXT_ID_KEY = 'erp_project_next_id'
@@ -72,10 +72,22 @@ export function useProjectData(employees) {
 
     const addProject = (newProject) => {
 
-        const error = validateProject(newProject, employees)
+        const error = validateProject(newProject)
 
         if (error) {
             return { ok: false, message: error };
+        }
+
+        // 견적 중복 사용 검증
+        const alreadyUsed = projects.some(
+            p => p.quotationId === newProject.quotationId
+        );
+
+        if (alreadyUsed) {
+            return {
+                ok: false,
+                message: "이미 다른 프로젝트에서 사용 중인 견적입니다."
+            };
         }
 
         const savedNextId = Number(localStorage.getItem(NEXT_ID_KEY))
@@ -121,10 +133,26 @@ export function useProjectData(employees) {
             };
         }
 
+        // 완료된 프로젝트 수정 금지
+        if (original.status === "완료") {
+            return {
+                ok: false,
+                message: "완료된 프로젝트는 수정할 수 없습니다."
+            };
+        }
+
+        // 일반 수정으로 프로젝트 완료 처리 금지
+        if (updatedProject.status === "완료") {
+            return {
+                ok: false,
+                message: "프로젝트는 배송 완료 시 자동으로 완료 처리됩니다."
+            };
+        }
+
         const error = validateProject({
             ...original,
             ...updatedProject
-        }, employees, original);
+        });
 
         if (error !== null) {
             return { ok: false, message: error };
@@ -185,10 +213,19 @@ export function useProjectData(employees) {
             };
         }
 
-        if (!projects.some(project => project.id === id)) {
+        const project = projects.find(p => p.id === id)
+
+        if (!project) {
             return {
                 ok: false,
                 message: "삭제할 프로젝트를 찾을 수 없습니다."
+            };
+        }
+
+        if (project.status === "완료") {
+            return {
+                ok: false,
+                message: "완료된 프로젝트는 삭제할 수 없습니다."
             };
         }
 
@@ -202,7 +239,76 @@ export function useProjectData(employees) {
 
     }
 
-    
+    const completeProject = (projectId) => {
+
+        if (!Number.isSafeInteger(projectId) || projectId <= 0) {
+            return {
+                ok: false,
+                message: "올바르지 않은 프로젝트 ID입니다."
+            };
+        }
+
+        const original = projects.find(p => p.id === projectId);
+
+        if (!original) {
+            return {
+                ok: false,
+                message: "프로젝트를 찾을 수 없습니다."
+            };
+        }
+
+        if (original.status === "완료") {
+            return {
+                ok: false,
+                message: "이미 완료된 프로젝트입니다."
+            };
+        }
+
+        const completedDate = new Date().toLocaleDateString("sv-SE");
+
+        setProjects(prev => prev.map(project =>
+            project.id === projectId
+                ? {
+                    ...project,
+                    status: "완료",
+                    completedDate
+                }
+                : project
+        ));
+
+        const nextId = Number(localStorage.getItem(NEXT_PH_ID_KEY)) || 1
+
+        const maxId = Math.max(
+            0, ...projectHistory.map(ph => Number(ph.id) || 0)
+        )
+
+        const newId = Math.max(
+            maxId + 1,
+            Number.isSafeInteger(nextId) && nextId > 0 ?
+                nextId : 1
+        )
+
+        setProjectHistory(prev =>
+            [...prev, {
+                id: newId,
+                projectId,
+                changedAt: new Date().toISOString(),
+                changes: [{
+                    field: "status",
+                    oldValue: original.status,
+                    newValue: "완료"
+                }, {
+                    field: "completedDate",
+                    oldValue: original.completedDate,
+                    newValue: completedDate
+                }]
+            }])
+
+        localStorage.setItem(NEXT_PH_ID_KEY, String(newId + 1))
+
+        return { ok: true };
+
+    };
 
     const resetProjects = () => {
 
@@ -227,6 +333,7 @@ export function useProjectData(employees) {
         addProject,
         updateProject,
         deleteProject,
+        completeProject,
         resetProjects
     }
 

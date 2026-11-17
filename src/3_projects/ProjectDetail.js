@@ -89,26 +89,26 @@ function ProjectDetail(props) {
         return String(value)
     }
 
-    
+
 
     const delProject = () => {
 
         if (!window.confirm("정말로 프로젝트를 삭제하시겠습니까?")) {
             return;
         }
-    
+
         const result = deleteProject(selectedProject.id);
-    
+
         if (!result.ok) {
             alert(result.message);
             return;
         }
-    
+
         props.setPage("list");
     };
 
     const saveStatus = () => {
-        
+
         const result = updateProject({
             id: selectedProject.id,
             status: status,
@@ -163,14 +163,23 @@ function ProjectDetail(props) {
                                 {getProjectStatus(selectedProject)}
                             </span>
 
-                            <button
-                                className="pd-edit-btn pj-btn pj-primary"
-                                onClick={() => props.setPage('edit')}
-                            >
-                                수정
-                            </button>
+                            {selectedProject.status !== "완료" && (
+                                <>
+                                    <button
+                                        className="pd-edit-btn pj-btn pj-primary"
+                                        onClick={() => props.setPage("edit")}
+                                    >
+                                        수정
+                                    </button>
 
-                            <button className="pd-delete-btn pj-btn" onClick={delProject}>삭제</button>
+                                    <button
+                                        className="pd-delete-btn pj-btn"
+                                        onClick={delProject}
+                                    >
+                                        삭제
+                                    </button>
+                                </>
+                            )}
                         </div>
                     </div>
 
@@ -306,12 +315,20 @@ function ProjectDetail(props) {
                                     <label htmlFor="pd-status-select">변경할 상태</label>
                                     <select
                                         id="pd-status-select"
-                                        value={status}
+                                        value={selectedProject.status === "완료" ? "완료" : status}
                                         onChange={(e) => setStatus(e.target.value)}
+                                        disabled={selectedProject.status === "완료"}
                                     >
-                                        {PROJECT_STATUSES.map(status => (
-                                            <option key={status} value={status}>{status}</option>
-                                        ))}
+                                        {PROJECT_STATUSES
+                                            .filter(s =>
+                                                s !== "완료" ||
+                                                selectedProject.status === "완료"
+                                            )
+                                            .map(s => (
+                                                <option key={s} value={s}>
+                                                    {s}
+                                                </option>
+                                            ))}
                                     </select>
                                 </div>
                             </div>
@@ -319,9 +336,16 @@ function ProjectDetail(props) {
                             <button
                                 className="pd-status-save pj-btn pj-primary"
                                 onClick={saveStatus}
+                                disabled={selectedProject.status === "완료"}
                             >
                                 상태 변경
                             </button>
+
+                            {selectedProject.status === "완료" && (
+                                <p className="pd-status-notice">
+                                    완료된 프로젝트는 상태를 변경할 수 없습니다.
+                                </p>
+                            )}
                         </div>
 
                     </section>
@@ -375,7 +399,7 @@ function ProjectDetail(props) {
 
                         <h3 className="pd-subheading">연결 견적 정보</h3>
                         {selectedQuotation ? (
-                            <ProjectQuotationInfo product={selectedProduct} quotation={selectedQuotation} customer={customer}/>
+                            <ProjectQuotationInfo product={selectedProduct} quotation={selectedQuotation} customer={customer} />
                         ) : (
                             <p className="pd-empty">연결된 견적 정보를 찾을 수 없습니다.</p>
                         )}
@@ -409,7 +433,7 @@ function ProjectDetail(props) {
                                                 <td>{task.taskDeadline || "미정"}</td>
                                                 <td>
                                                     <span className={`pd-task-status ${task.progress === "완료" ? "done" :
-                                                            task.progress === "작업중" ? "working" : "waiting"
+                                                        task.progress === "작업중" ? "working" : "waiting"
                                                         }`}>
                                                         {task.progress}
                                                     </span>

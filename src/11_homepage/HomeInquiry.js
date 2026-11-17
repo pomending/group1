@@ -1,129 +1,307 @@
 
-import React, { useState } from "react";
+import HomeFooter from "./HomeFooter";
+import React, { useEffect, useRef, useState } from "react";
 import "./HomeInquiry.css";
+import { useERP } from "../context/ERPContext";
+import { formatOrderNo } from "../utils/formatUtils";
+import { parseOrderNo } from "../utils/claimUtils";
 
-// 브라우저에 저장된 문의를 불러옵니다.
-function loadInquiries() {
-    try {
-        const saved = localStorage.getItem("home_inquiries");
-        if (!saved) return [];
-
-        const data = JSON.parse(saved);
-        if (Array.isArray(data)) return data;
-    } catch (error) {
-        return [];
-    }
-    return [];
-}
+const emptyForm = {
+    companyName: "", customerManager: "", phone: "", email: "", orderNo: "",
+    inquiryType: "제품 불량", title: "", content: "", photo: ""
+};
 
 function HomeInquiry({ isMaster = false }) {
-    const [list, setList] = useState(loadInquiries);
+    const {
+        claims,
+        addClaim,
+        updateClaim,
+        deleteClaim
+    } = useERP();
+    const [form, setForm] = useState(emptyForm);
     const [page, setPage] = useState("list");
-    const [title, setTitle] = useState("");
-    const [orderNo, setOrderNo] = useState("");
-    const [content, setContent] = useState("");
-    const [selected, setSelected] = useState(null);
-    const [checkNo, setCheckNo] = useState("");
+    const [selectedId, setSelectedId] = useState(null);
+    const [editing, setEditing] = useState(false);
     const [verified, setVerified] = useState(false);
+    const [checkNo, setCheckNo] = useState("");
     const [error, setError] = useState("");
+    const [photoLoading, setPhotoLoading] = useState(false);
+    const photoReader = useRef(null);
+    const [sharedMaster, setSharedMaster] = useState(() => sessionStorage.getItem("homepage_master") === "true");
 
-    // 문의 작성 화면으로 이동합니다.
-    function write() {
-        setTitle("");
-        setOrderNo("");
-        setContent("");
+    const master = isMaster || sharedMaster;
+    const selected = claims.find(claim => claim.id === selectedId);
+    const canSave =
+        form.companyName.trim() &&
+        form.customerManager.trim() &&
+        (form.phone.trim() || form.email.trim()) &&
+        form.orderNo.trim() &&
+        form.title.trim() &&
+        form.content.trim();
+
+    // 상단바에서 마스터 모드가 바뀌면 반영합니다.
+    useEffect(() => {
+        function updateMaster() {
+            setSharedMaster(sessionStorage.getItem("homepage_master") === "true");
+        }
+        window.addEventListener("homepage-master-changed", updateMaster);
+        return () => window.removeEventListener("homepage-master-changed", updateMaster);
+    }, []);
+
+    useEffect(() => {
+        if (!master) setVerified(false);
+    }, [master]);
+
+    useEffect(() => {
+        if (master && editing) {
+            setEditing(false);
+            setPage("detail");
+        }
+    }, [master, editing]);
+
+    useEffect(() => {
+        if (page === "detail" && selectedId !== null && !selected) {
+            setSelectedId(null);
+            setVerified(false);
+            setPage("list");
+        }
+    }, [page, selectedId, selected]);
+
+    useEffect(() => {
+        return () => { if (photoReader.current) photoReader.current.abort(); };
+    }, []);
+
+    function changeField(name, value) {
+        setForm(prev => ({ ...prev, [name]: value }));
+    }
+
+    function removePhoto() {
+        if (photoReader.current) photoReader.current.abort();
+        photoReader.current = null;
+        setPhotoLoading(false);
+        changeField("photo", "");
+    }
+
+    function fillForm(claim) {
+
+        removePhoto();
+
+        setForm({
+            companyName: claim.companyName || "",
+            customerManager: claim.customerManager || "",
+            phone: claim.phone || "",
+            email: claim.email || "",
+            orderNo: claim.consultationId
+                ? formatOrderNo(claim.consultationId)
+                : "",
+            inquiryType: claim.inquiryType || "제품 불량",
+            title: claim.title || "",
+            content: claim.content || "",
+            photo: claim.photo || ""
+        });
+
         setError("");
         setPage("write");
     }
 
-    // 작성한 문의를 저장합니다.
-    function save(event) {
-        event.preventDefault();
-        if (!title.trim() || !orderNo.trim() || !content.trim()) {
-            setError("모든 항목을 입력해 주세요.");
-            return;
-        }
-
-        const item = {
-            id: Date.now(),
-            title: title.trim(),
-            orderNo: orderNo.trim(),
-            content: content.trim(),
-            status: "접수",
-            date: new Date().toLocaleDateString("ko-KR")
-        };
-        const updated = [item, ...list];
-
-        try {
-            localStorage.setItem("home_inquiries", JSON.stringify(updated));
-        } catch (error) {
-            setError("문의를 저장하지 못했습니다.");
-            return;
-        }
-
-        setList(updated);
-        setError("");
-        setPage("list");
+    function write() {
+        setEditing(false);
+        setSelectedId(null);
+        setVerified(false);
+        fillForm({});
     }
 
-    // 문의를 선택하면 주문번호 확인을 준비합니다.
+    function edit() {
+        if (!selected || master || !verified) return;
+        setEditing(true);
+        fillForm(selected);
+    }
+
+    // 기존 사진 첨부 제한을 유지합니다.
+    function addPhoto(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        e.target.value = "";
+
+        if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+            setError("JPG, PNG, WEBP 사진만 첨부할 수 있습니다.");
+            return;
+        }
+
+        if (file.size > 500 * 1024) {
+            setError("사진은 500KB 이하만 첨부할 수 있습니다.");
+            return;
+        }
+
+        removePhoto();
+        setError("");
+        setPhotoLoading(true);
+        const reader = new FileReader();
+        photoReader.current = reader;
+
+        reader.onload = function () {
+            if (photoReader.current !== reader) return;
+            changeField("photo", reader.result);
+            setPhotoLoading(false);
+            photoReader.current = null;
+        };
+
+        reader.onerror = function () {
+            if (photoReader.current !== reader) return;
+            setError("사진을 읽지 못했습니다.");
+            setPhotoLoading(false);
+            photoReader.current = null;
+        };
+        reader.readAsDataURL(file);
+    }
+
+    function save(e) {
+
+        e.preventDefault();
+
+        if (photoLoading) return;
+
+        if (editing && (!selected || master || !verified)) {
+            setError("수정 권한을 확인해 주세요.");
+            return;
+        }
+
+        if (!canSave) {
+            setError("필수 항목과 연락처를 입력해 주세요.");
+            return;
+        }
+
+        // 주문번호에서 상담 ID 추출
+        const consultationId = parseOrderNo(form.orderNo);
+
+        if (consultationId === null) {
+            setError("올바른 주문번호를 입력해 주세요.");
+            return;
+        }
+
+        // orderNo를 제외한 나머지 입력값
+        const { orderNo, ...claimForm } = form;
+
+        let result;
+
+        if (editing) {
+
+            // 기존 클레임 수정
+            result = updateClaim({
+                ...claimForm,
+                id: selectedId
+            });
+
+        } else {
+
+            // 신규 클레임 등록
+            result = addClaim({
+                ...claimForm,
+                consultationId
+            });
+        }
+
+        if (!result.ok) {
+            setError(result.message);
+            return;
+        }
+
+        setError("");
+        setEditing(false);
+
+        if (editing) {
+            setPage("detail");
+        } else {
+            setSelectedId(null);
+            setVerified(false);
+            setPage("list");
+        }
+    }
+
+    function remove() {
+        if (!selected || (!master && !verified)) return;
+        if (!window.confirm("이 문의글을 삭제하시겠습니까?")) return;
+        const result = deleteClaim(selectedId);
+        if (result.ok) back();
+        else setError(result.message);
+    }
+
+    function changeStatus(e) {
+        if (!master || !selected) return;
+        const result = updateClaim({ id: selectedId, status: e.target.value });
+        setError(result.ok ? "" : result.message);
+    }
+
     function open(item) {
-        setSelected(item);
-        setCheckNo("");
+        setSelectedId(item.id);
         setVerified(false);
+        setCheckNo("");
         setError("");
         setPage("detail");
     }
 
-    // 입력한 주문번호와 저장된 번호를 비교합니다.
-    function check(event) {
-        event.preventDefault();
-        if (checkNo.trim() === selected.orderNo) {
+    function check(e) {
+
+        e.preventDefault();
+
+        const consultationId = parseOrderNo(checkNo);
+
+        if (
+            selected &&
+            consultationId === selected.consultationId
+        ) {
             setVerified(true);
             setError("");
         } else {
+            setVerified(false);
             setError("주문번호가 일치하지 않습니다.");
         }
     }
 
-    // 문의 목록으로 돌아갑니다.
     function back() {
-        setSelected(null);
-        setCheckNo("");
-        setVerified(false);
+        removePhoto();
         setError("");
-        setPage("list");
+        if (editing && selected) {
+            setEditing(false);
+            setPage("detail");
+        } else {
+            setSelectedId(null);
+            setVerified(false);
+            setCheckNo("");
+            setPage("list");
+        }
     }
 
     return (
         <main className="inq">
             <div className="inq-inner">
-                <header className="inq-head">
-                    <p>GOODS / CLAIM</p>
-                    <h1>클레임 문의</h1>
-                    <span>등록된 문의를 확인하고 새로운 문의를 작성할 수 있습니다.</span>
-                </header>
-
                 {/* 문의 목록 */}
                 {page === "list" && (
                     <section>
+                        <header className="inq-head">
+                            <p>GOODS / CLAIM</p>
+                            <h1>클레임 문의</h1>
+                            <span>등록된 문의를 확인하거나 새로운 문의를 작성할 수 있습니다.</span>
+                        </header>
                         <div className="inq-bar">
                             <h2>문의 목록</h2>
                             <button type="button" onClick={write}>문의 작성 +</button>
                         </div>
                         <table className="inq-table">
-                            <thead>
-                                <tr><th>제목</th><th>처리 상태</th><th>등록일</th></tr>
-                            </thead>
+                            <thead><tr><th>제목</th><th>처리 상태</th><th>등록일</th></tr></thead>
                             <tbody>
-                                {list.length === 0 && (
-                                    <tr><td className="inq-empty" colSpan={3}>등록된 문의가 없습니다.</td></tr>
-                                )}
-                                {list.map(item => (
-                                    <tr key={item.id}>
-                                        <td><button type="button" onClick={() => open(item)}>{item.title}</button></td>
-                                        <td><span className="inq-status">{item.status}</span></td>
-                                        <td>{item.date}</td>
+                                {claims.length === 0 && <tr><td className="inq-empty" colSpan={3}>등록된 문의가 없습니다.</td></tr>}
+                                {claims.map(item => (
+                                    <tr className="inq-row" key={item.id} role="button" tabIndex={0} onClick={() => open(item)}
+                                        onKeyDown={e => {
+                                            if (e.key === "Enter" || e.key === " ") {
+                                                e.preventDefault();
+                                                open(item);
+                                            }
+                                        }}>
+                                        <td>{item.title}</td>
+                                        <td><span className="inq-status">{item.status || "접수"}</span></td>
+                                        <td>{item.createdAt || item.date}</td>
                                     </tr>
                                 ))}
                             </tbody>
@@ -131,58 +309,167 @@ function HomeInquiry({ isMaster = false }) {
                     </section>
                 )}
 
-                {/* 문의 작성 */}
+                {/* 글쓰기 및 수정 */}
                 {page === "write" && (
-                    <section className="inq-box">
-                        <h2>문의 작성</h2>
+                    <section>
+                        <header className="inq-write-head">
+                            <div>
+                                <h1>{editing ? "클레임 수정" : "클레임 글쓰기"}</h1>
+                                <p>제작 및 납품 관련 문의 내용을 작성합니다.</p>
+                            </div>
+                            <button type="button" onClick={back}>취소</button>
+                        </header>
                         <form onSubmit={save}>
-                            <label>제목
-                                <input value={title} onChange={e => setTitle(e.target.value)} />
-                            </label>
-                            <label>주문번호
-                                <input value={orderNo} onChange={e => setOrderNo(e.target.value)} />
-                            </label>
-                            <label>문의 내용
-                                <textarea value={content} onChange={e => setContent(e.target.value)} />
-                            </label>
-                            {error && <p className="inq-error">{error}</p>}
+                            <div className="inq-box">
+                                <h2>업체 및 주문 정보</h2>
+                                <div className="inq-two">
+                                    <label>업체명 * <input
+                                        value={form.companyName}
+                                        onChange={e => changeField("companyName", e.target.value)}
+                                        readOnly={editing}
+                                        required
+                                    /></label>
+                                    <label>작성자 * <input value={form.customerManager} onChange={e => changeField("customerManager", e.target.value)} placeholder="문의글 작성자 이름" required /></label>
+                                </div>
+                                <div className="inq-two">
+                                    <label>전화번호 <input type="tel" value={form.phone} onChange={e => changeField("phone", e.target.value)} placeholder="예: 010-1234-5678" /></label>
+                                    <label>이메일 <input type="email" value={form.email} onChange={e => changeField("email", e.target.value)} placeholder="예: sample@example.com" /></label>
+                                </div>
+                                <small>전화번호와 이메일 중 하나 이상 입력해 주세요. 둘 다 입력해도 됩니다.</small>
+                                <label>
+                                    주문번호 *
+                                    <input
+                                        value={form.orderNo}
+                                        onChange={e => changeField("orderNo", e.target.value)}
+                                        placeholder="예: ERP-0003"
+                                        readOnly={editing}
+                                        required
+                                    />
+                                </label>
+                                <small>게시글 상세 열람에 사용됩니다.</small>
+                            </div>
+                            <div className="inq-box">
+                                <h2>문의 내용</h2>
+                                <label>문의 유형
+                                    <select value={form.inquiryType} onChange={e => changeField("inquiryType", e.target.value)}>
+                                        <option>제품 불량</option>
+                                        <option>수량 부족</option>
+                                        <option>배송 문제</option>
+                                        <option>기타 문의</option>
+                                    </select>
+                                </label>
+                                <label>제목 * <input value={form.title} onChange={e => changeField("title", e.target.value)} placeholder="게시글 제목" required /></label>
+                                <label>내용 * <textarea value={form.content} onChange={e => changeField("content", e.target.value)} placeholder="문제와 요청 사항을 작성해 주세요." required /></label>
+                                <label>사진 첨부 (선택, 500KB 이하) <input type="file" accept="image/jpeg,image/png,image/webp" onChange={addPhoto} /></label>
+                                {photoLoading && <p className="inq-note">사진을 읽고 있습니다.</p>}
+                                {form.photo && (
+                                    <div className="inq-photo">
+                                        <img src={form.photo} alt="첨부 사진 미리보기" />
+                                        <button type="button" onClick={removePhoto}>사진 제거</button>
+                                    </div>
+                                )}
+                            </div>
+                            {error && <p className="inq-error" role="alert">{error}</p>}
                             <div className="inq-actions">
                                 <button type="button" onClick={back}>취소</button>
-                                <button type="submit">등록</button>
+                                <button type="submit" disabled={photoLoading || !canSave}>{editing ? "수정 완료" : "게시글 등록"}</button>
                             </div>
                         </form>
                     </section>
                 )}
 
-                {/* 주문번호 확인 후 문의 내용 표시 */}
+                {/* 상세 보기 */}
                 {page === "detail" && selected && (
-                    <section className="inq-box">
-                        <h2>{selected.title}</h2>
-                        {isMaster || verified ? (
-                            <div className="inq-detail">
-                                <p>주문번호: {selected.orderNo}</p>
-                                <p>처리 상태: {selected.status}</p>
-                                <p>등록일: {selected.date}</p>
-                                <p className="inq-content">{selected.content}</p>
-                            </div>
-                        ) : (
-                            <form onSubmit={check}>
-                                <p>문의 내용을 확인하려면 주문번호를 입력하세요.</p>
-                                <label>주문번호
-                                    <input value={checkNo} onChange={e => setCheckNo(e.target.value)} />
-                                </label>
-                                {error && <p className="inq-error">{error}</p>}
-                                <div className="inq-actions">
-                                    <button type="submit">확인</button>
+                    <section>
+                        <header className="inq-head">
+                            <p>GOODS / CLAIM</p>
+                            <h1>{selected.title}</h1>
+                        </header>
+                        {(master || verified) && (
+                            <div className="inq-box inq-detail">
+                                <div className="inq-detail-top">
+                                    <h2>문의 상세</h2>
+                                    <span className="inq-status">
+                                        {master ? (
+                                            <select value={selected.status || "접수"} onChange={changeStatus}
+                                                style={{ width: "auto", margin: 0, padding: 0, border: "none", background: "transparent", color: "inherit", font: "inherit", cursor: "pointer" }}>
+                                                <option>접수</option>
+                                                <option>처리 중</option>
+                                                <option>처리 완료</option>
+                                            </select>
+                                        ) : selected.status || "접수"}
+                                    </span>
                                 </div>
+                                <div className="inq-detail-info">
+
+                                    <div>
+                                        <span>업체명</span>
+                                        <strong>{selected.companyName || "-"}</strong>
+                                    </div>
+
+                                    <div>
+                                        <span>작성자</span>
+                                        <strong>{selected.customerManager || "-"}</strong>
+                                    </div>
+
+                                    <div>
+                                        <span>전화번호</span>
+                                        <strong>{selected.phone || "-"}</strong>
+                                    </div>
+
+                                    <div>
+                                        <span>이메일</span>
+                                        <strong>{selected.email || "-"}</strong>
+                                    </div>
+
+                                    <div>
+                                        <span>주문번호</span>
+                                        <strong>
+                                            {formatOrderNo(selected.consultationId)}
+                                        </strong>
+                                    </div>
+
+                                    <div>
+                                        <span>문의 유형</span>
+                                        <strong>{selected.inquiryType}</strong>
+                                    </div>
+
+                                </div>
+                                <div className="inq-detail-body">
+                                    <h3>문의 내용</h3>
+                                    <p>{selected.content}</p>
+                                </div>
+                                {selected.photo && (
+                                    <div className="inq-detail-images">
+                                        <h3>첨부 사진</h3>
+                                        <img className="inq-detail-photo" src={selected.photo} alt="문의 첨부 사진" />
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                        {!master && !verified && (
+                            <form className="inq-box" onSubmit={check}>
+                                <h2>주문번호 확인</h2>
+                                <p>문의 내용을 확인하려면 주문번호를 입력하세요.</p>
+                                <label>주문번호 <input value={checkNo} onChange={e => setCheckNo(e.target.value)} placeholder="주문번호" required /></label>
+                                {error && <p className="inq-error" role="alert">{error}</p>}
+                                <div className="inq-actions"><button type="submit">확인</button></div>
                             </form>
                         )}
+                        {error && (master || verified) && <p className="inq-error" role="alert">{error}</p>}
                         <div className="inq-actions">
                             <button type="button" onClick={back}>목록으로</button>
+                            {(master || verified) && (
+                                <div className="inq-detail-buttons">
+                                    {!master && verified && <button type="button" onClick={edit}>수정</button>}
+                                    <button type="button" className="inq-delete" onClick={remove}>삭제</button>
+                                </div>
+                            )}
                         </div>
                     </section>
                 )}
             </div>
+            <HomeFooter />
         </main>
     );
 }

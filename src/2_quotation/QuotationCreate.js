@@ -3,6 +3,7 @@ import "./QuotationCreate.css"
 import { useLocation, useNavigate } from "react-router-dom";
 import { useERP } from "../context/ERPContext";
 import { formatQuotationId, formatEmployeeId } from "../utils/formatUtils";
+import { totalPrice as calculateTotalPrice, getQuotationPriceDetails } from "../utils/quotationUtils";
 
 function QuotationCreate() {
 
@@ -12,8 +13,8 @@ function QuotationCreate() {
     const [createdAt, setCreatedAt] = useState(() => {
         const today = new Date();
         const year = today.getFullYear();
-        const month = String(today.getMonth() +1).padStart(2,"0");
-        const day = String(today.getDate()).padStart(2,"0");
+        const month = String(today.getMonth() + 1).padStart(2, "0");
+        const day = String(today.getDate()).padStart(2, "0");
 
         return `${year}-${month}-${day}`;
     });
@@ -42,7 +43,9 @@ function QuotationCreate() {
 
     //내부 담당자 검색 필터링
     const filteredEmployees = employees.filter((employee) =>
-        employee.status === "재직" && employee.name.includes(employeeSearch))
+        employee.status === "재직" &&
+        employee.department === "영업팀" &&
+        employee.name.includes(employeeSearch))
 
 
     const quotationRequests = consultations.filter(consultation =>
@@ -57,15 +60,28 @@ function QuotationCreate() {
     )
 
     //단가 상태값
-    const [unitPrice, setUnitPrice] = useState("")
+    const [baseUnitPrice, setBaseUnitPrice] = useState("");
 
     //수량 상태값
-    const [quantity, setQuantity] = useState("")
+    const [quantity, setQuantity] = useState("");
 
-    //상품 총 금액 계산
-    const totalPrice = Number(quantity) * Number(unitPrice)
+    //기본 단가 + 제작 옵션 가격 계산
+    const [options, setOptions] = useState([]);
 
-    //부가세 및 최종 견적 금액
+    const priceDetails = getQuotationPriceDetails({
+        baseUnitPrice,
+        options
+    });
+
+    //옵션 추가 단가
+    const optionUnitPrice =priceDetails.optionUnitPrice;
+
+    //옵션 포함 최종 단가
+    const finalUnitPrice = priceDetails.finalUnitPrice;
+
+    const totalPrice = calculateTotalPrice(quantity, finalUnitPrice);
+
+    //부가서 및 최종 견적 금액
     const vat = totalPrice * 0.1;
     const finalPrice = totalPrice + vat;
 
@@ -75,7 +91,7 @@ function QuotationCreate() {
     const [paymentMethod, setPaymentMethod] = useState("")
     const [memo, setMemo] = useState("")
 
-    
+
     const fromDetail = location.state?.fromDetail;
     const editId = location.state?.editId;
     const editQuotation = quotations.find(q => q.id === Number(editId));
@@ -97,19 +113,59 @@ function QuotationCreate() {
 
     //견적서 저장
     const handleSave = () => {
+
+        if (!window.confirm("견적서를 저장하시겠습니까?")) {
+            return;
+        }
+
         saveQuotation("승인 대기");
     };
+
+    //제작 옵션 추가
+    const handleAddOption = () => {
+        setOptions(prev => [
+            ...prev,
+            {
+                id: Date.now() + Math.random(),
+                name: "",
+                unitPrice: ""
+            }
+        ])
+    }
+
+    //제작 옵션 수정
+    const handleChangeOption = (id, field, value) => {
+        setOptions(prev =>
+            prev.map(option =>
+                option.id === id
+                    ? { ...option, [field]: value }
+                    : option
+            )
+        )
+    }
+
+    //제작 옵션 삭제
+    const handleDeleteOption = (id) => {
+        setOptions(prev =>
+            prev.filter(option => option.id !== id)
+        )
+    }
 
     //공통 저장 함수
     const saveQuotation = (status) => {
 
         const newQuotation = {
-            ...(editQuotation ? {id: editQuotation.id} : {}),
+            ...(editQuotation ? { id: editQuotation.id } : {}),
             customerId: selectedCustomer ? Number(selectedCustomer.id) : null,
             productId: productId ? Number(productId) : null,
             employeeId: employeeId ? Number(employeeId) : null,
             quantity: quantity === "" ? 0 : Number(quantity),
-            unitPrice: unitPrice === "" ? 0 : Number(unitPrice),
+            // unitPrice: unitPrice === "" ? 0 : Number(unitPrice),
+            baseUnitPrice: baseUnitPrice === "" ? 0 : Number(baseUnitPrice),
+            options: options.map(option => ({
+                name: option.name,
+                unitPrice: Number(option.unitPrice)
+            })),
             createdAt: createdAt,
             validUntil,
             deliveryDate,
@@ -121,28 +177,37 @@ function QuotationCreate() {
         let result;
 
         if (editQuotation) {
-            //기존 견적서 수정
-            result = updateQuotation(newQuotation)
+            // 기존 견적서 수정
+            result = updateQuotation(newQuotation, selectedConsultation?.id);
         } else {
-            //신규 견적서 등록
-           result = addQuotation(newQuotation)
+            // 신규 견적서 등록
+            result = addQuotation(newQuotation, selectedConsultation?.id);
         }
 
-        if(!result.ok){
-            alert(result.message)
+        if (!result.ok) {
+            alert(result.message);
             return;
         }
 
-        if (editQuotation) {
-            navi(`/quotation/detail/${editQuotation.id}`)
+        //저장 성공 알림
+        if (status === "임시 저장") {
+            alert("견적서가 임시저장되었습니다.")
+        } else if (editQuotation) {
+            alert("견적서가 수정되었습니다.")
         } else {
-            navi("/quotation")
+            alert("견적서가 저장되었습니다.")
+        }
+
+        if (editQuotation) {
+            navi(`/quotation/detail/${editQuotation.id}`);
+        } else {
+            navi("/quotation");
         }
     }
 
-    
+
     React.useEffect(() => {
-        
+
         if (!editQuotation) return;
 
         setConsultationId(
@@ -162,7 +227,13 @@ function QuotationCreate() {
 
 
         setQuantity(editQuotation.quantity || "");
-        setUnitPrice(editQuotation.unitPrice || "");
+        setBaseUnitPrice(editQuotation.baseUnitPrice ?? editQuotation.unitPrice ?? "");
+        setOptions(
+            (editQuotation.options ?? []).map(option => ({
+                ...option,
+                id: Date.now() + Math.random()
+            }))
+        )
 
         setCreatedAt(editQuotation.createdAt || "");
         setValidUntil(editQuotation.validUntil || "");
@@ -266,7 +337,7 @@ function QuotationCreate() {
 
                     <div className="form-grid">
                         <div className="form-group">
-                            
+
                             <label htmlFor="quotation-consultation">견적 요청 상담</label>
                             <select
                                 id="quotation-consultation"
@@ -330,8 +401,9 @@ function QuotationCreate() {
                                 onChange={(e) => {
                                     setProductSearch(e.target.value)
                                     setProductId("")
-                                    setUnitPrice("")
+                                    setBaseUnitPrice("");
                                     setQuantity("")
+                                    setOptions([])
                                     setShowProductList(true)
                                 }}
                                 onFocus={() => setShowProductList(true)}
@@ -349,7 +421,12 @@ function QuotationCreate() {
                                                     setProductId(product.id);
                                                     setProductSearch(product.productName);
                                                     setShowProductList(false);
-                                                    setUnitPrice(product.productPrice)
+
+                                                    if (editQuotation?.productId === product.id) {
+                                                        setBaseUnitPrice(editQuotation.baseUnitPrice);
+                                                    } else {
+                                                        setBaseUnitPrice(product.productPrice);
+                                                    }
                                                 }}
                                             >
                                                 <strong>{product.productName}</strong>
@@ -378,13 +455,33 @@ function QuotationCreate() {
                         </div>
 
                         <div className="form-group">
-                            <label>단가 (원)</label>
+                            <label>기본 단가 (원)</label>
                             <input
                                 type="number"
-                                className="quantity-input"
-                                placeholder="단가를 입력하세요."
-                                value={unitPrice}
-                                onChange={(e) => setUnitPrice(e.target.value)} />
+                                className="readonly-input"
+                                placeholder="상품 선택 시 자동 입력"
+                                value={baseUnitPrice}
+                                readOnly />
+                        </div>
+
+                        <div className="form-group">
+                            <label>옵션 추가 단가 (원)</label>
+                            <input
+                                type="number"
+                                value={optionUnitPrice}
+                                readOnly
+                                className="readonly-input"
+                            />
+                        </div>
+
+                        <div className="form-group">
+                            <label>옵션 포함 최종 단가 (원)</label>
+                            <input
+                                type="number"
+                                value={finalUnitPrice}
+                                readOnly
+                                className="readonly-input"
+                            />
                         </div>
 
                         <div className="form-group">
@@ -397,6 +494,42 @@ function QuotationCreate() {
                                 className="readonly-input"
                             />
                         </div>
+
+                        <div className="option-section">
+                            <button className="option-add-btn" onClick={handleAddOption}>
+                                + 옵션 추가
+                            </button>
+
+                            {options.map((option) => (
+                                <div className="option-row" key={option.id}>
+                                    <input
+                                        className="option-name-input"
+                                        type="text"
+                                        placeholder="옵션명 입력"
+                                        value={option.name}
+                                        onChange={(e) =>
+                                            handleChangeOption(option.id, "name", e.target.value)
+                                        }
+                                    />
+
+                                    <input
+                                        className="option-price-input"
+                                        type="number"
+                                        placeholder="추가 단가 입력"
+                                        value={option.unitPrice}
+                                        onChange={(e) =>
+                                            handleChangeOption(option.id, "unitPrice", e.target.value)
+                                        }
+                                    />
+
+                                    <button className="option-delete-btn" onClick={() => handleDeleteOption(option.id)}>
+                                        삭제
+                                    </button>
+
+                                </div>
+                            ))}
+                        </div>
+
                     </div>
                 </section>
 
@@ -474,11 +607,22 @@ function QuotationCreate() {
             </main>
 
             <div className="create-footer">
-                <button
-                    className="cancel-btn"
-                    onClick={() => navi("/quotation")}>
-                    취소
-                </button>
+                {fromDetail && (
+                    <button
+                        className="cancel-btn"
+                        onClick={() => navi(`/quotation/detail/${editQuotation.id}`)}>
+                        취소
+                    </button>
+                )}
+
+                {!fromDetail && (
+                    <button
+                        className="cancel-btn"
+                        onClick={() => navi("/quotation")}>
+                        취소
+                    </button>
+                )}
+
                 {!fromDetail && (
                     <button
                         className="temp-save-btn"
@@ -486,6 +630,7 @@ function QuotationCreate() {
                         임시저장
                     </button>
                 )}
+
                 <button
                     className="save-btn"
                     onClick={handleSave}>
@@ -493,7 +638,7 @@ function QuotationCreate() {
                 </button>
             </div>
 
-        </div>
+        </div >
     )
 }
 

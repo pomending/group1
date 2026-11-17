@@ -7,11 +7,12 @@
 
 /* 폼·목록은 공통 ScheduleModal을 사용합니다. 날짜·시간과 추가 설정은 이 파일의 전용 부품으로 분리합니다. */
 import React, { useLayoutEffect, useRef, useState } from "react";
-import { ScheduleFavorite, ScheduleAttendees, ScheduleVisibility, ScheduleStatus } from "./ScheduleItemParts";
+import { ScheduleAgendaItem, ScheduleFavorite, ScheduleAttendees, ScheduleVisibility, ScheduleStatus } from "./ScheduleItemParts";
 import {
   compareSchedules,
   getScheduleListDate,
   getTodayKey,
+
   getRepeatLabel,
   getRepeatEndLabel,
   getRepeatSummary,
@@ -165,11 +166,11 @@ export default function ScheduleFormModal({
           </div>
         </div>}
         <ScheduleFieldError error={fieldError} fields={["category"]} />
-        {form.scope === "업무용" && form.category === "프로젝트" && (
+        {form.scope === "업무용" && form.category === "업무" && (
           <div className="sm-project-fields sm-form-wide">
             <label>프로젝트
               <input list="sm-project-suggestions" name="project" value={form.project} onChange={onChange} autoComplete="off"
-                placeholder="프로젝트명 입력" maxLength={60} required {...fieldErrorProps(fieldError, "project")} />
+                placeholder="연결할 프로젝트명 (선택)" maxLength={60} {...fieldErrorProps(fieldError, "project")} />
             </label>
             <datalist id="sm-project-suggestions">
               {projectSuggestions.map(name => <option key={name} value={name} />)}
@@ -454,7 +455,14 @@ export function ScheduleListModal({
   const [statusFilter, setStatusFilter] = useState("all");
   // 개인 일정에는 업무 진행 상태가 없으므로 예정·완료 필터에서 제외합니다.
   const matchingItems = statusFilter === "all" ? items
-    : items.filter(item => item.scope !== "개인 일정용" && normalizeStatus(item.status) === statusFilter);
+    : items.filter(item => {
+      if (item.scope === "개인 일정용" || item.isQuotationExpiry) return false;
+      if (item.isTaskDeadline) {
+        const taskStatus = item.taskProgress === "완료" ? "completed" : "pending";
+        return taskStatus === statusFilter;
+      }
+      return normalizeStatus(item.status) === statusFilter;
+    });
   const [page, setPage] = useState(1);
   const listContentRef = useRef(null);
   const pageSize = 20;
@@ -466,14 +474,16 @@ export function ScheduleListModal({
   useLayoutEffect(() => { if (listContentRef.current) listContentRef.current.scrollTop = 0; }, [currentPage, sortOrder, filterDate, statusFilter]);
   const todayKey = getTodayKey();
   const createListEntry = (item) => {
-    const dateInfo = getScheduleListDate(item, todayKey, holidayDates);
+    const dateInfo = getScheduleListDate(item, todayKey, holidayDates, filterDate ? null : Date.now());
+
     // 표시 문구를 여기서 완성해 JSX에서는 배치만 담당하도록 합니다.
-    const category = item.category || (item.project ? "프로젝트" : "업무");
+    const category = item.category === "프로젝트" ? "업무" : item.category || "업무";
     const detailLabel = item.scope === "개인 일정용"
       ? "개인 일정용"
-      : `${category} · ${item.project || item.person}`;
+      : [category, item.project || item.person].filter(Boolean).join(" · ");
 
     return { item, ...dateInfo, detailLabel };
+
   };
   // 날짜 계산 결과를 항목에 함께 담아 정렬과 화면 표시에서 재사용합니다.
   const sortedItems = matchingItems
@@ -493,7 +503,7 @@ export function ScheduleListModal({
   let emptyMessage = "등록된 일정이 없습니다. 목록을 닫고 일정 등록 버튼으로 추가해 보세요.";
   if (filterDate) {
     title = `${filterDate.replaceAll("-", ".")} 일정`;
-    description = `${items.length}건 · 전체 ${totalCount}건`;
+    description = `${items.length}건 · 직접 등록 전체 ${totalCount}건`;
     emptyMessage = "선택한 날짜에 일정이 없습니다. 목록을 닫고 일정 등록 버튼으로 추가해 보세요.";
     if (hasActiveFilter) emptyMessage = "선택한 날짜에 조건과 일치하는 일정이 없습니다. 검색어나 필터를 변경해 주세요.";
   }
@@ -533,10 +543,14 @@ export function ScheduleListModal({
         </label>
         <span className="sm-list-summary" role="status" aria-label="목록 표시 건수">표시 {matchingItems.length}건</span>
         </div>
-        {statusFilter !== "all" && <p className="sm-form-note">진행 상태는 업무 일정에만 적용됩니다. 개인 일정은 전체에서 확인하세요.</p>}
+        {statusFilter !== "all" && <p className="sm-form-note">진행 상태는 업무 일정과 세부 작업에 적용됩니다. 개인 일정과 견적은 전체에서 확인하세요.</p>}
         {sortedItems.length ? (
           sortedItems.slice((currentPage - 1) * pageSize, currentPage * pageSize).map(
             ({ item, dateLabel, basisLabel, detailLabel }) => (
+              item.isProjectMilestone
+              ? <ScheduleAgendaItem key={item.id} item={item} />
+              :
+
               <article className="sm-list-item" key={item.id}>
                 {/* 목록 제목은 item을 그대로 전달해 수정 창을 엽니다. 별 버튼은 즐겨찾기만 바꿉니다. */}
                 <button

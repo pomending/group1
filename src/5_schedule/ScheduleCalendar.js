@@ -27,6 +27,7 @@ export default function ScheduleCalendar({
   periodLabel,
   weekDates,
   scopeFilter,
+  hasStaffFilter = false,
   onScopeFilterChange,
   query,
   onQueryChange,
@@ -122,7 +123,8 @@ export default function ScheduleCalendar({
             <option value="shared">회사 공유</option>
             <option value="private">개인 표시</option>
           </select>
-          {(query || selectedProject || scopeFilter !== "all") && (
+          {(query || selectedProject || scopeFilter !== "all" || hasStaffFilter) && (
+
             <button type="button" className="sm-filter-reset-btn" onClick={onClearFilters}>검색·필터 초기화</button>
           )}
         </div>
@@ -290,14 +292,13 @@ export default function ScheduleCalendar({
       {/* 담당자별 주간 보기에는 계산된 발생 일정과 팀원 목록을 전달합니다. 표 내부 펼침 상태는 보기 전환 시 초기화됩니다. */}
       {view === "staff" && (
         <ScheduleStaffWeek
-          key={staffPersonSearch || "all"}
           onToggleFavorite={onToggleFavorite}
           people={staffPeople}
           personSearch={staffPersonSearch}
-          hasActiveFilter={Boolean(query.trim() || selectedProject || scopeFilter !== "all")}
+          hasActiveFilter={Boolean(query.trim() || selectedProject || scopeFilter !== "all" || hasStaffFilter)}
+          employees={employees}
           weekDates={weekDates}
           items={visibleItems}
-          employees={employees}
           selectedDate={selectedDate}
           holidayDates={holidayDates}
           onSelectDate={onSelectDate}

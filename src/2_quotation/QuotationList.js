@@ -1,16 +1,16 @@
 import React, { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import "./QuotationList.css";
-import { QUOTATION_STATUS } from "../utils/quotationUtils";
+import { getQuotationPriceDetails, QUOTATION_STATUS, totalPrice } from "../utils/quotationUtils";
 import { formatCustomerName, formatProductName, formatQuotationId } from "../utils/formatUtils";
 import { useERP } from "../context/ERPContext";
 
 function QuotationList() {
 
-    const { 
+    const {
         quotations,
-        customers, 
-        products, 
+        customers,
+        products,
         deleteQuotation
     } = useERP()
 
@@ -165,7 +165,12 @@ function QuotationList() {
 
                                             <button onClick={() => {
                                                 if (window.confirm("이 임시 저장 견적서를 삭제하시겠습니까?")) {
-                                                    deleteQuotation(q.id);
+                                                    const result = deleteQuotation(q.id);
+
+                                                    if (!result.ok) {
+                                                        alert(result.message);
+                                                        return;
+                                                    }
                                                 }
                                             }}>
                                                 삭제
@@ -237,7 +242,7 @@ function QuotationList() {
                         onChange={(e) => setStatus(e.target.value)}>
                         <option>전체 상태</option>
                         {QUOTATION_STATUS.map(status =>
-                            <option>{status}</option>
+                            <option key={status} value={status}>{status}</option>
                         )
                         }
                     </select>
@@ -336,7 +341,7 @@ function QuotationList() {
                                 <th>거래처명</th>
                                 <th>상품명</th>
                                 <th>작성일</th>
-                                <th>견적 금액</th>
+                                <th>공급가액</th>
                                 <th>상태</th>
                                 <th>관리</th>
                             </tr>
@@ -349,7 +354,13 @@ function QuotationList() {
                                     <td>{formatCustomerName(customers, quotation.customerId)}</td>
                                     <td>{formatProductName(products, quotation.productId)}</td>
                                     <td>{quotation.createdAt}</td>
-                                    <td>{(quotation.quantity * quotation.unitPrice).toLocaleString()}원</td>
+                                    {/* <td>{(quotation.quantity * quotation.unitPrice).toLocaleString()}원</td> */}
+                                    <td>
+                                        {totalPrice(
+                                            quotation.quantity,
+                                            getQuotationPriceDetails(quotation).finalUnitPrice
+                                        ).toLocaleString()}원
+                                    </td>
                                     <td>
                                         <span className={`status-badge ${quotation.status === "승인 대기" ? "pending" :
                                             quotation.status === "승인 완료" ? "approved" : "rejected"

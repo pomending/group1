@@ -13,7 +13,7 @@ function ProjectForm(props) {
     const [description, setDescription] = useState("");
 
     const selectedQuotation = quotations.find(
-        q => q.id === Number(selQuotation)
+        q => q.id === selQuotation
     )
 
     const selectedProduct = products.find(
@@ -28,11 +28,11 @@ function ProjectForm(props) {
 
         const result = addProject({
             name: projectName.trim(),
-            managerId: Number(managerId),
+            managerId,
             startDate: new Date().toLocaleDateString('sv-SE'),
             completedDate: null,
             description: description.trim(),
-            quotationId: Number(selQuotation)
+            quotationId: selQuotation
         });
 
         if (!result.ok) {
@@ -93,7 +93,9 @@ function ProjectForm(props) {
                                 id="pf-quotation"
                                 name="quotation"
                                 value={selQuotation}
-                                onChange={(e) => setSelQuotation(e.target.value)}
+                                onChange={(e) => setSelQuotation(
+                                    e.target.value === "" ? "" : Number(e.target.value)
+                                )}
                             >
                                 <option value="">견적을 선택하세요</option>
 

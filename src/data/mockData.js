@@ -25,11 +25,15 @@
 // quotations.productId           -> products.id
 // quotations.employeeId          -> initialEmployees.id (영업팀)
 // quotations.quantity            : 상품 주문 수량
-// quotations.unitPrice           : 실제 적용 단가 (상품 기본 단가와 별도)
+// quotations.baseUnitPrice : 견적 작성 당시 상품 기본 단가
+// quotations.options       : 추가 옵션 배열 (없으면 [])
+// options[].name           : 옵션 이름
+// options[].unitPrice      : 개당 옵션 금액 (음수는 할인)
 // quotations.deliveryDate        : 고객 납품 예정일
 // quotations.status              : "승인 대기" / "승인 완료" / "반려"
 // 견적 하나에는 상품 한 종류만 포함합니다.
-// 견적 총액은 quantity * unitPrice로 계산합니다.
+// 최종 단가 = baseUnitPrice + 옵션 단가 합계
+// 공급가액 = quantity * 최종 단가
 
 // [상담 및 견적 연계]
 // 상담과 견적은 각각 별도의 데이터로 관리합니다.
@@ -177,7 +181,11 @@ export const quotations = [
         productId: 1,
         employeeId: 2,
         quantity: 300,
-        unitPrice: 8000,
+        baseUnitPrice: 8000,
+        options: [
+            { name: "글씨 인쇄", unitPrice: 500 },
+            { name: "개별 포장", unitPrice: 300 }
+        ],
         createdAt: "2026-10-15",
         validUntil: "2026-11-15",
         deliveryDate: "2026-11-25",
@@ -191,7 +199,10 @@ export const quotations = [
         productId: 2,
         employeeId: 4,
         quantity: 500,
-        unitPrice: 5000,
+        baseUnitPrice: 5000,
+        options: [
+            { name: "학교 로고 인쇄", unitPrice: 400 }
+        ],
         createdAt: "2026-10-20",
         validUntil: "2026-11-20",
         deliveryDate: "2026-11-30",
@@ -205,7 +216,11 @@ export const quotations = [
         productId: 3,
         employeeId: 11,
         quantity: 400,
-        unitPrice: 6000,
+        baseUnitPrice: 6000,
+        options: [
+            { name: "로고 인쇄", unitPrice: 500 },
+            { name: "선물 상자 포장", unitPrice: 700 }
+        ],
         createdAt: "2026-10-22",
         validUntil: "2026-11-22",
         deliveryDate: "2026-12-02",
@@ -219,7 +234,8 @@ export const quotations = [
         productId: 4,
         employeeId: 2,
         quantity: 1000,
-        unitPrice: 2500,
+        baseUnitPrice: 2500,
+        options: [],
         createdAt: "2026-10-27",
         validUntil: "2026-11-27",
         deliveryDate: "2026-12-10",
@@ -233,7 +249,10 @@ export const quotations = [
         productId: 1,
         employeeId: 4,
         quantity: 100,
-        unitPrice: 8500,
+        baseUnitPrice: 8000,
+        options: [
+            { name: "맞춤 색상 인쇄", unitPrice: 500 }
+        ],
         createdAt: "2026-10-29",
         validUntil: "2026-11-29",
         deliveryDate: "2026-12-05",
@@ -247,7 +266,10 @@ export const quotations = [
         productId: 4,
         employeeId: 11,
         quantity: 800,
-        unitPrice: 2300,
+        baseUnitPrice: 2500,
+        options: [
+            { name: "대량 주문 할인", unitPrice: -200 }
+        ],
         createdAt: "2026-10-30",
         validUntil: "2026-11-30",
         deliveryDate: "2026-12-10",
@@ -261,7 +283,10 @@ export const quotations = [
         productId: 2,
         employeeId: 2,
         quantity: 200,
-        unitPrice: 5000,
+        baseUnitPrice: 5000,
+        options: [
+            { name: "친환경 잉크 인쇄", unitPrice: 300 }
+        ],
         createdAt: "2026-11-01",
         validUntil: "2026-12-01",
         deliveryDate: "2026-12-08",
@@ -275,7 +300,10 @@ export const quotations = [
         productId: 6,
         employeeId: 4,
         quantity: 1000,
-        unitPrice: 1200,
+        baseUnitPrice: 1300,
+        options: [
+            { name: "학교명 각인", unitPrice: 200 }
+        ],
         createdAt: "2026-11-02",
         validUntil: "2026-12-02",
         deliveryDate: "2026-12-15",
@@ -289,7 +317,11 @@ export const quotations = [
         productId: 5,
         employeeId: 11,
         quantity: 800,
-        unitPrice: 11500,
+        baseUnitPrice: 12000,
+        options: [
+            { name: "앞면 로고 인쇄", unitPrice: 500 },
+            { name: "뒷면 문구 인쇄", unitPrice: 400 }
+        ],
         createdAt: "2026-11-03",
         validUntil: "2026-12-03",
         deliveryDate: "2026-12-18",
@@ -303,7 +335,11 @@ export const quotations = [
         productId: 7,
         employeeId: 2,
         quantity: 300,
-        unitPrice: 6800,
+        baseUnitPrice: 7000,
+        options: [
+            { name: "로고 자수", unitPrice: 600 },
+            { name: "개별 포장", unitPrice: 200 }
+        ],
         createdAt: "2026-11-01",
         validUntil: "2026-12-01",
         deliveryDate: "2026-12-12",
@@ -348,7 +384,7 @@ export const consultations = [
         phone: "010-3456-7890",
         email: "woosung@example.com",
         employeeId: 11,
-        status: "견적 요청",
+        status: "인계 완료",
         memo: "친환경 에코백 300개 제작 상담"
     },
     {
@@ -396,7 +432,7 @@ export const consultations = [
         phone: "010-7890-1234",
         email: "taehoon@example.com",
         employeeId: 11,
-        status: "견적 요청",
+        status: "인계 완료",
         memo: "마라톤 기념 티셔츠 800벌"
     },
     {
@@ -408,7 +444,7 @@ export const consultations = [
         phone: "010-8901-2345",
         email: "haneul@example.com",
         employeeId: 4,
-        status: "문의 종료",
+        status: "인계 완료",
         memo: "재활용 소재 파우치 제작"
     },
     {
@@ -1556,5 +1592,36 @@ export const initialEmployees = [
         email: "daeun@example.com",
         phone: "010-0000-0023",
         hireDate: "2026-09-01"
+    }
+];
+
+export const claims = [
+    {
+        id: 1,
+        companyName: "그린컴퍼니",
+        customerManager: "정우성",
+        phone: "010-3456-7890",
+        email: "woosung@example.com",
+        consultationId: 3,
+        inquiryType: "제품 불량",
+        title: "에코백 인쇄 불량 문의",
+        content: "납품받은 에코백 중 일부 제품에 인쇄 불량이 있습니다.",
+        photo: "",
+        status: "접수",
+        createdAt: "2026-11-10"
+    },
+    {
+        id: 2,
+        companyName: "대한스포츠",
+        customerManager: "강태훈",
+        phone: "010-7890-1234",
+        email: "taehoon@example.com",
+        consultationId: 7,
+        inquiryType: "배송 문제",
+        title: "주문한 상품 일부가 도착하지 않았습니다.",
+        content: "주문한 티셔츠 중 일부 수량이 누락되어 배송됐습니다.",
+        photo: "",
+        status: "처리 중",
+        createdAt: "2026-11-11"
     }
 ];

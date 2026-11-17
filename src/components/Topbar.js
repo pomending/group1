@@ -124,8 +124,7 @@ function Topbar({ isCollapsed, setIsCollapsed }) {
             dismissNotifications(employeeId, item => item.read);
             setNotifications(getNotifications(employeeId));
             try {
-                const info = JSON.parse(localStorage.getItem(`erpMyPageInfo_${String(currentEmployee?.email || "").toLowerCase()}`) || "null");
-                setName(info?.name || currentEmployee?.name || "사용자");
+                setName(currentEmployee?.name || "사용자");
                 setPhoto(employeeId == null ? "" : localStorage.getItem(`erpProfilePhoto_${employeeId}`) || "");
             } catch {
                 setName(currentEmployee?.name || "사용자");
@@ -190,7 +189,7 @@ function Topbar({ isCollapsed, setIsCollapsed }) {
                         addNotification(employeeId, {
                             key: `task-assigned:${item.id}`,
                             title: "업무 배정",
-                            message: `'${item.taskStatus}' 업무 담당자로 지정되었습니다.`,
+                            message: `'${item.taskType}' 업무 담당자로 지정되었습니다.`,
                             link: "/tasks"
                         });
                     });

@@ -18,22 +18,19 @@ export const getAvailableEmployees = (employees, taskType) => {
     });
 };
 
-export const validateTask = (taskData, projects, employees, tasks, excludeId = null) => {
+export const validateTask = (
+    taskData, tasks, excludeId = null
+) => {
 
     if (!taskData.projectId) {
         return "프로젝트를 선택하세요.";
     }
-    
-    if (!Number.isSafeInteger(taskData.projectId) || taskData.projectId <= 0) {
+
+    if (
+        !Number.isSafeInteger(taskData.projectId) ||
+        taskData.projectId <= 0
+    ) {
         return "올바르지 않은 프로젝트 ID입니다.";
-    }
-
-    const selectedProject = projects.find(
-        project => project.id === taskData.projectId
-    );
-
-    if (!selectedProject) {
-        return "존재하지 않는 프로젝트입니다.";
     }
 
     if (!taskData.taskType) {
@@ -43,24 +40,20 @@ export const validateTask = (taskData, projects, employees, tasks, excludeId = n
     if (!taskData.employeeId) {
         return "담당자를 선택하세요.";
     }
-    
-    if (!Number.isSafeInteger(taskData.employeeId) || taskData.employeeId <= 0) {
+
+    if (
+        !Number.isSafeInteger(taskData.employeeId) ||
+        taskData.employeeId <= 0
+    ) {
         return "올바르지 않은 담당자 ID입니다.";
     }
 
     if (!taskData.taskDeadline) {
         return "작업 마감일을 선택하세요.";
     }
-    
+
     if (!isValidDate(taskData.taskDeadline)) {
         return "올바른 작업 마감일을 선택하세요.";
-    }
-
-    if (
-        !isValidDate(selectedProject.startDate) ||
-        !isValidDate(selectedProject.dueDate)
-    ) {
-        return "프로젝트의 시작일과 마감일을 확인하세요.";
     }
 
     if (!TASK_TYPES.includes(taskData.taskType)) {
@@ -71,39 +64,10 @@ export const validateTask = (taskData, projects, employees, tasks, excludeId = n
         return "올바른 작업 진행 상태를 선택하세요.";
     }
 
-    const original = excludeId == null
-        ? null
-        : tasks.find(t => Number(t.id) === Number(excludeId));
-
-    const keepEmployee =
-        original?.progress === "완료" &&
-        taskData.progress === "완료" &&
-        Number(original.employeeId) === Number(taskData.employeeId) &&
-        original.taskType === taskData.taskType &&
-        Number(original.projectId) === Number(taskData.projectId);
-
-    if (!keepEmployee) {
-
-        const validEmployee = getAvailableEmployees(employees, taskData.taskType).some(
-            e => e.id === taskData.employeeId
-        );
-
-        if (!validEmployee) {
-            return "해당 작업을 담당할 수 있는 재직 직원을 선택하세요.";
-        }
-
-    }
-
-    if (
-        taskData.taskDeadline < selectedProject.startDate ||
-        taskData.taskDeadline > selectedProject.dueDate
-    ) {
-        return "프로젝트 기간 내에서 마감일을 선택하세요.";
-    }
-
+    // 같은 프로젝트에 동일한 작업 단계 중복 등록 금지
     const selectedTasks = tasks.filter(
-        (task) => task.projectId === taskData.projectId
-    )
+        task => task.projectId === taskData.projectId
+    );
 
     if (selectedTasks.some(t =>
         t.taskType === taskData.taskType &&
@@ -114,4 +78,4 @@ export const validateTask = (taskData, projects, employees, tasks, excludeId = n
 
     return null;
 
-}
+};

@@ -1,7 +1,6 @@
 // 기존 고객정보 조회 및 수정, 입력값 검증, 수정 내용 저장
 import "./03_CustomerForm.css";
 import React, { useState } from "react";
-import { useLocation } from "react-router-dom";
 import { useERP } from "../context/ERPContext";
 import {
     formatBusinessNumber, validateBusinessNumber,
@@ -13,22 +12,27 @@ import {
     validateCustomerManager, validateMemo
 } from "../utils/consultationUtils";
 
-function CustomerEdit() {
+function CustomerEdit({ customerId, onClose }) {
 
-    const { employees, customers } = useERP();
+    const { employees, customers, saveEditedCustomer } = useERP();
 
-    //현재 페이지의 URL 주소정보
-    const location = useLocation();
-    //URL에서 필요한 값을 가져오기 위한 객체
-    const params = new URLSearchParams(location.search);
-    //URL에서 가져온 수정할 대상의 고객ID
-    const EditCustomerId = Number(params.get("id"));
-    //고객 ID와 일치하는 기존 고객정보
-    const CustomerData = window.opener.getCurrentCustomers().find(
-        customer => customer.id === EditCustomerId
+    // 수정할 고객 정보 조회
+    const CustomerData = customers.find(
+        customer => customer.id === customerId
     );
 
-    const [EditingCustomerData, setEditingCustomerData] = useState(CustomerData || {});
+    // 수정할 고객 정보 관리
+    const [EditingCustomerData, setEditingCustomerData] =
+        useState(CustomerData || {});
+
+    if (!CustomerData) {
+        return (
+            <div className="crm-form-page">
+                <p>존재하지 않는 고객입니다.</p>
+                <button onClick={onClose}>닫기</button>
+            </div>
+        );
+    }
 
 
     function updateCustomer(e) {
@@ -46,7 +50,7 @@ function CustomerEdit() {
         }
 
         if (EditingCustomerData.employeeId == null || EditingCustomerData.employeeId === "") {
-            alert("필수 등록정보(내부 담당자)를 확인해주세요.");
+            alert(" 담당자를 확인해주세요.");
             return;
         }
         if (!validatePhone(EditingCustomerData.phone)) {
@@ -67,9 +71,15 @@ function CustomerEdit() {
             return;
         }
 
-        window.opener.saveEditedCustomer(EditingCustomerData);
-        alert("고객의 정보가 수정되었습니다.")
-        window.close();
+        const result = saveEditedCustomer(EditingCustomerData);
+
+        if (!result.ok) {
+            alert(result.message);
+            return;
+        }
+
+        alert("고객의 정보가 수정되었습니다.");
+        onClose();
     }
 
     return (
@@ -133,7 +143,8 @@ function CustomerEdit() {
 
                 <div className="crm-form-field">
                     <label>메모</label>
-                    <input value={EditingCustomerData.memo}
+                    <textarea
+                        value={EditingCustomerData.memo}
                         onChange={(e) => (
                             setEditingCustomerData({ ...EditingCustomerData, memo: e.target.value })
                         )} />
@@ -150,7 +161,10 @@ function CustomerEdit() {
                         )}>
                         <option value="">미배정</option>
                         {employees
-                            .filter((employee) => (employee.department === "영업팀"))
+                            .filter(employee =>
+                                employee.department === "영업팀" &&
+                                employee.status === "재직"
+                            )
                             .map((employee) =>
                                 <option key={employee.id}
                                     value={employee.id}>{employee.name}</option>)}

@@ -76,7 +76,7 @@ export const getProjectProgress = (project, tasks) => {
 
 };
 
-export const validateProject = (projectData, employees, original = null) => {
+export const validateProject = (projectData) => {
 
     if (!projectData.name?.trim()) {
         return "프로젝트명을 입력하세요.";
@@ -96,7 +96,7 @@ export const validateProject = (projectData, employees, original = null) => {
     ) {
         return "올바른 프로젝트 날짜를 입력하세요.";
     }
-    
+
     if (
         projectData.completedDate &&
         !isValidDate(projectData.completedDate)
@@ -123,34 +123,66 @@ export const validateProject = (projectData, employees, original = null) => {
         return "완료되지 않은 프로젝트에는 완료일을 등록할 수 없습니다.";
     }
 
-    const keepOldManager =
-        original?.status === "완료" &&
-        projectData.status === "완료" &&
-        original.managerId === projectData.managerId;
-
-    if (!keepOldManager) {
-
-        const validManager = getProjectManagers(employees)
-            .some(emp => emp.id === Number(projectData.managerId));
-
-        if (!validManager) {
-            return "경영지원팀의 재직중인 직원을 선택하세요."
-        }
-
-    }
-
     return null;
 
 };
 
-export const breaksCompletedProject = (projectId, projects, nextTasks) => {
+export const canCompleteProject = (project, tasks) => {
 
-    const project = projects.find(
-        p => Number(p.id) === Number(projectId)
+    if (!project) {
+        return {
+            ok: false,
+            message: "프로젝트를 찾을 수 없습니다."
+        };
+    }
+
+    if (
+        !Number.isSafeInteger(project?.id) ||
+        project.id <= 0
+    ) {
+        return {
+            ok: false,
+            message: "올바르지 않은 프로젝트 ID입니다."
+        };
+    }
+
+    if (project.status === "완료") {
+        return {
+            ok: false,
+            message: "이미 완료된 프로젝트입니다."
+        };
+    }
+
+    const today = new Date().toLocaleDateString("sv-SE");
+
+    if (project.startDate > today) {
+        return {
+            ok: false,
+            message: "프로젝트 시작 예정일 이전에는 완료할 수 없습니다."
+        };
+    }
+
+    const requiredTypes = [
+        "제작 관리",
+        "검수 관리",
+        "포장 관리"
+    ];
+
+    const allCompleted = requiredTypes.every(type =>
+        tasks.some(task =>
+            task.projectId === project.id &&
+            task.taskType === type &&
+            task.progress === "완료"
+        )
     );
 
-    return (
-        project?.status === "완료" &&
-        getProjectProgress(project, nextTasks) !== 100
-    );
+    if (!allCompleted) {
+        return {
+            ok: false,
+            message: "제작, 검수, 포장 작업이 모두 완료되어야 합니다."
+        };
+    }
+
+    return { ok: true };
+
 };
