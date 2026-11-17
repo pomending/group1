@@ -141,6 +141,16 @@ export function useProjectData() {
             };
         }
 
+        // 진행 중인 프로젝트는 대기로 되돌릴 수 없음
+        if(original.status === "진행 중" &&
+            updatedProject.status === "대기"
+        ){
+            return {
+                ok:false,
+                message:"진행 중인 프로젝트는 대기 상태로 바꿀 수 없습니다"
+            }
+        }
+
         // 일반 수정으로 프로젝트 완료 처리 금지
         if (updatedProject.status === "완료") {
             return {
