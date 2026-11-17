@@ -17,6 +17,7 @@ function QuotationDetail() {
 
     const {
         quotations,
+        consultations,
         updateQuotation,
         deleteQuotation,
         customers,
@@ -39,11 +40,12 @@ function QuotationDetail() {
         return <div>견적서를 찾을 수 없습니다.</div>;
     }
 
+    const selectedConsultation = consultations.find(
+        consultation => consultation.id === Number(quotation.consultationId)
+    )
+
     //옵션 포함 단가 계산
     const priceDetails = getQuotationPriceDetails(quotation);
-
-    //옵션 추가 단가
-    const optionUnitPrice = priceDetails.optionUnitPrice;
 
     //옵션 포함 최종 단가
     const finalUnitPrice = priceDetails.finalUnitPrice;
@@ -212,6 +214,11 @@ function QuotationDetail() {
                         <div className="detail-item">
                             <span>내부 담당자</span>
                             <strong>{employee?.name || "-"}</strong>
+                        </div>
+
+                        <div className="detail-item">
+                            <span>상담 요청 메모</span>
+                            <strong>{selectedConsultation?.memo || "-"}</strong>
                         </div>
 
                         <div className="detail-item">
