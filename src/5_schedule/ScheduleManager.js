@@ -141,6 +141,8 @@ function ScheduleManagerContent({ erp, currentEmployee, accountKey }) {
 
   // 모달·알림·수정 중인 일정의 상태입니다.
   const [listOpen, setListOpen] = useState(false);
+  // 목록에서 수정창으로 넘어가도 처음 목록을 연 버튼을 기억합니다.
+  const modalReturnFocusRef = useRef(null);
   const [listDateFilter, setListDateFilter] = useState(null);
   const [form, setForm] = useState(null);
   const restoringDraftRef = useRef(false);
@@ -430,6 +432,7 @@ function ScheduleManagerContent({ erp, currentEmployee, accountKey }) {
   // 새 등록과 수정이 같은 폼을 사용하되 수정 대상과 최초 저장 버전을 별도로 기억합니다.
   const openScheduleForm = (item) => {
     if (item && !canViewSchedule(item, erp.currentUser, currentEmployee)) return;
+    if (!listOpen) modalReturnFocusRef.current = document.activeElement;
     restoringDraftRef.current = !item && Boolean(draft);
     setFormError("");
     setEditing(item || null);
@@ -734,6 +737,7 @@ function ScheduleManagerContent({ erp, currentEmployee, accountKey }) {
   // 날짜를 주면 그날의 더보기, 생략하면 전체 목록입니다. 같은 모달의 열기 처리를 한 곳에 둡니다.
   // [6. 화면 이동] 목록·보기·프로젝트 선택을 바꿉니다. 일정 내용의 저장과는 별개입니다.
   const showScheduleList = (date = null) => {
+    modalReturnFocusRef.current = document.activeElement;
     if (date) setSelectedDate(date);
     setListDateFilter(date);
     setListOpen(true);
@@ -1024,6 +1028,7 @@ function ScheduleManagerContent({ erp, currentEmployee, accountKey }) {
         <ScheduleFormModal
           key={editing ? `${editing.id}:${editing.occurrenceDate || "series"}` : "new"}
           form={form}
+          returnFocusRef={modalReturnFocusRef}
           canCreatePrivate={Boolean(currentEmployee)}
           saving={isSubmitting}
           projectWarning={getScheduleProjectWarning(form, projects)}

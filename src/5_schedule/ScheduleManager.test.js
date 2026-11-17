@@ -963,6 +963,27 @@ test("입력을 원래 값으로 돌리면 닫기 확인을 표시하지 않는�
   expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   await act(async () => { expect(fetch).toHaveBeenCalled(); });
 });
+test("일정 없는 날짜도 Tab으로 이동하고 Enter·Space로 선택해 새 등록 날짜로 사용한다", async () => {
+  render(<ScheduleManager />);
+  const calendar = screen.getByRole("region", { name: "월간 달력" });
+  const dates = within(calendar).getAllByRole("button", { name: /날짜 선택$/ });
+  const first = dates[0];
+  const second = dates[1];
+  first.focus();
+  userEvent.tab();
+  expect(second).toHaveFocus();
+  userEvent.keyboard("{Enter}");
+  expect(second).toHaveAttribute("aria-pressed", "true");
+  expect(first).toHaveAttribute("aria-pressed", "false");
+  first.focus();
+  userEvent.keyboard(" ");
+  expect(first).toHaveAttribute("aria-pressed", "true");
+  expect(second).toHaveAttribute("aria-pressed", "false");
+  fireEvent.click(screen.getByRole("button", { name: "일정 등록", exact: true }));
+  expect(screen.getByLabelText("날짜", { exact: true })).toHaveValue(first.getAttribute("aria-label").slice(0, 10));
+  await act(async () => {});
+});
+
 test("등록 팝업은 Tab을 순환하고 Escape로 닫은 뒤 등록 버튼에 초점을 돌려준다", async () => {
   render(<ScheduleManager />);
   const opener = screen.getByRole("button", { name: "일정 등록", exact: true });
@@ -982,6 +1003,25 @@ test("등록 팝업은 Tab을 순환하고 Escape로 닫은 뒤 등록 버튼에
   expect(opener).toHaveFocus();
   await act(async () => { expect(fetch).toHaveBeenCalled(); });
 });
+test.each(["전체 목록", "날짜 더보기"])("%s에서 수정창을 닫으면 처음 목록을 연 버튼으로 초점을 돌린다", async mode => {
+  saveSchedules([1, 2, 3].map(number => makeStoredSchedule({
+    id: "focus-" + number, title: "초점 확인 " + number, date: getTodayKey(),
+  })));
+  render(<ScheduleManager />);
+  const opener = mode === "전체 목록"
+    ? screen.getByRole("button", { name: "전체 일정 (3)" })
+    : screen.getByRole("button", { name: "+ 더보기", exact: true });
+  opener.focus();
+  fireEvent.click(opener);
+  const edit = within(screen.getByRole("dialog")).getByRole("button", { name: "초점 확인 1 일정 수정" });
+  edit.focus();
+  fireEvent.click(edit);
+  fireEvent.keyDown(screen.getByRole("dialog"), { key: "Escape" });
+  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  expect(opener).toHaveFocus();
+  await act(async () => {});
+});
+
 test("전체 목록 팝업도 처음 초점을 받고 닫기 버튼으로 원래 위치에 복귀한다", async () => {
   render(<ScheduleManager />);
   const opener = screen.getByRole("button", { name: "전체 일정 (0)" });
