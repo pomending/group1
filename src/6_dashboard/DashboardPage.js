@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useERP } from "../context/ERPContext";
 import { getProjectStatus } from "../utils/projectUtils";
-import DashboardToday from "./DashboardToday";
 import CommunityPage from "./CommunityPage";
 import CommunityWritePage from "./CommunityWritePage";
 import CommunityDetailPage from "./CommunityDetailPage";
@@ -11,16 +10,7 @@ import NoticeWritePage from "./NoticeWritePage";
 import NoticeDetailPage from "./NoticeDetailPage";
 import MyPage from "./MyPage";
 import "./Dashboard.css";
-
-// 저장된 게시글이 없거나 저장 형식이 잘못되었으면 빈 목록을 사용합니다.
-function loadPosts(key) {
-    try {
-        const saved = JSON.parse(localStorage.getItem(key) || "[]");
-        return Array.isArray(saved) ? saved : [];
-    } catch {
-        return [];
-    }
-}
+import { loadDashboardPosts } from "./dashboardStorage";
 
 // 프로젝트의 남은 날짜와 긴급 표시 여부를 계산합니다.
 function getRemainingDays(project) {
@@ -52,13 +42,14 @@ function getRemainingDays(project) {
 function DashboardPage() {
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
-    const { projects } = useERP();
+    const { projects, currentUser } = useERP();
+    const isAdmin = currentUser?.status === "활성" && currentUser?.role === "ADMIN";
     const page = searchParams.get("page");
     const postId = searchParams.get("id");
 
     // 게시판 목록은 글을 작성하거나 수정하면 바로 갱신됩니다.
-    const [posts, setPosts] = useState(() => loadPosts("communityPosts"));
-    const [noticePosts, setNoticePosts] = useState(() => loadPosts("noticePosts"));
+    const [posts, setPosts] = useState(() => loadDashboardPosts("communityPosts"));
+    const [noticePosts, setNoticePosts] = useState(() => loadDashboardPosts("noticePosts"));
 
     // 메인 화면에 보여 줄 최근 항목을 정리합니다.
     const recentProjects = [...projects]
@@ -127,6 +118,52 @@ function DashboardPage() {
                 )}
             </div>
 
+            <div className="dashboard-grid">
+                {/* 공지사항: 최신 일반 공지 6건 */}
+                <div className="dashboard-card">
+                    <Link to="/?page=notice" className="dashboard-community-heading">
+                        <h3>공지사항</h3>
+                    </Link>
+                    {recentNotices.length === 0 ? (
+                        <p>등록된 공지사항이 없습니다.</p>
+                    ) : (
+                        recentNotices.map(post => (
+                            <div className="dashboard-post" key={post.id}>
+                                <Link
+                                    to={`/?page=notice-detail&id=${post.id}`}
+                                    className="dashboard-post-link">
+                                    <span className="dashboard-post-title">{post.title}</span>
+                                    <span className="dashboard-post-writer">{post.writer}</span>
+                                    <span className="dashboard-post-date">{post.date}</span>
+                                </Link>
+                            </div>
+                        ))
+                    )}
+                </div>
+
+                {/* 사내 커뮤니티: 최신 게시글 6건 */}
+                <div className="dashboard-card">
+                    <Link to="/?page=community" className="dashboard-community-heading">
+                        <h3>사내 커뮤니티</h3>
+                    </Link>
+                    {recentPosts.length === 0 ? (
+                        <p>등록된 게시글이 없습니다.</p>
+                    ) : (
+                        recentPosts.map(post => (
+                            <div className="dashboard-post" key={post.id}>
+                                <Link
+                                    to={`/?page=detail&id=${post.id}`}
+                                    className="dashboard-post-link">
+                                    <span className="dashboard-post-title">{post.title}</span>
+                                    <span className="dashboard-post-writer">{isAdmin ? post.writer : "익명"}</span>
+                                    <span className="dashboard-post-date">{post.date}</span>
+                                </Link>
+                            </div>
+                        ))
+                    )}
+                </div>
+            </div>
+
             {/* 프로젝트: 완료되지 않은 최근 4건 */}
             <div className="dashboard-card dashboard-project-card">
                 <Link
@@ -166,64 +203,6 @@ function DashboardPage() {
                         );
                     })
                 )}
-            </div>
-
-            <div className="dashboard-grid">
-                <div className="dashboard-left">
-                    {/* 공지사항: 최신 일반 공지 6건 */}
-                    <div className="dashboard-card">
-                        <Link to="/?page=notice" className="dashboard-community-heading">
-                            <h3>공지사항</h3>
-                        </Link>
-                        {recentNotices.length === 0 ? (
-                            <p>등록된 공지사항이 없습니다.</p>
-                        ) : (
-                            recentNotices.map(post => (
-                                <div className="dashboard-post" key={post.id}>
-                                    <Link
-                                        to={`/?page=notice-detail&id=${post.id}`}
-                                        className="dashboard-post-link">
-                                        <span className="dashboard-post-title">{post.title}</span>
-                                        <span className="dashboard-post-writer">{post.writer}</span>
-                                        <span className="dashboard-post-date">{post.date}</span>
-                                    </Link>
-                                </div>
-                            ))
-                        )}
-                    </div>
-
-                    {/* 사내 커뮤니티: 최신 게시글 6건 */}
-                    <div className="dashboard-card">
-                        <Link to="/?page=community" className="dashboard-community-heading">
-                            <h3>사내 커뮤니티</h3>
-                        </Link>
-                        {recentPosts.length === 0 ? (
-                            <p>등록된 게시글이 없습니다.</p>
-                        ) : (
-                            recentPosts.map(post => (
-                                <div className="dashboard-post" key={post.id}>
-                                    <Link
-                                        to={`/?page=detail&id=${post.id}`}
-                                        className="dashboard-post-link">
-                                        <span className="dashboard-post-title">{post.title}</span>
-                                        <span className="dashboard-post-writer">{post.writer}</span>
-                                        <span className="dashboard-post-date">{post.date}</span>
-                                    </Link>
-                                </div>
-                            ))
-                        )}
-                    </div>
-                </div>
-
-                {/* 오늘의 일정 */}
-                <div className="dashboard-right">
-                    <div className="dashboard-card schedule-card">
-                        <Link to="/schedule" className="dashboard-community-heading">
-                            <h3>오늘의 일정</h3>
-                        </Link>
-                        <DashboardToday />
-                    </div>
-                </div>
             </div>
         </div>
     );
