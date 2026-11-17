@@ -4,7 +4,7 @@ import { getDeadlineStatus, getProjectProgress, getProjectStatus, isProjectDelay
 
 function ProjectList(props) {
 
-    const { projects, tasks } = useERP()
+    const { projects, tasks, quotations } = useERP()
 
     const [sort, setSort] = useState('dueAsc')
 
@@ -41,6 +41,13 @@ function ProjectList(props) {
         return 'pm-deadline-normal';
     };
 
+    const pendingQuotations = quotations.filter(q =>
+        q.status === "승인 완료" &&
+        !projects.some(p => p.quotationId === q.id)
+    );
+
+    const pendingCount = pendingQuotations.length;
+
     return (
         <div className="project-app pj-page">
             <div className="pm-shell pj-container">
@@ -64,6 +71,10 @@ function ProjectList(props) {
                         </button>
                     </div>
                 </div>
+
+                <h3 className="pm-pending-banner">
+                    프로젝트 생성 대기 견적 {pendingCount}건
+                </h3>
 
                 {/* 통계 */}
                 <div className="pm-stats">

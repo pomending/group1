@@ -16,6 +16,7 @@ import { isValidDate } from "../utils/dateUtils";
 import useClaimData from "./useClaimData";
 import { validateClaim } from "../utils/claimUtils";
 import { resetDashboardData } from "../6_dashboard/dashboardStorage";
+import { validateCustomerData } from "../utils/customerUtils";
 
 const ERPContext = createContext(null);
 
@@ -158,6 +159,15 @@ export function ERPProvider({ children }) {
         if (!result.ok) {
             return result;
         }
+
+        const customerResult = validateCustomerData(
+            newCustomer,
+            customerData.customers
+        );
+        
+        if (!customerResult.ok) {
+            return customerResult;
+        }
     
         const newId = customerData.addCustomer(newCustomer);
     
@@ -199,6 +209,16 @@ export function ERPProvider({ children }) {
     
         if (!result.ok) {
             return result;
+        }
+
+        const customerResult = validateCustomerData(
+            mergedCustomer,
+            customerData.customers,
+            mergedCustomer.id
+        );
+        
+        if (!customerResult.ok) {
+            return customerResult;
         }
     
         customerData.saveEditedCustomer(mergedCustomer);
@@ -1425,26 +1445,46 @@ export function ERPProvider({ children }) {
     // 각 Hook의 원본 초기화 함수를 직접 호출한다.
     const resetAllData = () => {
 
-        const scheduleResult = resetStoredSchedules();
-
-        if (!scheduleResult.ok) {
-            return scheduleResult;
+        try {
+            const scheduleResult = resetStoredSchedules();
+    
+            if (!scheduleResult.ok) {
+                return scheduleResult;
+            }
+    
+            // 상품 초기화 결과 확인
+            const productResult = productData.resetProducts();
+    
+            if (!productResult.ok) {
+                return {
+                    ok: false,
+                    message: (productResult.message || "상품 초기화에 실패했습니다.") +
+                        " 일부 데이터는 이미 초기화되었을 수 있습니다."
+                };
+            }
+    
+            projectData.resetProjects();
+            employeeData.resetEmployees();
+            customerData.resetCustomers();
+            accountData.resetAccounts();
+            consultationData.resetConsultations();
+            taskData.resetTasks();
+            quotationData.resetQuotations();
+            claimData.resetClaim();
+            resetDashboardData();
+    
+            authData.logout();
+    
+            return { ok: true };
+    
+        } catch (error) {
+            console.error("전체 초기화 실패", error);
+    
+            return {
+                ok: false,
+                message: "전체 초기화 중 오류가 발생했습니다. 일부 데이터가 초기화되었을 수 있습니다."
+            };
         }
-
-        projectData.resetProjects();
-        employeeData.resetEmployees();
-        customerData.resetCustomers();
-        productData.resetProducts();
-        accountData.resetAccounts();
-        consultationData.resetConsultations();
-        taskData.resetTasks();
-        quotationData.resetQuotations();
-        claimData.resetClaim();
-        resetDashboardData();
-
-        authData.logout();
-
-        return { ok: true };
 
     };
 

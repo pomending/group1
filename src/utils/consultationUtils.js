@@ -39,15 +39,6 @@ export function validateCustomerManager(customerManager) {
     }
     return true;
 }
-// 메모 최대글자 수 제한
-export function validateMemo(memo) {
-    if ((memo || "").length > 1000) {
-        alert("메모는 최대 1,000자까지 입력할 수 있습니다.")
-        return false;
-    }
-    return true;
-}
-
 
 //전화번호 입력중 형식변환(-표시)
 export function formatPhone(phone) {

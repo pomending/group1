@@ -160,15 +160,21 @@ function MyPage() {
 
     // 비밀번호는 로컬에 직접 저장하지 않고 Context에서 변경합니다.
     const handleChangePassword = () => {
+        
         if (!account) return;
-        if (!currentPassword || !newPassword || !confirmPassword) {
-            return alert("비밀번호를 모두 입력해 주세요.");
+
+        const result = changePassword(
+            account.id,
+            currentPassword,
+            newPassword,
+            confirmPassword
+        );
+        
+        if (!result.ok) {
+            alert(result.message);
+            return;
         }
-        if (newPassword !== confirmPassword) return alert("새 비밀번호가 서로 일치하지 않습니다.");
-        if (currentPassword === newPassword) return alert("현재 비밀번호와 다른 비밀번호를 입력해 주세요.");
-        if (!changePassword(account.id, currentPassword, newPassword, confirmPassword)) {
-            return alert("현재 비밀번호가 올바르지 않습니다.");
-        }
+        
         closePasswordForm();
         alert("비밀번호가 변경되었습니다.");
     };
