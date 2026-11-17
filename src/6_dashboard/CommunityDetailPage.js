@@ -1,4 +1,5 @@
 
+
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useERP } from "../context/ERPContext";
@@ -306,7 +307,7 @@ function CommunityDetailPage({ posts, setPosts, postId }) {
                                 <h1>{post.title}</h1>
                                 <div className="community-info">
                                     <div className="detail-post-meta">
-                                        <span>작성자: {post.writer}</span>
+                                        <span>작성자: {isAdmin ? post.writer : "익명"}</span>
                                         <span>작성일: {post.date}</span>
                                     </div>
                                     <div className="community-actions detail-top-actions">
@@ -464,7 +465,7 @@ function CommunityDetailPage({ posts, setPosts, postId }) {
                                                                     onClick={(event) => event.stopPropagation()}
                                                                 >{item.title}</Link>}
                                                         </td>
-                                                        <td>{item.writer}</td>
+                                                        <td>{isAdmin ? item.writer : "익명"}</td>
                                                         <td>{item.date}</td>
                                                     </tr>
                                                 ))}

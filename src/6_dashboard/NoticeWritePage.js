@@ -1,12 +1,14 @@
+
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useERP } from "../context/ERPContext";
 import { getBoardUser } from "./MyPage";
+import { addNotification } from "../components/Topbar";
 import "./CommunityWrite.css";
 
 function NoticeWritePage({ posts, setPosts }) {
     const navigate = useNavigate();
-    const { currentUser } = useERP();
+    const { currentUser, accounts } = useERP();
     const isAdmin = currentUser?.status === "활성" && currentUser.role === "ADMIN";
     const canWrite = isAdmin || (currentUser?.status === "활성" && currentUser.role === "MANAGER");
     const [type, setType] = useState("normal");
@@ -29,6 +31,16 @@ function NoticeWritePage({ posts, setPosts }) {
         const updated = [...posts, post];
         setPosts(updated);
         localStorage.setItem("noticePosts", JSON.stringify(updated));
+
+        // 새 공지를 모든 활성 계정에 알립니다.
+        accounts.filter(account => account.status === "활성").forEach(account => {
+            addNotification(account.employeeId, {
+                key: `notice-new:${post.id}`,
+                title: post.type === "important" ? "중요공지" : "일반공지",
+                message: post.title,
+                link: `/?page=notice-detail&id=${encodeURIComponent(post.id)}`
+            });
+        });
         navigate("/?page=notice");
     };
 

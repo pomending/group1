@@ -1,9 +1,13 @@
+
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { useERP } from "../context/ERPContext";
 import "./Community.css";
 
 function CommunityPage({ posts }) {
     const navigate = useNavigate();
+    const { currentUser } = useERP();
+    const isAdmin = currentUser?.status === "활성" && currentUser?.role === "ADMIN";
     const [page, setPage] = useState(1);
 
     // 최신 글부터 15개씩 나누어 보여 줍니다.
@@ -34,7 +38,7 @@ function CommunityPage({ posts }) {
                                 style={{ cursor: "pointer" }}>
                                 <td>{sorted.length - start - index}</td>
                                 <td>{post.title}</td>
-                                <td>{post.writer}</td>
+                                <td>{isAdmin ? post.writer : "익명"}</td>
                                 <td>{post.date}</td>
                             </tr>
                         ))}
