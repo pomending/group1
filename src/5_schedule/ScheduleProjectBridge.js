@@ -148,7 +148,9 @@ export function resolveScheduleProject(form, projects) {
     return { project, projectId, projectReference };
   }
   const reference = getProjectReference(linked);
-  return { project: linked.name, projectId: projectId ?? linked.id, ...(reference ? { projectReference: reference } : {}) };
+  const result = { project: linked.name, projectId: projectId ?? linked.id };
+  if (reference) result.projectReference = reference;
+  return result;
 }
 
 // 프로젝트의 시작일과 마감일을 저장 일정과 분리한 읽기 전용 달력 항목으로 만듭니다.

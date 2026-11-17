@@ -801,9 +801,11 @@ export function getScheduleFormError(form) {
   if (!isNumericInput(form.reminderMinutes) || ![0, 10, 30, 1440].includes(Number(form.reminderMinutes))) return { field: "reminderMinutes", message: "알림 시간을 선택해 주세요." };
   if (typeof form.isAllDay !== "boolean") return { field: "isAllDay", message: "종일 일정 여부를 확인해 주세요." };
 
-  if (!isValidScheduleDate(form.date) || !isValidScheduleTime(form.time) || !isValidScheduleTime(form.endTime)) {
-    return { field: !isValidScheduleDate(form.date) ? "date" : !isValidScheduleTime(form.time) ? "time" : "endTime", message: "올바른 날짜와 시작·종료 시간을 입력해 주세요." };
-  }
+  // 잘못된 입력 중 날짜 → 시작 시간 → 종료 시간 순서로 안내합니다.
+  const dateTimeMessage = "올바른 날짜와 시작·종료 시간을 입력해 주세요.";
+  if (!isValidScheduleDate(form.date)) return { field: "date", message: dateTimeMessage };
+  if (!isValidScheduleTime(form.time)) return { field: "time", message: dateTimeMessage };
+  if (!isValidScheduleTime(form.endTime)) return { field: "endTime", message: dateTimeMessage };
   if (form.endDate && (!isValidScheduleDate(form.endDate) || form.endDate < form.date || form.repeatType !== "none")) {
     return { field: "endDate", message: "여러 날 일정의 종료 날짜는 시작일 이후여야 하며 반복 일정에는 지정할 수 없습니다." };
   }

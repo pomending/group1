@@ -1,5 +1,6 @@
 /* 상품 입력값 선택·조회 조건·표시 규칙입니다. 등록·수정 처리는 context/useProductData에 있습니다. */
 import { PRODUCT_STATUS } from "../context/useProductData";
+import ExcelJS from "exceljs";
 // 검색과 중복 검사는 상태 관리 Hook의 같은 정의를 사용합니다.
 export { normalizeProductName, PRODUCT_STATUS } from "../context/useProductData";
 
@@ -76,32 +77,36 @@ export function formatProductDate(value, withTime = false) {
 export function compareProductDates(left, right, newestFirst = true) {
   const a = parseProductDate(left);
   const b = parseProductDate(right);
-  if (!a) return b ? 1 : 0;
+  if (!a && !b) return 0;
+  if (!a) return 1;
   if (!b) return -1;
-  return newestFirst ? b.date - a.date : a.date - b.date;
+  if (newestFirst) return b.date - a.date;
+  return a.date - b.date;
 }
 
-// Excel에서도 한글을 읽도록 BOM을 넣고 쉼표·따옴표·줄바꿈을 CSV 규칙으로 감쌉니다.
-export function createProductCsv(products) {
-  function formatCell(value) {
-    let text = String(value ?? "");
-    // 상품명이 계산식으로 실행되지 않고 문자 그대로 열리도록 처리합니다.
-    if (typeof value === "string" && (/^\s*[=+\-@]/.test(text) || /^[\t\r\n]/.test(text))) text = "'" + text;
-    return '"' + text.replace(/"/g, '""') + '"';
-  }
-  const rows = [["상품 번호", "상품명", "기본 단가 (원)", "판매 상태", "등록일 (한국 시간)", "최종 수정일 (한국 시간)"]];
+// 실제 XLSX 파일을 만듭니다. 이름은 문자열, 단가는 숫자로 넣어 엑셀에서 바로 계산할 수 있습니다.
+export async function createProductExcel(products) {
+  const workbook = new ExcelJS.Workbook();
+  const sheet = workbook.addWorksheet("상품 목록");
+  sheet.columns = [
+    { header: "상품 번호", width: 14 },
+    { header: "상품명", width: 34 },
+    { header: "기본 단가 (원)", width: 18 },
+    { header: "판매 상태", width: 14 },
+    { header: "등록일 (한국 시간)", width: 24 },
+    { header: "최종 수정일 (한국 시간)", width: 24 },
+  ];
+  sheet.getRow(1).font = { bold: true };
+  sheet.views = [{ state: "frozen", ySplit: 1 }];
+  sheet.autoFilter = "A1:F1";
+  sheet.getColumn(2).alignment = { vertical: "top", wrapText: true };
+  sheet.getColumn(3).numFmt = "#,##0";
   for (const product of products) {
-    rows.push([
+    // '=1+1' 같은 이름도 formula 객체가 아닌 문자열로 저장해 수식으로 실행하지 않습니다.
+    sheet.addRow([
       product.id, product.productName, product.productPrice, getProductStatus(product.productStatus).label,
       formatProductDate(product.productCreatedAt, true), formatProductDate(product.productUpdatedAt, true),
     ]);
   }
-
-  // 한 칸씩 CSV 문자로 바꾸고, 쉼표로 연결해 한 줄을 만듭니다.
-  const lines = [];
-  for (const row of rows) {
-    const cells = row.map(formatCell);
-    lines.push(cells.join(","));
-  }
-  return "\uFEFF" + lines.join("\r\n") + "\r\n";
+  return workbook.xlsx.writeBuffer();
 }

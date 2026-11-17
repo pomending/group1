@@ -61,7 +61,9 @@ export default function ScheduleFormModal({
     if (details) details.open = true;
   }, [fieldError]);
   function canDiscardChanges() {
-    return (!isRestoredDraft && JSON.stringify(form) === initialFormRef.current) || window.confirm("작성 중인 변경 내용을 저장하지 않고 닫을까요?");
+    const unchanged = JSON.stringify(form) === initialFormRef.current;
+    if (!isRestoredDraft && unchanged) return true;
+    return window.confirm("작성 중인 변경 내용을 저장하지 않고 닫을까요?");
   }
   // 입력이 처음 값과 다르거나 임시 보관을 복구한 폼이면 폐기를 확인합니다. 복구한 내용은 변경하지 않았어도 확인합니다.
   // 실제 저장·삭제와 폼 닫기는 부모 콜백에서 처리합니다.
@@ -78,12 +80,16 @@ export default function ScheduleFormModal({
 
   const selectedAttendees = normalizeAttendees(form.attendees);
   const selectedStaff = form.attendeeEmployees || [];
-  const attendeeDepartments = new Map();
+  const attendeeDepartments = [];
   for (const employee of employees) {
     if (employee.status !== "재직") continue;
     const department = employee.department || "부서 미지정";
-    if (!attendeeDepartments.has(department)) attendeeDepartments.set(department, []);
-    attendeeDepartments.get(department).push(employee);
+    let group = attendeeDepartments.find(group => group.department === department);
+    if (!group) {
+      group = { department, staff: [] };
+      attendeeDepartments.push(group);
+    }
+    group.staff.push(employee);
   }
   const unavailableAttendees = selectedStaff.filter(person =>
     !employees.some(employee => employee.id === person.id && employee.status === "재직")
@@ -218,7 +224,7 @@ export default function ScheduleFormModal({
           <fieldset className="sm-team-options sm-form-wide sm-meeting-attendees">
             <legend>참석자 추가</legend>
             <p className="sm-form-note">부서별로 재직 직원을 선택하세요.</p>
-            {[...attendeeDepartments].map(([department, staff]) => (
+            {attendeeDepartments.map(({ department, staff }) => (
               <fieldset className="sm-team-options" key={department}>
                 <legend>{department} · {staff.length}명</legend>
                 {staff.map(employee => (
@@ -243,7 +249,7 @@ export default function ScheduleFormModal({
                 {employee.name} · 기존 직원
               </label>
             ))}
-            {attendeeDepartments.size === 0 && <p className="sm-form-note">선택할 수 있는 재직 직원이 없습니다.</p>}
+            {attendeeDepartments.length === 0 && <p className="sm-form-note">선택할 수 있는 재직 직원이 없습니다.</p>}
           </fieldset>
         )}
         {form.scope === "업무용" && <label className="sm-form-wide">일정 상태
@@ -415,7 +421,8 @@ function ScheduleExtraSettings({ form, onChange, isOccurrence, fieldError, canCr
       )}
     </div>
     <ScheduleFieldError error={fieldError} fields={["endDate", "repeatInterval", "repeatEndDate", "repeatCount", "isAllDay", "reminderMinutes", "visibility", "repeatEndType", "holidayRule", "monthlyRule", "monthlyOrdinal", "monthlyWeekday"]} />
-    <p className="sm-form-note">개인 일정과 개인 표시는 작성 계정에서만 확인할 수 있습니다. 개인 일정을 등록하려면 로그인해 주세요.</p>
+    <p className="sm-form-note">개인 일정과 개인 표시는 작성 계정에서만 확인할 수 있습니다.</p>
+    {!canCreatePrivate && <p className="sm-form-note">개인 일정을 등록하려면 로그인해 주세요.</p>}
     {form.repeatType !== "none" && form.repeatEndType === "count" && <p className="sm-form-note">횟수는 규칙상 발생 횟수입니다. 휴일로 건너뛰거나 삭제한 회차도 포함합니다.</p>}
     {form.repeatType !== "none" && form.repeatEndType === "until" && <p className="sm-form-note">이동 전 규칙 날짜가 종료일 이내인 회차까지 포함합니다. 휴일 이동 결과는 종료일을 넘을 수 있습니다.</p>}
     {form.repeatType === "monthly" && form.monthlyRule === "weekday" && (

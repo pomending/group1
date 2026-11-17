@@ -1,7 +1,7 @@
 /* [파일 안내] 일정 화면의 상태·계산·사용자 동작 연결
  * 입력: ERPContext의 프로젝트·직원, scheduleHooks의 일정·팀원·공휴일 상태
  * 계산: scheduleData에서 반복 발생일·검색 대상·시간 충돌을 계산합니다.
- * 출력: Calendar·Sidebar·Directory·FormModal에 표시값과 콜백을 전달합니다.
+ * 출력: Calendar·Sidebar·FormModal에 표시값과 콜백을 전달합니다.
  * 저장 흐름: FormModal → updateForm → addSchedule → setItems → useScheduleStorage
  * 수정 위치: 입력 검증은 addSchedule, 회차 상태 변경은 changeScheduleStatus, 삭제는 deleteSchedule
  */
@@ -56,28 +56,26 @@ const createScheduleId = () =>
 export default function ScheduleManager() {
   const erp = useERP();
   const account = erp.currentUser;
-  const employee = account?.status === "활성" && Number.isSafeInteger(account.id) && Number.isSafeInteger(account.employeeId)
-    ? erp.employees?.find(person => person.id === account.employeeId)
-    : null;
+  let employee = null;
+  let accountKey = "";
+  if (account?.status === "활성" && Number.isSafeInteger(account.id) && Number.isSafeInteger(account.employeeId)) {
+    employee = erp.employees?.find(person => person.id === account.employeeId) || null;
+    if (employee) accountKey = `${account.id}:${employee.id}`;
+  }
   // 계정을 바꾸면 열려 있던 수정창·삭제 기록·알림까지 이전 계정과 분리합니다.
-  return <ScheduleManagerContent key={employee ? `${account.id}:${employee.id}` : "guest"} />;
+  return <ScheduleManagerContent key={accountKey || "guest"} erp={erp} currentEmployee={employee} accountKey={accountKey} />;
 }
 
-function ScheduleManagerContent() {
+function ScheduleManagerContent({ erp, currentEmployee, accountKey }) {
   // [1. 상태 준비] 프로젝트·직원·일정·팀원·선택 날짜를 준비합니다.
   // 실제 화면은 ERPProvider 내부에서 실행해야 합니다. useERP는 Provider가 없으면 오류를 던집니다.
   // 아래 선택적 접근과 빈 배열은 누락된 필드에 대한 보완이며 Provider 없이 실행할 수 있다는 뜻은 아닙니다.
-  const erp = useERP();
   const projects = erp?.projects || EMPTY_LIST;
   // Context의 useEmployeeData가 erp_employees 저장값을 먼저 읽고, 없거나 읽지 못하면 mockData의 initialEmployees를 사용합니다.
   // HR 직원 목록으로 일정 담당자를 선택합니다. 부서 제한 없이 재직 직원만 새로 선택할 수 있습니다.
   // 참석자·담당자별 일정표의 이름 기반 팀원 목록은 기존대로 유지합니다.
   const employees = erp.employees || EMPTY_LIST;
-  // account.id와 employee.id는 서로 다릅니다. 실제 로그인 계정의 employeeId로 HR 직원을 찾습니다.
-  const currentEmployee = erp.currentUser?.status === "활성" && Number.isSafeInteger(erp.currentUser.id) && Number.isSafeInteger(erp.currentUser.employeeId)
-    ? employees.find(employee => String(employee.id) === String(erp.currentUser.employeeId))
-    : null;
-  const accountKey = currentEmployee ? `${erp.currentUser.id}:${currentEmployee.id}` : "";
+  // 계정과 연결 직원은 부모에서 한 번 확인하고 전달합니다.
   const [myScheduleAccountKey, setMyScheduleAccountKey] = useState("");
   const mySchedulesOnly = Boolean(accountKey && myScheduleAccountKey === accountKey);
   const currentEmployeeId = currentEmployee?.id ?? null;
@@ -395,8 +393,12 @@ function ScheduleManagerContent() {
       }
       // 사용자가 프로젝트명을 바꾸면 기존 ID를 해제하고 저장할 때 새 이름으로 연결합니다.
       if (name === "project") {
-        const unchanged = value.trim() === current.project.trim();
-        return { ...current, project: value, projectId: unchanged ? current.projectId : null, projectReference: unchanged ? current.projectReference : "" };
+        const nextForm = { ...current, project: value };
+        if (value.trim() !== current.project.trim()) {
+          nextForm.projectId = null;
+          nextForm.projectReference = "";
+        }
+        return nextForm;
       }
       // 담당자 검색어가 바뀌면 이전 직원 선택은 반드시 해제합니다.
       if (name === "person") {
@@ -545,6 +547,12 @@ function ScheduleManagerContent() {
 
     // 저장 전에 중복 일정과 담당자·참석자의 시간 겹침을 확인합니다.
     // 폼 문자열과 체크박스 값을 충돌 비교에 사용할 일정 형태로 정리합니다.
+    let ownerAccountId = null;
+    let ownerEmployeeId = null;
+    if (isPrivateSchedule(form)) {
+      ownerAccountId = editing?.ownerAccountId ?? erp.currentUser.id;
+      ownerEmployeeId = editing?.ownerEmployeeId ?? currentEmployee.id;
+    }
     const candidate = {
       // 폼의 원본 값은 복사하고, 공백 정리·참석자 배열 변환 등이 끝난 값으로 덮어씁니다.
       // 이 객체를 충돌 검사와 실제 저장에서 함께 사용해 서로 다른 값이 검사되는 것을 막습니다.
@@ -561,8 +569,8 @@ function ScheduleManagerContent() {
       legacyAttendees,
       ...projectFields,
       // 소유 정보는 입력 폼에서 받지 않습니다. 기존 소유자는 유지하고 새 개인 일정만 현재 계정에 연결합니다.
-      ownerAccountId: isPrivateSchedule(form) ? (editing?.ownerAccountId ?? erp.currentUser.id) : null,
-      ownerEmployeeId: isPrivateSchedule(form) ? (editing?.ownerEmployeeId ?? currentEmployee.id) : null,
+      ownerAccountId,
+      ownerEmployeeId,
     };
     // 반복 규칙은 다음 1년을 확인하고, 휴일 이동 설정은 범위 끝에서 밀릴 날짜도 포함합니다.
     let conflictEndKey = form.endDate || form.date;
@@ -794,8 +802,12 @@ function ScheduleManagerContent() {
     employees.some(employee => employee.name === name)
     || items.some(item => getSchedulePeople(item, employees).includes(name)));
   let staffPeople = [...new Set([...visibleTeamMembers, ...linkedStaffNames, ...visibleProjectMilestones.map(item => item.person)])];
-  const personalOwners = visibleItems.filter(item => item.scope === "개인 일정용").flatMap(item => getSchedulePeople(item, employees));
-  staffPeople = [...new Set([...staffPeople, ...personalOwners])];
+  for (const item of visibleItems) {
+    if (item.scope !== "개인 일정용") continue;
+    for (const name of getSchedulePeople(item, employees)) {
+      if (!staffPeople.includes(name)) staffPeople.push(name);
+    }
+  }
   if (hasStaffFilter) {
     staffPeople = staffPeople.filter(name => visibleItems.some(item => getSchedulePeople(item, employees).includes(name)));
 
@@ -820,6 +832,16 @@ function ScheduleManagerContent() {
         person === "프로젝트 일정"
           || [...filteredItems, ...visibleProjectMilestones].some((item) => getSchedulePeople(item, employees).includes(person)));
     }
+  }
+
+  let accountLabel = "내 일정은 로그인 후 조회할 수 있습니다.";
+  if (currentEmployee) {
+    accountLabel = `현재 계정: ${currentEmployee.name}`;
+    if (currentEmployee.email) accountLabel += ` (${currentEmployee.email})`;
+  }
+  function changeMyScheduleFilter(event) {
+    setMyScheduleAccountKey(event.target.checked ? accountKey : "");
+    setReminderNotice(null);
   }
 
   // [8. 화면 구성] 위에서 만든 데이터와 콜백을 각 화면 부품의 props에 연결합니다.
@@ -902,8 +924,8 @@ function ScheduleManagerContent() {
 
         <div className="sm-integration-filters">
           <label className="sm-form-note"><input type="checkbox" checked={mySchedulesOnly}
-            disabled={currentEmployeeId == null} onChange={event => { setMyScheduleAccountKey(event.target.checked ? accountKey : ""); setReminderNotice(null); }} /> 내 담당·참석 일정</label>
-          <span className="sm-form-note">{currentEmployee ? `현재 계정: ${currentEmployee.name}${currentEmployee.email ? ` (${currentEmployee.email})` : ""}` : "내 일정은 로그인 후 조회할 수 있습니다."}</span>
+            disabled={currentEmployeeId == null} onChange={changeMyScheduleFilter} /> 내 담당·참석 일정</label>
+          <span className="sm-form-note">{accountLabel}</span>
           <span className="sm-form-note">개인 일정·개인 표시는 작성 계정에서만 확인할 수 있습니다.</span>
           <label className="sm-form-note">부서
             <select value={department} onChange={event => { setDepartment(event.target.value); setFilterNotice(""); }} aria-label="일정 부서 필터">

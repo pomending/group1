@@ -25,7 +25,12 @@ import {
 
 // 일정 저장소의 로컬 변경과 다른 탭의 변경을 ID별로 비교해 합칩니다.
 export function mergeScheduleChanges(base, local, remote) {
-  const toMap = schedules => new Map(schedules.map(item => [String(item.id), item]));
+  // 숫자 ID와 문자열 ID를 같은 기준으로 비교합니다.
+  function toMap(schedules) {
+    const result = new Map();
+    for (const item of schedules) result.set(String(item.id), item);
+    return result;
+  }
   const original = toMap(base);
   const current = toMap(local);
   const otherTab = toMap(remote);

@@ -413,8 +413,9 @@ export function useScheduleDraft(form, isEditing, accountKey = "", allowPrivate 
       if (loaded.readError) throw new Error("일정 초기화 정보를 읽지 못했습니다.");
       const currentResetId = resetId ?? loaded.resetId ?? null;
       // 탭이 닫힌 동안 초기화됐어도 예전 계정 초안을 되살리지 않습니다.
-      if ((saved?.resetId ?? null) !== currentResetId || (!allowPrivate && (saved?.form?.scope === "개인 일정용" || saved?.form?.visibility === "private"))) {
-
+      const wasReset = (saved?.resetId ?? null) !== currentResetId;
+      const isPrivateDraft = saved?.form?.scope === "개인 일정용" || saved?.form?.visibility === "private";
+      if (wasReset || (!allowPrivate && isPrivateDraft)) {
         sessionStorage.removeItem(key);
         return { draft: null, error: "" };
       }
@@ -423,7 +424,8 @@ export function useScheduleDraft(form, isEditing, accountKey = "", allowPrivate 
       const draft = {};
       // 기본 폼에 있는 필드만 읽습니다. 숫자 입력란은 작성 중 빈칸도 허용합니다.
       for (const name of Object.keys(defaults)) {
-        const value = name === "attendeeEmployees" ? saved.form[name] ?? [] : saved.form[name];
+        let value = saved.form[name];
+        if (name === "attendeeEmployees") value = value ?? [];
         let valid = typeof value === typeof defaults[name];
         if (name === "employeeId") {
           // 이전 버전의 임시 폼에는 직원 ID가 없었습니다.
@@ -434,7 +436,8 @@ export function useScheduleDraft(form, isEditing, accountKey = "", allowPrivate 
           valid = value === "" || (typeof value === "number" && Number.isFinite(value));
         }
         if (!valid) throw new Error("Invalid draft field");
-        draft[name] = name === "employeeId" ? (value ?? null) : value;
+        if (name === "employeeId") value = value ?? null;
+        draft[name] = value;
       }
       return { draft, error: "" };
     } catch { return { draft: null, error: "임시 작성 내용을 읽지 못했습니다. 임시 보관 삭제 후 다시 작성할 수 있습니다." }; }
