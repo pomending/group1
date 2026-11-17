@@ -571,3 +571,30 @@
   resize: none;
   overflow: hidden;
 }
+
+/* 옵션 단가 입력창 */
+.quotation-create .option-price-wrapper {
+  position: relative;
+  width: 100%;
+  min-width: 0;
+}
+
+/* 옵션 단가 */
+.quotation-create .option-price-wrapper .option-price-input {
+  width: 100%;
+  padding-right: 35px;
+  box-sizing: border-box;
+}
+
+/* 원 표시 */
+.quotation-create .option-price-wrapper .price-unit {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+
+  color: #827A98;
+  font-size: 13px;
+  pointer-events: none;
+  z-index: 2;
+}

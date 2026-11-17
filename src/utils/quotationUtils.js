@@ -30,6 +30,18 @@ export function getQuotationPriceDetails(quotation) {
     };
 }
 
+// 재검토 요청인지 확인
+export const isReviewRequest = (existing, updatedQuotation) => {
+    return (
+        (existing.status === "승인 완료" ||
+            existing.status === "반려") &&
+        updatedQuotation.status === "승인 대기" &&
+        Object.keys(updatedQuotation).every(key =>
+            ["id", "status", "employeeId"].includes(key)
+        )
+    );
+};
+
 //견적 데이터 유효성 검사
 export const validateQuotation = (quotation) => {
 
@@ -83,7 +95,10 @@ export const validateQuotation = (quotation) => {
     const hasInvalidOption = quotation.options.some(option =>
         typeof option?.name !== "string" ||
         !option.name.trim() ||
-        !Number.isFinite(option.unitPrice)
+        option.unitPrice === "" ||
+        option.unitPrice == null ||
+        !Number.isFinite(Number(option.unitPrice)) ||
+        Number(option.unitPrice) < 0
     );
 
     if (hasInvalidOption) {
@@ -112,7 +127,7 @@ export const validateQuotation = (quotation) => {
         return { ok: false, message: "견적 유효기간을 입력해주세요." }
     }
 
-    
+
 
     //납품 예정일 필수 입력 검사
     if (!quotation.deliveryDate) {
@@ -124,11 +139,11 @@ export const validateQuotation = (quotation) => {
         { key: "validUntil", label: "유효기간" },
         { key: "deliveryDate", label: "납품일" }
     ];
-    
+
     const invalidDate = dateFields.find(
         field => !isValidDate(quotation[field.key])
     );
-    
+
     if (invalidDate) {
         return {
             ok: false,
@@ -146,7 +161,7 @@ export const validateQuotation = (quotation) => {
     if (quotation.deliveryDate < quotation.createdAt) {
         return { ok: false, message: "납품 예정일은 작성일 이후여야 합니다." };
     }
-    
+
     return { ok: true };
 
 }

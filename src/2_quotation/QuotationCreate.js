@@ -174,7 +174,9 @@ function QuotationCreate() {
             baseUnitPrice: baseUnitPrice === "" ? 0 : Number(baseUnitPrice),
             options: options.map(option => ({
                 name: option.name,
-                unitPrice: Number(option.unitPrice)
+                unitPrice: option.unitPrice === ""
+                    ? ""
+                    : Number(option.unitPrice)
             })),
             createdAt: createdAt,
             validUntil,
@@ -208,7 +210,9 @@ function QuotationCreate() {
             alert("견적서가 저장되었습니다.")
         }
 
-        if (editQuotation) {
+        if (status === "임시 저장") {
+            navi("/quotation")
+        } else if (editQuotation) {
             navi(`/quotation/detail/${editQuotation.id}`);
         } else {
             navi("/quotation");
@@ -361,11 +365,7 @@ function QuotationCreate() {
                                         ? "견적 요청 상담을 선택하세요."
                                         : "선택 가능한 견적 요청 상담이 없습니다."}
                                 </option>
-                                {existingCustomer && (
-                                    <option value="existing">
-                                        {existingCustomer.companyName} (기존 거래처)
-                                    </option>
-                                )}
+
                                 {quotationRequests.map(consultation => (
                                     <option key={consultation.id} value={consultation.id}>
                                         {consultation.companyName} (상담 #{consultation.id})
@@ -533,17 +533,22 @@ function QuotationCreate() {
                                             handleChangeOption(option.id, "name", e.target.value)
                                         }
                                     />
-
-                                    <input
-                                        className="option-price-input"
-                                        type="number"
-                                        placeholder="추가 단가 입력"
-                                        value={option.unitPrice}
-                                        onChange={(e) =>
-                                            handleChangeOption(option.id, "unitPrice", e.target.value)
-                                        }
-                                    />
-
+                                    <div className="option-price-wrapper">
+                                        <input
+                                            className="option-price-input"
+                                            type="text"
+                                            placeholder="추가 단가 입력"
+                                            value={option.unitPrice === "" || option.unitPrice == null
+                                                ? ""
+                                                : Number(option.unitPrice).toLocaleString("ko-KR")}
+                                            onChange={(e) =>
+                                                handleChangeOption(option.id,
+                                                    "unitPrice",
+                                                    e.target.value.replace(/[^0-9]/g, ""))
+                                            }
+                                        />
+                                        <span className="price-unit">원</span>
+                                    </div>
                                     <button className="option-delete-btn" onClick={() => handleDeleteOption(option.id)}>
                                         삭제
                                     </button>
