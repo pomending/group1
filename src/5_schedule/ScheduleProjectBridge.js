@@ -6,10 +6,39 @@
 
 import { getScheduleProjectId, getScheduleParticipants, isValidScheduleDate, normalizeAttendeeEmployees, typeColors } from "./scheduleData";
 
+// 로그인 계정 번호가 아니라 계정에 연결된 직원 번호로 비교합니다.
+// 이름만 있는 과거 일정은 동명이인을 추측하지 않고 전체 조회에 남깁니다.
+export function matchesScheduleEmployee(item, employeeId) {
+  if (employeeId == null) return false;
+  const id = String(employeeId);
+  if (item.ownerEmployeeId != null && (item.isProjectMilestone || item.scope === "개인 일정용")) {
+    return String(item.ownerEmployeeId) === id;
+  }
+  if (item.employeeId != null && String(item.employeeId) === id) return true;
+  return normalizeAttendeeEmployees(item.attendeeEmployees)
+    .some(person => String(person.id) === id);
+}
+
+export function isPrivateSchedule(item) {
+  return item.scope === "개인 일정용" || item.visibility === "private";
+}
+
+// 개인 일정은 조회 필터와 관계없이 작성 계정과 연결 직원이 모두 같아야 표시합니다.
+// 소유 정보가 없는 과거 개인 일정도 임의 계정에 배정하지 않고 저장소에 보존합니다.
+export function canViewSchedule(item, account, employee) {
+  if (!isPrivateSchedule(item)) return true;
+  return Boolean(account?.status === "활성" && employee
+    && account.employeeId === employee.id
+    && Number.isSafeInteger(item.ownerAccountId) && item.ownerAccountId > 0
+    && Number.isSafeInteger(item.ownerEmployeeId) && item.ownerEmployeeId > 0
+    && item.ownerAccountId === account.id && item.ownerEmployeeId === employee.id);
+}
+
+
 // ID가 없는 과거 기록은 직원을 임의로 추측하지 않고 전체 조회에 남깁니다.
 export function matchesScheduleStaff(item, employees, employeeId, department) {
-  let participants = getScheduleParticipants(item);
-  if (item.ownerEmployeeId != null) {
+  let participants = getScheduleParticipants(item, employees);
+  if (item.ownerEmployeeId != null && (item.isProjectMilestone || item.scope === "개인 일정용")) {
     participants = [{ id: item.ownerEmployeeId, name: item.projectManager }];
   }
   // 선택하지 않은 조건은 통과시킵니다. 두 조건을 골랐으면 둘 다 맞아야 합니다.
@@ -52,6 +81,7 @@ export function createQuotationMilestones(quotations, customers, employees) {
     });
   }
   return milestones;
+
 }
 
 // 저장 당시 이름은 보존하고 HR의 현재 정보와 다른 연결만 안내합니다.
@@ -118,7 +148,9 @@ export function resolveScheduleProject(form, projects) {
     return { project, projectId, projectReference };
   }
   const reference = getProjectReference(linked);
-  return { project: linked.name, projectId: projectId ?? linked.id, ...(reference ? { projectReference: reference } : {}) };
+  const result = { project: linked.name, projectId: projectId ?? linked.id };
+  if (reference) result.projectReference = reference;
+  return result;
 }
 
 // 프로젝트의 시작일과 마감일을 저장 일정과 분리한 읽기 전용 달력 항목으로 만듭니다.
@@ -145,8 +177,8 @@ export function createProjectMilestones(projects, employees = []) {
         title: project.name + " · " + entry.milestoneType,
         project: project.name,
         projectManager: manager?.name || "미지정",
+        ownerEmployeeId: project.managerId ?? null,
         person: "프로젝트 일정",
-        ownerEmployeeId: manager?.id ?? null,
         type: "기획",
         category: "프로젝트",
         scope: "업무용",
@@ -179,8 +211,10 @@ export function createTaskMilestones(tasks, projects, employees) {
       title: project.name + " · " + (task.taskType || "세부 작업") + " 마감",
       project: project.name,
       projectManager: employee?.name || "미지정",
+      ownerEmployeeId: task.employeeId ?? null,
       person: employee?.name || "프로젝트 일정",
       employeeId: employee?.id ?? null,
+
       scope: "업무용",
       category: "프로젝트",
       visibility: "shared",

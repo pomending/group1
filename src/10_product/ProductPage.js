@@ -12,7 +12,7 @@ import ProductForm from "./ProductForm";
 import ProductDetails from "./ProductDetails";
 import {
   formatProductDate, getProductStatus, productStatuses, normalizeProductName,
-  compareProductDates, createProductCsv, getProductInput, getProductPriceRange,
+  compareProductDates, createProductExcel, getProductInput, getProductPriceRange,
 } from "./productData";
 import "./productStyles.css";
 
@@ -45,6 +45,7 @@ export default function ProductPage() {
   const [selectedId, setSelectedId] = useState(null);
   const selectedProduct = products.find(product => product.id === selectedId);
   const [notice, setNotice] = useState("");
+  const [exporting, setExporting] = useState(false);
   // 복귀 위치는 상품명 대신 ID로 기억합니다. 이름 변경·필터 결과 제외 시에도 안전하게 처리합니다.
   const focusTargets = useRef({});
   const focusRequest = useRef(null);
@@ -55,9 +56,12 @@ export default function ProductPage() {
     else delete focusTargets.current[key];
   };
   // [2] 목록 계산: 현황은 전체 상품, visible은 조회 결과, pageProducts는 현재 페이지입니다.
-  const statusCounts = productStatuses.map(option => [
-    option.value, option.label, products.filter(product => product.productStatus === option.value).length,
-  ]);
+  // 각 현황 카드의 값·문구·건수를 이름이 있는 속성으로 모읍니다.
+  const statusCounts = [{ value: "all", label: "전체 상품", count: products.length }];
+  for (const option of productStatuses) {
+    const count = products.filter(product => product.productStatus === option.value).length;
+    statusCounts.push({ value: option.value, label: option.label, count });
+  }
   const searchQuery = normalizeProductName(query);
   const visible = products.filter(product => {
     // 이름 또는 번호로 검색한 뒤 판매 상태와 단가 조건을 차례로 확인합니다.
@@ -79,6 +83,21 @@ export default function ProductPage() {
   const page = Math.min(currentPage, totalPages);
   const pageStart = (page - 1) * PAGE_SIZE;
   const pageProducts = visible.slice(pageStart, pageStart + PAGE_SIZE);
+  let emptyMessage = "조건에 맞는 상품이 없습니다. 검색어·판매 상태·단가 조건을 변경해 주세요.";
+  if (range.error) emptyMessage = "단가 조건을 확인해 주세요. 유효한 범위를 입력하면 조회됩니다.";
+  else if (products.length === 0) emptyMessage = "등록된 상품이 없습니다. 상품 등록 버튼으로 추가해 주세요.";
+
+  // 화면 읽기 안내는 JSX 밖에서 정리해 중첩 조건식을 줄입니다.
+  let searchLabel = "전체 상품명, ";
+  if (query.trim()) searchLabel = `검색어 ${query.trim()}, `;
+  let statusLabel = "전체 상태";
+  if (status !== "all") statusLabel = getProductStatus(status).label;
+  let priceRangeLabel = range.error;
+  if (hasPriceRange && !range.error) {
+    let maximumLabel = "상한 없음";
+    if (priceRange.max !== "") maximumLabel = `${range.max.toLocaleString("ko-KR")}원까지`;
+    priceRangeLabel = `단가 ${range.min.toLocaleString("ko-KR")}원부터 ${maximumLabel}, `;
+  }
 
   useLayoutEffect(() => {
     if (!focusRequest.current) return;
@@ -133,14 +152,18 @@ export default function ProductPage() {
   }
 
   // 페이지를 자르기 전 검색·필터·정렬 결과 전체를 내려받습니다. 상품 상태와 저장소에는 쓰지 않습니다.
-  function exportProducts() {
-    if (!visible.length) return;
+  async function exportProducts() {
+    if (!visible.length || exporting) return;
+    setExporting(true);
     try {
-      const blob = new Blob([createProductCsv(visible)], { type: "text/csv;charset=utf-8;" });
-      saveAs(blob, `상품목록_${formatProductDate(new Date().toISOString())}.csv`);
-      setNotice(`조회한 상품 ${visible.length}건의 CSV 다운로드를 요청했습니다.`);
+      const buffer = await createProductExcel(visible);
+      const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+      saveAs(blob, `상품목록_${formatProductDate(new Date().toISOString())}.xlsx`);
+      setNotice(`조회한 상품 ${visible.length}건의 엑셀 다운로드를 요청했습니다.`);
     } catch {
-      setNotice("CSV 다운로드를 시작하지 못했습니다. 다시 시도해 주세요.");
+      setNotice("엑셀 다운로드를 시작하지 못했습니다. 다시 시도해 주세요.");
+    } finally {
+      setExporting(false);
     }
   }
 
@@ -242,7 +265,7 @@ export default function ProductPage() {
         ) : (
           <>
             <section className="pd-stats" aria-label="상품 현황">
-              {[["all", "전체 상품", products.length], ...statusCounts].map(([value, label, count]) => (
+              {statusCounts.map(({ value, label, count }) => (
                 <button
                   type="button"
                   className="pd-stat"
@@ -261,17 +284,17 @@ export default function ProductPage() {
                 <div className="pd-list-actions">
                   {/* 건수가 같아도 조건 변경을 알 수 있도록 검색어·상태를 함께 읽습니다. */}
                   <span className="pd-muted" role="status" aria-label="상품 조회 결과" aria-live="polite" aria-atomic="true">
-                    <span className="pd-sr-only">{query.trim() ? `검색어 ${query.trim()}, ` : "전체 상품명, "}{status === "all" ? "전체 상태" : getProductStatus(status).label}, </span>
-                    {hasPriceRange && <span className="pd-sr-only">{range.error || `단가 ${range.min.toLocaleString("ko-KR")}원부터 ${priceRange.max === "" ? "상한 없음" : `${range.max.toLocaleString("ko-KR")}원까지`}, `}</span>}
+                    <span className="pd-sr-only">{searchLabel}{statusLabel}, </span>
+                    {hasPriceRange && <span className="pd-sr-only">{priceRangeLabel}</span>}
                     조회 {visible.length}건
                   </span>
                   <button
                     type="button"
                     className="pd-button pd-export"
-                    disabled={!visible.length}
+                    disabled={!visible.length || exporting}
                     onClick={exportProducts}
                     title="현재 검색·필터 결과 전체를 내보냅니다."
-                  >CSV 내보내기</button>
+                  >{exporting ? "엑셀 생성 중…" : "엑셀 내보내기"}</button>
                 </div>
               </div>
               {/* 조회 조건은 상품 데이터와 분리하며, 변경 시 첫 페이지를 표시합니다. */}
@@ -389,11 +412,7 @@ export default function ProductPage() {
                       <tr>
                         <td className="pd-empty" colSpan={7}>
                           <div className="pd-empty-content">
-                            <p>
-                              {range.error ? "단가 조건을 확인해 주세요. 유효한 범위를 입력하면 조회됩니다." : products.length === 0
-                                ? "등록된 상품이 없습니다. 상품 등록 버튼으로 추가해 주세요."
-                                : "조건에 맞는 상품이 없습니다. 검색어·판매 상태·단가 조건을 변경해 주세요."}
-                            </p>
+                            <p>{emptyMessage}</p>
                             {products.length > 0 && (
                               <button
                                 type="button"
