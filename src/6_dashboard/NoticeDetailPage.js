@@ -322,7 +322,7 @@ function NoticeDetailPage({ posts, setPosts, postId }) {
                                         일반 공지
                                     </option>
                                     {isAdmin && (
-                                        <option value="important">중요공지</option>
+                                        <option value="important">중요 공지</option>
                                     )}
                                 </select>
                                 <label htmlFor="notice-edit-title">

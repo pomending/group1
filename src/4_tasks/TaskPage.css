@@ -147,7 +147,7 @@
 
 
 .pm-heading-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; flex-shrink: 0; }
-.new-btn { padding:9px 14px; background:#7565d8; color: #fff; font:14px/1.4 Arial, sans-serif; 
+.new-btn { padding:9px 14px; background:#7565d8; color: #fff; font:14px/1.4 Arial, sans-serif;
   text-align: left; border-radius:8px; border:0px; text-align: center;}
 
   .task-detail-page {
@@ -752,27 +752,27 @@
   min-width: 35px;
   height: 35px;
   padding: 0 10px;
-  border: 1px solid #ddd;
+  border: 1px solid #C8C0E5;
   border-radius: 5px;
   background: #fff;
-  color: #333;
+  color: #524B80;
   cursor: pointer;
   font-size: 14px;
 }
 
 .task-pagination button:hover:not(:disabled) {
-  background: #f0f3f8;
+  background: #F0EDFA;
 }
 
 .task-pagination button.active {
-  background: #3454a4;
+  background: #68619A;
   color: #fff;
-  border-color: #3454a4;
+  border-color: #68619A;
   font-weight: bold;
 }
 
 .task-pagination button:disabled {
-  color: #bbb;
+  color: #9690A5;
   cursor: not-allowed;
-  background: #f5f5f5;
+  background: #E9E7EF;
 }

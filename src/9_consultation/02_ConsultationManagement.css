@@ -415,6 +415,11 @@
     border-color: #DCA6B5;
 }
 
+/* 상담 목록 페이지 이동 버튼 가운데 정렬 */
+.consultation-page .consultation-pagination {
+    display: flex;
+    justify-content: center;
+}
 /* =========================================
    반응형
 ========================================= */
