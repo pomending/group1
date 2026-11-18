@@ -164,13 +164,19 @@
   font-size: 13px;
   font-weight: 400;
 }
-/* 검색어·상태·정렬·초기화를 한 줄로 정리해 넓은 화면의 빈 공간을 줄입니다. */
+/* 검색 조건은 가용 너비에 맞춰 줄바꿈합니다. */
 .pd-app .pd-filters {
-  display: grid;
-  grid-template-columns: minmax(260px, 1fr) minmax(160px, 220px) minmax(160px, 220px) auto;
-  align-items: end;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
   gap: 14px;
   margin-bottom: 20px;
+}
+.pd-app .pd-filters > label {
+  flex: 1 1 145px;
+}
+.pd-app .pd-filters > .pd-search {
+  flex: 2 1 260px;
 }
 .pd-app label {
   display: grid;
@@ -186,7 +192,7 @@
   min-width: 0;
 }
 .pd-app .pd-filters > .pd-button {
-  justify-self: end;
+  flex: 0 0 auto;
 }
 .pd-app input, .pd-app select {
   width: 100%;
@@ -200,34 +206,6 @@
   font: inherit;
   font-size: 13px;
   font-weight: 400;
-}
-.pd-app .pd-price-filter {
-  min-width: 0;
-  margin-bottom: 20px;
-  padding: 12px;
-  border: 1px solid #E6E1F0;
-  border-radius: 8px;
-}
-.pd-app .pd-price-filter summary {
-  font-weight: 600;
-  cursor: pointer;
-  overflow-wrap: anywhere;
-}
-.pd-app .pd-price-filter summary:focus-visible {
-  outline: 2px solid #9286C1;
-  outline-offset: 3px;
-}
-.pd-app .pd-price-range {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
-  margin: 12px 0 8px;
-  max-width: 680px;
-}
-.pd-app .pd-price-filter-actions {
-  display: flex;
-  flex-wrap: wrap;
-  margin-top: 12px;
 }
 /* [4] 긴 상품명은 셀 안에서 줄바꿈하고, 7열 표의 최소 너비는 내부 스크롤로 확보합니다. */
 .pd-app .pd-table-scroll {
@@ -555,12 +533,6 @@
   margin: 0;
   color: #AA4D60;
 }
-/* 화면이 중간 너비일 때 검색 조건을 두 열로 표시합니다. */
-@media (max-width: 1100px) {
-  .pd-app .pd-filters {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
 /* [6] 작은 화면에서 필터와 페이지 조작을 다음 줄로 내려 잘림을 방지합니다. */
 @media (max-width: 600px) {
   .pd-app {
@@ -569,11 +541,11 @@
   .pd-app .pd-stats {
       grid-template-columns: minmax(0, 1fr);
   }
-  .pd-app .pd-filters {
-      grid-template-columns: minmax(0, 1fr);
+  .pd-app .pd-filters > label {
+      flex-basis: 100%;
   }
   .pd-app .pd-filters > .pd-button {
-      justify-self: stretch;
+      flex: 1 1 auto;
   }
   .pd-app .pd-stats {
       gap: 8px;
@@ -593,9 +565,6 @@
       gap: 8px;
   }
   .pd-app .pd-form-row {
-      grid-template-columns: minmax(0, 1fr);
-  }
-  .pd-app .pd-price-range {
       grid-template-columns: minmax(0, 1fr);
   }
   .pd-app .pd-details {

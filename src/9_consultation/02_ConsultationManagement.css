@@ -415,10 +415,41 @@
     border-color: #DCA6B5;
 }
 
-/* 상담 목록 페이지 이동 버튼 가운데 정렬 */
+/* 상담 목록 페이지 이동 버튼 */
 .consultation-page .consultation-pagination {
     display: flex;
     justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+.consultation-page .consultation-pagination > button {
+    min-width: 36px;
+    min-height: 36px;
+    height: 36px;
+    margin: 0;
+    padding: 0 12px;
+    border: 1px solid #DDD8EA;
+    border-radius: 8px;
+    background: #FBFAFE;
+    color: #625B78;
+    font-size: 13px;
+}
+.consultation-page .consultation-pagination > button:hover:not(:disabled):not(.active) {
+    background: #F0EDFA;
+    border-color: #C8C0E5;
+    color: #524B80;
+}
+.consultation-page .consultation-pagination > button.active {
+    background: #68619A;
+    border-color: #68619A;
+    color: #FFFFFF;
+}
+.consultation-page .consultation-pagination > button:disabled {
+    background: #E9E7EF;
+    border-color: #E9E7EF;
+    color: #9690A5;
+    opacity: 1;
 }
 /* =========================================
    반응형
