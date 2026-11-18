@@ -1,5 +1,4 @@
-
-import React, { useState } from "react";
+import { useState } from "react";
 import { Routes, Route, useNavigate } from "react-router-dom";
 import TaskDetail from "./TaskDetail";
 import { useERP } from "../context/ERPContext";
@@ -11,40 +10,51 @@ import NotFoundPage from "../components/NotFoundPage";
 
 function TaskList() {
 
-    const [taskTypeFilter, setTaskTypeFilter] = useState("전체");
-    const [currentPage, setCurrentPage] = useState(1);
-    const [openProjectId, setOpenProjectId] = useState(null);
+    // 작업 단계 필터
+    const [ taskTypeFilter, setTaskTypeFilter ] = useState("전체");
 
-    const itemsPerPage = 10;
 
-    const { tasks, setTasks, projects, employees } = useERP();
+    const { tasks, projects, employees } = useERP();
+    const [openProjects, setOpenProjects] = useState([]);
 
     const navigate = useNavigate();
 
+    // 선택한 작업 단계에 따라 작업 목록 필터링
+    const filteredTasks = tasks.filter((task) => {
+        if (taskTypeFilter === "전체") {
+            return true;
+        }
 
-    // 1. 작업 필터링
-    const filteredTasks = tasks.filter(task => {
-        return taskTypeFilter === "전체" ||
-            task.taskType === taskTypeFilter;
+        return task.taskType === taskTypeFilter;
     });
 
-    // 2. 프로젝트별 그룹화
-    const groupedProjects = projects.map(project => ({
-        project,
-        projectTasks: filteredTasks.filter(
-            task => task.projectId === project.id
-        )
-    })).filter(group => group.projectTasks.length > 0);
 
-    // 3. 페이지네이션
-    const totalPages = Math.ceil(groupedProjects.length / itemsPerPage);
+    // 프로젝트별 작업 그룹 만들기
+    const groupedTasks = filteredTasks.reduce((groups, task) => {
 
-    const startIndex = (currentPage - 1) * itemsPerPage;
+        const projectId = task.projectId;
 
-    const currentProjects = groupedProjects.slice(
-        startIndex,
-        startIndex + itemsPerPage
-    );
+        if (!groups[projectId]) {
+            groups[projectId] = [];
+        }
+
+        groups[projectId].push(task);
+
+        return groups;
+
+    }, {});
+
+    // 프로젝트 아코디언 열기 / 닫기
+    const toggleProject = (projectId) => {
+
+        setOpenProjects(prev =>
+            prev.includes(projectId)
+                ? prev.filter(id => id !== projectId)
+                : [...prev, projectId]
+        );
+
+    };
+
 
     return (
         <div className="task-page">
@@ -90,7 +100,6 @@ function TaskList() {
                         value={taskTypeFilter}
                         onChange={(e) => {
                             setTaskTypeFilter(e.target.value);
-                            setCurrentPage(1);
                         }}
                     >
                         <option value="전체">전체 단계</option>
@@ -99,199 +108,133 @@ function TaskList() {
                         ))}
                     </select>
                 </div>
+{/* 프로젝트별 아코디언 작업 목록 */}
+<div className="task-accordion">
 
-                {/* 프로젝트별 아코디언 목록 */}
-<div className="task-accordion-list">
+    {filteredTasks.length > 0 ? (
 
-{currentProjects.length > 0 ? (
+        Object.entries(groupedTasks).map(([projectId, projectTasks]) => {
 
-    currentProjects.map((group, index) => (
+            const project = projects.find(
+                p => p.id === projectTasks[0].projectId
+            );
 
-        <div
-            className="task-accordion"
-            key={group.project.id}
-        >
+            const isOpen = openProjects.includes(projectId);
 
-            {/* 프로젝트 제목 */}
-            <button
-                type="button"
-                className="task-accordion-header"
-                onClick={() => {
-                    setOpenProjectId(
-                        openProjectId === group.project.id
-                            ? null
-                            : group.project.id
-                    );
-                }}
-            >
+            return (
 
-                <div className="task-project-info">
+                <div className="task-project-group" key={projectId}>
 
-                    <span className="task-project-number">
-                        {formatProjectId(group.project.id)}
-                    </span>
+                    {/* 프로젝트 제목 */}
+                    <div
+                        className={`task-project-header ${isOpen ? "open" : ""}`}
+                        onClick={() => toggleProject(projectId)}
+                    >
 
-                    <strong>
-                        {group.project.name}
-                    </strong>
+                        <div className="task-project-info">
 
-                    <span className="task-count">
-                        작업 {group.projectTasks.length}개
-                    </span>
+                            <span className="task-project-number">
+                                {formatProjectId(projectTasks[0].projectId)}
+                            </span>
 
-                </div>
+                            <strong>
+                                {project?.name ?? "삭제된 프로젝트"}
+                            </strong>
 
-                <span className="accordion-arrow">
-                    {openProjectId === group.project.id ? "▲" : "▼"}
-                </span>
-
-            </button>
-
-
-            {/* 펼쳐지는 작업 목록 */}
-            {openProjectId === group.project.id && (
-
-                <div className="task-accordion-content">
-
-                    <div className="task-accordion-label">
-                        <span>작업 단계</span>
-                        <span>진행 상태</span>
-                        <span>담당자</span>
-                    </div>
-
-                    {group.projectTasks.map(task => (
-
-                        <div
-                            className="task-accordion-item"
-                            key={task.id}
-                        >
-
-                            {/* 작업 단계 */}
-                            <select
-                                value={task.taskType}
-                                onChange={e => {
-                                    const value = e.target.value;
-
-                                    setTasks(prev =>
-                                        prev.map(t =>
-                                            t.id === task.id
-                                                ? { ...t, taskType: value }
-                                                : t
-                                        )
-                                    );
-                                }}
-                            >
-                                {TASK_TYPES.map(type => (
-                                    <option key={type} value={type}>
-                                        {type}
-                                    </option>
-                                ))}
-                            </select>
-
-
-                            {/* 진행 상태 */}
-                            <select
-                                value={task.progress}
-                                onChange={e => {
-                                    const value = e.target.value;
-
-                                    setTasks(prev =>
-                                        prev.map(t =>
-                                            t.id === task.id
-                                                ? { ...t, progress: value }
-                                                : t
-                                        )
-                                    );
-                                }}
-                            >
-                                {TASK_PROGRESS.map(progress => (
-                                    <option key={progress} value={progress}>
-                                        {progress}
-                                    </option>
-                                ))}
-                            </select>
-
-
-                            {/* 담당자 */}
-                            <select
-                                value={String(task.employeeId ?? "")}
-                                onChange={e => {
-                                    const selectedEmployee = employees.find(
-                                        emp => String(emp.id) === e.target.value
-                                    );
-
-                                    setTasks(prev =>
-                                        prev.map(t =>
-                                            t.id === task.id
-                                                ? {
-                                                    ...t,
-                                                    employeeId: selectedEmployee
-                                                        ? selectedEmployee.id
-                                                        : ""
-                                                }
-                                                : t
-                                        )
-                                    );
-                                }}
-                            >
-                                <option value="">담당자 선택</option>
-
-                                {employees.map(emp => (
-                                    <option
-                                        key={emp.id}
-                                        value={emp.id}
-                                    >
-                                        {emp.name}
-                                    </option>
-                                ))}
-                            </select>
+                            <span className="task-count">
+                                작업 {projectTasks.length}개
+                            </span>
 
                         </div>
 
-                    ))}
+                        <span className="task-accordion-arrow">
+                            {isOpen ? "▲" : "▼"}
+                        </span>
+
+                    </div>
+
+                    {/* 프로젝트별 작업 목록 */}
+                    {isOpen && (
+
+                        <div className="task-project-content">
+
+                            <table className="task-table">
+
+                                <thead>
+                                    <tr>
+                                        <th>번호</th>
+                                        <th>작업 단계</th>
+                                        <th>진행 상태</th>
+                                        <th>담당자</th>
+                                    </tr>
+                                </thead>
+
+                                <tbody>
+
+                                    {projectTasks.map(task => {
+
+                                        const employee = employees.find(
+                                            emp => emp.id === task.employeeId
+                                        );
+
+                                        return (
+
+                                            <tr key={task.id}>
+
+                                                <td>{task.id}</td>
+
+                                                <td>{task.taskType}</td>
+
+                                                <td>
+                                                    <span
+                                                        className={`task-status ${
+                                                            task.progress === "완료"
+                                                                ? "complete"
+                                                                : task.progress === "작업중"
+                                                                    ? "progress"
+                                                                    : "waiting"
+                                                        }`}
+                                                    >
+                                                        {task.progress}
+                                                    </span>
+                                                </td>
+
+                                                <td>
+                                                    {employee?.name ?? "담당자 없음"}
+                                                </td>
+
+                                            </tr>
+
+                                        );
+
+                                    })}
+
+                                </tbody>
+
+                            </table>
+
+                        </div>
+
+                    )}
 
                 </div>
 
-            )}
+            );
 
+        })
+
+    ) : (
+
+        <div className="task-empty">
+            작업 내역이 없습니다.
         </div>
 
-    ))
-
-) : (
-
-    <div className="task-empty">
-        작업 내역이 없습니다.
-    </div>
-
-)}
+    )}
 
 </div>
+               
 
-                {/* 페이지네이션 */}
-                {totalPages > 1 && (
-                    <div className="task-pagination">
-                        <button onClick={() => setCurrentPage(prev => prev - 1)}
-                                disabled = {currentPage === 1}
-                        >
-                            이전
-                        </button>
-                        {Array.from({length: totalPages}, (_, index) => (
-                            <button key={index + 1}
-                                    className={currentPage === index + 1 ? "active" : ""}
-                                    onClick={() => setCurrentPage(index + 1)}
-                            >
-                                {index + 1}
-                        </button>
-                        
-                        ))}
-                        <button onClick ={() => setCurrentPage(prev => prev + 1)}
-                                disabled={currentPage === totalPages}
-                        >
-                            다음
-                        </button>
-                    </div>
-                )}
+                
 
             </div>
 
