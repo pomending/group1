@@ -132,9 +132,9 @@ export default function ProductImage({ product }) {
             <p className="pd-muted">이미지를 고른 뒤 적용을 눌러 주세요.</p>
             {message && <p className="pd-field-hint" role="status">{message}</p>}
             <div className="pd-image-grid">
-              {productImages.map(item => <button key={item.id} type="button" className="pd-image-option"
-                aria-pressed={pending === item.id} onClick={() => setPending(item.id)}>
-                <img src={item.src} alt="" /><span>{item.name}</span>
+              {productImages.map((item, index) => <button key={item.id} type="button" className="pd-image-option"
+                aria-label={`이미지 ${index + 1}`} aria-pressed={pending === item.id} onClick={() => setPending(item.id)}>
+                <img src={item.src} alt="" />
               </button>)}
             </div>
             {productImages.length === 0 && <p className="pd-muted">선택할 이미지가 없습니다. images 폴더에 이미지 파일을 추가해 주세요.</p>}
