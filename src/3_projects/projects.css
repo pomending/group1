@@ -1948,3 +1948,74 @@
   border-radius: 50%;
   background: #D5A356;
 }
+
+/* 프로젝트 목록 페이지네이션 */
+.pm-pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  margin-top: 24px;
+  padding-bottom: 8px;
+}
+
+/* 페이지 버튼 공통 */
+.pm-pagination button {
+  min-width: 36px;
+  height: 36px;
+  padding: 0 12px;
+  border: 1px solid #e2ddec;
+  border-radius: 8px;
+  background-color: #fff;
+  color: #51466d;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+/* 마우스 올렸을 때 */
+.pm-pagination button:hover:not(:disabled) {
+  background-color: #f3effb;
+  border-color: #a99ad4;
+}
+
+/* 현재 선택된 페이지 */
+.pm-pagination button.active {
+  background-color: #7562b3;
+  border-color: #7562b3;
+  color: #fff;
+  font-weight: 600;
+}
+
+.pm-pagination button.active:hover {
+  background-color: #65519f;
+}
+
+/* 이전/다음 버튼 비활성화 */
+.pm-pagination button:disabled {
+  background-color: #f7f6fa;
+  color: #bcb6c9;
+  border-color: #e9e6ef;
+  cursor: not-allowed;
+}
+
+/* 키보드 접근성 */
+.pm-pagination button:focus-visible {
+  outline: 2px solid #7562b3;
+  outline-offset: 2px;
+}
+
+/* 모바일 대응 */
+@media (max-width: 600px) {
+  .pm-pagination {
+      flex-wrap: wrap;
+      gap: 6px;
+  }
+
+  .pm-pagination button {
+      min-width: 32px;
+      height: 32px;
+      padding: 0 8px;
+      font-size: 12px;
+  }
+}

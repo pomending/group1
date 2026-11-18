@@ -8,7 +8,7 @@ import useProductData from "./useProductData";
 import useConsultationData from "./useConsultationData";
 import useTaskData from "./useTaskData";
 import { getProjectManagers, canCompleteProject } from "../utils/projectUtils";
-import { getAvailableEmployees } from "../utils/taskUtils";
+import { getAvailableEmployees, TASK_TYPES } from "../utils/taskUtils";
 import { sanitizeEmployee, validateEmployee } from "../utils/employeeUtils";
 import useQuotationData from "./useQuotationData";
 import { deleteSchedulesByProject, deleteSchedulesByEmployee, resetStoredSchedules } from "../5_schedule/scheduleStorage";
@@ -109,25 +109,25 @@ export function ERPProvider({ children }) {
     const validateCustomerEmployee = (customer) => {
 
         const employeeId = customer.employeeId;
-    
+
         if (employeeId == null || employeeId === "") {
             return {
                 ok: false,
                 message: "담당자를 지정해주세요."
             };
         }
-    
+
         const employee = employeeData.employees.find(
             e => e.id === employeeId
         );
-    
+
         if (!employee) {
             return {
                 ok: false,
                 message: "존재하지 않는 담당자입니다."
             };
         }
-    
+
         if (
             employee.status !== "재직" ||
             employee.department !== "영업팀"
@@ -137,7 +137,7 @@ export function ERPProvider({ children }) {
                 message: "재직 중인 영업팀 직원만 담당자로 지정할 수 있습니다."
             };
         }
-    
+
         return { ok: true };
     };
 
@@ -153,9 +153,9 @@ export function ERPProvider({ children }) {
                 message: "올바르지 않은 고객 정보입니다."
             };
         }
-    
+
         const result = validateCustomerEmployee(newCustomer);
-    
+
         if (!result.ok) {
             return result;
         }
@@ -164,13 +164,13 @@ export function ERPProvider({ children }) {
             newCustomer,
             customerData.customers
         );
-        
+
         if (!customerResult.ok) {
             return customerResult;
         }
-    
+
         const newId = customerData.addCustomer(newCustomer);
-    
+
         return {
             ok: true,
             id: newId
@@ -188,25 +188,25 @@ export function ERPProvider({ children }) {
                 message: "올바르지 않은 고객 ID입니다."
             };
         }
-    
+
         const original = customerData.customers.find(
             c => c.id === updatedCustomer.id
         );
-    
+
         if (!original) {
             return {
                 ok: false,
                 message: "존재하지 않는 고객입니다."
             };
         }
-    
+
         const mergedCustomer = {
             ...original,
             ...updatedCustomer
         };
-    
+
         const result = validateCustomerEmployee(mergedCustomer);
-    
+
         if (!result.ok) {
             return result;
         }
@@ -216,13 +216,13 @@ export function ERPProvider({ children }) {
             customerData.customers,
             mergedCustomer.id
         );
-        
+
         if (!customerResult.ok) {
             return customerResult;
         }
-    
+
         customerData.saveEditedCustomer(mergedCustomer);
-    
+
         return { ok: true };
     };
 
@@ -358,41 +358,41 @@ export function ERPProvider({ children }) {
     const addConsultation = (newConsultation) => {
 
         const result = validateConsultationEmployee(newConsultation);
-    
+
         if (!result.ok) {
             return result;
         }
-    
+
         return consultationData.addConsultation(newConsultation);
     };
-    
+
     const updateConsultation = (updatedConsultation) => {
-    
+
         const original = consultationData.consultations.find(
             c => c.id === updatedConsultation.id
         );
-    
+
         if (!original) {
             return {
                 ok: false,
                 message: "존재하지 않는 상담입니다."
             };
         }
-    
+
         const mergedConsultation = {
             ...original,
             ...updatedConsultation
         };
-    
+
         const result = validateConsultationEmployee(
             mergedConsultation,
             original
         );
-    
+
         if (!result.ok) {
             return result;
         }
-    
+
         return consultationData.updateConsultation(mergedConsultation);
     };
 
@@ -1177,7 +1177,6 @@ export function ERPProvider({ children }) {
     const validateTaskReferences = (
         task, project, original = null
     ) => {
-
         // 프로젝트 시작일 및 마감일 검사
         if (
             !isValidDate(project.startDate) ||
@@ -1225,8 +1224,98 @@ export function ERPProvider({ children }) {
             };
         }
 
+        // 작업 단계별 마감일 순서 검증
+        const currentOrder = TASK_TYPES.indexOf(task.taskType);
+
+        const hasInvalidOrder = taskData.tasks.some(other => {
+
+            // 다른 프로젝트의 작업 또는 수정 중인 자기 자신 제외
+            if (
+                other.projectId !== project.id ||
+                other.id === original?.id
+            ) {
+                return false;
+            }
+
+            const otherOrder = TASK_TYPES.indexOf(other.taskType);
+
+            if (currentOrder === -1 || otherOrder === -1) {
+                return false;
+            }
+
+            // 앞 단계의 마감일이 더 늦거나,
+            // 뒷 단계의 마감일이 더 빠르면 거부
+            return (
+                (otherOrder < currentOrder &&
+                    other.taskDeadline > task.taskDeadline) ||
+                (otherOrder > currentOrder &&
+                    other.taskDeadline < task.taskDeadline)
+            );
+        });
+
+        if (hasInvalidOrder) {
+            return {
+                ok: false,
+                message: "작업 마감일은 제작 → 검수 → 포장 → 배송 순서로 설정해야 합니다."
+            };
+        }
+
+        // 완료하려는 작업의 앞 단계가 모두 완료됐는지 확인
+        if (task.progress === "완료") {
+
+            const previousTypes = TASK_TYPES.slice(0, currentOrder);
+
+            const hasIncompletePreviousTask = previousTypes.some(type =>
+                !taskData.tasks.some(other =>
+                    other.projectId === project.id &&
+                    other.taskType === type &&
+                    other.progress === "완료"
+                )
+            );
+
+            if (hasIncompletePreviousTask) {
+                return {
+                    ok: false,
+                    message: "앞 단계 작업이 모두 완료되어야 완료 처리할 수 있습니다."
+                };
+            }
+        }
+
+        // 뒤 단계가 완료됐다면 현재 작업의 완료 취소 금지
+        if (
+            original?.progress === "완료" &&
+            task.progress !== "완료"
+        ) {
+            const originalOrder = TASK_TYPES.indexOf(original.taskType);
+
+            const hasCompletedLaterTask = taskData.tasks.some(other =>
+                other.projectId === original.projectId &&
+                TASK_TYPES.indexOf(other.taskType) > originalOrder &&
+                other.progress === "완료"
+            );
+
+            if (hasCompletedLaterTask) {
+                return {
+                    ok: false,
+                    message: "뒤 단계에 완료된 작업이 있어 완료 상태를 취소할 수 없습니다."
+                };
+            }
+        }
+
         return { ok: true };
 
+    };
+
+    const validateTaskProjectEditable = (project) => {
+
+        if (project.status === "완료") {
+            return {
+                ok: false,
+                message: "완료된 프로젝트의 세부 작업은 추가·수정·삭제할 수 없습니다."
+            };
+        }
+
+        return { ok: true };
     };
 
     const addTask = (newTask) => {
@@ -1255,21 +1344,16 @@ export function ERPProvider({ children }) {
         }
 
         // 완료된 프로젝트에는 작업 추가 금지
-        if (project.status === "완료") {
-            return {
-                ok: false,
-                message: "완료된 프로젝트에는 세부 작업을 추가할 수 없습니다."
-            };
+        const editableResult = validateTaskProjectEditable(project);
+
+        if (!editableResult.ok) {
+            return editableResult;
         }
 
-        // 배송 작업 생성과 동시에 완료 처리 금지
-        if (
-            newTask.taskType === "배송 관리" &&
-            newTask.progress === "완료"
-        ) {
+        if (newTask.progress !== "대기중") {
             return {
                 ok: false,
-                message: "배송 작업은 생성과 동시에 완료할 수 없습니다."
+                message: "신규 작업은 대기중 상태로만 등록할 수 있습니다."
             };
         }
 
@@ -1311,11 +1395,10 @@ export function ERPProvider({ children }) {
             };
         }
 
-        if (project.status === "완료") {
-            return {
-                ok: false,
-                message: "완료된 프로젝트의 세부 작업은 수정할 수 없습니다."
-            };
+        const editableResult = validateTaskProjectEditable(project);
+
+        if (!editableResult.ok) {
+            return editableResult;
         }
 
         // 작업 참조 검증
@@ -1348,6 +1431,17 @@ export function ERPProvider({ children }) {
         const result = taskData.updateTask(updatedTask);
 
         if (!result.ok) return result;
+
+        //작업이 시작되면 대기 상태이던 프로젝트가 진행 중으로 변경
+        if (project.status === '대기' && ["작업중", "완료"].includes(mergedTask.progress)) {
+
+            const changeProjectStatus = projectData.updateProject({ id: project.id, status: "진행 중" })
+
+            if (!changeProjectStatus.ok) {
+                return changeProjectStatus
+            }
+
+        }
 
         // 배송 완료 시 프로젝트 자동 완료
         if (isCompletingDelivery) {
@@ -1384,10 +1478,24 @@ export function ERPProvider({ children }) {
         }
 
         // 완료된 프로젝트의 세부 작업 삭제 금지
-        if (project.status === "완료") {
+        const editableResult = validateTaskProjectEditable(project);
+
+        if (!editableResult.ok) {
+            return editableResult;
+        }
+
+        const currentOrder = TASK_TYPES.indexOf(original.taskType);
+
+        const hasCompletedLaterTask = taskData.tasks.some(task =>
+            task.projectId === original.projectId &&
+            TASK_TYPES.indexOf(task.taskType) > currentOrder &&
+            task.progress === "완료"
+        );
+
+        if (hasCompletedLaterTask) {
             return {
                 ok: false,
-                message: "완료된 프로젝트의 세부 작업은 삭제할 수 없습니다."
+                message: "뒤 단계에 완료된 작업이 있어 삭제할 수 없습니다."
             };
         }
 
@@ -1447,14 +1555,14 @@ export function ERPProvider({ children }) {
 
         try {
             const scheduleResult = resetStoredSchedules();
-    
+
             if (!scheduleResult.ok) {
                 return scheduleResult;
             }
-    
+
             // 상품 초기화 결과 확인
             const productResult = productData.resetProducts();
-    
+
             if (!productResult.ok) {
                 return {
                     ok: false,
@@ -1462,7 +1570,7 @@ export function ERPProvider({ children }) {
                         " 일부 데이터는 이미 초기화되었을 수 있습니다."
                 };
             }
-    
+
             projectData.resetProjects();
             employeeData.resetEmployees();
             customerData.resetCustomers();
@@ -1472,14 +1580,14 @@ export function ERPProvider({ children }) {
             quotationData.resetQuotations();
             claimData.resetClaim();
             resetDashboardData();
-    
+
             authData.logout();
-    
+
             return { ok: true };
-    
+
         } catch (error) {
             console.error("전체 초기화 실패", error);
-    
+
             return {
                 ok: false,
                 message: "전체 초기화 중 오류가 발생했습니다. 일부 데이터가 초기화되었을 수 있습니다."

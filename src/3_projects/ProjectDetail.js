@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useERP } from "../context/ERPContext";
 import { formatProjectId, formatQuotationId } from "../utils/formatUtils";
 import { getProjectStatus, getProjectProgress, PROJECT_STATUSES } from "../utils/projectUtils";
@@ -20,6 +20,10 @@ function ProjectDetail(props) {
     const selectedProject = projects.find(project => project.id === props.selectedProjectId);
 
     const [status, setStatus] = useState(selectedProject?.status ?? '대기');
+
+    useEffect(() => {
+        setStatus(selectedProject?.status ?? "대기");
+    }, [selectedProject?.id, selectedProject?.status]);
 
     if (!selectedProject) {
         return (
@@ -111,11 +115,7 @@ function ProjectDetail(props) {
 
         const result = updateProject({
             id: selectedProject.id,
-            status: status,
-            // 변경된 상태가 완료이면 오늘 날짜를 (YYYY-MM-DD) 형식으로 저장
-            completedDate: status === '완료'
-                ? (selectedProject.completedDate ?? new Date().toLocaleDateString('sv-SE'))
-                : null
+            status: status
         })
 
         if (!result.ok) {
@@ -315,14 +315,16 @@ function ProjectDetail(props) {
                                     <label htmlFor="pd-status-select">변경할 상태</label>
                                     <select
                                         id="pd-status-select"
-                                        value={selectedProject.status === "완료" ? "완료" : status}
+                                        value={selectedProject.status === "대기"
+                                            ? status
+                                            : selectedProject.status}
                                         onChange={(e) => setStatus(e.target.value)}
-                                        disabled={selectedProject.status === "완료"}
+                                        disabled={selectedProject.status !== "대기"}
                                     >
                                         {PROJECT_STATUSES
                                             .filter(s =>
-                                                s !== "완료" ||
-                                                selectedProject.status === "완료"
+                                                s === selectedProject.status ||
+                                                (selectedProject.status === "대기" && s === "진행 중")
                                             )
                                             .map(s => (
                                                 <option key={s} value={s}>
@@ -336,7 +338,10 @@ function ProjectDetail(props) {
                             <button
                                 className="pd-status-save pj-btn pj-primary"
                                 onClick={saveStatus}
-                                disabled={selectedProject.status === "완료"}
+                                disabled={
+                                    selectedProject.status !== "대기" ||
+                                    status !== "진행 중"
+                                }
                             >
                                 상태 변경
                             </button>

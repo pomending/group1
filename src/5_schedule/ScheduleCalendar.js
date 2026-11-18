@@ -213,12 +213,19 @@ export default function ScheduleCalendar({
                   aria-current={cell.key === todayKey ? "date" : undefined}
                   className={`sm-day ${selectedDate === cell.key ? "selected" : ""} ${cell.key === todayKey ? "today" : ""}`}
                 >
-                  <div
+                  <button
+                    type="button"
                     className={`sm-day-num ${dateColor}`}
+                    aria-label={`${cell.key} 날짜 선택`}
+                    aria-pressed={selectedDate === cell.key}
                     title={holidayName || undefined}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      onSelectDate(cell.key);
+                    }}
                   >
                     {cell.date.getDate()}
-                  </div>
+                  </button>
                   {holidayName && (
                     <div className="sm-holiday-name">{holidayName}</div>
                   )}

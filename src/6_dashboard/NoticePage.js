@@ -36,7 +36,7 @@ function NoticePage({ posts }) {
                                 onClick={() => navigate(`/?page=notice-detail&id=${post.id}`)}
                                 style={{ cursor: "pointer" }}>
                                 <td>{sorted.length - start - index}</td>
-                                <td>{post.type === "important" ? "중요공지" : "일반 공지"}</td>
+                                <td>{post.type === "important" ? "중요 공지" : "일반 공지"}</td>
                                 <td>{post.title}</td>
                                 <td>{post.writer}</td>
                                 <td>{post.date}</td>

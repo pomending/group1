@@ -30,6 +30,7 @@ import {
 // isOccurrence이면 반복 중 특정 날짜만 수정하므로 반복 선택창을 숨기고 해당 날짜의 정보만 바꿉니다.
 export default function ScheduleFormModal({
   form,
+  returnFocusRef,
   saving = false,
   canCreatePrivate = true,
   employees = [],
@@ -123,6 +124,7 @@ export default function ScheduleFormModal({
       title={title}
       description={description}
       onClose={requestClose}
+      returnFocusRef={returnFocusRef}
     >
       {/* 이름·프로젝트명은 사전에 없는 고유명사가 많으므로 브라우저 맞춤법 검사를 끕니다.
           spellCheck=false는 입력 내용을 바꾸지 않고 맞춤법 표시만 제어하며 자식 입력창에 상속됩니다.
@@ -626,6 +628,7 @@ function ScheduleModal({
   children,
   headerExtra,
   className = "",
+  returnFocusRef,
 }) {
   const dialogRef = useRef(null);
   // 자동 초점이 적용되기 전, 팝업을 연 버튼을 기억합니다.
@@ -633,14 +636,14 @@ function ScheduleModal({
 
   useLayoutEffect(() => {
     const dialog = dialogRef.current;
-    const opener = openerRef.current;
+    const opener = returnFocusRef?.current || openerRef.current;
     // 등록·수정 폼의 기존 autoFocus는 유지하고, 목록은 첫 조작 요소에 초점을 둡니다.
     if (!dialog.contains(document.activeElement)) (getModalFocusTargets(dialogRef.current)[0] || dialog).focus();
     return () => {
       if (opener?.isConnected) opener.focus();
       else document.querySelector('.schedule-app button')?.focus();
     };
-  }, []);
+  }, [returnFocusRef]);
 
   function handleKeyDown(event) {
     // 목록 위에 수정창이 열려 있으면 가장 위의 팝업만 키보드 입력을 처리합니다.

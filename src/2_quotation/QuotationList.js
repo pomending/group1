@@ -64,7 +64,14 @@ function QuotationList() {
         setCurrentPage(1);
     }
 
-    
+    const pendingRequests = consultations.filter(consultation =>
+        consultation.status === "견적 요청" &&
+        !quotations.some(quotation =>
+            Number(quotation.consultationId) === Number(consultation.id) &&
+            quotation.status !== "임시 저장"
+        )
+    )
+
 
     const [sortOrder, setSortOrder] = useState("latest");
 
@@ -270,6 +277,17 @@ function QuotationList() {
                 </div>
             </section>
 
+            {/* 미완료 견적 요청 알림 */}
+            {pendingRequests.length > 0 && (
+                <div className="quotation-request-alert">
+                    <span className="alert-dot"></span>
+                    <strong>
+                        견적 작성 대기 {pendingRequests.length}건
+                    </strong>
+                </div>
+            )}
+
+
             {/* 견적 현황 */}
             <section className="quotation-status">
 
@@ -357,7 +375,6 @@ function QuotationList() {
                                     <td>{formatCustomerName(customers, quotation.customerId)}</td>
                                     <td>{formatProductName(products, quotation.productId)}</td>
                                     <td>{quotation.createdAt}</td>
-                                    {/* <td>{(quotation.quantity * quotation.unitPrice).toLocaleString()}원</td> */}
                                     <td>
                                         {totalPrice(
                                             quotation.quantity,

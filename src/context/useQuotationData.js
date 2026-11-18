@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from "react";
 import { quotations as initialQuotations } from "../data/mockData";
-import { validateQuotation } from "../utils/quotationUtils";
+import { isReviewRequest, validateQuotation } from "../utils/quotationUtils";
 
 export default function useQuotationData() {
 
@@ -107,10 +107,13 @@ export default function useQuotationData() {
             };
         }
 
-        const result = validateQuotation(mergedQuotation);
+        // 재검토 요청이 아닐 때만 전체 유효성 검사
+        if (!isReviewRequest(existing, updatedQuotation)) {
+            const result = validateQuotation(mergedQuotation);
 
-        if (!result.ok) {
-            return result
+            if (!result.ok) {
+                return result;
+            }
         }
 
         setQuotations(prev =>
