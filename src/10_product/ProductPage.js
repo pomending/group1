@@ -240,9 +240,9 @@ export default function ProductPage() {
       <div className="pd-shell">
         <header className="pd-heading">
           <div>
-            <p className="pd-eyebrow">PRODUCT MANAGEMENT</p>
+         
             <h1>상품 관리</h1>
-            <p className="pd-muted">상품의 기본 단가와 판매 상태를 관리합니다.</p>
+            
           </div>
           {editing === null && selectedId === null && (
             <button

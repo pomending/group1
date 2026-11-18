@@ -164,11 +164,9 @@ function CustomerManagement() {
         <div className="crm-page">
             <div className="crm-header">
                 <div>
-                    <p className="crm-path">CRM / 고객 관리</p>
+                    
                     <h2>고객 관리</h2>
-                    <p className="crm-description">
-                        고객사 정보 조회 및 관리
-                    </p>
+                   
                 </div>
             </div>
 
