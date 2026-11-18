@@ -72,8 +72,8 @@ function TaskList() {
         <div className="task-page">
             <div className="task-header">
                 <div>
-                    <h2>작업 관리</h2>
-                    <p>프로젝트별 작업 진행 현황을 관리합니다.</p>
+                    <h2>세부 작업 관리</h2>
+                  
                 </div>
                 <div className="pm-heading-actions">
                     <button
@@ -81,7 +81,7 @@ function TaskList() {
                         className="new-btn"
                         onClick={() => navigate("/tasks/detail")}
                     >
-                        + 세부상세 내용
+                        + 세부상세 등록
                     </button>
                 </div>
             </div>

@@ -235,7 +235,7 @@ function Topbar({ isCollapsed, setIsCollapsed }) {
         : location.pathname === menu || location.pathname.startsWith(menu + "/"));
     const pageName = location.pathname === "/" && subpages[page]
         ? subpages[page] : menus[path] || "페이지를 찾을 수 없음";
-    const isHome = location.pathname === "/" && !page;
+    
 
     return (
         <header className="erp-topbar">
@@ -250,7 +250,7 @@ function Topbar({ isCollapsed, setIsCollapsed }) {
                 <div className="erp-topbar-page">
                     <div className="erp-topbar-breadcrumb">
                         <Link to="/">홈</Link>
-                        {!isHome && <><span>/</span><span>{pageName}</span></>}
+                        <><span>/</span><span>{pageName}</span></>
                     </div>
                     <div className="erp-topbar-title">{pageName}</div>
                 </div>

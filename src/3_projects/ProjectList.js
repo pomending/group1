@@ -97,11 +97,9 @@ function ProjectList(props) {
                 {/* 페이지 제목 */}
                 <div className="pm-heading">
                     <div>
-                        <div className="pm-eyebrow pj-eyebrow">
-                            PROJECT MANAGEMENT
-                        </div>
+                        
                         <h2>프로젝트 관리</h2>
-                        <p>프로젝트 진행 현황을 한눈에 확인하세요.</p>
+                        
                     </div>
 
                     <div className="pm-heading-actions">

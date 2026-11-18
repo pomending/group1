@@ -885,9 +885,9 @@ function ScheduleManagerContent({ erp, currentEmployee, accountKey }) {
         </aside>}
         <section className="sm-heading">
           <div>
-            <div className="sm-eyebrow">TEAM PLANNER</div>
+            
             <h1>일정 관리</h1>
-            <p>함께 만드는 프로젝트, 한눈에 이어지는 팀의 일정.</p>
+            
           </div>
           <div className="sm-heading-actions">
             <button className="sm-secondary-btn" aria-label="오늘의 작업 일별 보기" onClick={() => showCurrentPeriod("daily")}>오늘 일정 {todayWorkCount}건</button>
