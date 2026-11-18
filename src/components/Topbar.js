@@ -258,6 +258,7 @@ function Topbar({ isCollapsed, setIsCollapsed }) {
 
             {/* 확인한 알림은 목록에서 삭제합니다. */}
             <div className="erp-topbar-notification" ref={panelRef}>
+                <Link to="/homepage" className="erp-notification-button erp-topbar-home" title="홈페이지로 이동" aria-label="홈페이지로 이동">⌂</Link>
                 <button
                     type="button"
                     className="erp-notification-button"

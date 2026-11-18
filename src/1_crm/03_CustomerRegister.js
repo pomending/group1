@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 import { useERP } from "../context/ERPContext";
 import { formatBusinessNumber } from "../utils/customerUtils";
-import { formatPhone } from "../utils/consultationUtils";
+import { formatPhone } from "../utils/formatUtils";
 import "./03_CustomerForm.css";
 
 function CustomerRegister({ onClose }) {

@@ -26,8 +26,8 @@ test("일정 초기화는 현재 탭의 모든 계정 초안을 지우고 다른
   unmount();
   // 다른 탭에서 남아 있던 초기화 이전 자료를 재현합니다.
   sessionStorage.setItem("made-mate-schedule-draft:2:20", stale);
-  const restored = renderHook(() => useScheduleDraft(null, false, "2:20"));
-  expect(restored.result.current.draft).toBeNull();
+  const { result: restoredResult } = renderHook(() => useScheduleDraft(null, false, "2:20"));
+  expect(restoredResult.current.draft).toBeNull();
   expect(sessionStorage.getItem("made-mate-schedule-draft:2:20")).toBeNull();
 });
 
@@ -42,14 +42,16 @@ test.each([true, false])("초기화 전 대기하던 팀원 저장은 이름과 
   try {
     const { result } = renderHook(() => useScheduleTeam());
     act(() => result.current.addTeamMember("늦은 팀원"));
+    let resetResult;
     act(() => {
-      if (sameTab) expect(resetStoredSchedules().ok).toBe(true);
+      if (sameTab) resetResult = resetStoredSchedules();
       else {
         localStorage.setItem("made-mate-schedule-team", "[]");
         localStorage.setItem("made-mate-excluded-team", "[]");
         localStorage.setItem(storageKey, serializeSchedules([], "다른 탭 초기화"));
       }
     });
+    expect(resetResult).toEqual(sameTab ? { ok: true } : undefined);
     await act(async () => {
       const pending = jobs.splice(0);
       for (const job of pending) job();
@@ -65,15 +67,15 @@ test.each([true, false])("초기화 전 대기하던 팀원 저장은 이름과 
 
 test("초기화 번호가 바뀌면 열린 폼의 이전 초안을 다시 저장하지 않고 재접속 초안도 폐기한다", () => {
   const form = { ...createEmptyForm(), title: "이전 작성" };
-  const hook = renderHook(({ resetId }) => useScheduleDraft(form, false, "", true, resetId), { initialProps: { resetId: null } });
-  expect(hook.result.current.draft.title).toBe("이전 작성");
-  hook.rerender({ resetId: "new-reset" });
-  expect(hook.result.current.draft).toBeNull();
+  const { result, rerender, unmount } = renderHook(({ resetId }) => useScheduleDraft(form, false, "", true, resetId), { initialProps: { resetId: null } });
+  expect(result.current.draft.title).toBe("이전 작성");
+  rerender({ resetId: "new-reset" });
+  expect(result.current.draft).toBeNull();
   expect(sessionStorage.getItem("made-mate-schedule-draft")).toBeNull();
-  hook.unmount();
+  unmount();
   sessionStorage.setItem("made-mate-schedule-draft", JSON.stringify({ version: 1, form }));
-  const reopened = renderHook(() => useScheduleDraft(null, false, "", true, "new-reset"));
-  expect(reopened.result.current.draft).toBeNull();
+  const { result: reopenedResult } = renderHook(() => useScheduleDraft(null, false, "", true, "new-reset"));
+  expect(reopenedResult.current.draft).toBeNull();
   expect(sessionStorage.getItem("made-mate-schedule-draft")).toBeNull();
 
 });

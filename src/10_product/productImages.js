@@ -4,18 +4,6 @@
 const imageFiles = process.env.NODE_ENV === "test" ? null
   : require.context("./images", false, /\.(jpe?g|png|webp|gif)$/i);
 
-// 파일 ID는 그대로 두고 화면 이름만 바꾸므로 기존 상품의 이미지 연결을 유지합니다.
-const imageNames = {
-  "01-stainless-tumbler": "스테인리스 텀블러", "02-canvas-ecobag": "캔버스 에코백",
-  "03-ceramic-mug": "도자기 머그컵", "04-acrylic-keyring": "아크릴 키링",
-  "05-group-tshirt": "단체 티셔츠", "06-logo-pen": "로고 볼펜",
-  "07-fabric-pouch": "패브릭 파우치", "08-metal-badge": "금속 배지",
-  "09-promotional-notebook": "홍보용 노트", "10-logo-sticker": "로고 스티커",
-  "11-wireless-mouse": "무선 마우스", "12-power-bank": "보조배터리",
-  "13-wireless-charger": "무선 충전기", "14-sports-bottle": "스포츠 물병",
-  "15-baseball-cap": "볼캡",
-};
-
 export function collectProductImages(context) {
   if (!context) return [];
   const files = [];
@@ -32,10 +20,8 @@ export function collectProductImages(context) {
   for (const file of files) {
     const source = context(file);
     const id = file.slice(2); // 앞의 ./를 뺀 파일명을 고유 번호로 사용합니다.
-    const filename = id.replace(/\.[^.]+$/, ""); // 표시 이름에는 확장자를 빼 줍니다.
     images.push({
       id,
-      name: imageNames[filename] || filename,
       src: source.default || source,
     });
   }

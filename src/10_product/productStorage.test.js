@@ -46,12 +46,12 @@ test.each([
 });
 
 test.each([0, Number.MAX_SAFE_INTEGER])("단가 허용 경계 %s는 저장 후 다시 읽어도 유지한다", price => {
-  const first = renderHook(() => useProductData(seed));
-  act(() => first.result.current.addProduct({ ...values("경계 상품"), productPrice: price }));
-  first.unmount();
-  const second = renderHook(() => useProductData(seed));
-  expect(second.result.current.products.find(item => item.productName === "경계 상품").productPrice).toBe(price);
-  expect(second.result.current.productStorageError).toBe("");
+  const { result, unmount } = renderHook(() => useProductData(seed));
+  act(() => result.current.addProduct({ ...values("경계 상품"), productPrice: price }));
+  unmount();
+  const { result: reloadedResult } = renderHook(() => useProductData(seed));
+  expect(reloadedResult.current.products.find(item => item.productName === "경계 상품").productPrice).toBe(price);
+  expect(reloadedResult.current.productStorageError).toBe("");
 });
 
 test.each(["", "   ", 0, -1, 1.5, Number.MAX_SAFE_INTEGER + 1])("잘못된 저장 상품 번호 %s는 원본을 보호하고 변경 저장을 막는다", id => {
@@ -104,17 +104,17 @@ test("초기화의 상품 저장이 실패하면 기존 이미지 연결과 상�
 });
 
 test("다른 탭이 먼저 등록한 상품을 오래된 목록으로 덮어쓰지 않고 재진입 후 저장한다", () => {
-  const first = renderHook(() => useProductData(seed));
-  const second = renderHook(() => useProductData(seed));
-  act(() => first.result.current.addProduct(values("첫 탭 상품")));
+  const { result: firstResult } = renderHook(() => useProductData(seed));
+  const { result: secondResult, unmount } = renderHook(() => useProductData(seed));
+  act(() => firstResult.current.addProduct(values("첫 탭 상품")));
   let response;
-  act(() => { response = second.result.current.addProduct(values("둘째 탭 상품")); });
+  act(() => { response = secondResult.current.addProduct(values("둘째 탭 상품")); });
   expect(response).toMatchObject({ ok: false, field: null });
   expect(response.message).toContain("다른 탭");
   expect(JSON.parse(localStorage.getItem("erp_products")).map(item => item.productName)).toEqual(["원본", "첫 탭 상품"]);
-  second.unmount();
-  const reloaded = renderHook(() => useProductData(seed));
-  act(() => { response = reloaded.result.current.addProduct(values("둘째 탭 상품")); });
+  unmount();
+  const { result: reloadedResult } = renderHook(() => useProductData(seed));
+  act(() => { response = reloadedResult.current.addProduct(values("둘째 탭 상품")); });
   expect(response.ok).toBe(true);
-  expect(reloaded.result.current.products.map(item => item.id)).toEqual([1, 2, 3]);
+  expect(reloadedResult.current.products.map(item => item.id)).toEqual([1, 2, 3]);
 });

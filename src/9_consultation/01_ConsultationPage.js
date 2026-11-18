@@ -4,17 +4,11 @@ import ConsultationManagement from "./02_ConsultationManagement";
 
 function ConsultationPage(){
 
-
-
     return(
         <Routes>
             <Route index element ={<ConsultationManagement/>}/>
-
             
         </Routes>
-
-
-
 
     )
 }

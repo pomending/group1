@@ -15,7 +15,7 @@ const formLabels = {
   copy: { title: "상품 복사 등록", cancelMessage: "복사한 상품의 작성 내용을 저장하지 않고 취소할까요?" },
 };
 
-export default function ProductForm({ product, onSave, onCancel, mode = "create" }) {
+export default function ProductForm({ product, onSave, onCancel, onDelete, mode = "create" }) {
   // 편집 시작값은 고정합니다. 다른 입력을 했다가 원래 값으로 되돌리면 취소 확인이 필요 없습니다.
   const [initial] = useState(() => ({
     name: product.productName || "",
@@ -121,6 +121,12 @@ export default function ProductForm({ product, onSave, onCancel, mode = "create"
         </div>
         {error && !error.field && <p className="pd-error" role="alert">{error.message}</p>}
         <div className="pd-form-actions">
+          {isEditing && product.productStatus === PRODUCT_STATUS.STOPPED && onDelete && (
+            <button className="pd-button" type="button" onClick={() => {
+              const result = onDelete();
+              if (!result.ok) showError(null, result.message);
+            }}>상품 삭제</button>
+          )}
           <button className="pd-button" type="button" onClick={cancel}>취소</button>
           <button className="pd-button pd-primary" type="submit">{isEditing ? "수정 저장" : "등록 저장"}</button>
         </div>

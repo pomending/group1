@@ -1,4 +1,4 @@
-import { isValidDate } from "./dateUtils";
+import { isValidDate } from "./validationUtils";
 
 //견적 상태
 export const QUOTATION_STATUS = ["승인 대기", "승인 완료", "반려"]
@@ -45,6 +45,12 @@ export const isReviewRequest = (existing, updatedQuotation) => {
 //견적 데이터 유효성 검사
 export const validateQuotation = (quotation) => {
 
+    const enableStatus = [...QUOTATION_STATUS, "임시 저장"]
+
+    if (!enableStatus.includes(quotation.status)) {
+        return { ok: false, message: "올바르지 않은 상태입니다." }
+    }
+
     //임시 저장은 필수 입력 검사 제외
     if (quotation.status === "임시 저장") {
         return { ok: true };
@@ -66,10 +72,15 @@ export const validateQuotation = (quotation) => {
         return { ok: false, message: "작성일을 입력해주세요." };
     }
 
-    //Number.isFinite()은 정상적인 숫자인지 확인해준다.
-    if (!Number.isFinite(Number(quotation.quantity)) ||
-        Number(quotation.quantity) <= 0) {
-        return { ok: false, message: "수량은 0보다 커야 합니다." }
+    // 수량은 1 이상의 안전한 정수만 허용
+    if (
+        !Number.isSafeInteger(Number(quotation.quantity)) ||
+        Number(quotation.quantity) <= 0
+    ) {
+        return {
+            ok: false,
+            message: "수량은 1 이상의 정수로 입력해주세요."
+        };
     }
 
     //기본 데이터의 unitprice도 허용
@@ -97,8 +108,7 @@ export const validateQuotation = (quotation) => {
         !option.name.trim() ||
         option.unitPrice === "" ||
         option.unitPrice == null ||
-        !Number.isFinite(Number(option.unitPrice)) ||
-        Number(option.unitPrice) < 0
+        !Number.isFinite(Number(option.unitPrice))
     );
 
     if (hasInvalidOption) {
@@ -126,8 +136,6 @@ export const validateQuotation = (quotation) => {
     if (!quotation.validUntil) {
         return { ok: false, message: "견적 유효기간을 입력해주세요." }
     }
-
-
 
     //납품 예정일 필수 입력 검사
     if (!quotation.deliveryDate) {

@@ -1,3 +1,4 @@
+
 /* 상품관리 진입 화면: ERPContext의 상품 목록을 읽고 등록·수정합니다.
  * 진입: App.js의 /product 경로 → ProductPage → 상세(ProductDetails) 또는 등록·수정(ProductForm)
  * 데이터: ERPProvider가 useProductData로 상태 생성 → useERP()로 products / addProduct / updateProduct 사용
@@ -12,7 +13,7 @@ import ProductForm from "./ProductForm";
 import ProductDetails from "./ProductDetails";
 import {
   formatProductDate, getProductStatus, productStatuses, normalizeProductName,
-  compareProductDates, createProductExcel, getProductInput, getProductPriceRange,
+  compareProductDates, createProductExcel, getProductInput, getProductPriceRange, PRODUCT_STATUS,
 } from "./productData";
 import "./productStyles.css";
 
@@ -29,7 +30,7 @@ function compareProducts(a, b, sort) {
 
 export default function ProductPage() {
   // [1] 데이터와 화면 상태: Context 상품과 검색·편집 조건을 분리합니다.
-  const { products, addProduct, updateProduct, productStorageError } = useERP();
+  const { products, addProduct, updateProduct, deleteProduct, quotations = [], productStorageError } = useERP();
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("all");
   const [sort, setSort] = useState("newest");
@@ -118,6 +119,24 @@ export default function ProductPage() {
     setEditing(null);
   }
 
+  function removeProduct() {
+    const product = products.find(item => item.id === editing.id);
+    if (!product || product.productStatus !== PRODUCT_STATUS.STOPPED) {
+      return { ok: false, message: "판매 중지된 상품만 삭제할 수 있습니다." };
+    }
+    if (quotations.some(quotation => quotation.productId === product.id)) {
+      return { ok: false, message: "견적에 연결된 상품은 삭제할 수 없습니다. 판매 중지 상태로 보관해 주세요." };
+    }
+    if (!window.confirm(`'${product.productName}' 상품을 삭제할까요? 삭제 후에는 복구할 수 없습니다.`)) return { ok: true };
+    const result = deleteProduct(product.id);
+    if (!result.ok) return result;
+    setEditing(null);
+    setSelectedId(null);
+    focusRequest.current = "list-heading";
+    setNotice("상품을 삭제했습니다.");
+    return result;
+  }
+
   // 입력값 세 개만 복사합니다. 신규 저장 시 ID·등록일을 생성하고 수정일은 비우며 원본은 변경하지 않습니다.
   function copyProduct() {
     if (!selectedProduct) return;
@@ -133,7 +152,7 @@ export default function ProductPage() {
     setCurrentPage(1);
   }
 
-  // 카드와 선택 상자는 같은 필터 상태를 사용합니다. 검색·정렬은 유지하고 첫 페이지로 이동합니다.
+  // 상태 카드는 검색·정렬을 유지하고 첫 페이지로 이동합니다.
   function filterByStatus(value) {
     setStatus(value);
     setCurrentPage(1);
@@ -245,6 +264,7 @@ export default function ProductPage() {
             mode={editorMode}
             product={editing}
             onSave={saveProduct}
+            onDelete={removeProduct}
             onCancel={() => {
               setNotice("");
               closeEditor();
@@ -302,12 +322,6 @@ export default function ProductPage() {
                 <label className="pd-search">상품명·번호 검색
                   <input ref={focusRef("search")} type="search" value={query} onChange={event => { setQuery(event.target.value); setCurrentPage(1); }} placeholder="상품명 또는 상품 번호를 입력하세요" />
                 </label>
-                <label>판매 상태
-                  <select value={status} onChange={event => filterByStatus(event.target.value)}>
-                    <option value="all">전체 상태</option>
-                    {productStatuses.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
-                  </select>
-                </label>
                 <label>정렬
                   <select value={sort} onChange={event => { setSort(event.target.value); setCurrentPage(1); }}>
                     <option value="newest">등록일 최신순</option>
@@ -318,31 +332,23 @@ export default function ProductPage() {
                     <option value="priceDesc">높은 단가순</option>
                   </select>
                 </label>
+                <label>최소 단가 (원)
+                  <input ref={focusRef("min-price")} type="number" min={0} max={Number.MAX_SAFE_INTEGER} step={1}
+                    value={priceRange.min} onChange={event => filterByPrice("min", event.target.value)}
+                    placeholder="제한 없음" aria-invalid={!!range.error || undefined}
+                    aria-describedby={range.error ? "pd-price-range-hint pd-price-range-error" : "pd-price-range-hint"} />
+                </label>
+                <label>최대 단가 (원)
+                  <input type="number" min={0} max={Number.MAX_SAFE_INTEGER} step={1}
+                    value={priceRange.max} onChange={event => filterByPrice("max", event.target.value)}
+                    placeholder="제한 없음" aria-invalid={!!range.error || undefined}
+                    aria-describedby={range.error ? "pd-price-range-hint pd-price-range-error" : "pd-price-range-hint"} />
+                </label>
+                <button type="button" className="pd-button" disabled={!hasPriceRange} onClick={resetPriceRange}>단가 조건 해제</button>
                 <button type="button" className="pd-button" onClick={() => { resetConditions(); setSort("newest"); }}>초기화</button>
               </div>
-              {/* 접어도 입력한 단가 조건은 유지합니다. 초기화는 숨겨진 조건까지 해제합니다. */}
-              <details className="pd-price-filter" aria-label="단가 범위 검색">
-                <summary>추가 검색 조건{hasPriceRange ? " · 단가 조건 적용 중" : ""}</summary>
-                <div className="pd-price-range">
-                  <label>최소 단가 (원)
-                    <input ref={focusRef("min-price")} type="number" min={0} max={Number.MAX_SAFE_INTEGER} step={1}
-                      value={priceRange.min} onChange={event => filterByPrice("min", event.target.value)}
-                      placeholder="제한 없음" aria-invalid={!!range.error || undefined}
-                      aria-describedby={range.error ? "pd-price-range-hint pd-price-range-error" : "pd-price-range-hint"} />
-                  </label>
-                  <label>최대 단가 (원)
-                    <input type="number" min={0} max={Number.MAX_SAFE_INTEGER} step={1}
-                      value={priceRange.max} onChange={event => filterByPrice("max", event.target.value)}
-                      placeholder="제한 없음" aria-invalid={!!range.error || undefined}
-                      aria-describedby={range.error ? "pd-price-range-hint pd-price-range-error" : "pd-price-range-hint"} />
-                  </label>
-                </div>
-                <p id="pd-price-range-hint" className="pd-field-hint">입력하면 바로 조회합니다. 빈 값은 제한 없음이며 양 끝 금액을 포함합니다.</p>
-                {range.error && <p id="pd-price-range-error" className="pd-error" role="alert">{range.error}</p>}
-                <div className="pd-price-filter-actions">
-                  <button type="button" className="pd-button" disabled={!hasPriceRange} onClick={resetPriceRange}>단가 조건 해제</button>
-                </div>
-              </details>
+              <p id="pd-price-range-hint" className="pd-sr-only">입력하면 바로 조회합니다. 빈 값은 제한 없음이며 양 끝 금액을 포함합니다.</p>
+              {range.error && <p id="pd-price-range-error" className="pd-error" role="alert">{range.error}</p>}
               <div className="pd-table-scroll" role="region" aria-label="상품 목록 표" tabIndex={0}>
                 <table className="pd-table">
                   <thead>

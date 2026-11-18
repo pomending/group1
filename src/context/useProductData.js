@@ -102,6 +102,16 @@ export function useProductData(seedProducts = initialProducts) {
                 }
                 for (const [key] of imageBackup) localStorage.removeItem(key);
             }
+            if (!reset) {
+                // 삭제 후 번호가 재사용되어도 이전 상품의 이미지가 붙지 않게 정리합니다.
+                for (const product of latestProducts.current) {
+                    if (next.some(item => item.id === product.id)) continue;
+                    const key = "erp_product_image:" + product.id;
+                    const value = localStorage.getItem(key);
+                    if (value !== null) imageBackup.push([key, value]);
+                }
+                for (const [key] of imageBackup) localStorage.removeItem(key);
+            }
             const serialized = JSON.stringify(next);
             localStorage.setItem(STORAGE_KEY, serialized);
             savedRaw.current = serialized;
@@ -167,6 +177,16 @@ export function useProductData(seedProducts = initialProducts) {
         return { ok: true, changed: true, product };
     };
 
+    const deleteProduct = (id) => {
+        const current = latestProducts.current;
+        const product = current.find(item => item.id === id);
+        if (!product) return failure(null, "삭제할 상품을 찾을 수 없습니다.");
+        if (product.productStatus !== PRODUCT_STATUS.STOPPED) {
+            return failure(null, "판매 중지된 상품만 삭제할 수 있습니다.");
+        }
+        return setProducts(current.filter(item => item.id !== id));
+    };
+
     const resetProducts = () => {
         return commitProducts(createInitialProducts(), true);
     };
@@ -175,6 +195,7 @@ export function useProductData(seedProducts = initialProducts) {
     return {
         products,
         setProducts,
+        deleteProduct,
         addProduct,
         updateProduct,
         resetProducts,

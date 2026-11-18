@@ -391,7 +391,7 @@
 }
 
 /* 삭제 버튼 */
-.consultation-page .consultation-table-actions button:last-child {
+.consultation-page .consultation-table-actions .consultation-delete-btn {
     background: #F8EDEF;
     border-color: #E8C7CF;
     color: #A34E64;
@@ -415,10 +415,41 @@
     border-color: #DCA6B5;
 }
 
-/* 상담 목록 페이지 이동 버튼 가운데 정렬 */
+/* 상담 목록 페이지 이동 버튼 */
 .consultation-page .consultation-pagination {
     display: flex;
     justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+.consultation-page .consultation-pagination > button {
+    min-width: 36px;
+    min-height: 36px;
+    height: 36px;
+    margin: 0;
+    padding: 0 12px;
+    border: 1px solid #DDD8EA;
+    border-radius: 8px;
+    background: #FBFAFE;
+    color: #625B78;
+    font-size: 13px;
+}
+.consultation-page .consultation-pagination > button:hover:not(:disabled):not(.active) {
+    background: #F0EDFA;
+    border-color: #C8C0E5;
+    color: #524B80;
+}
+.consultation-page .consultation-pagination > button.active {
+    background: #68619A;
+    border-color: #68619A;
+    color: #FFFFFF;
+}
+.consultation-page .consultation-pagination > button:disabled {
+    background: #E9E7EF;
+    border-color: #E9E7EF;
+    color: #9690A5;
+    opacity: 1;
 }
 /* =========================================
    반응형
@@ -497,4 +528,22 @@
         overflow-x: auto;
         white-space: nowrap;
     }
+}
+
+/* 미배정 상담 필터 */
+.consultation-page .consultation-unassigned-filter {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    margin: 0 4px;
+    font-size: 13px;
+    font-weight: 500;
+    color: #524B80;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.consultation-page .consultation-unassigned-filter input {
+    margin: 0;
+    cursor: pointer;
 }

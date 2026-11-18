@@ -5,8 +5,8 @@ import { productImages } from "./productImages";
 
 // Jest에서는 Webpack의 폴더 수집을 실행하지 않으므로 선택창용 목록만 제공합니다.
 beforeAll(() => productImages.push(
-  { id: "10-logo-sticker.jpg", name: "10-logo-sticker", src: "/sticker.jpg" },
-  { id: "02-canvas-ecobag.jpg", name: "02-canvas-ecobag", src: "/ecobag.jpg" },
+  { id: "10-logo-sticker.jpg", name: "이미지 1", src: "/sticker.jpg" },
+  { id: "02-canvas-ecobag.jpg", name: "이미지 2", src: "/ecobag.jpg" },
 ));
 afterAll(() => { productImages.length = 0; });
 
@@ -19,7 +19,7 @@ test("이미지 적용 저장에 실패하면 기존 이미지와 선택창을 �
   const product = { id: 7103, productName: "적용 실패", productImageUrl: "/keep.jpg" };
   render(<ProductImage product={product} />);
   fireEvent.click(screen.getByRole("button", { name: "이미지 변경" }));
-  fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "10-logo-sticker" }));
+  fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "이미지 1" }));
   const write = jest.spyOn(Storage.prototype, "setItem").mockImplementation(() => { throw new Error("quota"); });
   try {
     fireEvent.click(screen.getByRole("button", { name: "적용", exact: true }));
@@ -94,8 +94,8 @@ test("선택창 적용 후 상품별 이미지를 저장하고 다시 열어도 
     fireEvent.click(screen.getByRole("button", { name: "이미지 추가" }));
     const dialog = screen.getByRole("dialog", { name: "상품 이미지 선택" });
     expect(within(dialog).getByRole("button", { name: "적용" })).toBeDisabled();
-    fireEvent.click(within(dialog).getByRole("button", { name: "10-logo-sticker" }));
-    expect(within(dialog).getByRole("button", { name: "10-logo-sticker" })).toHaveAttribute("aria-pressed", "true");
+    fireEvent.click(within(dialog).getByRole("button", { name: "이미지 1" }));
+    expect(within(dialog).getByRole("button", { name: "이미지 1" })).toHaveAttribute("aria-pressed", "true");
     fireEvent.click(within(dialog).getByRole("button", { name: "적용" }));
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     expect(screen.getByRole("img", { name: "[테스트] 이미지 상품 상품 이미지" })).toBeInTheDocument();
@@ -105,7 +105,7 @@ test("선택창 적용 후 상품별 이미지를 저장하고 다시 열어도 
     render(<ProductImage product={product} />);
     expect(screen.getByRole("img")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "이미지 변경" }));
-    expect(within(screen.getByRole("dialog")).getByRole("button", { name: "10-logo-sticker" })).toHaveAttribute("aria-pressed", "true");
+    expect(within(screen.getByRole("dialog")).getByRole("button", { name: "이미지 1" })).toHaveAttribute("aria-pressed", "true");
   } finally { localStorage.removeItem("erp_product_image:7001"); }
 });
 
@@ -114,7 +114,7 @@ test("선택 후 취소하거나 Escape로 닫으면 이미지를 적용하지 �
   const trigger = screen.getByRole("button", { name: "이미지 추가" });
   fireEvent.click(trigger);
   let dialog = screen.getByRole("dialog");
-  fireEvent.click(within(dialog).getByRole("button", { name: "02-canvas-ecobag" }));
+  fireEvent.click(within(dialog).getByRole("button", { name: "이미지 2" }));
   fireEvent.click(within(dialog).getByRole("button", { name: "취소" }));
   expect(screen.queryByRole("img")).not.toBeInTheDocument();
   expect(trigger).toHaveFocus();
@@ -146,7 +146,7 @@ test("이전 이미지 ID로 저장한 선택도 원래 파일로 복원한다",
     render(<ProductImage product={{ id: 7002, productName: "이전 상품" }} />);
     expect(screen.getByRole("img")).toHaveAttribute("src", "/sticker.jpg");
     fireEvent.click(screen.getByRole("button", { name: "이미지 변경" }));
-    expect(within(screen.getByRole("dialog")).getByRole("button", { name: "10-logo-sticker" })).toHaveAttribute("aria-pressed", "true");
+    expect(within(screen.getByRole("dialog")).getByRole("button", { name: "이미지 1" })).toHaveAttribute("aria-pressed", "true");
   } finally { localStorage.removeItem("erp_product_image:7002"); }
 });
 

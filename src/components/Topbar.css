@@ -275,6 +275,9 @@
 
 .erp-layout .erp-topbar-notification {
     position: relative;
+    display: flex;
+    align-items: center;
+    gap: 10px;
     flex-shrink: 0;
     margin-left: auto;
 }
@@ -295,6 +298,7 @@
 
     color: #524B80;
     font-size: 18px;
+    text-decoration: none;
     cursor: pointer;
 
     transition: background 0.2s;
