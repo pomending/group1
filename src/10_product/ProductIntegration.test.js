@@ -27,7 +27,7 @@ test("상품 이름·단가 변경은 새 견적 선택에 반영하고 기존 �
   fireEvent.focus(search);
   fireEvent.change(search, { target: { value: "연동 확인 텀블러" } });
   fireEvent.click(screen.getByText("연동 확인 텀블러", { exact: true }));
-  expect(screen.getByPlaceholderText("상품 선택 시 자동 입력")).toHaveValue(14500);
+  expect(screen.getByPlaceholderText("상품 선택 시 자동 입력")).toHaveValue("14,500원");
   expect(JSON.stringify(erp.quotations)).toBe(oldQuotes);
 });
 

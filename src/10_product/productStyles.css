@@ -365,12 +365,6 @@
   object-fit: contain;
   margin-bottom: 8px;
 }
-.pd-app .pd-image-option span {
-  display: block;
-  font-size: 12px;
-  font-weight: 600;
-  overflow-wrap: anywhere;
-}
 .pd-app .pd-product-image {
   display: flex;
   align-items: center;

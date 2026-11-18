@@ -13,6 +13,12 @@ function renderSchedule() {
   return render(<ERPProvider><ContextProbe /><ScheduleManager /></ERPProvider>);
 }
 
+async function finishHolidayRequests() {
+  await act(async () => {
+    await Promise.allSettled(fetch.mock.results.map(request => request.value));
+  });
+}
+
 beforeEach(() => {
   localStorage.clear();
   sessionStorage.clear();
@@ -35,7 +41,7 @@ test("인사 이름·부서 변경은 일정 검색에 반영하고 휴직 직�
     person: employee.name, employeeId: employee.id, attendees: [], attendeeEmployees: [], legacyAttendees: [], repeatType: "none",
   }]));
   renderSchedule();
-  await act(async () => {});
+  await finishHolidayRequests();
   act(() => { expect(erp.updateEmployee({ id: employee.id, name: "변경직원", department: "물류팀" }).ok).toBe(true); });
   fireEvent.change(screen.getByRole("textbox", { name: "일정 검색" }), { target: { value: "변경직원" } });
   fireEvent.change(screen.getByRole("combobox", { name: "일정 부서 필터" }), { target: { value: "물류팀" } });
@@ -55,7 +61,7 @@ test("인사 이름·부서 변경은 일정 검색에 반영하고 휴직 직�
 
 test("프로젝트 이름·마감 변경은 달력에 반영하고 직접 등록 일정으로 복제하지 않는다", async () => {
   renderSchedule();
-  await act(async () => {});
+  await finishHolidayRequests();
   act(() => { expect(erp.updateProject({ id: 2, name: "연동 프로젝트", dueDate: "2026-12-05" }).ok).toBe(true); });
   fireEvent.click(screen.getByRole("button", { name: "다음 기간" }));
   const calendar = screen.getByRole("region", { name: "일정 달력" });
@@ -66,13 +72,14 @@ test("프로젝트 이름·마감 변경은 달력에 반영하고 직접 등록
 
 test("세부 작업 마감·완료 변경을 달력에서 읽고 완료 숨기기 조건을 적용한다", async () => {
   renderSchedule();
-  await act(async () => {});
-  act(() => { expect(erp.updateTask({ id: 2, taskDeadline: "2026-11-20", progress: "완료" }).ok).toBe(true); });
+  await finishHolidayRequests();
+  // 제작(11/03)과 포장(11/13) 사이에서 검수 날짜를 변경합니다.
+  act(() => { expect(erp.updateTask({ id: 2, taskDeadline: "2026-11-08", progress: "완료" }).ok).toBe(true); });
   const calendar = screen.getByRole("region", { name: "일정 달력" });
-  const cardName = "2026-11-20 종일 삼성전자 텀블러 제작 · 검수 관리 마감 선택한 날짜 일정에서 보기";
+  const cardName = "2026-11-08 종일 삼성전자 텀블러 제작 · 검수 관리 마감 선택한 날짜 일정에서 보기";
   expect(within(calendar).getByRole("button", { name: cardName })).toBeInTheDocument();
   fireEvent.click(screen.getByRole("checkbox", { name: "완료된 세부 작업 숨기기" }));
   expect(within(calendar).queryByRole("button", { name: cardName })).not.toBeInTheDocument();
-  expect(erp.tasks.find(item => item.id === 2)).toMatchObject({ taskDeadline: "2026-11-20", progress: "완료" });
+  expect(erp.tasks.find(item => item.id === 2)).toMatchObject({ taskDeadline: "2026-11-08", progress: "완료" });
   expect(loadSchedules().items).toEqual([]);
 });
