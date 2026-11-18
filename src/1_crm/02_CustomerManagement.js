@@ -338,7 +338,7 @@ function CustomerManagement() {
                             disabled={currentPage === 1}
                             onClick={() => setCurrentPage(currentPage - 1)}
                         >
-                            ◀
+                            이전
                         </button>
 
                         {Array.from(
@@ -358,7 +358,7 @@ function CustomerManagement() {
                             disabled={currentPage >= totalPageCount}
                             onClick={() => setCurrentPage(currentPage + 1)}
                         >
-                            ▶
+                            다음
                         </button>
                     </div>
                 </div>

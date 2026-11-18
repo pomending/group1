@@ -1,7 +1,8 @@
+
 import React, { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import "./QuotationList.css";
-import { getQuotationPriceDetails, QUOTATION_STATUS, totalPrice } from "../utils/quotationUtils";
+import { getQuotationPriceDetails, totalPrice } from "../utils/quotationUtils";
 import { formatCustomerName, formatProductName, formatQuotationId } from "../utils/formatUtils";
 import { useERP } from "../context/ERPContext";
 
@@ -22,13 +23,11 @@ function QuotationList() {
     const [search, setSearch] = useState("");
     const [startdate, setStartDate] = useState("");
     const [enddate, setEndDate] = useState("");
-    const [status, setStatus] = useState("전체 상태");
 
     //실제 검색에 적용할 조건
     const [appliedsearch, setAppliedSearch] = useState("");
     const [appliedstartdate, setAppliedStartDate] = useState("");
     const [appliedenddate, setAppliedEndDate] = useState("");
-    const [appliedstatus, setAppliedStatus] = useState("전체 상태");
 
     const [selectedCard, setSelectedCard] = useState("전체 상태")
 
@@ -45,7 +44,6 @@ function QuotationList() {
         setAppliedSearch(search);
         setAppliedStartDate(startdate);
         setAppliedEndDate(enddate);
-        setAppliedStatus(status);
         setCurrentPage(1);
     }
 
@@ -54,12 +52,10 @@ function QuotationList() {
         setSearch("");
         setStartDate("");
         setEndDate("");
-        setStatus("전체 상태");
 
         setAppliedSearch("")
         setAppliedStartDate("")
         setAppliedEndDate("")
-        setAppliedStatus("전체 상태")
 
         setCurrentPage(1);
     }
@@ -90,11 +86,8 @@ function QuotationList() {
         const endDateMatch =
             appliedenddate === "" || quotation.createdAt <= appliedenddate;
 
-        const statusMatch =
-            (appliedstatus === "전체 상태" ||
-                quotation.status === appliedstatus) &&
-            (selectedCard === "전체 상태" ||
-                quotation.status === selectedCard);
+        const statusMatch = selectedCard === "전체 상태" ||
+            quotation.status === selectedCard;
 
         return searchMatch && startDateMatch && endDateMatch && statusMatch;
     }).sort((a, b) => {
@@ -217,66 +210,6 @@ function QuotationList() {
             </header>
 
 
-            {/* 검색 조건 코드 만들기 */}
-            <section className="quotation-search">
-
-                <div>
-                    <label>검색어</label>
-                    <input
-                        type="text"
-                        placeholder="견적번호, 거래처명 또는 상품명으로 검색"
-                        value={search}
-                        onChange={(e) => setSearch(e.target.value)} />
-                </div>
-
-                <div className="search-item">
-                    <label>작성일 기간</label>
-
-                    <div className="date-range">
-                        <input type="date"
-                            value={startdate}
-                            onChange={(e) => setStartDate(e.target.value)} />
-
-                        <span>~</span>
-
-                        <input type="date"
-                            value={enddate}
-                            onChange={(e) => setEndDate(e.target.value)} />
-                    </div>
-                </div>
-
-
-                <div className="search-item">
-                    <label>견적 상태</label>
-                    <select value={status}
-                        onChange={(e) => setStatus(e.target.value)}>
-                        <option>전체 상태</option>
-                        {QUOTATION_STATUS.map(status =>
-                            <option key={status} value={status}>{status}</option>
-                        )
-                        }
-                    </select>
-                </div>
-
-                <div className="search-buttons">
-                    <input
-                        type="button"
-                        value="검색"
-                        onClick={handleSearch}
-                    />
-                    <input
-                        type="button"
-                        value="초기화"
-                        onClick={handleReset}
-                    />
-                </div>
-
-                <div>
-                    <p>현재 조회 결과</p>
-                    <h2>{filteredQuotations.length}건</h2>
-                </div>
-            </section>
-
             {/* 미완료 견적 요청 알림 */}
             {pendingRequests.length > 0 && (
                 <div className="quotation-request-alert">
@@ -354,6 +287,53 @@ function QuotationList() {
                         <option value="oldest">오래된순</option>
                     </select>
                 </div>
+                {/* 검색 조건 코드 만들기 */}
+                <section className="quotation-search">
+
+                    <div>
+                        <label>검색어</label>
+                        <input
+                            type="text"
+                            placeholder="견적번호, 거래처명 또는 상품명으로 검색"
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)} />
+                    </div>
+
+                    <div className="search-item">
+                        <label>작성일 기간</label>
+
+                        <div className="date-range">
+                            <input type="date"
+                                value={startdate}
+                                onChange={(e) => setStartDate(e.target.value)} />
+
+                            <span>~</span>
+
+                            <input type="date"
+                                value={enddate}
+                                onChange={(e) => setEndDate(e.target.value)} />
+                        </div>
+                    </div>
+
+
+                    <div className="search-buttons">
+                        <input
+                            type="button"
+                            value="검색"
+                            onClick={handleSearch}
+                        />
+                        <input
+                            type="button"
+                            value="초기화"
+                            onClick={handleReset}
+                        />
+                    </div>
+
+                    <div>
+                        <p>현재 조회 결과</p>
+                        <h2>{filteredQuotations.length}건</h2>
+                    </div>
+                </section>
                 <div className="table-scroll">
                     <table>
                         <thead>

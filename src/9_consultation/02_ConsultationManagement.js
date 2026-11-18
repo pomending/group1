@@ -376,7 +376,7 @@ function ConsultationManagement() {
                         disabled={currentPage === 1}
                         onClick={() => setCurrentPage(currentPage - 1)}
                     >
-                        ◀
+                        이전
                     </button>
 
                     {Array.from({ length: totalPages }, (_, index) => (
@@ -395,7 +395,7 @@ function ConsultationManagement() {
                         disabled={currentPage >= totalPages}
                         onClick={() => setCurrentPage(currentPage + 1)}
                     >
-                        ▶
+                        다음
                     </button>
                 </div>
 

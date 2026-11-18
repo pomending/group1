@@ -1,3 +1,4 @@
+
 /* =========================================
    MODU GOODS ERP - 견적 목록
    Mist Lavender Theme
@@ -117,34 +118,28 @@
     white-space: nowrap;
 }
 
-/* 3. 검색 영역 */
+/* 3. 견적 목록 안의 검색 영역 */
 
 .quotation-menu .quotation-search {
     display: grid;
-    grid-template-columns:
-        minmax(220px, 1.35fr) minmax(350px, 1.5fr) minmax(180px, 0.85fr);
+    grid-template-columns: minmax(220px, 1fr) minmax(270px, 1.3fr);
     align-items: end;
     column-gap: 18px;
     row-gap: 16px;
 
-    padding: 22px 24px 18px;
-    margin-bottom: 18px;
+    padding: 0;
+    margin-bottom: 20px;
 
-    background: #FFFFFF;
-    border: 1px solid #E6E1F0;
-    border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(65, 55, 95, 0.035);
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
 }
 
 .quotation-menu .quotation-search>div {
     display: flex;
     flex-direction: column;
     gap: 8px;
-    min-width: 0;
-}
-
-.quotation-menu .quotation-search>div:first-child {
-    width: 100%;
     min-width: 0;
 }
 
@@ -260,16 +255,18 @@
     margin-bottom: 18px;
 }
 
-/* 네 가지 현황을 하나의 가로 요약 영역으로 정리 */
-.quotation-menu .quotation-summary {
+/* 네 가지 현황을 각각 독립된 카드로 표시 */
+.quotation-menu .quotation-status .quotation-summary {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 0;
+    gap: 12px;
     padding: 0;
-    background: #FFFFFF;
-    border: 1px solid #E6E1F0;
-    border-radius: 12px;
-    overflow: hidden;
+    margin-bottom: 0;
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    overflow: visible;
+    box-shadow: none;
 }
 
 .quotation-menu .quotation-summary .summary-card {
@@ -277,27 +274,20 @@
     min-width: 0;
     padding: 18px 22px;
     background: #FFFFFF;
-    border: 0;
-    border-right: 1px solid #E6E1F0;
-    border-radius: 0;
-    box-shadow: none;
+    border: 1px solid #E6E1F0;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(65, 55, 95, 0.035);
     cursor: pointer;
     transition: background 0.2s;
-}
-
-.quotation-menu .quotation-summary .summary-card:last-child {
-    border-right: 0;
 }
 
 .quotation-menu .quotation-summary .summary-card:hover {
     background: #F8F6FD;
 }
 
-/* 선택된 카드는 기존 보라색으로 구분 */
 .quotation-menu .quotation-summary .summary-card.active {
-    background: #F0EDFA;
-    outline: 2px solid #9286C1;
-    outline-offset: -2px;
+    background: #F8F6FD;
+    border-color: #C8C0E5;
 }
 
 .quotation-menu .summary-card p {
@@ -309,45 +299,15 @@
 
 .quotation-menu .summary-card h2 {
     margin: 0;
-    color: #39354F;
+    color: #524B80;
     font-size: 24px;
     font-weight: 700;
-}
-
-/* 의미별 상태 색상 */
-
-.quotation-menu .summary-card h2.total-count {
-    color: #68619A;
-}
-
-.quotation-menu .summary-card h2.pending-count {
-    color: #A95C22;
-}
-
-.quotation-menu .summary-card h2.approved-count {
-    color: #28734E;
-}
-
-.quotation-menu .summary-card h2.rejected-count {
-    color: #AA4D60;
-}
-
-/* 상태별 왼쪽 구분선은 기존 색상 그대로 유지 */
-.quotation-menu .summary-card:has(.pending-count) {
-    box-shadow: inset 4px 0 #D5A06D;
-}
-
-.quotation-menu .summary-card:has(.approved-count) {
-    box-shadow: inset 4px 0 #82B99A;
-}
-
-.quotation-menu .summary-card:has(.rejected-count) {
-    box-shadow: inset 4px 0 #D8A0AC;
 }
 
 /* 5. 견적 목록 */
 
 .quotation-menu .recent-quotation {
+    position: relative;
     padding: 25px;
     background: #FFFFFF;
     border: 1px solid #E6E1F0;
@@ -362,17 +322,16 @@
     font-weight: 700;
 }
 
-/* 정렬 */
-
+/* 견적 목록 카드 안쪽 오른쪽 위에 순서 선택창 배치 */
 .quotation-menu .sort-select {
-    display: flex;
-    justify-content: flex-end;
-    align-items: center;
-    margin-bottom: 15px;
+    position: absolute;
+    top: 25px;
+    right: 25px;
+    width: 130px;
 }
 
 .quotation-menu .sort-select select {
-    width: 130px;
+    width: 100%;
     height: 40px;
     padding: 0 12px;
 
@@ -657,6 +616,10 @@
     }
 
     .quotation-menu .quotation-search>div:first-child {
+        grid-column: 1;
+    }
+
+    .quotation-menu .quotation-search>div:nth-child(3) {
         grid-column: 1 / -1;
     }
 
@@ -694,16 +657,14 @@
         grid-row: 3;
     }
 
-    .quotation-menu .quotation-summary {
+    .quotation-menu .quotation-status .quotation-summary {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
+}
 
-    .quotation-menu .quotation-summary .summary-card:nth-child(2) {
-        border-right: 0;
-    }
-
-    .quotation-menu .quotation-summary .summary-card:nth-child(-n+2) {
-        border-bottom: 1px solid #E6E1F0;
+@media (max-width: 700px) {
+    .quotation-menu .quotation-status .quotation-summary {
+        grid-template-columns: 1fr;
     }
 }
 
@@ -729,7 +690,6 @@
 
     .quotation-menu .quotation-search {
         grid-template-columns: 1fr;
-        padding: 18px;
     }
 
     .quotation-menu .quotation-search>div,
@@ -762,6 +722,8 @@
     .quotation-menu .recent-quotation {
         padding: 16px;
     }
+
+    .quotation-menu .sort-select { top: 16px; right: 16px; }
 
     .temp-modal-item {
         grid-template-columns: 1fr 1fr;

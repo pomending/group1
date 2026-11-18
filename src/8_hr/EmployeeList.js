@@ -116,7 +116,11 @@ export default function EmployeeList({ employees, projects, statusFilter, onView
                 <span>{filtered.length ? `${(currentPage - 1) * PAGE_SIZE + 1}–${Math.min(currentPage * PAGE_SIZE, filtered.length)}` : "0"} / {filtered.length}명</span>
                 <div>
                     <button type="button" disabled={currentPage === 1} onClick={() => setPage(currentPage - 1)}>이전</button>
-                    <span>{currentPage} / {maxPage}</span>
+                    {Array.from({ length: maxPage }, (_, index) => (
+    <button type="button" key={index + 1} className={currentPage === index + 1 ? "active" : ""} onClick={() => setPage(index + 1)}>
+        {index + 1}
+    </button>
+))}
                     <button type="button" disabled={currentPage === maxPage} onClick={() => setPage(currentPage + 1)}>다음</button>
                 </div>
             </div>

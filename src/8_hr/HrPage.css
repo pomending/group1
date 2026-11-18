@@ -1,3 +1,4 @@
+
 /* HR 모듈 스타일 - 다른 팀원의 CSS와 충돌하지 않도록 hr- 접두사 사용 */
 .hr-app {
   --hr-purple: #7565d8;
@@ -69,8 +70,8 @@
 .hr-link-button:hover { background: #eee9ff; }
 .hr-empty { padding: 34px 16px; text-align: center; color: var(--hr-muted); font-size: 13px; }
 .hr-empty h2 { color: var(--hr-ink); }
-.hr-pagination { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 13px 2px 0; font-size: 12px; color: var(--hr-muted); }
-.hr-pagination > div { display: flex; gap: 9px; align-items: center; }
+.hr-pagination { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 12px; padding: 13px 2px 0; font-size: 12px; color: var(--hr-muted); }
+.hr-pagination > div { grid-column: 2; grid-row: 1; display: flex; justify-content: center; flex-wrap: wrap; gap: 9px; align-items: center; }
 .hr-pagination button { padding: 6px 11px; border: 1px solid var(--hr-line); border-radius: 7px; background: white; color: #6d7085; font-size: 12px; }
 .hr-pagination button:not(:disabled):hover { border-color: var(--hr-purple); color: var(--hr-purple); }
 .hr-form-panel { max-width: 920px; margin-left: auto; margin-right: auto; padding: 28px 32px; }
@@ -83,7 +84,7 @@
 .hr-form-note { color: var(--hr-muted); font-size: 11px; margin: 17px 0 0; }
 .hr-form-actions { margin-top: 25px; border-top: 1px solid var(--hr-line); padding-top: 20px; display: flex; justify-content: flex-end; gap: 9px; }
 .hr-form-error { border: 1px solid #eab7c0; background: #fff3f5; color: #b34456; border-radius: 8px; padding: 10px 13px; font-size: 12px; margin: 12px 0 17px; }
-.hr-notice { border: 1px solid #e9dfbf; background: #fffcf2; color: #917234; padding: 11px 13px; border-radius: 8px; font-size: 12px; margin: 15px 0 0; }
+.hr-notice { border: 1px solid #e9dfbf; background: #fffcf2; color: #917234; padding: 11px 13px; font-size: 12px; margin: 15px 0 0; }
 .hr-detail-panel { padding: 28px; }
 .hr-detail-top { display: flex; gap: 16px; justify-content: space-between; align-items: center; padding-bottom: 23px; border-bottom: 1px solid var(--hr-line); }
 .hr-identity { display: flex; align-items: center; gap: 15px; }
@@ -187,6 +188,12 @@
 .hr-app .hr-avatar { background: #E9E4F6; color: #524B80; }
 .hr-app .hr-pagination button { background: #FBFAFE; border-color: #DDD8EA; color: #625B78; }
 .hr-app .hr-pagination button:not(:disabled):hover { background: #F0EDFA; border-color: #9C91C8; }
+.hr-app .hr-pagination button.active,
+.hr-app .hr-pagination button.active:hover:not(:disabled) { background: #68619A; border-color: #68619A; color: #FFFFFF; }
+@media (max-width: 900px) {
+  .hr-pagination { display: flex; flex-direction: column; justify-content: center; }
+  .hr-pagination > div { justify-content: center; }
+}
 .hr-app .hr-status-working { background: #E8F4ED; color: #28734E; }
 .hr-app .hr-status-leave { background: #FFF1E5; color: #A95C22; }
 .hr-app .hr-status-resigned { background: #F0EFF3; color: #777184; }
