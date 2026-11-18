@@ -36,7 +36,7 @@ function ProjectList(props) {
             return 'pm-deadline-complete';
         }
 
-        if (deadline === "D-Day" || /^D-[1-3]$/.test(deadline)) {
+        if (deadline === "D - Day" || /^D - [1-3]$/.test(deadline)) {
             return "pm-deadline-soon";
         }
 
