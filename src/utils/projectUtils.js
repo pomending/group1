@@ -45,26 +45,25 @@ export const getDeadlineStatus = (project) => {
     const daysLeft = (new Date(project.dueDate) - new Date(today)) / (60 * 60 * 24 * 1000)
 
     if (!Number.isFinite(daysLeft)) {
-        return '정보 확인 불가'
+        return "정보 확인 불가";
     }
 
-    if (daysLeft > 3) {
-        return '정상'
-    } else if (daysLeft > 0) {
-        return `D - ${daysLeft}`
-    } else if (daysLeft === 0) {
-        return 'D-Day'
-    } else {
-        return `D + ${Math.abs(daysLeft)} (지연됨)`
+    if (daysLeft > 0) {
+        return `D - ${daysLeft}`;
     }
+
+    if (daysLeft === 0) {
+        return "D - Day";
+    }
+
+    return `D + ${Math.abs(daysLeft)}`;
 
 }
 
 export const getProjectProgress = (project, tasks) => {
 
     const completedTypes = new Set(
-        tasks
-            .filter(t =>
+        tasks.filter(t =>
                 t.projectId === project.id &&
                 t.progress === "완료" &&
                 TASK_TYPES.includes(t.taskType)
