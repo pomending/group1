@@ -1,9 +1,9 @@
 import { collectProductImages } from "./productImages";
 
-test("기존 파일 ID를 유지하면서 알려진 상품을 한글 이름으로 표시한다", () => {
+test("표시 이름을 만들지 않고 기존 파일 ID와 이미지 주소만 수집한다", () => {
   const images = collectProductImages(imageContext(["./11-wireless-mouse.jpg", "./15-baseball-cap.jpg"]));
-  expect(images.map(item => [item.id, item.name])).toEqual([
-    ["11-wireless-mouse.jpg", "무선 마우스"], ["15-baseball-cap.jpg", "볼캡"],
+  expect(images.map(item => [item.id, item.src])).toEqual([
+    ["11-wireless-mouse.jpg", "/static/media/11-wireless-mouse.jpg"], ["15-baseball-cap.jpg", "/static/media/15-baseball-cap.jpg"],
   ]);
 });
 
@@ -18,7 +18,7 @@ test("새 이미지와 한글 파일명을 수집하고 모음 원본과 다른 
     "./product-catalog.png", "./새 상품.PNG", "./02-bag.webp", "./01-mug.jpg", "./note.txt",
   ]));
   expect(images.map(item => item.id)).toEqual(["01-mug.jpg", "02-bag.webp", "새 상품.PNG"]);
-  expect(images[2]).toEqual({ id: "새 상품.PNG", name: "새 상품", src: "/static/media/새 상품.PNG" });
+  expect(images[2]).toEqual({ id: "새 상품.PNG", src: "/static/media/새 상품.PNG" });
 });
 
 test("파일 추가와 정렬 변경에도 기존 파일 ID와 주소 연결이 유지된다", () => {

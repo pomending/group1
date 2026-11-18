@@ -1061,3 +1061,53 @@ test("날짜만 있던 상품은 시각을 붙이지 않고 빈 수정일·잘�
     ? { ...product, productCreatedAt: "2026-02-30", productUpdatedAt: "invalid" } : product)));
   expect(within(details).getAllByText("—")).toHaveLength(2);
 });
+
+
+test("판매 중지 상품만 수정에서 삭제하고 이미지 연결도 정리한다", () => {
+  localStorage.setItem("erp_product_image:2", "catalog:10-logo-sticker.jpg");
+  render(<ProductPage />);
+  clickButton("텀블러 수정");
+  expect(screen.queryByRole("button", { name: "상품 삭제" })).not.toBeInTheDocument();
+  clickButton("취소");
+  clickButton("스티커 수정");
+  window.confirm.mockReturnValue(false);
+  clickButton("상품 삭제");
+  expect(currentContext.products).toHaveLength(2);
+  window.confirm.mockReturnValue(true);
+  clickButton("상품 삭제");
+  expect(currentContext.products.map(item => item.id)).toEqual([1]);
+  expect(localStorage.getItem("erp_product_image:2")).toBeNull();
+  expect(JSON.parse(localStorage.getItem("erp_products"))).toHaveLength(1);
+});
+
+test("판매 중 상품 삭제와 저장 실패 시 삭제를 차단한다", () => {
+  const { result } = renderHook(() => useProductData(initialProducts));
+  let response;
+  act(() => { response = result.current.deleteProduct(1); });
+  expect(response.ok).toBe(false);
+  localStorage.setItem("erp_product_image:2", "catalog:10-logo-sticker.jpg");
+  const originalWrite = Storage.prototype.setItem;
+  jest.spyOn(Storage.prototype, "setItem").mockImplementation(function(key, value) {
+    if (key === "erp_products") throw new Error("quota");
+    return originalWrite.call(this, key, value);
+  });
+  act(() => { response = result.current.deleteProduct(2); });
+  expect(response.ok).toBe(false);
+  expect(result.current.products).toHaveLength(2);
+  expect(localStorage.getItem("erp_product_image:2")).toBe("catalog:10-logo-sticker.jpg");
+  localStorage.removeItem("erp_product_image:2");
+});
+
+
+test("견적에 연결된 판매 중지 상품은 삭제하지 않는다", () => {
+  useERP.mockImplementation(function useLinkedProduct() {
+    currentContext = useProductData(initialProducts);
+    return { ...currentContext, quotations: [{ id: 10, productId: 2 }] };
+  });
+  render(<ProductPage />);
+  clickButton("스티커 수정");
+  clickButton("상품 삭제");
+  expect(screen.getByRole("alert")).toHaveTextContent("견적에 연결된 상품은 삭제할 수 없습니다");
+  expect(currentContext.products).toHaveLength(2);
+  expect(window.confirm).not.toHaveBeenCalled();
+});

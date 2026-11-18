@@ -1,3 +1,13 @@
+@import url("https://cdn.jsdelivr.net/gh/moonspam/NanumSquare@2.0/nanumsquare.css");
+
+* {
+  font-family: 'NanumSquare', sans-serif;
+}
+
+body {
+  margin: 0;
+  font-family: 'NanumSquare', sans-serif;
+}
 
 .task-page {
   padding: 24px;
@@ -780,112 +790,89 @@
 
 
 
-/* 아코디언 전체 */
-.task-accordion-list {
+
+/* 프로젝트 아코디언 전체 */
+.task-accordion {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
+  margin-top: 15px;
 }
 
-/* 프로젝트 영역 */
-.task-accordion {
-  border: 1px solid #e5e5ef;
+/* 프로젝트 그룹 */
+.task-project-group {
+  border: 1px solid #ddd;
   border-radius: 8px;
   overflow: hidden;
   background: #fff;
 }
 
-/* 프로젝트 제목 버튼 */
-.task-accordion-header {
-  width: 100%;
+/* 프로젝트 제목 */
+.task-project-header {
   display: flex;
-  align-items: center;
   justify-content: space-between;
+  align-items: center;
   padding: 18px 20px;
-  border: none;
-  background: #f8f8fc;
   cursor: pointer;
-  text-align: left;
+  background: #f8f9fb;
+  transition: background 0.2s;
 }
 
-.task-accordion-header:hover {
-  background: #f0eff9;
+.task-project-header:hover {
+  background: #eef2f7;
+}
+
+.task-project-header.open {
+  background: #edf3fa;
+  border-bottom: 1px solid #ddd;
 }
 
 /* 프로젝트 정보 */
 .task-project-info {
   display: flex;
   align-items: center;
-  gap: 18px;
+  gap: 15px;
 }
 
 .task-project-number {
-  color: #5266bd;
+  color: #64748b;
   font-size: 13px;
-  font-weight: 600;
 }
 
 .task-project-info strong {
-  font-size: 14px;
+  font-size: 15px;
   color: #333;
 }
 
 .task-count {
-  color: #888;
   font-size: 12px;
+  color: #64748b;
+  background: #e9edf3;
+  padding: 4px 9px;
+  border-radius: 12px;
 }
 
-.accordion-arrow {
-  color: #666;
-  font-size: 12px;
-}
-
-/* 펼쳐지는 영역 */
-.task-accordion-content {
-  padding: 15px 20px;
-}
-
-/* 항목 제목 */
-.task-accordion-label {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  gap: 12px;
-  padding: 8px 0;
-  color: #777;
-  font-size: 12px;
-  font-weight: 600;
-}
-
-/* 개별 작업 */
-.task-accordion-item {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  gap: 12px;
-  padding: 9px 0;
-  border-top: 1px solid #eee;
-}
-
-/* 선택 박스 */
-.task-accordion-item select {
-  width: 100%;
-  min-width: 0;
-  padding: 9px;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  background: #fff;
+/* 아코디언 화살표 */
+.task-accordion-arrow {
   font-size: 13px;
-  color: #333;
+  color: #64748b;
 }
 
-.task-accordion-item select:focus {
-  outline: none;
-  border-color: #647ff5;
+/* 펼쳐진 작업 목록 */
+.task-project-content {
+  padding: 15px;
 }
 
-/* 작업 없음 */
+.task-project-content .task-table {
+  width: 100%;
+  margin: 0;
+  border-collapse: collapse;
+}
+
+/* 작업 내역 없음 */
 .task-empty {
-  padding: 40px;
   text-align: center;
+  padding: 40px 20px;
   color: #888;
 }
 

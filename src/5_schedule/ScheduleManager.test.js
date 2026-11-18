@@ -25,6 +25,13 @@ import {
   getSchedulePeople, getRepeatLabel, getScheduleTime, getRepeatSummary, getScheduleDurationFields, restoreDeletedSchedule, getScheduleListDate,
 } from "./scheduleData";
 
+// 공휴일 응답이 끝난 뒤 발생하는 상태 갱신까지 함께 기다립니다.
+async function finishHolidayRequests() {
+  await act(async () => {
+    await Promise.allSettled(fetch.mock.results.map(request => request.value));
+  });
+}
+
 test("손상된 참석자 연결이 저장돼 있어도 회의 조회와 편집에서 오류 없이 이름을 보존한다", async () => {
   saveSchedules([makeStoredSchedule({ date: getTodayKey(), scope: "업무용", category: "회의",
     person: "김담당", employeeId: 802, title: "참석자 복원 회의", attendees: ["외부 참석자"],
@@ -104,7 +111,7 @@ test("개명 전후 담당·참석 일정은 현재 직원 이름의 한 행에 
     items={items} weekDates={[{ key: date }]} selectedDate={date} holidayDates={{}} />);
   expect(screen.getAllByRole("button", { name: /일정 펼치기$/ })).toHaveLength(2);
   fireEvent.click(screen.getByRole("button", { name: "현재 이름 (직원 1) 일정 펼치기" }));
-  const row = screen.getByRole("button", { name: "현재 이름 (직원 1) 일정 접기" }).closest("tr");
+  const row = screen.getByRole("row", { name: /^현재 이름 \(직원 1\) / });
   expect(within(row).getByText("개명 전 담당")).toBeInTheDocument();
   expect(within(row).getByText("개명 후 담당")).toBeInTheDocument();
   expect(within(row).getByText("개명 전 참석")).toBeInTheDocument();
@@ -212,14 +219,14 @@ test("미완료 마감 조회는 지연·오늘·7일 경계를 구분하고 완
       .concat({ id: 10, projectId: 1, taskType: "끝난 작업", taskDeadline: day(0), progress: "완료" }) });
   render(<ScheduleManager />);
   fireEvent.click(screen.getByText("미완료 작업 마감 모아보기"));
-  const panel = screen.getByRole("combobox", { name: "작업 마감 조회 기간" }).closest("details");
-  expect(within(panel).getAllByRole("button")).toHaveLength(2);
-  expect(within(panel).queryByText(/끝난 작업/)).not.toBeInTheDocument();
+  const deadlineButtons = /^\d{4}-\d{2}-\d{2} · 마감 검증/;
+  expect(screen.getAllByRole("button", { name: deadlineButtons })).toHaveLength(2);
+  expect(screen.queryByRole("button", { name: /^\d{4}-\d{2}-\d{2} · 마감 검증 · 끝난 작업/ })).not.toBeInTheDocument();
   fireEvent.change(screen.getByRole("combobox", { name: "작업 마감 조회 기간" }), { target: { value: "overdue" } });
-  expect(within(panel).getByRole("button")).toHaveTextContent("작업-1");
+  expect(screen.getByRole("button", { name: deadlineButtons })).toHaveTextContent("작업-1");
   fireEvent.change(screen.getByRole("combobox", { name: "작업 마감 조회 기간" }), { target: { value: "today" } });
-  expect(within(panel).getByRole("button")).toHaveTextContent("작업0");
-  fireEvent.click(within(panel).getByRole("button"));
+  expect(screen.getByRole("button", { name: deadlineButtons })).toHaveTextContent("작업0");
+  fireEvent.click(screen.getByRole("button", { name: deadlineButtons }));
   expect(screen.getByRole("tab", { name: "일별" })).toHaveAttribute("aria-selected", "true");
   await act(async () => { expect(fetch).toHaveBeenCalled(); });
 });
@@ -241,7 +248,7 @@ test("견적 유효기간 표시와 담당자별 작업 행은 저장 일정을 
   fireEvent.click(screen.getByRole("checkbox", { name: "견적 유효기간 표시" }));
   fireEvent.click(screen.getByRole("tab", { name: "담당자별 주간" }));
   fireEvent.click(screen.getByRole("button", { name: "동명 (직원 1) 일정 펼치기" }));
-  const row = screen.getByRole("button", { name: "동명 (직원 1) 일정 접기" }).closest("tr");
+  const row = screen.getByRole("row", { name: /^동명 \(직원 1\) / });
   expect(within(row).getByText("주간 검증 · 담당 작업1 마감")).toBeInTheDocument();
   expect(within(row).queryByText("주간 검증 · 담당 작업2 마감")).not.toBeInTheDocument();
   expect(loadSchedules().items).toEqual([]);
@@ -981,7 +988,7 @@ test("일정 없는 날짜도 Tab으로 이동하고 Enter·Space로 선택해 �
   expect(second).toHaveAttribute("aria-pressed", "false");
   fireEvent.click(screen.getByRole("button", { name: "일정 등록", exact: true }));
   expect(screen.getByLabelText("날짜", { exact: true })).toHaveValue(first.getAttribute("aria-label").slice(0, 10));
-  await act(async () => {});
+  await finishHolidayRequests();
 });
 
 test("등록 팝업은 Tab을 순환하고 Escape로 닫은 뒤 등록 버튼에 초점을 돌려준다", async () => {
@@ -1019,7 +1026,7 @@ test.each(["전체 목록", "날짜 더보기"])("%s에서 수정창을 닫으�
   fireEvent.keyDown(screen.getByRole("dialog"), { key: "Escape" });
   expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   expect(opener).toHaveFocus();
-  await act(async () => {});
+  await finishHolidayRequests();
 });
 
 test("전체 목록 팝업도 처음 초점을 받고 닫기 버튼으로 원래 위치에 복귀한다", async () => {
@@ -1393,7 +1400,7 @@ test("실제 로그인 함수가 초기 계정의 이메일을 직원 일정 조
   fireEvent.click(screen.getByRole("button", { name: "계정 로그아웃 검사" }));
   expect(sessionStorage.getItem("erp_current_user_id")).toBeNull();
   expect(screen.getByRole("checkbox", { name: "내 담당·참석 일정" })).toBeDisabled();
-  await act(async () => {});
+  await finishHolidayRequests();
 });
 
 test("로그인 계정의 직원 번호로 달력·즐겨찾기·전체 목록을 함께 조회한다", async () => {
@@ -1415,14 +1422,14 @@ test("로그인 계정의 직원 번호로 달력·즐겨찾기·전체 목록�
   expect(within(calendar).getAllByText("내 참석 회의").length).toBeGreaterThan(0);
   expect(within(calendar).queryByText("다른 직원 업무")).not.toBeInTheDocument();
   expect(within(calendar).queryByText("이름만 있는 일정")).not.toBeInTheDocument();
-  const favorites = screen.getByRole("heading", { name: "★ 즐겨찾기" }).closest("section");
+  const favorites = screen.getByRole("region", { name: "★ 즐겨찾기" });
   expect(within(favorites).queryByText("다른 직원 업무")).not.toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: "전체 일정 (2)" }));
   const list = screen.getByRole("dialog", { name: "전체 일정" });
   expect(within(list).getByText("내 담당 업무")).toBeInTheDocument();
   expect(within(list).getByText("내 참석 회의")).toBeInTheDocument();
   expect(within(list).queryByText("다른 직원 업무")).not.toBeInTheDocument();
-  await act(async () => {});
+  await finishHolidayRequests();
   expect(localStorage.getItem(storageKey)).toBe(raw);
 });
 
@@ -1450,7 +1457,7 @@ test("계정 전환·로그아웃 시 이전 직원의 내 일정 선택을 해�
   useERP.mockReturnValue({ ...erp, currentUser: { id: 1, employeeId: 802, status: "활성" } });
   rerender(<ScheduleManager />);
   expect(screen.getByRole("checkbox", { name: "내 담당·참석 일정" })).not.toBeChecked();
-  await act(async () => {});
+  await finishHolidayRequests();
 });
 
 test("로그인하지 않았거나 HR 연결이 끊긴 계정에서는 내 일정 선택을 막는다", async () => {
@@ -1461,7 +1468,7 @@ test("로그인하지 않았거나 HR 연결이 끊긴 계정에서는 내 일�
   useERP.mockReturnValue({ ...erp, currentUser: { id: 1, employeeId: 9999, status: "활성" } });
   rerender(<ScheduleManager />);
   expect(screen.getByRole("checkbox", { name: "내 담당·참석 일정" })).toBeDisabled();
-  await act(async () => {});
+  await finishHolidayRequests();
 });
 
 test("내 일정의 날짜 이동은 조회 기준을 유지하고 연동 날짜도 담당 직원으로 거른다", async () => {
@@ -1481,7 +1488,7 @@ test("내 일정의 날짜 이동은 조회 기준을 유지하고 연동 날짜
   fireEvent.click(screen.getByRole("button", { name: "날짜 이동 업무 즐겨찾기 일정으로 이동" }));
   expect(screen.getByRole("checkbox", { name: "내 담당·참석 일정" })).toBeChecked();
   expect(screen.getByRole("tab", { name: "일별" })).toHaveAttribute("aria-selected", "true");
-  await act(async () => {});
+  await finishHolidayRequests();
 });
 
 test("내 일정 필터를 꺼도 다른 계정과 소유자 미상의 개인 일정은 모든 목록에서 숨긴다", async () => {
@@ -1503,7 +1510,7 @@ test("내 일정 필터를 꺼도 다른 계정과 소유자 미상의 개인 �
   expect(within(list).getByText("본인 개인 약속")).toBeInTheDocument();
   expect(within(list).getByText("회사 공유 업무")).toBeInTheDocument();
   expect(within(list).queryByText("다른 계정 비공개 약속")).not.toBeInTheDocument();
-  await act(async () => {});
+  await finishHolidayRequests();
   expect(loadSchedules().items).toHaveLength(5);
 });
 
@@ -1521,7 +1528,7 @@ test("부서 필터와 초기화를 함께 사용해도 타 계정 개인 일정
   fireEvent.click(screen.getByRole("button", { name: "담당·부서 필터 초기화" }));
   expect(screen.queryByText("타 계정 숨긴 약속")).not.toBeInTheDocument();
   expect(screen.getAllByText("다른 부서 공유 업무").length).toBeGreaterThan(0);
-  await act(async () => {});
+  await finishHolidayRequests();
   expect(loadSchedules().items).toHaveLength(3);
 });
 
@@ -1549,12 +1556,12 @@ test("개인 일정 저장 시 작성 계정을 기록하고 계정 전환·복�
   expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   unmount();
   useERP.mockReturnValue(base);
-  const remounted = render(<ScheduleManager />);
+  const { rerender: rerenderRemounted } = render(<ScheduleManager />);
   expect(screen.getAllByText("작성자 전용 일정").length).toBeGreaterThan(0);
   useERP.mockReturnValue({ ...base, currentUser: null });
-  remounted.rerender(<ScheduleManager />);
+  rerenderRemounted(<ScheduleManager />);
   expect(screen.queryByText("작성자 전용 일정")).not.toBeInTheDocument();
-  await act(async () => {});
+  await finishHolidayRequests();
 });
 
 test("계정을 바꾸면 작성 초안이 섞이지 않고 본인 계정으로 돌아와야 복구할 수 있다", async () => {
@@ -1573,7 +1580,7 @@ test("계정을 바꾸면 작성 초안이 섞이지 않고 본인 계정으로 
   rerender(<ScheduleManager />);
   fireEvent.click(screen.getByRole("button", { name: "이어서 작성" }));
   expect(screen.getByLabelText("일정 이름")).toHaveValue("첫 계정 비공개 초안");
-  await act(async () => {});
+  await finishHolidayRequests();
 });
 
 test("로그아웃 상태에서는 개인 일정의 등록을 차단한다", async () => {
@@ -1583,7 +1590,7 @@ test("로그아웃 상태에서는 개인 일정의 등록을 차단한다", asy
   expect(screen.getByRole("button", { name: "개인 일정용", exact: true })).toBeDisabled();
   expect(sessionStorage.getItem("made-mate-schedule-draft:guest")).toBeNull();
   expect(loadSchedules().items).toHaveLength(0);
-  await act(async () => {});
+  await finishHolidayRequests();
 });
 
 test("다른 계정의 개인 일정 알림은 표시하지 않고 해당 계정으로 로그인해야 표시한다", async () => {
@@ -1601,7 +1608,7 @@ test("다른 계정의 개인 일정 알림은 표시하지 않고 해당 계정
   useERP.mockReturnValue(base);
   rerender(<ScheduleManager />);
   expect(screen.queryByText("일정 알림", { exact: true })).not.toBeInTheDocument();
-  await act(async () => {});
+  await finishHolidayRequests();
 });
 
 test("숨겨진 타 계정 개인 일정은 중복 경고에 노출하지 않고 새 저장에서도 보존한다", async () => {
@@ -1638,7 +1645,7 @@ test("다른 탭 초기화는 작성창·현재 초안·삭제 되돌리기 기�
   expect(screen.queryByRole("complementary", { name: "임시 작성 일정" })).not.toBeInTheDocument();
   expect(sessionStorage.getItem("made-mate-schedule-draft:900:802")).toBeNull();
   expect(loadSchedules().items).toHaveLength(0);
-  await act(async () => {});
+  await finishHolidayRequests();
 });
 
 test("담당자별 주간 보기는 본인 개인 일정을 소유 직원 행에서 보여준다", async () => {
@@ -1649,7 +1656,7 @@ test("담당자별 주간 보기는 본인 개인 일정을 소유 직원 행에
   const staff = screen.getByRole("region", { name: "담당자별 주간 일정표" });
   fireEvent.click(within(staff).getByRole("button", { name: "김담당 일정 펼치기" }));
   expect(within(staff).getAllByText("본인 주간 개인 일정").length).toBeGreaterThan(0);
-  await act(async () => {});
+  await finishHolidayRequests();
 });
 
 test("전체 목록 날짜는 전체 기간과 실제 다음 반복 회차·종료 여부를 구분한다", () => {

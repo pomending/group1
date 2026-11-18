@@ -12,7 +12,7 @@ import ProductForm from "./ProductForm";
 import ProductDetails from "./ProductDetails";
 import {
   formatProductDate, getProductStatus, productStatuses, normalizeProductName,
-  compareProductDates, createProductExcel, getProductInput, getProductPriceRange,
+  compareProductDates, createProductExcel, getProductInput, getProductPriceRange, PRODUCT_STATUS,
 } from "./productData";
 import "./productStyles.css";
 
@@ -29,7 +29,7 @@ function compareProducts(a, b, sort) {
 
 export default function ProductPage() {
   // [1] 데이터와 화면 상태: Context 상품과 검색·편집 조건을 분리합니다.
-  const { products, addProduct, updateProduct, productStorageError } = useERP();
+  const { products, addProduct, updateProduct, deleteProduct, quotations = [], productStorageError } = useERP();
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("all");
   const [sort, setSort] = useState("newest");
@@ -116,6 +116,24 @@ export default function ProductPage() {
   function closeEditor() {
     focusRequest.current = editReturnFocus.current;
     setEditing(null);
+  }
+
+  function removeProduct() {
+    const product = products.find(item => item.id === editing.id);
+    if (!product || product.productStatus !== PRODUCT_STATUS.STOPPED) {
+      return { ok: false, message: "판매 중지된 상품만 삭제할 수 있습니다." };
+    }
+    if (quotations.some(quotation => quotation.productId === product.id)) {
+      return { ok: false, message: "견적에 연결된 상품은 삭제할 수 없습니다. 판매 중지 상태로 보관해 주세요." };
+    }
+    if (!window.confirm(`'${product.productName}' 상품을 삭제할까요? 삭제 후에는 복구할 수 없습니다.`)) return { ok: true };
+    const result = deleteProduct(product.id);
+    if (!result.ok) return result;
+    setEditing(null);
+    setSelectedId(null);
+    focusRequest.current = "list-heading";
+    setNotice("상품을 삭제했습니다.");
+    return result;
   }
 
   // 입력값 세 개만 복사합니다. 신규 저장 시 ID·등록일을 생성하고 수정일은 비우며 원본은 변경하지 않습니다.
@@ -245,6 +263,7 @@ export default function ProductPage() {
             mode={editorMode}
             product={editing}
             onSave={saveProduct}
+            onDelete={removeProduct}
             onCancel={() => {
               setNotice("");
               closeEditor();

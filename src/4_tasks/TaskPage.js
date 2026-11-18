@@ -1,5 +1,4 @@
-
-import React, { useState } from "react";
+import { useState } from "react";
 import { Routes, Route, useNavigate } from "react-router-dom";
 import TaskDetail from "./TaskDetail";
 import { useERP } from "../context/ERPContext";
@@ -16,9 +15,9 @@ function TaskList() {
     const [currentPage, setCurrentPage] = useState(1);
     const [openProjectId, setOpenProjectId] = useState(null);
 
-    const itemsPerPage = 10;
 
-    const { tasks, setTasks, projects, employees } = useERP();
+    const { tasks, projects, employees } = useERP();
+    const [openProjects, setOpenProjects] = useState([]);
 
     const navigate = useNavigate();
 
@@ -42,23 +41,33 @@ function TaskList() {
         return matchesType && matchesProgress;
     });
 
-    // 2. 프로젝트별 그룹화
-    const groupedProjects = projects.map(project => ({
-        project,
-        projectTasks: filteredTasks.filter(
-            task => task.projectId === project.id
-        )
-    })).filter(group => group.projectTasks.length > 0);
 
-    // 3. 페이지네이션
-    const totalPages = Math.ceil(groupedProjects.length / itemsPerPage);
+    // 프로젝트별 작업 그룹 만들기
+    const groupedTasks = filteredTasks.reduce((groups, task) => {
 
-    const startIndex = (currentPage - 1) * itemsPerPage;
+        const projectId = task.projectId;
 
-    const currentProjects = groupedProjects.slice(
-        startIndex,
-        startIndex + itemsPerPage
-    );
+        if (!groups[projectId]) {
+            groups[projectId] = [];
+        }
+
+        groups[projectId].push(task);
+
+        return groups;
+
+    }, {});
+
+    // 프로젝트 아코디언 열기 / 닫기
+    const toggleProject = (projectId) => {
+
+        setOpenProjects(prev =>
+            prev.includes(projectId)
+                ? prev.filter(id => id !== projectId)
+                : [...prev, projectId]
+        );
+
+    };
+
 
     return (
         <div className="task-page">
@@ -121,7 +130,6 @@ function TaskList() {
                         value={taskTypeFilter}
                         onChange={(e) => {
                             setTaskTypeFilter(e.target.value);
-                            setCurrentPage(1);
                         }}
                     >
                         <option value="전체">전체 단계</option>
@@ -130,18 +138,110 @@ function TaskList() {
                         ))}
                     </select>
                 </div>
+{/* 프로젝트별 아코디언 작업 목록 */}
+<div className="task-accordion">
 
-                {/* 프로젝트별 아코디언 목록 */}
-                <div className="task-accordion-list">
+    {filteredTasks.length > 0 ? (
 
-                    {currentProjects.length > 0 ? (
+        Object.entries(groupedTasks).map(([projectId, projectTasks]) => {
 
-                        currentProjects.map((group, index) => (
+            const project = projects.find(
+                p => p.id === projectTasks[0].projectId
+            );
 
-                            <div
-                                className="task-accordion"
-                                key={group.project.id}
-                            >
+            const isOpen = openProjects.includes(projectId);
+
+            return (
+
+                <div className="task-project-group" key={projectId}>
+
+                    {/* 프로젝트 제목 */}
+                    <div
+                        className={`task-project-header ${isOpen ? "open" : ""}`}
+                        onClick={() => toggleProject(projectId)}
+                    >
+
+                        <div className="task-project-info">
+
+                            <span className="task-project-number">
+                                {formatProjectId(projectTasks[0].projectId)}
+                            </span>
+
+                            <strong>
+                                {project?.name ?? "삭제된 프로젝트"}
+                            </strong>
+
+                            <span className="task-count">
+                                작업 {projectTasks.length}개
+                            </span>
+
+                        </div>
+
+                        <span className="task-accordion-arrow">
+                            {isOpen ? "▲" : "▼"}
+                        </span>
+
+                    </div>
+
+                    {/* 프로젝트별 작업 목록 */}
+                    {isOpen && (
+
+                        <div className="task-project-content">
+
+                            <table className="task-table">
+
+                                <thead>
+                                    <tr>
+                                        <th>번호</th>
+                                        <th>작업 단계</th>
+                                        <th>진행 상태</th>
+                                        <th>담당자</th>
+                                    </tr>
+                                </thead>
+
+                                <tbody>
+
+                                    {projectTasks.map(task => {
+
+                                        const employee = employees.find(
+                                            emp => emp.id === task.employeeId
+                                        );
+
+                                        return (
+
+                                            <tr key={task.id}>
+
+                                                <td>{task.id}</td>
+
+                                                <td>{task.taskType}</td>
+
+                                                <td>
+                                                    <span
+                                                        className={`task-status ${
+                                                            task.progress === "완료"
+                                                                ? "complete"
+                                                                : task.progress === "작업중"
+                                                                    ? "progress"
+                                                                    : "waiting"
+                                                        }`}
+                                                    >
+                                                        {task.progress}
+                                                    </span>
+                                                </td>
+
+                                                <td>
+                                                    {employee?.name ?? "담당자 없음"}
+                                                </td>
+
+                                            </tr>
+
+                                        );
+
+                                    })}
+
+                                </tbody>
+
+                            </table>
 
                                 {/* 프로젝트 제목 */}
                                 <button
