@@ -538,14 +538,20 @@ function QuotationCreate() {
                                             className="option-price-input"
                                             type="text"
                                             placeholder="추가 단가 입력"
-                                            value={option.unitPrice === "" || option.unitPrice == null
-                                                ? ""
-                                                : Number(option.unitPrice).toLocaleString("ko-KR")}
-                                            onChange={(e) =>
-                                                handleChangeOption(option.id,
-                                                    "unitPrice",
-                                                    e.target.value.replace(/[^0-9]/g, ""))
+                                            value={
+                                                option.unitPrice === "" ||
+                                                    option.unitPrice == null ||
+                                                    option.unitPrice === "-"
+                                                    ? (option.unitPrice ?? "")
+                                                    : Number(option.unitPrice).toLocaleString("ko-KR")
                                             }
+                                            onChange={(e) => {
+                                                const value = e.target.value.replace(/,/g, "");
+
+                                                if (/^-?\d*$/.test(value)) {
+                                                    handleChangeOption(option.id, "unitPrice", value);
+                                                }
+                                            }}
                                         />
                                         <span className="price-unit">원</span>
                                     </div>

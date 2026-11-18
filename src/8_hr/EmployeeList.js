@@ -1,15 +1,19 @@
-import { useState } from "react";
-import { departmentNames, EMPLOYEE_STATUSES, statusClass } from "../utils/employeeUtils";
+import { useEffect, useState } from "react";
+import { departmentNames, statusClass } from "../utils/employeeUtils";
 import { formatEmployeeId } from "../utils/formatUtils";
 
 const PAGE_SIZE = 8;
 
-export default function EmployeeList({ employees, projects, onView, onNew }) {
+export default function EmployeeList({ employees, projects, statusFilter, onView, onNew }) {
     const [search, setSearch] = useState("");
     const [department, setDepartment] = useState("");
-    const [status, setStatus] = useState("");
     const [sort, setSort] = useState("newest");
     const [page, setPage] = useState(1);
+
+    // 상단 직원 상태 카드를 바꾸면 첫 페이지부터 표시
+    useEffect(() => {
+        setPage(1);
+    }, [statusFilter]);
 
     const keyword = search.trim().toLowerCase();
 
@@ -25,7 +29,7 @@ export default function EmployeeList({ employees, projects, onView, onNew }) {
 
         return matchesSearch &&
             (!department || employee.department === department) &&
-            (!status || employee.status === status);
+            (!statusFilter || employee.status === statusFilter);
     });
 
     filtered.sort((a, b) => {
@@ -42,7 +46,6 @@ export default function EmployeeList({ employees, projects, onView, onNew }) {
 
     const changeSearch = (value) => { setSearch(value); setPage(1); };
     const changeDepartment = (value) => { setDepartment(value); setPage(1); };
-    const changeStatus = (value) => { setStatus(value); setPage(1); };
     const changeSort = (value) => { setSort(value); setPage(1); };
 
     return (
@@ -63,12 +66,6 @@ export default function EmployeeList({ employees, projects, onView, onNew }) {
                 <select className="hr-input hr-select" aria-label="부서 필터" value={department} onChange={e => changeDepartment(e.target.value)}>
                     <option value="">전체 부서</option>
                     {departmentNames.map(d => <option key={d} value={d}>{d}</option>)}
-                </select>
-                <select className="hr-input hr-select" aria-label="상태 필터" value={status} onChange={e => changeStatus(e.target.value)}>
-                    <option value="">전체 상태</option>
-                    {EMPLOYEE_STATUSES.map(status =>
-                        <option key={status} value={status}>{status}</option>
-                    )}
                 </select>
                 <select className="hr-input hr-select" aria-label="정렬" value={sort} onChange={e => changeSort(e.target.value)}>
                     <option value="newest">최근 입사 순</option>

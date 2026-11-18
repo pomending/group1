@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useERP } from "../context/ERPContext";
-import { getDeadlineStatus, getProjectProgress, getProjectStatus, isProjectDelayed } from "../utils/projectUtils";
+import { getDeadlineStatus, getProjectProgress, getProjectStatus } from "../utils/projectUtils";
 
 function ProjectList(props) {
 
@@ -41,6 +41,29 @@ function ProjectList(props) {
         }
 
         return 'pm-deadline-normal';
+    };
+
+    // 통계 카드와 목록 필터는 동일한 프로젝트 상태 계산 함수를 사용한다.
+    const statusCounts = { "대기": 0, "진행 중": 0, "완료": 0, "지연": 0 };
+
+    projects.forEach(project => {
+        const status = getProjectStatus(project);
+        if (Object.prototype.hasOwnProperty.call(statusCounts, status)) {
+            statusCounts[status] += 1;
+        }
+    });
+
+    const statusCards = [
+        { label: "전체 프로젝트", filter: "", count: projects.length },
+        { label: "대기", filter: "대기", count: statusCounts["대기"] },
+        { label: "진행 중", filter: "진행 중", count: statusCounts["진행 중"] },
+        { label: "완료", filter: "완료", count: statusCounts["완료"] },
+        { label: "지연", filter: "지연", count: statusCounts["지연"] }
+    ];
+
+    const changeStatusFilter = (status) => {
+        props.setSearchStat(status);
+        setPage(1);
     };
 
     const pendingQuotations = quotations.filter(q =>
@@ -95,24 +118,23 @@ function ProjectList(props) {
                     프로젝트 생성 대기 견적 {pendingCount}건
                 </h3>
 
-                {/* 통계 */}
+                {/* 통계 카드: 클릭하면 목록 상태 필터가 변경된다. */}
                 <div className="pm-stats">
-                    <div className="pm-stat pj-card">
-                        <div className="pm-stat-label">전체 프로젝트</div>
-                        <div className="pm-stat-value">{projects.length}</div>
-                    </div>
-                    <div className="pm-stat pj-card">
-                        <div className="pm-stat-label">진행 중</div>
-                        <div className="pm-stat-value">
-                            {projects.filter(project => getProjectStatus(project) === '진행 중').length}
-                        </div>
-                    </div>
-                    <div className="pm-stat pj-card">
-                        <div className="pm-stat-label">지연</div>
-                        <div className="pm-stat-value">
-                            {projects.filter(project => isProjectDelayed(project)).length}
-                        </div>
-                    </div>
+                    {statusCards.map(card => (
+                        <button
+                            key={card.filter || "all"}
+                            type="button"
+                            className={`pm-stat pm-stat-button pj-card ${props.searchstat === card.filter ? "pm-stat-active" : ""}`}
+                            onClick={() => changeStatusFilter(card.filter)}
+                            aria-pressed={props.searchstat === card.filter}
+                        >
+                            <div className="pm-stat-label">{card.label}</div>
+                            <div className="pm-stat-value">
+                                {card.count}
+                                <span className="pm-stat-unit">개</span>
+                            </div>
+                        </button>
+                    ))}
                 </div>
 
                 {/* 프로젝트 목록 */}
@@ -126,13 +148,13 @@ function ProjectList(props) {
                         </span>
                     </div>
 
-                    {/* 검색 및 상태 필터 */}
+                    {/* 검색 및 정렬 */}
                     <div className="pm-filters">
                         <input
                             className="pm-search"
                             placeholder="프로젝트명 검색"
                             value={props.search}
-                            onChange={(e) => { props.setSearch(e.target.value); }}
+                            onChange={(e) => { props.setSearch(e.target.value); setPage(1); }}
                         />
                         <select
                             className="pm-select"
@@ -142,17 +164,6 @@ function ProjectList(props) {
                             <option value='dueAsc'>마감일 빠른 순</option>
                             <option value='dueDesc'>마감일 늦은 순</option>
                             <option value='recent'>최근 등록 순</option>
-                        </select>
-                        <select
-                            className="pm-select"
-                            value={props.searchstat}
-                            onChange={(e) => { props.setSearchStat(e.target.value); }}
-                        >
-                            <option value="">전체 상태</option>
-                            <option value="대기">대기</option>
-                            <option value="진행 중">진행 중</option>
-                            <option value="완료">완료</option>
-                            <option value="지연">지연</option>
                         </select>
                     </div>
 

@@ -391,7 +391,7 @@
 }
 
 /* 삭제 버튼 */
-.consultation-page .consultation-table-actions button:last-child {
+.consultation-page .consultation-table-actions .consultation-delete-btn {
     background: #F8EDEF;
     border-color: #E8C7CF;
     color: #A34E64;
@@ -497,4 +497,22 @@
         overflow-x: auto;
         white-space: nowrap;
     }
+}
+
+/* 미배정 상담 필터 */
+.consultation-page .consultation-unassigned-filter {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    margin: 0 4px;
+    font-size: 13px;
+    font-weight: 500;
+    color: #524B80;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.consultation-page .consultation-unassigned-filter input {
+    margin: 0;
+    cursor: pointer;
 }

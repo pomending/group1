@@ -1,17 +1,18 @@
 import React, { useState } from "react";
 import "./02_ConsultationManagement.css";
 import { useERP } from "../context/ERPContext";
-import {
-    validateCompanyName, validateConsultation, validateCustomerManager, validateDuplicateConsultation,
-    validateEmail, validatePhone, formatPhone
-} from "../utils/consultationUtils";
+import { validateDuplicateConsultation, validateConsultationForm } from "../utils/consultationUtils";
+import { formatPhone } from "../utils/formatUtils";
 
 
 function ConsultationManagement() {
-    
-    const { consultations, addConsultation, updateConsultation,
-        deleteConsultations, employees, customers, addCustomer,
-        saveEditedCustomer, claims, validateConsultationEmployee
+
+    const {
+        consultations,
+        deleteConsultations,
+        employees,
+        claims,
+        saveConsultationWithCustomer
     } = useERP();
 
     //체크박스로 선택한 문의 Id를 저장할 usestate
@@ -32,13 +33,15 @@ function ConsultationManagement() {
     //버튼을 눌러 확정한 검색기준
     const [searchTypeResult, setSearchTypeResult] = useState("companyName")
 
+    //미배정된 사람만 볼 수 있게 하는 checkbox
+    const [onlyUnassigned, setOnlyUnassigned] = useState(false);
+
     const originalConsultation = consultations.find(
         (consultation) => consultation.id === editData.id)
     //페이지설정기준
     const [currentPage, setCurrentPage] = useState(1)
     //페이지당 보여질 목록개수
     const consultationPerPage = 10;
-
 
     const editConsultation = () => {
 
@@ -51,152 +54,31 @@ function ConsultationManagement() {
 
     const saveConsultation = () => {
 
-        if (!validateConsultation(editData)) {
-            return;
-        }
-
-        if (!validatePhone(editData.phone)) {
-            return;
-        }
-
-        if (!validateEmail(editData.email)) {
-            return;
-        }
-        if (!validateCompanyName(editData.companyName)) {
-            return;
-        }
-        if (!validateCustomerManager(editData.customerManager)) {
-            return;
-        }
+        // 중복 상담은 사용자에게 등록 여부 확인
         if (!validateDuplicateConsultation(editData, consultations)) {
             return;
         }
 
-        const employeeResult = validateConsultationEmployee(
-            editData,
-            originalConsultation
-        );
+        const result = saveConsultationWithCustomer(editData);
 
-        if (!employeeResult.ok) {
-            alert(employeeResult.message);
+        if (!result.ok) {
+            alert(result.message);
             return;
         }
 
-        let isNewCustomer = false;
-
-        const isMemoChanged = !originalConsultation
-            || (originalConsultation.memo !== editData.memo)
-
-        if (
-            originalConsultation &&
-            originalConsultation.companyName !== editData.companyName &&
-            ["견적 요청", "인계 완료"].includes(originalConsultation.status)
-        ) {
-            alert("견적 요청 또는 인계 완료된 상담의 고객은 변경할 수 없습니다.");
-            return;
-        }
-
-        let customerId = editData.customerId ?? null
-        if (editData.status === "견적 요청") {
-            const existingCustomer = customers.find(
-                (customer) => customer.companyName === editData.companyName)
-
-
-            if (!existingCustomer) {
-                const result = addCustomer({
-                    companyName: editData.companyName,
-                    businessNumber: "",
-                    customerManager: editData.customerManager,
-                    employeeId: editData.employeeId ?? null,
-                    phone: editData.phone,
-                    email: editData.email || "",
-                    address: "",
-                    createdAt: new Date().toLocaleDateString("sv-SE"),
-                    memo: editData.memo?.trim()
-                        ? `${new Date().toLocaleDateString("sv-SE")} | ${editData.memo}`
-                        : "",
-                    registrationSource: "autosave"
-                });
-
-                if (!result.ok) {
-                    alert(result.message);
-                    return;
-                }
-
-                customerId = result.id;
-                isNewCustomer = true;
-            } else {
-                customerId = existingCustomer.id
-                //날짜형식 
-                const today = new Date().toLocaleDateString("sv-SE");
-                //메모형식\
-                const oldMemo = originalConsultation?.memo || "";
-                const currentMemo = editData.memo || "";
-
-                const addedMemo = currentMemo.startsWith(oldMemo)
-                    ? currentMemo.slice(oldMemo.length).trim()
-                    : currentMemo.trim();
-
-                const newMemo = addedMemo ? `${today} | ${addedMemo}` : "";
-
-                const updatedMemo = newMemo && isMemoChanged
-                    ? [existingCustomer.memo, newMemo].filter(Boolean).join("\n")
-                    : (existingCustomer.memo || "");
-
-                if (
-                    existingCustomer.customerManager !== editData.customerManager ||
-                    existingCustomer.email !== (editData.email?.trim() || existingCustomer.email) ||
-                    existingCustomer.phone !== editData.phone ||
-                    existingCustomer.memo !== updatedMemo
-                ) {
-                    const result = saveEditedCustomer({
-                        ...existingCustomer,
-                        customerManager: editData.customerManager,
-                        email: editData.email?.trim() || existingCustomer.email,
-                        phone: editData.phone,
-                        memo: updatedMemo
-                    });
-
-                    if (!result.ok) {
-                        alert(result.message);
-                        return;
-                    }
-                }
-            }
-        }
-
-        if (editData.id) {
-            const result = updateConsultation({ ...editData, customerId });
-
-            if (!result.ok) {
-                alert(result.message);
-                return;
-            }
-        } else {
-            const result = addConsultation({
-                ...editData,
-                customerId
-            });
-
-            if (!result.ok) {
-                alert(result.message);
-                return;
-            }
-        }
-        if (isNewCustomer) {
+        if (result.customerAction === "created") {
             alert("문의 정보가 저장되고 고객관리에 신규 등록되었습니다.");
-        } else if (editData.status === "견적 요청" && isNewCustomer === false) {
+        } else if (result.customerAction === "linked") {
             alert("문의 정보가 저장되고 기존 고객정보와 연결되었습니다.");
+        } else if (editData.id) {
+            alert("문의 정보가 수정되었습니다.");
         } else {
-            if (editData.id) {
-                alert("문의 정보가 수정되었습니다.");
-            } else {
-                alert("새로운 문의가 등록되었습니다.");
-            }
+            alert("새로운 문의가 등록되었습니다.");
         }
+
         setEditData({});
         setCheckedIds([]);
-    }
+    };
 
     const deleteConsultation = () => {
 
@@ -230,11 +112,22 @@ function ConsultationManagement() {
     const resetConsultationSearch = () => {
         setSearch("");
         setSearchResult("");
+        setOnlyUnassigned(false);
+        setCheckedIds([]);
         setCurrentPage(1);
-    }
+    };
 
     // 업체명 검색어에 일치하는 문의 목록을 필터링
     const filteredConsultation = consultations.filter((item) => {
+
+        if (
+            onlyUnassigned &&
+            item.employeeId != null &&
+            item.employeeId !== ""
+        ) {
+            return false;
+        }
+
         if (searchTypeResult === "companyName") {
             return (item.companyName || "").includes(searchResult)
         } else {
@@ -394,9 +287,19 @@ function ConsultationManagement() {
                     value={search}
                     onChange={(e) => setSearch(e.target.value)} />
                 <button type="submit">검색</button>
-                <button type="button" onClick={resetConsultationSearch}>
-                    전체목록으로
-                </button>
+
+                <label className="consultation-unassigned-filter">
+                    <input
+                        type="checkbox"
+                        checked={onlyUnassigned}
+                        onChange={(e) => {
+                            setOnlyUnassigned(e.target.checked);
+                            setCurrentPage(1);
+                            setCheckedIds([]);
+                        }}
+                    />
+                    미배정만 보기
+                </label>
             </form>
 
             <div>
@@ -405,9 +308,13 @@ function ConsultationManagement() {
                         disabled={checkIds.length !== 1}
                         onClick={editConsultation}>상세보기</button>
                     <button
+                        className="consultation-delete-btn"
                         disabled={checkIds.length === 0}
                         onClick={deleteConsultation}>삭제</button>
 
+                    <button type="button" onClick={resetConsultationSearch}>
+                        초기화
+                    </button>
                 </div>
                 <table>
                     <thead>

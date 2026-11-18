@@ -1,3 +1,5 @@
+import { isValidPhone, isValidEmail } from "./validationUtils";
+
 export const CLAIM_TYPES = [
     "제품 불량",
     "수량 부족",
@@ -110,7 +112,7 @@ export const validateClaim = (claim) => {
     }
 
     // 전화번호 형식 검사
-    if (phone && !/^\d{2,3}-?\d{3,4}-?\d{4}$/.test(phone)) {
+    if (phone && !isValidPhone(phone)) {
         return {
             ok: false,
             message: "올바른 전화번호를 입력해 주세요."
@@ -118,7 +120,7 @@ export const validateClaim = (claim) => {
     }
 
     // 이메일 형식 검사
-    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    if (email && !isValidEmail(email)) {
         return {
             ok: false,
             message: "올바른 이메일 주소를 입력해 주세요."
