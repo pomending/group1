@@ -82,8 +82,6 @@ export function useCustomerData() {
         deleteCustomers,
         resetCustomers
 
-
-
     };
 }
 

@@ -16,6 +16,7 @@ export default function HrPage() {
     } = useERP();
 
     const [page, setPage] = useState("list");
+    const [statusFilter, setStatusFilter] = useState("");
     const [selectedEmployeeId, setSelectedEmployeeId] = useState(null);
     const selectedEmployee = employees.find(e => Number(e.id) === Number(selectedEmployeeId));
 
@@ -89,10 +90,23 @@ export default function HrPage() {
                 {page === "list" && (
                     <>
                         <section className="hr-stats" aria-label="인원 통계">
-                            <div className="hr-stat"><span>전체 직원</span><strong>{employees.length}<small>명</small></strong></div>
-                            <div className="hr-stat"><span>재직 직원</span><strong>{employees.filter(e => e.status === "재직").length}<small>명</small></strong></div>
-                            <div className="hr-stat"><span>휴직 직원</span><strong>{employees.filter(e => e.status === "휴직").length}<small>명</small></strong></div>
-                            <div className="hr-stat"><span>퇴사 직원</span><strong>{employees.filter(e => e.status === "퇴사").length}<small>명</small></strong></div>
+                            {[
+                                { label: "전체 직원", status: "", count: employees.length },
+                                { label: "재직 직원", status: "재직", count: employees.filter(e => e.status === "재직").length },
+                                { label: "휴직 직원", status: "휴직", count: employees.filter(e => e.status === "휴직").length },
+                                { label: "퇴사 직원", status: "퇴사", count: employees.filter(e => e.status === "퇴사").length }
+                            ].map(card => (
+                                <button
+                                    key={card.status}
+                                    type="button"
+                                    className={`hr-stat ${statusFilter === card.status ? "active" : ""}`}
+                                    onClick={() => setStatusFilter(card.status)}
+                                    aria-pressed={statusFilter === card.status}
+                                >
+                                    <span>{card.label}</span>
+                                    <strong>{card.count}<small>명</small></strong>
+                                </button>
+                            ))}
                         </section>
                         <section className="hr-panel hr-department-panel">
                             <div className="hr-section-title">
@@ -117,7 +131,7 @@ export default function HrPage() {
                                 <p className="hr-empty">직원이 없습니다.</p>
                             )}
                         </section>
-                        <EmployeeList employees={employees} projects={projects} onView={showDetail} onNew={() => setPage("new")} />
+                        <EmployeeList employees={employees} projects={projects} statusFilter={statusFilter} onView={showDetail} onNew={() => setPage("new")} />
                     </>
                 )}
 

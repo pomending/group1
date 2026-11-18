@@ -5,7 +5,7 @@ import { useERP } from "../context/ERPContext";
 import {
     formatBusinessNumber
 } from "../utils/customerUtils";
-import { formatPhone } from "../utils/consultationUtils";
+import { formatPhone } from "../utils/formatUtils";
 
 function CustomerEdit({ customerId, onClose }) {
 

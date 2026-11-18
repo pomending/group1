@@ -12,11 +12,12 @@ import { getAvailableEmployees, TASK_TYPES } from "../utils/taskUtils";
 import { sanitizeEmployee, validateEmployee } from "../utils/employeeUtils";
 import useQuotationData from "./useQuotationData";
 import { deleteSchedulesByProject, deleteSchedulesByEmployee, resetStoredSchedules } from "../5_schedule/scheduleStorage";
-import { isValidDate } from "../utils/dateUtils";
+import { isValidDate } from "../utils/validationUtils";
 import useClaimData from "./useClaimData";
 import { validateClaim } from "../utils/claimUtils";
 import { resetDashboardData } from "../6_dashboard/dashboardStorage";
 import { validateCustomerData } from "../utils/customerUtils";
+import { validateConsultationForm } from "../utils/consultationUtils";
 
 const ERPContext = createContext(null);
 
@@ -41,6 +42,373 @@ export function ERPProvider({ children }) {
     const { resetTasks, ...publicTaskData } = taskData;
     const claimData = useClaimData();
     const { resetClaim, ...publicClaimData } = claimData;
+
+    const validateConsultationEmployee = (consultation, original = null) => {
+
+        const status = consultation.status || "문의 접수";
+        const employeeId = consultation.employeeId;
+
+        // 담당자가 반드시 필요한 상태
+        const requiresEmployee = [
+            "처리 중",
+            "견적 요청",
+            "문의 종료"
+        ].includes(status);
+
+        // 담당자 미배정 검사
+        if (employeeId == null || employeeId === "") {
+            if (requiresEmployee) {
+                return {
+                    ok: false,
+                    message: "담당자를 지정해주세요."
+                };
+            }
+
+            return { ok: true };
+        }
+
+        // 담당 직원 존재 확인
+        const employee = employeeData.employees.find(
+            e => e.id === employeeId
+        );
+
+        if (!employee) {
+            return {
+                ok: false,
+                message: "존재하지 않는 담당자입니다."
+            };
+        }
+
+        // 종료된 상담의 기존 담당자 기록은 유지 허용
+        const keepEmployee =
+            original &&
+            ["문의 종료", "인계 완료"].includes(original.status) &&
+            ["문의 종료", "인계 완료"].includes(status) &&
+            original.employeeId === employeeId;
+
+        if (
+            !keepEmployee &&
+            (
+                employee.status !== "재직" ||
+                employee.department !== "영업팀"
+            )
+        ) {
+            return {
+                ok: false,
+                message: "재직 중인 영업팀 직원만 담당자로 지정할 수 있습니다."
+            };
+        }
+
+        return { ok: true };
+    };
+
+    const validateConsultationCustomer = (
+        consultation,
+        newlyCreatedCustomerId = null
+    ) => {
+
+        const customerId = consultation.customerId;
+
+        // 고객 미연결 상담 허용
+        if (customerId == null) {
+            return { ok: true };
+        }
+
+        if (
+            !Number.isSafeInteger(customerId) ||
+            customerId <= 0
+        ) {
+            return {
+                ok: false,
+                message: "올바르지 않은 고객 ID입니다."
+            };
+        }
+
+        // 방금 정상적으로 생성한 고객은 존재하는 것으로 인정
+        if (
+            newlyCreatedCustomerId !== null &&
+            customerId === newlyCreatedCustomerId
+        ) {
+            return { ok: true };
+        }
+
+        const exists = customerData.customers.some(
+            customer => customer.id === customerId
+        );
+
+        if (!exists) {
+            return {
+                ok: false,
+                message: "존재하지 않는 고객입니다."
+            };
+        }
+
+        return { ok: true };
+    };
+
+    const saveConsultationRecord = (
+        consultation,
+        original = null,
+        newlyCreatedCustomerId = null
+    ) => {
+    
+        // 담당 직원 검증
+        const employeeResult = validateConsultationEmployee(
+            consultation, original
+        );
+    
+        if (!employeeResult.ok) {
+            return employeeResult;
+        }
+    
+        // 고객 FK 검증
+        const customerResult = validateConsultationCustomer(
+            consultation, newlyCreatedCustomerId
+        );
+    
+        if (!customerResult.ok) {
+            return customerResult;
+        }
+    
+        // 실제 상담 저장
+        return original
+            ? consultationData.updateConsultation(consultation)
+            : consultationData.addConsultation(consultation);
+    };
+
+    const addConsultation = (newConsultation) => {
+        return saveConsultationRecord(newConsultation);
+    };
+    
+    const updateConsultation = (updatedConsultation) => {
+    
+        const original = consultationData.consultations.find(
+            c => c.id === updatedConsultation.id
+        );
+    
+        if (!original) {
+            return {
+                ok: false,
+                message: "존재하지 않는 상담입니다."
+            };
+        }
+    
+        const mergedConsultation = {
+            ...original,
+            ...updatedConsultation
+        };
+    
+        return saveConsultationRecord(
+            mergedConsultation,
+            original
+        );
+    };
+
+    const saveConsultationWithCustomer = (editData) => {
+
+        const validationResult = validateConsultationForm(editData);
+
+        if (!validationResult.ok) {
+            return validationResult;
+        }
+
+        const original = editData.id == null
+            ? null
+            : consultationData.consultations.find(
+                c => c.id === editData.id
+            );
+
+        if (editData.id != null && !original) {
+            return {
+                ok: false,
+                message: "존재하지 않는 상담입니다."
+            };
+        }
+
+        // 담당 직원 검증
+        const employeeResult = validateConsultationEmployee(
+            editData, original
+        );
+
+        if (!employeeResult.ok) return employeeResult;
+
+        // 기존 상담의 변경 제한을 고객 수정 전에 검사
+        if (original) {
+            if (["견적 요청", "인계 완료"].includes(original.status)) {
+                if (original.status !== editData.status) {
+                    return {
+                        ok: false,
+                        message: `${original.status} 상태의 상담은 상태를 변경할 수 없습니다.`
+                    };
+                }
+
+                if (original.companyName !== editData.companyName) {
+                    return {
+                        ok: false,
+                        message: "견적 요청 또는 인계 완료된 상담의 고객은 변경할 수 없습니다."
+                    };
+                }
+            }
+
+            if (
+                original.status !== "인계 완료" &&
+                editData.status === "인계 완료"
+            ) {
+                return {
+                    ok: false,
+                    message: "견적이 정식 등록되면 자동으로 인계 완료됩니다."
+                };
+            }
+        }
+
+        const today = new Date().toLocaleDateString("sv-SE");
+
+        let customerId = editData.customerId ?? null;
+        let customerAction = "none";
+        let customerToAdd = null;
+        let customerToUpdate = null;
+
+        if (editData.status === "견적 요청") {
+
+            const existingCustomer = customerData.customers.find(
+                c => c.companyName === editData.companyName
+            );
+
+            if (!existingCustomer) {
+
+                customerToAdd = {
+                    companyName: editData.companyName,
+                    businessNumber: "",
+                    customerManager: editData.customerManager,
+                    employeeId: editData.employeeId ?? null,
+                    phone: editData.phone,
+                    email: editData.email || "",
+                    address: "",
+                    createdAt: today,
+                    memo: editData.memo?.trim()
+                        ? `${today} | ${editData.memo}`
+                        : "",
+                    registrationSource: "autosave"
+                };
+
+                customerAction = "created";
+
+            } else {
+
+                customerId = existingCustomer.id;
+                customerAction = "linked";
+
+                const oldMemo = original?.memo || "";
+                const currentMemo = editData.memo || "";
+
+                const addedMemo = currentMemo.startsWith(oldMemo)
+                    ? currentMemo.slice(oldMemo.length).trim()
+                    : currentMemo.trim();
+
+                const newMemo = addedMemo
+                    ? `${today} | ${addedMemo}`
+                    : "";
+
+                const isMemoChanged =
+                    !original || original.memo !== editData.memo;
+
+                const updatedMemo = newMemo && isMemoChanged
+                    ? [existingCustomer.memo, newMemo]
+                        .filter(Boolean).join("\n")
+                    : (existingCustomer.memo || "");
+
+                const candidate = {
+                    ...existingCustomer,
+                    customerManager: editData.customerManager,
+                    email: editData.email?.trim() ||
+                        existingCustomer.email,
+                    phone: editData.phone,
+                    memo: updatedMemo
+                };
+
+                if (
+                    candidate.customerManager !== existingCustomer.customerManager ||
+                    candidate.email !== existingCustomer.email ||
+                    candidate.phone !== existingCustomer.phone ||
+                    candidate.memo !== existingCustomer.memo
+                ) {
+                    customerToUpdate = candidate;
+                }
+            }
+        }
+
+        // 기존에 연결된 고객을 다른 고객으로 바꾸는 것 방지
+        if (
+            original &&
+            ["견적 요청", "인계 완료"].includes(original.status) &&
+            (customerToAdd || original.customerId !== customerId)
+        ) {
+            return {
+                ok: false,
+                message: "이미 연결된 상담의 고객은 변경할 수 없습니다."
+            };
+        }
+
+        // 실제 저장 전에 고객 정보 검증
+        const customerCandidate = customerToAdd || customerToUpdate;
+
+        if (customerCandidate) {
+            const managerResult = validateCustomerEmployee(customerCandidate);
+
+            if (!managerResult.ok) return managerResult;
+
+            const customerResult = validateCustomerData(
+                customerCandidate,
+                customerData.customers,
+                customerToUpdate?.id ?? null
+            );
+
+            if (!customerResult.ok) return customerResult;
+        }
+
+        // 신규 고객 생성이 아닌 경우 기존 고객 FK 검증
+        if (!customerToAdd) {
+            const customerResult = validateConsultationCustomer({
+                customerId
+            });
+
+            if (!customerResult.ok) return customerResult;
+        }
+
+        // 신규 고객 생성
+        if (customerToAdd) {
+            const result = addCustomer(customerToAdd);
+
+            if (!result.ok) return result;
+
+            customerId = result.id;
+        }
+
+        const consultationToSave = {
+            ...editData,
+            customerId
+        };
+
+        const result = saveConsultationRecord(
+            consultationToSave,
+            original,
+            customerToAdd ? customerId : null
+        );
+
+        if (!result.ok) return result;
+
+        // 상담 저장 성공 후 기존 고객 정보 반영
+        if (customerToUpdate) {
+            const customerResult = saveEditedCustomer(customerToUpdate);
+
+            if (!customerResult.ok) return customerResult;
+        }
+
+        return {
+            ok: true,
+            customerAction
+        };
+    };
 
     const deleteConsultations = (ids) => {
 
@@ -294,106 +662,6 @@ export function ERPProvider({ children }) {
         }
 
         return customerData.deleteCustomers(ids);
-    };
-
-    const validateConsultationEmployee = (consultation, original = null) => {
-
-        const status = consultation.status || "문의 접수";
-        const employeeId = consultation.employeeId;
-
-        // 담당자가 반드시 필요한 상태
-        const requiresEmployee = [
-            "처리 중",
-            "견적 요청",
-            "문의 종료"
-        ].includes(status);
-
-        // 담당자 미배정 검사
-        if (employeeId == null || employeeId === "") {
-            if (requiresEmployee) {
-                return {
-                    ok: false,
-                    message: "담당자를 지정해주세요."
-                };
-            }
-
-            return { ok: true };
-        }
-
-        // 담당 직원 존재 확인
-        const employee = employeeData.employees.find(
-            e => e.id === employeeId
-        );
-
-        if (!employee) {
-            return {
-                ok: false,
-                message: "존재하지 않는 담당자입니다."
-            };
-        }
-
-        // 종료된 상담의 기존 담당자 기록은 유지 허용
-        const keepEmployee =
-            original &&
-            ["문의 종료", "인계 완료"].includes(original.status) &&
-            ["문의 종료", "인계 완료"].includes(status) &&
-            original.employeeId === employeeId;
-
-        if (
-            !keepEmployee &&
-            (
-                employee.status !== "재직" ||
-                employee.department !== "영업팀"
-            )
-        ) {
-            return {
-                ok: false,
-                message: "재직 중인 영업팀 직원만 담당자로 지정할 수 있습니다."
-            };
-        }
-
-        return { ok: true };
-    };
-
-    const addConsultation = (newConsultation) => {
-
-        const result = validateConsultationEmployee(newConsultation);
-
-        if (!result.ok) {
-            return result;
-        }
-
-        return consultationData.addConsultation(newConsultation);
-    };
-
-    const updateConsultation = (updatedConsultation) => {
-
-        const original = consultationData.consultations.find(
-            c => c.id === updatedConsultation.id
-        );
-
-        if (!original) {
-            return {
-                ok: false,
-                message: "존재하지 않는 상담입니다."
-            };
-        }
-
-        const mergedConsultation = {
-            ...original,
-            ...updatedConsultation
-        };
-
-        const result = validateConsultationEmployee(
-            mergedConsultation,
-            original
-        );
-
-        if (!result.ok) {
-            return result;
-        }
-
-        return consultationData.updateConsultation(mergedConsultation);
     };
 
     const updateEmployee = (updatedEmployee) => {
@@ -1582,6 +1850,7 @@ export function ERPProvider({ children }) {
             resetDashboardData();
 
             authData.logout();
+            sessionStorage.removeItem("homepage_master");
 
             return { ok: true };
 
@@ -1612,6 +1881,7 @@ export function ERPProvider({ children }) {
             validateConsultationEmployee,
             addConsultation,
             updateConsultation,
+            saveConsultationWithCustomer,
             deleteConsultations,
 
             addCustomer,

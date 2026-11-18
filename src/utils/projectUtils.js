@@ -1,4 +1,4 @@
-import { isValidDate } from "./dateUtils";
+import { isValidDate } from "./validationUtils";
 import { TASK_TYPES } from "./taskUtils";
 
 export const PROJECT_STATUSES = [
