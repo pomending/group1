@@ -108,6 +108,7 @@
   background: #FFFFFF;
   min-width: 0;
 }
+.pd-app .pd-panel { container-type: inline-size; }
 .pd-app button.pd-stat {
   width: 100%;
   color: inherit;
@@ -182,6 +183,15 @@
 }
 .pd-app .pd-filters > .pd-button {
   flex: 0 0 auto;
+}
+/* 좁은 창: 단가 입력칸은 넓게, 두 버튼은 다음 줄 왼쪽에 붙여 배치 */
+@container (max-width: 1100px) {
+  .pd-app .pd-filters { display: flex; flex-wrap: wrap; gap: 10px; }
+  .pd-app .pd-filters > label:first-child { flex: 0 0 calc(62% - 5px); }
+  .pd-app .pd-filters > label:nth-child(2) { flex: 0 0 calc(38% - 5px); }
+  .pd-app .pd-filters > label:nth-child(3),
+  .pd-app .pd-filters > label:nth-child(4) { flex: 0 0 calc(50% - 5px); }
+  .pd-app .pd-filters > .pd-button { flex: 0 0 auto; }
 }
 .pd-app input, .pd-app select {
   width: 100%;
@@ -331,6 +341,12 @@
   aspect-ratio: 5 / 3;
   object-fit: contain;
   margin-bottom: 8px;
+}
+.pd-app .pd-image-option span {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
 }
 .pd-app .pd-product-image {
   display: flex;
@@ -528,7 +544,7 @@
       flex-basis: 100%;
   }
   .pd-app .pd-filters > .pd-button {
-      flex: 1 1 auto;
+      flex: 0 0 auto;
   }
   .pd-app .pd-stats {
       gap: 8px;
