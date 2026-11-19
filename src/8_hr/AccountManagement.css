@@ -912,3 +912,41 @@
 }
 .am-page .am-form-note { background: #FBFAFE; border-color: #E6E1F0; }
 .am-page .am-account-summary { background: #F8F6FC; }
+
+/* 공통 PageHeader 사용: HR 헤더와 버튼의 높이를 통일한다. */
+.am-page .erp-page-header { margin-bottom: 24px; }
+.am-page .am-create-trigger { min-height: 42px; }
+
+/* 세부 작업 관리와 같은 클릭형 통계 카드 */
+.am-page .am-stat-card {
+  appearance: none;
+  width: 100%;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color .2s, border-color .2s;
+}
+.am-page .am-stat-card:hover {
+  background: #F8F6FD;
+  border-color: #C8C0E5;
+}
+.am-page .am-stat-card.active {
+  background: #F0EDFA;
+  border: 2px solid #68619A;
+  padding: 18px 20px; /* 기본 1px 테두리와 높이를 동일하게 유지 */
+}
+.am-page .am-stat-card:focus-visible {
+  outline: 2px solid #68619A;
+  outline-offset: 3px;
+}
+.am-page .am-stat-value { margin: 7px 0 0; }
+.am-page .am-stat-unit {
+  margin-left: 6px;
+  font-size: 13px;
+  font-weight: 400;
+  color: #827A98;
+}
+@media (max-width: 640px) {
+  .am-page .erp-page-header-actions { width: 100%; }
+  .am-page .am-stat-card.active { padding: 13px 10px; }
+}

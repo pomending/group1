@@ -4,7 +4,7 @@ import { useState } from "react";
 import "./ChangePasswordPage.css";
 
 function ChangePasswordPage() {
-    const { currentUser, changePassword } = useERP();
+    const { currentUser, changePassword, logout } = useERP();
     const navi = useNavigate();
     const [prevPwd, setPrevPwd] = useState("");
     const [nextPwd1, setNextPwd1] = useState("");
@@ -94,6 +94,16 @@ function ChangePasswordPage() {
 
                         <p className="cp-note">새 비밀번호는 현재 비밀번호와 다르게 설정해주세요.</p>
                         <button className="cp-submit" type="submit">비밀번호 변경 완료</button>
+                        <button
+                            className="cp-back-to-login"
+                            type="button"
+                            onClick={() => {
+                                logout();
+                                navi("/login", { replace: true });
+                            }}
+                        >
+                            로그인 화면으로 돌아가기
+                        </button>
                     </form>
                 </section>
 
