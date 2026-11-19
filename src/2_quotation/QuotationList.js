@@ -227,59 +227,33 @@ function QuotationList() {
             )}
 
 
-            {/* 견적 현황 */}
+            {/* 견적 현황: 상태 카드를 클릭하면 목록에 상태 필터를 적용한다. */}
             <section className="quotation-status">
-
                 <div className="quotation-summary">
-                    <div
-                        className="summary-card"
-                        onClick={() => {
-                            setSelectedCard("전체 상태")
-                            setCurrentPage(1)
-                        }}>
-                        <p>전체 견적 수</p>
-                        <h2 className="total-count">
-                            {quotations.filter(q => q.status !== "임시 저장").length}건
-                        </h2>
-                    </div>
-
-                    <div
-                        className="summary-card"
-                        onClick={() => {
-                            setSelectedCard("승인 대기")
-                            setCurrentPage(1)
-                        }}>
-                        <p>승인 대기</p>
-                        <h2 className="pending-count">
-                            {quotations.filter(q => q.status === "승인 대기").length}건
-                        </h2>
-                    </div>
-
-                    <div
-                        className="summary-card"
-                        onClick={() => {
-                            setSelectedCard("승인 완료")
-                            setCurrentPage(1)
-                        }}>
-                        <p>승인 완료</p>
-                        <h2 className="approved-count">
-                            {quotations.filter(q => q.status === "승인 완료").length}건
-                        </h2>
-                    </div>
-
-                    <div
-                        className="summary-card"
-                        onClick={() => {
-                            setSelectedCard("반려")
-                            setCurrentPage(1)
-                        }}>
-                        <p>반려</p>
-                        <h2 className="rejected-count">
-                            {quotations.filter(q => q.status === "반려").length}건
-                        </h2>
-                    </div>
+                    {[
+                        { label: "전체 견적 수", status: "전체 상태", count: quotations.filter(q => q.status !== "임시 저장").length },
+                        { label: "승인 대기", status: "승인 대기", count: quotations.filter(q => q.status === "승인 대기").length },
+                        { label: "승인 완료", status: "승인 완료", count: quotations.filter(q => q.status === "승인 완료").length },
+                        { label: "반려", status: "반려", count: quotations.filter(q => q.status === "반려").length }
+                    ].map(card => (
+                        <button
+                            type="button"
+                            key={card.status}
+                            className={`summary-card ${selectedCard === card.status ? "active" : ""}`}
+                            onClick={() => {
+                                setSelectedCard(card.status);
+                                setCurrentPage(1);
+                            }}
+                            aria-pressed={selectedCard === card.status}
+                        >
+                            <span className="quotation-stat-label">{card.label}</span>
+                            <strong className="quotation-stat-value">
+                                {card.count}<small className="quotation-stat-unit">건</small>
+                            </strong>
+                        </button>
+                    ))}
                 </div>
-            </section >
+            </section>
 
             {/* 견적 목록 */}
             < section className="recent-quotation" >

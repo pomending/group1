@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useERP } from "../context/ERPContext";
-import { ACCOUNT_ROLES, ENABLE_STATUS } from "../utils/accountUtils";
+import { ACCOUNT_ROLES } from "../utils/accountUtils";
+import PageHeader from "../components/PageHeader";
 import "./AccountManagement.css";
 
 function AccountManagement() {
@@ -80,42 +81,46 @@ function AccountManagement() {
     return (
         <div className="am-page">
             <div className="am-shell">
-                <header className="am-header">
-                    <div>
-                        <p className="am-eyebrow">ACCOUNT MANAGEMENT</p>
-                        <h1>계정 관리</h1>
-                        <p className="am-muted">직원 계정의 발급, 권한 및 사용 상태를 관리합니다.</p>
-                    </div>
-                    <button
-                        type="button"
-                        className="am-btn am-btn-primary am-create-trigger"
-                        onClick={() => {
-                            setSelectedEmployeeId(eligibleEmployees[0]?.id ?? "");
-                            setSelectedRole("EMPLOYEE");
-                            setAccountCreateMode(!accountCreateMode);
-                            setSelectedAccountId(null);
-                        }}
-                    >
-                        <span aria-hidden="true" className="am-plus">+</span> 계정 발급
-                    </button>
-                </header>
+                <PageHeader
+                    eyebrow="ACCOUNT MANAGEMENT"
+                    title="계정 관리"
+                    description="직원 계정의 발급, 권한 및 사용 상태를 관리합니다."
+                    actions={
+                        <button
+                            type="button"
+                            className="am-btn am-btn-primary am-create-trigger"
+                            onClick={() => {
+                                setSelectedEmployeeId(eligibleEmployees[0]?.id ?? "");
+                                setSelectedRole("EMPLOYEE");
+                                setAccountCreateMode(!accountCreateMode);
+                                setSelectedAccountId(null);
+                            }}
+                        >
+                            <span aria-hidden="true" className="am-plus">+</span> 계정 발급
+                        </button>
+                    }
+                />
 
+                {/* 계정 현황 카드를 선택하면 목록을 계정 상태로 필터링한다. */}
                 <section className="am-stats" aria-label="계정 현황">
-                    <div className="am-stat-card">
-                        <span className="am-stat-label">전체 계정</span>
-                        <strong className="am-stat-value">{accounts.length}</strong>
-                        <span className="am-stat-hint">등록된 ERP 계정</span>
-                    </div>
-                    <div className="am-stat-card">
-                        <span className="am-stat-label">활성 계정</span>
-                        <strong className="am-stat-value">{accounts.filter(a => a.status === "활성").length}</strong>
-                        <span className="am-stat-hint">사용 가능한 계정</span>
-                    </div>
-                    <div className="am-stat-card">
-                        <span className="am-stat-label">비활성 계정</span>
-                        <strong className="am-stat-value">{accounts.filter(a => a.status === "비활성").length}</strong>
-                        <span className="am-stat-hint">사용이 중지된 계정</span>
-                    </div>
+                    {[
+                        { label: "전체 계정", status: "", count: accounts.length },
+                        { label: "활성 계정", status: "활성", count: accounts.filter(a => a.status === "활성").length },
+                        { label: "비활성 계정", status: "비활성", count: accounts.filter(a => a.status === "비활성").length }
+                    ].map(card => (
+                        <button
+                            type="button"
+                            key={card.status || "all"}
+                            className={`am-stat-card ${searchStatus === card.status ? "active" : ""}`}
+                            onClick={() => setSearchStatus(card.status)}
+                            aria-pressed={searchStatus === card.status}
+                        >
+                            <span className="am-stat-label">{card.label}</span>
+                            <strong className="am-stat-value">
+                                {card.count}<small className="am-stat-unit">개</small>
+                            </strong>
+                        </button>
+                    ))}
                 </section>
 
                 <section className="am-panel am-list-panel">
@@ -150,17 +155,6 @@ function AccountManagement() {
                             <option value="">모든 권한</option>
                             {ACCOUNT_ROLES.map(role => (
                                 <option key={role} value={role}>{role}</option>
-                            ))}
-                        </select>
-                        <select
-                            className="am-control am-filter-select"
-                            aria-label="계정 상태 필터"
-                            value={searchStatus}
-                            onChange={(e) => setSearchStatus(e.target.value)}
-                        >
-                            <option value="">모든 상태</option>
-                            {ENABLE_STATUS.map(status => (
-                                <option key={status} value={status}>{status}</option>
                             ))}
                         </select>
                     </div>

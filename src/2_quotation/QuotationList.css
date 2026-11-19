@@ -675,3 +675,51 @@
     background-color: #f97316;
     flex-shrink: 0;
 }
+
+/* 클릭형 견적 통계 카드: 세부 작업 관리와 같은 버튼·선택 강조 */
+.quotation-menu .quotation-summary .summary-card {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+    width: 100%;
+    appearance: none;
+    font-family: inherit;
+    text-align: left;
+    cursor: pointer;
+    transition: background-color .2s, border-color .2s;
+}
+.quotation-menu .quotation-summary .summary-card:hover {
+    background: #F8F6FD;
+    border-color: #C8C0E5;
+}
+.quotation-menu .quotation-summary .summary-card.active {
+    background: #F0EDFA;
+    border: 2px solid #68619A;
+    padding: 17px 21px; /* 1px 테두리 증가분 보정 */
+}
+.quotation-menu .quotation-summary .summary-card:focus-visible {
+    outline: 2px solid #68619A;
+    outline-offset: 3px;
+}
+.quotation-menu .quotation-summary .quotation-stat-label {
+    color: #827A98;
+    font-size: 14px;
+    font-weight: 600;
+}
+.quotation-menu .quotation-summary .quotation-stat-value {
+    color: #524B80;
+    font-size: 26px;
+    font-weight: 700;
+    line-height: 1.2;
+    font-variant-numeric: tabular-nums;
+}
+.quotation-menu .quotation-summary .quotation-stat-unit {
+    margin-left: 6px;
+    color: #827A98;
+    font-size: 13px;
+    font-weight: 400;
+}
+@media (max-width: 650px) {
+    .quotation-menu .quotation-summary .summary-card.active { padding: 15px; }
+}
