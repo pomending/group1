@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import PageHeader from "../components/PageHeader";
 import { Link, useNavigate } from "react-router-dom";
 import { useERP } from "../context/ERPContext";
 import "./Community.css";
@@ -18,8 +19,11 @@ function NoticePage({ posts }) {
 
     return (
         <div className="community">
-            <h1>공지사항</h1>
-            <p>사내 공지사항을 확인하는 공간입니다.</p>
+            <PageHeader
+                eyebrow="COMPANY NOTICES"
+                title="공지사항"
+                description="사내 공지사항을 확인하는 공간입니다."
+            />
             <div className="community-board">
                 <div className="community-top">
                     <h3>공지사항 목록</h3>

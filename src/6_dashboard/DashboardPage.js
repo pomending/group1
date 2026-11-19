@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import PageHeader from "../components/PageHeader";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useERP } from "../context/ERPContext";
 import { getProjectStatus } from "../utils/projectUtils";
@@ -102,7 +103,11 @@ function DashboardPage() {
 
     return (
         <div className="dashboard">
-            <h1>대시보드</h1>
+            <PageHeader
+                eyebrow="DASHBOARD"
+                title="대시보드"
+                description="프로젝트 현황과 사내 소식을 한눈에 확인합니다."
+            />
 
             {/* 중요공지: 최신 1건 */}
             <div className="dashboard-banner">

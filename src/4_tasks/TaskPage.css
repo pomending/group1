@@ -4,25 +4,6 @@
   min-height: 100vh;
 }
 
-/* 페이지 제목 */
-.task-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 25px;
-}
-
-.task-header h2 {
-  font-size: 24px;
-  margin: 0 0 8px;
-}
-
-.task-header p {
-  color: #888;
-  font-size: 14px;
-  margin: 0;
-}
-
 /* 작업 현황 카드 */
 .task-summary {
   display: grid;
@@ -131,226 +112,232 @@
 /* 반응형 */
 @media (max-width: 768px) {
   .task-summary {
-      grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(2, 1fr);
   }
 
   .task-list-container {
-      overflow-x: auto;
+    overflow-x: auto;
   }
 
   .task-table {
-      min-width: 650px;
+    min-width: 650px;
   }
 }
 
+.new-btn {
+  padding: 9px 14px;
+  background: #7565d8;
+  color: #fff;
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 1.4;
+  text-align: center;
+  border-radius: 8px;
+  border: 0;
+}
 
-
-.pm-heading-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; flex-shrink: 0; }
-.new-btn { padding:9px 14px; background:#7565d8; color: #fff; font:14px/1.4 Arial, sans-serif;
-  text-align: left; border-radius:8px; border:0px; text-align: center;}
-
-  .task-detail-page {
-    min-height: 100vh;
-    padding: 30px;
-    background: #f8f9fb;
+.task-detail-page {
+  min-height: 100vh;
+  padding: 30px;
+  background: #f8f9fb;
 }
 
 /* 상단 */
 .td-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 30px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
 }
 
 .td-eyebrow {
-    margin: 0 0 10px;
-    color: #7b8494;
-    font-size: 12px;
-    font-weight: 600;
-    letter-spacing: 1px;
+  margin: 0 0 10px;
+  color: #7b8494;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 1px;
 }
 
 .td-header h2 {
-    margin: 0 0 8px;
-    font-size: 25px;
-    color: #222;
+  margin: 0 0 8px;
+  font-size: 25px;
+  color: #222;
 }
 
 .td-header p:last-child {
-    margin: 0;
-    color: #888;
-    font-size: 14px;
+  margin: 0;
+  color: #888;
+  font-size: 14px;
 }
 
 .td-back-btn {
-    padding: 10px 16px;
-    border: 1px solid #ddd;
-    border-radius: 6px;
-    background: white;
-    color: #444;
-    cursor: pointer;
+  padding: 10px 16px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  background: white;
+  color: #444;
+  cursor: pointer;
 }
 
 .td-back-btn:hover {
-    background: #f1f3f5;
+  background: #f1f3f5;
 }
 
 /* 프로젝트 선택 */
 .td-select-box {
-    display: flex;
-    align-items: center;
-    gap: 20px;
-    padding: 22px;
-    margin-bottom: 25px;
-    background: white;
-    border: 1px solid #e8e8e8;
-    border-radius: 10px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 22px;
+  margin-bottom: 25px;
+  background: white;
+  border: 1px solid #e8e8e8;
+  border-radius: 10px;
 }
 
 .td-select-box label {
-    font-size: 15px;
-    font-weight: 600;
-    white-space: nowrap;
+  font-size: 15px;
+  font-weight: 600;
+  white-space: nowrap;
 }
 
 .td-select-box select {
-    width: 350px;
-    max-width: 100%;
-    padding: 12px;
-    border: 1px solid #ddd;
-    border-radius: 6px;
-    background: white;
-    font-size: 14px;
-    cursor: pointer;
+  width: 350px;
+  max-width: 100%;
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  background: white;
+  font-size: 14px;
+  cursor: pointer;
 }
 
 /* 선택 전 안내 */
 .td-empty {
-    padding: 80px 20px;
-    text-align: center;
-    background: white;
-    border: 1px solid #e8e8e8;
-    border-radius: 10px;
+  padding: 80px 20px;
+  text-align: center;
+  background: white;
+  border: 1px solid #e8e8e8;
+  border-radius: 10px;
 }
 
 .td-empty h3 {
-    margin-bottom: 10px;
-    color: #444;
+  margin-bottom: 10px;
+  color: #444;
 }
 
 .td-empty p {
-    color: #999;
-    font-size: 14px;
+  color: #999;
+  font-size: 14px;
 }
 
 /* 프로젝트 게시판 */
 .td-board {
-    background: white;
-    border: 1px solid #e8e8e8;
-    border-radius: 10px;
-    overflow: hidden;
+  background: white;
+  border: 1px solid #e8e8e8;
+  border-radius: 10px;
+  overflow: hidden;
 }
 
 .td-board-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 25px;
-    border-bottom: 1px solid #eee;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 25px;
+  border-bottom: 1px solid #eee;
 }
 
 .td-board-header span:first-child {
-    color: #888;
-    font-size: 12px;
+  color: #888;
+  font-size: 12px;
 }
 
 .td-board-header h3 {
-    margin: 8px 0 0;
-    font-size: 21px;
-    color: #222;
+  margin: 8px 0 0;
+  font-size: 21px;
+  color: #222;
 }
 
 /* 진행 상태 */
 .td-status {
-    padding: 7px 14px;
-    border-radius: 20px;
-    font-size: 12px;
-    font-weight: 600;
+  padding: 7px 14px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
 }
 
 .td-status.status-progress {
-    background: #e8f1ff;
-    color: #3478db;
+  background: #e8f1ff;
+  color: #3478db;
 }
 
 .td-status.status-waiting {
-    background: #fff3df;
-    color: #d99025;
+  background: #fff3df;
+  color: #d99025;
 }
 
 /* 상세정보 */
 .td-board-content {
-    padding: 25px;
+  padding: 25px;
 }
 
 .td-board-content h4 {
-    margin: 0 0 18px;
-    font-size: 17px;
+  margin: 0 0 18px;
+  font-size: 17px;
 }
 
 .td-table {
-    width: 100%;
-    border-collapse: collapse;
-    text-align: left;
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
 }
 
 .td-table th,
 .td-table td {
-    padding: 17px 15px;
-    border: 1px solid #eee;
-    font-size: 14px;
+  padding: 17px 15px;
+  border: 1px solid #eee;
+  font-size: 14px;
 }
 
 .td-table th {
-    width: 17%;
-    background: #f7f8fa;
-    color: #555;
-    font-weight: 600;
+  width: 17%;
+  background: #f7f8fa;
+  color: #555;
+  font-weight: 600;
 }
 
 .td-table td {
-    color: #444;
+  color: #444;
 }
 
 /* 반응형 */
 @media (max-width: 768px) {
-    .task-detail-page {
-        padding: 15px;
-    }
+  .task-detail-page {
+    padding: 15px;
+  }
 
-    .td-header {
-        align-items: flex-start;
-        gap: 15px;
-        flex-direction: column;
-    }
+  .td-header {
+    align-items: flex-start;
+    gap: 15px;
+    flex-direction: column;
+  }
 
-    .td-select-box {
-        align-items: flex-start;
-        flex-direction: column;
-    }
+  .td-select-box {
+    align-items: flex-start;
+    flex-direction: column;
+  }
 
-    .td-select-box select {
-        width: 100%;
-    }
+  .td-select-box select {
+    width: 100%;
+  }
 
-    .td-board-content {
-        overflow-x: auto;
-    }
+  .td-board-content {
+    overflow-x: auto;
+  }
 
-    .td-table {
-        min-width: 650px;
-    }
+  .td-table {
+    min-width: 650px;
+  }
 }
 
 
@@ -361,7 +348,7 @@
   margin-top: 0px;
 }
 
-.project-detail > div {
+.project-detail>div {
   flex: 1;
   min-width: 0;
 }
@@ -383,9 +370,9 @@
 }
 
 .save-btn {
-  float:right;
+  float: right;
   padding: 10px 20px;
-  margin:10px 0px;
+  margin: 10px 0px;
   background-color: #2563eb;
   color: #ffffff;
   border: none;
@@ -426,7 +413,7 @@
   justify-content: space-between;
   align-items: center;
   margin-bottom: 18px;
- 
+
 }
 
 .td-task-list-header h4 {
@@ -631,7 +618,8 @@
    MODU GOODS ERP · Tasks Mist Lavender theme
    Append-only overrides. Original structure intact.
    ============================================== */
-.task-page, .task-detail-page {
+.task-page,
+.task-detail-page {
   --task-bg: #F5F4FA;
   --task-surface: #FFFFFF;
   --task-line: #E6E1F0;
@@ -642,53 +630,80 @@
   background: var(--task-bg);
   color: var(--task-text);
 }
-.task-page .task-header h2, .task-detail-page .td-header h2,
-.task-page .task-list-header h3, .task-detail-page .td-board-header h3,
-.task-detail-page .td-board-content h4, .task-detail-page .td-task-list-header h4 {
+
+.task-detail-page .td-header h2,
+.task-page .task-list-header h3,
+.task-detail-page .td-board-header h3,
+.task-detail-page .td-board-content h4,
+.task-detail-page .td-task-list-header h4 {
   color: #39354F;
 }
-.task-page .task-header p, .task-detail-page .td-header p:last-child,
-.task-detail-page .td-eyebrow, .task-detail-page .td-board-header span:first-child {
+
+.task-detail-page .td-header p:last-child,
+.task-detail-page .td-eyebrow,
+.task-detail-page .td-board-header span:first-child {
   color: #827A98;
 }
+
 /* Cards: preserve original sizes and grid layout */
-.task-page .summary-card, .task-page .task-list-container,
-.task-detail-page .td-select-box, .task-detail-page .td-empty,
+.task-page .summary-card,
+.task-page .task-list-container,
+.task-detail-page .td-select-box,
+.task-detail-page .td-empty,
 .task-detail-page .td-board {
   background: #FFFFFF;
   border-color: #E6E1F0;
   border-radius: 12px;
-  box-shadow: 0 3px 12px rgba(65,55,95,.035);
+  box-shadow: 0 3px 12px rgba(65, 55, 95, .035);
 }
-.task-page .summary-card span { color: #827A98; }
-.task-page .summary-card strong { color: #524B80; }
+
+.task-page .summary-card span {
+  color: #827A98;
+}
+
+.task-page .summary-card strong {
+  color: #524B80;
+}
+
 .task-page .task-list-header select,
 .task-detail-page .td-select-box select,
 .task-detail-page .project-detail select,
 .task-detail-page .project-detail input,
-.task-detail-page .td-modal-field :is(input,select) {
+.task-detail-page .td-modal-field :is(input, select) {
   background: #FBFAFE;
   border-color: #DDD8EA;
   color: #39354F;
 }
+
 .task-page .task-list-header select:focus,
 .task-detail-page .td-select-box select:focus,
-.task-detail-page .project-detail :is(select,input):focus,
-.task-detail-page .td-modal-field :is(input,select):focus {
+.task-detail-page .project-detail :is(select, input):focus,
+.task-detail-page .td-modal-field :is(input, select):focus {
   outline: none;
   border-color: #9C91C8;
-  box-shadow: 0 0 0 3px rgba(156,145,200,.14);
+  box-shadow: 0 0 0 3px rgba(156, 145, 200, .14);
 }
-.task-page .task-table th, .task-detail-page .td-table th,
+
+.task-page .task-table th,
+.task-detail-page .td-table th,
 .task-detail-page .td-task-table th {
   background: #F1EFF8;
   color: #5D557A;
   border-color: #E6E1F0;
 }
-.task-page .task-table td, .task-detail-page .td-table td,
-.task-detail-page .td-task-table td { border-color: #EEEAF4; color: #49445F; }
+
+.task-page .task-table td,
+.task-detail-page .td-table td,
+.task-detail-page .td-task-table td {
+  border-color: #EEEAF4;
+  color: #49445F;
+}
+
 .task-page .task-table tbody tr:hover,
-.task-detail-page .td-task-table tbody tr:hover { background: #F8F6FD; }
+.task-detail-page .td-task-table tbody tr:hover {
+  background: #F8F6FD;
+}
+
 .task-page .new-btn,
 .task-detail-page .save-btn,
 .task-detail-page .td-modal-save {
@@ -697,23 +712,36 @@
   color: #FFFFFF;
   cursor: pointer;
 }
+
 .task-page .new-btn:hover,
 .task-detail-page .save-btn:hover,
-.task-detail-page .td-modal-save:hover { background: #575084; border-color: #575084; }
+.task-detail-page .td-modal-save:hover {
+  background: #575084;
+  border-color: #575084;
+}
+
 .task-detail-page .td-back-btn,
 .task-detail-page .td-modify-btn {
   border-color: #C8C0E5;
   background: #F0EDFA;
   color: #524B80;
 }
+
 .task-detail-page .td-back-btn:hover,
-.task-detail-page .td-modify-btn:hover { background: #E3DCF5; }
+.task-detail-page .td-modify-btn:hover {
+  background: #E3DCF5;
+}
+
 .task-detail-page .td-delete-btn {
   background: #F8EDEF;
   border-color: #E8C7CF;
   color: #A34E64;
 }
-.task-detail-page .td-delete-btn:hover { background: #F2DDE3; }
+
+.task-detail-page .td-delete-btn:hover {
+  background: #F2DDE3;
+}
+
 /* Status colors keep their distinct business meanings */
 .task-page .task-status.progress,
 .task-detail-page .td-status.status-progress,
@@ -721,21 +749,56 @@
   background: #F0EDFA;
   color: #524B80;
 }
-.task-page .task-status.complete { background: #E8F4ED; color: #28734E; }
+
+.task-page .task-status.complete {
+  background: #E8F4ED;
+  color: #28734E;
+}
+
 .task-page .task-status.waiting,
-.task-detail-page .td-status.status-waiting { background: #FFF1E5; color: #A95C22; }
+.task-detail-page .td-status.status-waiting {
+  background: #FFF1E5;
+  color: #A95C22;
+}
+
 /* Detail view and task-edit modal */
 .task-detail-page .td-board-header,
 .task-detail-page .td-task-list,
 .task-detail-page .td-modal-header,
-.task-detail-page .td-modal-footer { border-color: #E6E1F0; }
-.task-detail-page .td-modal-overlay { background: rgba(39,34,59,.38); }
-.task-detail-page .td-edit-modal { border: 1px solid #E6E1F0; background: #FFFFFF; }
-.task-detail-page .td-modal-header { background: #F5F4FA; }
-.task-detail-page .td-modal-header h3 { color: #39354F; }
-.task-detail-page .td-modal-field label { color: #55516C; }
-.task-detail-page .td-modal-cancel { background: #F0EDFA; border-color: #C8C0E5; color: #524B80; }
-.task-detail-page .td-modal-cancel:hover { background: #E3DCF5; }
+.task-detail-page .td-modal-footer {
+  border-color: #E6E1F0;
+}
+
+.task-detail-page .td-modal-overlay {
+  background: rgba(39, 34, 59, .38);
+}
+
+.task-detail-page .td-edit-modal {
+  border: 1px solid #E6E1F0;
+  background: #FFFFFF;
+}
+
+.task-detail-page .td-modal-header {
+  background: #F5F4FA;
+}
+
+.task-detail-page .td-modal-header h3 {
+  color: #39354F;
+}
+
+.task-detail-page .td-modal-field label {
+  color: #55516C;
+}
+
+.task-detail-page .td-modal-cancel {
+  background: #F0EDFA;
+  border-color: #C8C0E5;
+  color: #524B80;
+}
+
+.task-detail-page .td-modal-cancel:hover {
+  background: #E3DCF5;
+}
 
 
 
@@ -867,17 +930,17 @@
 
 @media (max-width: 600px) {
   .task-project-info {
-      flex-wrap: wrap;
-      gap: 8px;
+    flex-wrap: wrap;
+    gap: 8px;
   }
 
   .task-accordion-content {
-      padding: 10px;
+    padding: 10px;
   }
 
   .task-accordion-item,
   .task-accordion-label {
-      gap: 5px;
+    gap: 5px;
   }
 }
 

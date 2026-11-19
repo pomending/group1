@@ -1,6 +1,7 @@
 //고객 목록 및 관리(조회 등록 수정 삭제 페이지이동 엑셀다운로드)
 
 import React, { useState, useEffect } from "react";
+import PageHeader from "../components/PageHeader";
 //고객정보를 엑셀 파일로 생성하기 위한 라이브러리
 import ExcelJS from "exceljs";
 //생성된 엑셀 파일을 다운로드하기 위한 기능
@@ -162,13 +163,20 @@ function CustomerManagement() {
 
     return (
         <div className="crm-page">
-            <div className="crm-header">
-                <div>
-                    
-                    <h2>고객 관리</h2>
-                   
-                </div>
-            </div>
+            <PageHeader
+                eyebrow="CRM / CUSTOMER MANAGEMENT"
+                title="고객 관리"
+                description="고객사 정보 조회 및 관리"
+                actions={
+                    <button
+                        type="button"
+                        className="crm-btn-primary"
+                        onClick={() => setModal({ type: "register" })}
+                    >
+                        + 고객 등록
+                    </button>
+                }
+            />
 
             <div className="crm-summary">
                 <div className="crm-summary-card">
@@ -213,13 +221,6 @@ function CustomerManagement() {
                     <span>선택한 고객: {checkedIds.length}건</span>
 
                     <div className="crm-actions">
-                        <button
-                            className="crm-btn-primary"
-                            onClick={() => setModal({ type: "register" })}
-                        >
-                            + 고객 등록
-                        </button>
-
                         <button
                             className="crm-btn-secondary"
                             disabled={checkedIds.length !== 1}

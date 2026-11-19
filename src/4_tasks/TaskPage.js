@@ -6,6 +6,7 @@ import { TASK_PROGRESS, TASK_TYPES } from "../utils/taskUtils";
 import { formatProjectId } from "../utils/formatUtils";
 import NotFoundPage from "../components/NotFoundPage";
 import "./TaskPage.css";
+import PageHeader from "../components/PageHeader";
 
 function TaskList() {
     const [taskTypeFilter, setTaskTypeFilter] = useState("전체");
@@ -70,12 +71,11 @@ function TaskList() {
 
     return (
         <div className="task-page">
-            <div className="task-header">
-                <div>
-                    <h2>세부 작업 관리</h2>
-                  
-                </div>
-                <div className="pm-heading-actions">
+            <PageHeader
+                eyebrow="TASK MANAGEMENT"
+                title="세부 작업 관리"
+                description="프로젝트별 세부 작업과 진행 현황을 관리합니다."
+                actions={
                     <button
                         type="button"
                         className="new-btn"
@@ -83,8 +83,8 @@ function TaskList() {
                     >
                         + 세부상세 등록
                     </button>
-                </div>
-            </div>
+                }
+            />
 
             {/* 진행 상태 통계 카드를 누르면 목록에 해당 필터를 적용한다. */}
             <div className="task-summary">

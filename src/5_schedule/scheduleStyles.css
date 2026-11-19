@@ -73,7 +73,6 @@
  * justify-content:space-between은 양끝 배치, gap은 항목 사이 간격입니다.
  * display:grid + place-items:center 조합은 아이콘을 가로·세로 가운데에 놓습니다.
  */
-.sm-heading,
 .sm-calendar-head,
 .sm-month,
 .sm-panel-title,
@@ -86,29 +85,6 @@
   margin: -6px 0 14px;
   color: #d4505e;
   font-size: 12px;
-}
-.sm-heading {
-  gap: 12px;
-  margin-bottom: 16px;
-}
-.sm-eyebrow {
-  margin-bottom: 6px;
-  color: #5c7761;
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 2.5px;
-}
-.sm-heading h1 {
-  margin: 0;
-  font-size: clamp(30px, 3vw, 40px);
-  font-weight: 800;
-  letter-spacing: -1.8px;
-  line-height: 1.25;
-}
-.sm-heading p {
-  margin: 12px 0 0;
-  color: var(--sm-muted);
-  font-size: 13px;
 }
 .sm-btn {
   padding: 12px 18px;
@@ -164,7 +140,7 @@
   flex-shrink: 0;
   vertical-align: middle;
 }
-.sm-heading-actions button {
+.schedule-app .erp-page-header-actions button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1473,10 +1449,6 @@
   .sm-stats {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-  .sm-heading {
-    align-items: flex-start;
-    flex-direction: column;
-  }
   .sm-stat {
     gap: 8px;
     min-height: 136px;
@@ -2335,10 +2307,6 @@
   background: #f6f7fb;
   color: var(--sm-ink);
 }
-.schedule-app .sm-eyebrow {
-  color: #7565d8;
-}
-.schedule-app .sm-heading p,
 .schedule-app .sm-panel-title .sm-muted,
 .schedule-app .sm-muted {
   color: #657085;
@@ -2810,16 +2778,14 @@
  * 조회 버튼과 등록 버튼의 높이를 통일하고, 좁은 화면에서는 등록을 다음 줄 전체에 표시합니다.
  * 카드의 제목·시간·진행 상태는 유지하고 공유 구분과 전체 이름 안내는 낮은 강조로 구분합니다.
  */
-.schedule-app .sm-heading { align-items: flex-start; flex-wrap: wrap; gap: 20px; }
-.schedule-app .sm-heading > div:first-child { min-width: 0; }
-.schedule-app .sm-heading-actions {
+.schedule-app .erp-page-header-actions {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr)) auto;
   align-items: stretch;
   gap: 8px;
   min-width: 0;
 }
-.schedule-app .sm-heading-actions > button { min-height: 42px; margin: 0; padding: 10px 14px; }
+.schedule-app .erp-page-header-actions > button { min-height: 42px; margin: 0; padding: 10px 14px; }
 .schedule-app .sm-event-meta { justify-content: flex-start; gap: 6px; }
 .schedule-app .sm-event .sm-visibility { padding: 0; border-color: transparent; background: transparent; color: #657085; font-size: 10px; }
 .schedule-app .sm-event-full-title { margin-top: 2px; }
@@ -2832,11 +2798,11 @@
 .schedule-app .sm-form-actions { gap: 8px; margin-top: 8px; }
 .schedule-app .sm-form-actions > button { min-height: 40px; }
 @media (max-width: 900px) {
-  .schedule-app .sm-heading-actions { width: 100%; }
+  .schedule-app .erp-page-header-actions { width: 100%; }
 }
 @media (max-width: 480px) {
-  .schedule-app .sm-heading-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .schedule-app .sm-heading-actions > .sm-btn { grid-column: 1 / -1; }
+  .schedule-app .erp-page-header-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .schedule-app .erp-page-header-actions > .sm-btn { grid-column: 1 / -1; }
   .schedule-app .sm-form-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .schedule-app .sm-form-actions > button { width: 100%; min-width: 0; margin: 0; }
 }
@@ -2858,9 +2824,7 @@
 }
 .schedule-app .sm-directory-project-symbol,
 .schedule-app .sm-person-avatar { background: #F0EDFA; color: #524B80; }
-.schedule-app .sm-eyebrow,
 .schedule-app .sm-stat strong { color: #68619A; }
-.schedule-app .sm-heading p,
 .schedule-app .sm-muted { color: #827A98; }
 .schedule-app .sm-btn,
 .schedule-app .sm-agenda-item .sm-edit-btn { background: #68619A; border-color: #68619A; color: #FFFFFF; }
@@ -2996,10 +2960,9 @@
 }
 
 /* 상단은 제목·주요 버튼, 저장 상태, 필터 순서로 묶습니다. */
-.schedule-app .sm-heading { margin-bottom: 12px; gap: 16px; }
-.schedule-app .sm-heading h1 { font-size: 28px; line-height: 1.3; }
-.schedule-app .sm-heading p { margin-top: 6px; font-size: 13px; }
-.schedule-app .sm-heading-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+.schedule-app .erp-page-header-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
 .schedule-app .sm-display-info { display: flex; justify-content: flex-end; margin-bottom: 12px; color: #827A98; font-size: 12px; }
 .schedule-app .sm-display-info > p { margin: 0; font-size: 12px; }
 .schedule-app .sm-calendar-filters { align-items: center; }
+/* 일정 관리: 공통 헤더의 작업 버튼은 900px 이하에서 다음 줄로 배치합니다. */
+.schedule-app .erp-page-header { flex-wrap: wrap; }

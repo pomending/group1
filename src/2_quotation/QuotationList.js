@@ -1,5 +1,6 @@
 
 import React, { useState } from "react";
+import PageHeader from "../components/PageHeader";
 import { useLocation, useNavigate } from "react-router-dom";
 import "./QuotationList.css";
 import { getQuotationPriceDetails, totalPrice } from "../utils/quotationUtils";
@@ -191,23 +192,28 @@ function QuotationList() {
                 </div>
             )}
 
-            <header className="quotation-header">
-                <h1>견적 관리</h1>
-                
-
-                <button onClick={() => setShowTempModel(true)}>
-                    임시 저장(
-                    {quotations.filter(q => q.status === "임시 저장").length}
-                    )
-                </button>
-
-
-
-                <input
-                    type="button"
-                    value="+ 새 견적 작성"
-                    onClick={() => navi("/quotation/create")} />
-            </header>
+            <PageHeader
+                eyebrow="QUOTATION MANAGEMENT"
+                title="견적 관리"
+                description="고객 주문에 대한 견적서 작성 및 승인 상태를 관리합니다."
+                actions={
+                    <>
+                        <button
+                            type="button"
+                            className="quotation-temp-btn"
+                            onClick={() => setShowTempModel(true)}
+                        >
+                            임시 저장({quotations.filter(q => q.status === "임시 저장").length})
+                        </button>
+                        <input
+                            type="button"
+                            className="quotation-new-btn"
+                            value="+ 새 견적 작성"
+                            onClick={() => navi("/quotation/create")}
+                        />
+                    </>
+                }
+            />
 
 
             {/* 미완료 견적 요청 알림 */}
