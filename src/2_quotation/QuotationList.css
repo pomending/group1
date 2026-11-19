@@ -21,101 +21,37 @@
     box-sizing: border-box;
 }
 
-/* 2. 상단 헤더 */
-
-/* 제목과 설명을 왼쪽에, 작업 버튼을 오른쪽에 모아 배치 */
-.quotation-menu .quotation-header {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto auto;
-    grid-template-rows: auto auto;
-    align-items: center;
-    column-gap: 10px;
-    row-gap: 5px;
-    margin-bottom: 22px;
-}
-
-.quotation-menu .quotation-header h1 {
-    grid-column: 1;
-    grid-row: 1;
-}
-
-.quotation-menu .quotation-header p {
-    grid-column: 1;
-    grid-row: 2;
-}
-
-.quotation-menu .quotation-header>button {
-    grid-column: 2;
-    grid-row: 1 / 3;
-}
-
-.quotation-menu .quotation-header>input[type="button"] {
-    grid-column: 3;
-    grid-row: 1 / 3;
-}
-
-.quotation-menu .quotation-header h1 {
-    margin: 0;
-    color: #39354F;
-    font-size: 26px;
-    font-weight: 700;
-    white-space: nowrap;
-    word-break: keep-all;
-}
-
-.quotation-menu .quotation-header p {
-    margin: 0;
-    color: #827A98;
-    font-size: 14px;
-}
-
-/* 새 견적 작성 버튼 */
-
-.quotation-menu .quotation-header input[type="button"] {
-    height: 43px;
-    padding: 0 20px;
-    background: #68619A;
-    color: #FFFFFF;
-    border: 1px solid #68619A;
-    border-radius: 8px;
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background 0.2s, border-color 0.2s;
-}
-
-.quotation-menu .quotation-header input[type="button"]:hover {
-    background: #575084;
-    border-color: #575084;
-}
-
-/* 임시저장 버튼 */
-
-.quotation-menu .quotation-header button {
-    padding: 10px 16px;
-    background: #F0EDFA;
-    color: #524B80;
-    border: 1px solid #C8C0E5;
-    border-radius: 8px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background 0.2s;
-}
-
-.quotation-menu .quotation-header button:hover {
-    background: #E3DCF5;
-}
-
-/* 헤더 버튼 크기 통일 */
-.quotation-menu .quotation-header>button,
-.quotation-menu .quotation-header>input[type="button"] {
+/* 2. 상단 헤더: 레이아웃과 글꼴은 PageHeader.css에서 관리 */
+.quotation-menu .quotation-temp-btn,
+.quotation-menu .quotation-new-btn {
     height: 40px;
     min-width: 118px;
     padding: 0 16px;
     border-radius: 8px;
+    font-family: inherit;
     font-size: 13px;
     font-weight: 600;
     white-space: nowrap;
+    cursor: pointer;
+}
+
+.quotation-menu .quotation-temp-btn {
+    background: #F0EDFA;
+    color: #524B80;
+    border: 1px solid #C8C0E5;
+    transition: background 0.2s;
+}
+.quotation-menu .quotation-temp-btn:hover { background: #E3DCF5; }
+
+.quotation-menu .quotation-new-btn {
+    background: #68619A;
+    color: #FFFFFF;
+    border: 1px solid #68619A;
+    transition: background 0.2s, border-color 0.2s;
+}
+.quotation-menu .quotation-new-btn:hover {
+    background: #575084;
+    border-color: #575084;
 }
 
 /* 3. 견적 목록 안의 검색 영역 */
@@ -636,26 +572,11 @@
 
 @media (max-width: 800px) {
 
-    /* 작업 버튼을 제목 아래 같은 줄에 배치 */
-    .quotation-menu .quotation-header {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        row-gap: 10px;
-    }
-
-    .quotation-menu .quotation-header h1,
-    .quotation-menu .quotation-header p {
-        grid-column: 1 / -1;
-    }
-
-    .quotation-menu .quotation-header>button {
-        grid-column: 1;
-        grid-row: 3;
-    }
-
-    .quotation-menu .quotation-header>input[type="button"] {
-        grid-column: 2;
-        grid-row: 3;
-    }
+    /* 견적 화면은 800px 이하에서 두 작업 버튼을 제목 아래에 배치합니다. */
+    .quotation-menu .erp-page-header { flex-direction: column; align-items: flex-start; gap: 12px; }
+    .quotation-menu .erp-page-header-actions { width: 100%; gap: 10px; }
+    .quotation-menu .quotation-temp-btn,
+    .quotation-menu .quotation-new-btn { flex: 1; min-width: 0; }
 
     .quotation-menu .quotation-status .quotation-summary {
         grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -672,20 +593,6 @@
 
     .quotation-menu {
         padding: 16px;
-    }
-
-    .quotation-menu .quotation-header {
-        gap: 10px;
-    }
-
-    .quotation-menu .quotation-header>button,
-    .quotation-menu .quotation-header>input[type="button"] {
-        width: 100%;
-        min-width: 0;
-    }
-
-    .quotation-menu .quotation-header h1 {
-        font-size: 23px;
     }
 
     .quotation-menu .quotation-search {

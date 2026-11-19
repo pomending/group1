@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useERP } from "../context/ERPContext";
 import { getDeadlineStatus, getProjectProgress, getProjectStatus } from "../utils/projectUtils";
+import PageHeader from "../components/PageHeader";
 
 function ProjectList(props) {
 
@@ -94,23 +95,19 @@ function ProjectList(props) {
         <div className="project-app pj-page">
             <div className="pm-shell pj-container">
 
-                {/* 페이지 제목 */}
-                <div className="pm-heading">
-                    <div>
-                        
-                        <h2>프로젝트 관리</h2>
-                        
-                    </div>
-
-                    <div className="pm-heading-actions">
+                <PageHeader
+                    eyebrow="PROJECT MANAGEMENT"
+                    title="프로젝트 관리"
+                    description="프로젝트 진행 현황과 일정을 관리합니다."
+                    actions={
                         <button
                             className="pm-btn pj-btn pj-primary"
-                            onClick={() => props.setPage('newproject')}
+                            onClick={() => props.setPage("newproject")}
                         >
                             + 새 프로젝트
                         </button>
-                    </div>
-                </div>
+                    }
+                />
 
                 <h3 className="pm-pending-banner">
                     프로젝트 생성 대기 견적 {pendingCount}건

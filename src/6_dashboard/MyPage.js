@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import PageHeader from "../components/PageHeader";
 import { useERP } from "../context/ERPContext";
 import { initialAccounts } from "../data/mockAccounts";
 import { initialEmployees } from "../data/mockData";
@@ -188,7 +189,11 @@ function MyPage() {
     if (!employee) {
         return (
             <main className="mypage">
-                <h1 className="mypage-title">마이페이지</h1>
+                <PageHeader
+                    eyebrow="MY PAGE"
+                    title="마이페이지"
+                    description="내 정보와 계정 설정을 관리합니다."
+                />
                 <div className="mypage-card">
                     로그인한 계정의 직원 정보를 찾을 수 없습니다.
                 </div>
@@ -197,7 +202,11 @@ function MyPage() {
     }
     return (
         <main className="mypage">
-            <h1 className="mypage-title">마이페이지</h1>
+            <PageHeader
+                    eyebrow="MY PAGE"
+                    title="마이페이지"
+                    description="내 정보와 계정 설정을 관리합니다."
+                />
             <div className="mypage-card">
                 <form onSubmit={saveInfo}>
                     {/* 상단 프로필 */}

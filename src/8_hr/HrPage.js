@@ -6,6 +6,7 @@ import EmployeeDetail from "./EmployeeDetail";
 import "./HrPage.css";
 import { departmentNames } from "../utils/employeeUtils";
 import { useNavigate } from "react-router-dom";
+import PageHeader from "../components/PageHeader";
 
 export default function HrPage() {
 
@@ -61,14 +62,12 @@ export default function HrPage() {
     return (
         <div className="hr-app">
             <main className="hr-shell">
-                <header className="hr-page-heading">
-                    <div>
-                        <p className="hr-eyebrow">HUMAN RESOURCES MANAGEMENT</p>
-                        <h1>인적자원 관리</h1>
-                        <p className="hr-muted">직원 정보 및 부서별 인원 현황을 관리합니다.</p>
-                    </div>
-                    <div className="hr-heading-actions">
-                        {page === "list" ? (
+                <PageHeader
+                    eyebrow="HUMAN RESOURCES MANAGEMENT"
+                    title="인적자원 관리"
+                    description="직원 정보 및 부서별 인원 현황을 관리합니다."
+                    actions={
+                        page === "list" ? (
                             <>
                                 {currentUser?.role === "ADMIN" && (
                                     <button
@@ -79,13 +78,26 @@ export default function HrPage() {
                                         계정 관리
                                     </button>
                                 )}
-                                <button type="button" className="hr-btn hr-btn-primary" onClick={() => setPage("new")}>+ 직원 등록</button>
+
+                                <button
+                                    type="button"
+                                    className="hr-btn hr-btn-primary"
+                                    onClick={() => setPage("new")}
+                                >
+                                    + 직원 등록
+                                </button>
                             </>
                         ) : (
-                            <button type="button" className="hr-btn hr-btn-ghost" onClick={() => setPage("list")}>← 직원 목록</button>
-                        )}
-                    </div>
-                </header>
+                            <button
+                                type="button"
+                                className="hr-btn hr-btn-ghost"
+                                onClick={() => setPage("list")}
+                            >
+                                ← 직원 목록
+                            </button>
+                        )
+                    }
+                />
 
                 {page === "list" && (
                     <>

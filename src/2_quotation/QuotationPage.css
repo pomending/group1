@@ -21,28 +21,6 @@
 }
 
 /* =========================================
-   상단 제목
-========================================= */
-
-.quotation-menu .quotation-header {
-    margin-bottom: 24px;
-}
-
-.quotation-menu .quotation-header h1 {
-    margin: 0 0 10px;
-    color: #39354F;
-    font-size: 26px;
-    font-weight: 700;
-}
-
-.quotation-menu .quotation-header p {
-    margin: 0;
-    color: #79738A;
-    font-size: 13px;
-    line-height: 1.6;
-}
-
-/* =========================================
    현황 카드
 ========================================= */
 

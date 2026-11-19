@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import PageHeader from "../components/PageHeader";
 import "./02_ConsultationManagement.css";
 import { useERP } from "../context/ERPContext";
 import { validateDuplicateConsultation, validateConsultationForm } from "../utils/consultationUtils";
@@ -154,10 +155,14 @@ function ConsultationManagement() {
 
     return (
         <div className="consultation-page">
-            <h2>상담 관리</h2>
+            <PageHeader
+                eyebrow="CONSULTATION MANAGEMENT"
+                title="상담 관리"
+                description="고객 문의 접수 및 처리 현황을 관리합니다."
+            />
             <h3>미완료 클레임 {pendingCount}건</h3>
             <div className="consultation-box">
-               
+                <h6>고객 문의 접수 및 처리 현황 관리</h6>
 
                 <h4>문의 등록/수정
                     <span>

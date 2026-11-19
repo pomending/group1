@@ -1,5 +1,6 @@
 
 import React, { useState } from "react";
+import PageHeader from "../components/PageHeader";
 import { Link, useNavigate } from "react-router-dom";
 import { useERP } from "../context/ERPContext";
 import "./Community.css";
@@ -19,8 +20,11 @@ function CommunityPage({ posts }) {
 
     return (
         <div className="community">
-            <h1>사내 커뮤니티</h1>
-            <p>직원들과 자유롭게 소통하는 공간입니다.</p>
+            <PageHeader
+                eyebrow="INTERNAL COMMUNITY"
+                title="사내 커뮤니티"
+                description="직원들과 자유롭게 소통하는 공간입니다."
+            />
             <div className="community-board">
                 <div className="community-top">
                     <h3>게시글 목록</h3>

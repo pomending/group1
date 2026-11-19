@@ -19,15 +19,6 @@
     box-sizing: border-box;
 }
 
-/* 페이지 제목 */
-.consultation-page h2 {
-    order: 0;
-    float: none;
-    margin: 0 0 22px;
-    color: #39354F;
-    font-size: 26px;
-    font-weight: 700;
-}
 
 /* 미완료 클레임 현황 */
 .consultation-page > h3 {
@@ -480,10 +471,6 @@
         padding: 18px 14px 28px;
     }
 
-    .consultation-page h2 {
-        float: none;
-        font-size: 22px;
-    }
 
     .consultation-page > h3 {
         float: none;

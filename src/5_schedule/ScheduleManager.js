@@ -8,6 +8,7 @@
 
 /* 일정 화면의 상태와 사용자 동작을 연결합니다. */
 import React, { useEffect, useRef, useState } from "react";
+import PageHeader from "../components/PageHeader";
 import { useScheduleClock, useScheduleHolidays, useScheduleStorage, useScheduleTeam, useScheduleDraft } from "./scheduleHooks";
 import { loadSchedules } from "./scheduleStorage";
 import { createProjectMilestones, createTaskMilestones, resolveScheduleProject, getScheduleProjectWarning, getScheduleEmployeeWarning, createQuotationMilestones, matchesScheduleStaff, matchesScheduleEmployee, isPrivateSchedule, canViewSchedule } from "./ScheduleProjectBridge";
@@ -883,23 +884,23 @@ function ScheduleManagerContent({ erp, currentEmployee, accountKey }) {
           <button type="button" onClick={() => { const date = reminderNotice.date; setReminderNotice(null); showCurrentPeriod("daily", date); focusCalendar(); }}>일정 보기</button>
           <button type="button" aria-label="알림 닫기" onClick={() => setReminderNotice(null)}>닫기</button>
         </aside>}
-        <section className="sm-heading">
-          <div>
-            
-            <h1>일정 관리</h1>
-            
-          </div>
-          <div className="sm-heading-actions">
-            <button className="sm-secondary-btn" aria-label="오늘의 작업 일별 보기" onClick={() => showCurrentPeriod("daily")}>오늘 일정 {todayWorkCount}건</button>
-            <button className="sm-secondary-btn" onClick={() => showScheduleList()}>
-              <ScheduleIcon name="calendar" />
-              전체 일정 ({accountItems.length})
-            </button>
-            <button className="sm-btn" onClick={() => openScheduleForm()}>
-              <ScheduleIcon name="plus" /> 일정 등록
-            </button>
-          </div>
-        </section>
+        <PageHeader
+          eyebrow="TEAM PLANNER"
+          title="일정 관리"
+          description="함께 만드는 프로젝트, 한눈에 이어지는 팀의 일정."
+          actions={
+            <>
+              <button className="sm-secondary-btn" aria-label="오늘의 작업 일별 보기" onClick={() => showCurrentPeriod("daily")}>오늘 일정 {todayWorkCount}건</button>
+              <button className="sm-secondary-btn" onClick={() => showScheduleList()}>
+                <ScheduleIcon name="calendar" />
+                전체 일정 ({accountItems.length})
+              </button>
+              <button className="sm-btn" onClick={() => openScheduleForm()}>
+                <ScheduleIcon name="plus" /> 일정 등록
+              </button>
+            </>
+          }
+        />
 
         <div className="sm-display-info">
           <p className="sm-muted" role="status" aria-label="일정 저장 상태" aria-live="polite">

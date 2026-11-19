@@ -18,32 +18,6 @@
     box-sizing: border-box;
 }
 
-/* 페이지 상단 */
-.crm-header {
-    margin-bottom: 20px;
-}
-
-.crm-path {
-    margin: 0 0 8px;
-    color: #827A98;
-    font-size: 12px;
-    font-weight: 500;
-}
-
-.crm-header h2 {
-    margin: 0 0 8px;
-    color: #39354F;
-    font-size: 26px;
-    font-weight: 700;
-}
-
-.crm-description {
-    margin: 0;
-    color: #79738A;
-    font-size: 13px;
-    line-height: 1.6;
-}
-
 /* =========================================
    고객 현황 요약 카드
 ========================================= */
@@ -255,12 +229,6 @@
     gap: 8px;
 }
 
-/* 고객 등록 버튼만 페이지 상단 오른쪽으로 이동 */
-.crm-page .crm-actions > button:first-child {
-    position: absolute;
-    top: 43px;
-    right: 30px;
-}
 
 /* =========================================
    고객 목록 테이블
@@ -401,15 +369,8 @@
         padding: 18px 14px 28px;
     }
 
-    .crm-header h2 {
-        font-size: 22px;
-    }
-
-    /* 작은 화면에서도 고객 등록 버튼을 상단 오른쪽에 유지 */
-    .crm-page .crm-actions > button:first-child {
-        top: 29px;
-        right: 14px;
-    }
+    .crm-page .erp-page-header-actions { width: 100%; }
+    .crm-page .erp-page-header-actions > button { width: 100%; }
 
     .crm-content {
         padding: 18px;

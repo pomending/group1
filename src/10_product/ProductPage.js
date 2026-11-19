@@ -16,6 +16,7 @@ import {
   compareProductDates, createProductExcel, getProductInput, getProductPriceRange, PRODUCT_STATUS,
 } from "./productData";
 import "./productStyles.css";
+import PageHeader from "../components/PageHeader";
 
 const PAGE_SIZE = 10;
 // 정렬은 filter가 만든 새 배열에만 적용합니다. 같은 값이면 ID순으로 정해 페이지 이동 중 순서를 유지합니다.
@@ -238,23 +239,23 @@ export default function ProductPage() {
   return (
     <div className="pd-app">
       <div className="pd-shell">
-        <header className="pd-heading">
-          <div>
-         
-            <h1>상품 관리</h1>
-            
-          </div>
-          {editing === null && selectedId === null && (
-            <button
-              ref={focusRef("register")}
-              className="pd-button pd-primary"
-              type="button"
-              onClick={() => openEditor({}, "register")}
-            >
-              + 상품 등록
-            </button>
-          )}
-        </header>
+        <PageHeader
+          eyebrow="PRODUCT MANAGEMENT"
+          title="상품 관리"
+          description="상품의 기본 단가와 판매 상태를 관리합니다."
+          actions={
+            editing === null && selectedId === null && (
+              <button
+                ref={focusRef("register")}
+                className="pd-button pd-primary"
+                type="button"
+                onClick={() => openEditor({}, "register")}
+              >
+                + 상품 등록
+              </button>
+            )
+          }
+        />
 
         {productStorageError && <p className="pd-error" role="alert">{productStorageError}</p>}
         {notice && <p className="pd-notice" role="status" aria-label="상품 처리 결과">{notice}</p>}

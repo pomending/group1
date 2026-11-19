@@ -7,13 +7,6 @@
     box-sizing: border-box;
 }
 
-.mypage-title {
-    margin: 0 0 20px;
-    color: #263247;
-    font-size: 24px;
-    font-weight: 700;
-}
-
 /* 마이페이지 카드 */
 .mypage-card {
     width: 100%;
@@ -362,7 +355,6 @@
     background: #F5F4FA;
     color: #39354F;
 }
-.mypage-title,
 .mypage-profile-text h2,
 .mypage-section h3,
 .mypage-password-panel h4 {
