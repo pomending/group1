@@ -953,6 +953,18 @@ export function ERPProvider({ children }) {
                 };
             }
 
+            // 임시 저장 견적을 정식 등록할 때 상품 판매 상태 재확인
+            const isDraftToSubmitted =
+                original?.status === "임시 저장" &&
+                quotation.status === "승인 대기";
+
+            if (isDraftToSubmitted && product.productStatus !== "판매 중") {
+                return {
+                    ok: false,
+                    message: "판매중지된 상품은 정식 견적으로 등록할 수 없습니다."
+                };
+            }
+
             const isNewProduct =
                 !original ||
                 original.productId !== quotation.productId;
@@ -1114,6 +1126,16 @@ export function ERPProvider({ children }) {
             ...original,
             ...updatedQuotation
         };
+
+        if (
+            original.status !== "임시 저장" &&
+            mergedQuotation.consultationId !== original.consultationId
+        ) {
+            return {
+                ok: false,
+                message: "정식 등록된 견적의 연결 상담은 변경할 수 없습니다."
+            };
+        }
 
         // 임시 저장 견적은 승인 대기로만 정식 등록 가능
         if (
