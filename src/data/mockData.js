@@ -654,7 +654,7 @@ export const consultations = [
         email: "jaehyuk@example.com",
         employeeId: 4,
         status: "견적 요청",
-        memo: "매장 직원용 앞치마 제작"
+        memo: "매장 홍보용 세라믹 머그컵 200개 제작 문의"
     },
     {
         id: 12,
@@ -702,7 +702,7 @@ export const consultations = [
         email: "dohyun@example.com",
         employeeId: 20,
         status: "견적 요청",
-        memo: "행사 기념 손목밴드 제작"
+        memo: "행사 기념 금속 배지 500개 제작 문의"
     },
     {
         id: 16,
@@ -750,7 +750,7 @@ export const consultations = [
         email: "junseo@example.com",
         employeeId: 19,
         status: "견적 요청",
-        memo: "직원 단체복 250벌 제작"
+        memo: "직원 단체 티셔츠 250벌 제작 문의"
     },
     {
         id: 20,
@@ -822,7 +822,7 @@ export const consultations = [
         email: "seoyeon@example.com",
         employeeId: 4,
         status: "인계 완료",
-        memo: "텀블러 소량 제작 가격 협의 후 견적 반려"
+        memo: "텀블러 100개 소량 제작 단가 및 납기 문의"
     },
     {
         id: 26,

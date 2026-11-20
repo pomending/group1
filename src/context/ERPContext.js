@@ -151,25 +151,25 @@ export function ERPProvider({ children }) {
         original = null,
         newlyCreatedCustomerId = null
     ) => {
-    
+
         // 담당 직원 검증
         const employeeResult = validateConsultationEmployee(
             consultation, original
         );
-    
+
         if (!employeeResult.ok) {
             return employeeResult;
         }
-    
+
         // 고객 FK 검증
         const customerResult = validateConsultationCustomer(
             consultation, newlyCreatedCustomerId
         );
-    
+
         if (!customerResult.ok) {
             return customerResult;
         }
-    
+
         // 실제 상담 저장
         return original
             ? consultationData.updateConsultation(consultation)
@@ -179,25 +179,32 @@ export function ERPProvider({ children }) {
     const addConsultation = (newConsultation) => {
         return saveConsultationRecord(newConsultation);
     };
-    
+
     const updateConsultation = (updatedConsultation) => {
-    
+
         const original = consultationData.consultations.find(
             c => c.id === updatedConsultation.id
         );
-    
+
         if (!original) {
             return {
                 ok: false,
                 message: "존재하지 않는 상담입니다."
             };
         }
-    
+
+        if (["문의 종료", "인계 완료"].includes(original.status)) {
+            return {
+                ok: false,
+                message: `${original.status} 상태의 상담은 수정할 수 없습니다.`
+            };
+        }
+
         const mergedConsultation = {
             ...original,
             ...updatedConsultation
         };
-    
+
         return saveConsultationRecord(
             mergedConsultation,
             original
@@ -222,6 +229,16 @@ export function ERPProvider({ children }) {
             return {
                 ok: false,
                 message: "존재하지 않는 상담입니다."
+            };
+        }
+
+        if (
+            original &&
+            ["문의 종료", "인계 완료"].includes(original.status)
+        ) {
+            return {
+                ok: false,
+                message: `${original.status} 상태의 상담은 수정할 수 없습니다.`
             };
         }
 
@@ -449,13 +466,13 @@ export function ERPProvider({ children }) {
         const hasTransferredConsultation =
             consultationData.consultations.some(
                 c => ids.includes(c.id) &&
-                    ["견적 요청", "인계 완료"].includes(c.status)
+                    ["견적 요청", "문의 종료", "인계 완료"].includes(c.status)
             );
 
         if (hasTransferredConsultation) {
             return {
                 ok: false,
-                message: "견적 요청 또는 인계 완료된 상담은 삭제할 수 없습니다."
+                message: "견적 요청, 문의 종료 또는 인계 완료된 상담은 삭제할 수 없습니다."
             };
         }
 

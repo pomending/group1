@@ -407,133 +407,130 @@ function QuotationCreate() {
                 </section>
 
 
+
                 <section className="create-card">
                     <div className="section-header">
                         <span className="section-number">03</span>
                         <h2>상품 정보</h2>
                     </div>
 
-                    <div className="product-form">
-                        <div className="form-group product-name">
-                            <label>상품명</label>
-                            <input
-                                type="text"
-                                placeholder="상품명을 입력하세요."
-                                value={productSearch}
-                                onChange={(e) => {
-                                    setProductSearch(e.target.value)
-                                    setProductId("")
-                                    setBaseUnitPrice("");
-                                    setQuantity("")
-                                    setOptions([])
-                                    setShowProductList(true)
-                                }}
-                                onFocus={() => setShowProductList(true)}
-                                onBlur={() => setShowProductList(false)}
-                            />
-                            {showProductList && (
-                                <div className="product-list">
-                                    {filteredProducts.length > 0 ? (
-                                        filteredProducts.map((product) => (
-                                            <div
-                                                key={product.id}
-                                                className="product-item"
-                                                onMouseDown={(e) => e.preventDefault()}
-                                                onClick={() => {
-                                                    setProductId(product.id);
-                                                    setProductSearch(product.productName);
-                                                    setShowProductList(false);
+                    <div className="quote-product-layout">
 
-                                                    if (editQuotation?.productId === product.id) {
-                                                        setBaseUnitPrice(editQuotation.baseUnitPrice);
-                                                    } else {
-                                                        setBaseUnitPrice(product.productPrice);
-                                                    }
-                                                }}
-                                            >
-                                                <strong>{product.productName}</strong>
+                        {/* 1. 기본 상품 정보 */}
+                        <div className="quote-product-top quote-product-columns">
 
-                                                <div>
-                                                    <span>{product.productPrice.toLocaleString()}원</span>
+                            <div className="form-group quote-product-name">
+                                <label>상품명 / 추가 옵션</label>
+                                <input
+                                    type="text"
+                                    placeholder="상품명을 입력하세요."
+                                    value={productSearch}
+                                    onChange={(e) => {
+                                        setProductSearch(e.target.value);
+                                        setProductId("");
+                                        setBaseUnitPrice("");
+                                        setQuantity("");
+                                        setOptions([]);
+                                        setShowProductList(true);
+                                    }}
+                                    onFocus={() => setShowProductList(true)}
+                                    onBlur={() => setShowProductList(false)}
+                                />
+
+                                {showProductList && (
+                                    <div className="product-list">
+                                        {filteredProducts.length > 0 ? (
+                                            filteredProducts.map((product) => (
+                                                <div
+                                                    key={product.id}
+                                                    className="product-item"
+                                                    onMouseDown={(e) => e.preventDefault()}
+                                                    onClick={() => {
+                                                        setProductId(product.id);
+                                                        setProductSearch(product.productName);
+                                                        setShowProductList(false);
+
+                                                        if (editQuotation?.productId === product.id) {
+                                                            setBaseUnitPrice(editQuotation.baseUnitPrice);
+                                                        } else {
+                                                            setBaseUnitPrice(product.productPrice);
+                                                        }
+                                                    }}
+                                                >
+                                                    <strong>{product.productName}</strong>
+                                                    <div>
+                                                        <span>
+                                                            {product.productPrice.toLocaleString()}원
+                                                        </span>
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        ))
-                                    ) : (
-                                        <p>검색 결과가 없습니다.</p>
-                                    )}
-                                </div>
-                            )}
+                                            ))
+                                        ) : (
+                                            <p>검색 결과가 없습니다.</p>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="form-group quote-product-quantity">
+                                <label>수량</label>
+                                <input
+                                    type="number"
+                                    className="quantity-input"
+                                    min={1}
+                                    placeholder="수량을 입력하세요."
+                                    value={quantity}
+                                    onChange={(e) => setQuantity(e.target.value)}
+                                />
+                            </div>
+
+                            <div className="form-group quote-product-base">
+                                <label>기본 단가 / 옵션 단가 (원)</label>
+                                <input
+                                    type="text"
+                                    className="readonly-input"
+                                    placeholder="상품 선택 시 자동 입력"
+                                    value={formatPrice(baseUnitPrice)}
+                                    readOnly
+                                />
+                            </div>
+
+
+                            <div className="quote-product-add">
+                                <button
+                                    type="button"
+                                    className="option-add-btn"
+                                    onClick={handleAddOption}
+                                >
+                                    + 옵션 추가
+                                </button>
+                            </div>
+
                         </div>
 
-                        <div className="form-group">
-                            <label>수량</label>
-                            <input
-                                type="number"
-                                className="quantity-input"
-                                min={1}
-                                placeholder="수량을 입력하세요."
-                                value={quantity}
-                                onChange={(e) => setQuantity(e.target.value)} />
-                        </div>
-
-                        <div className="form-group">
-                            <label>기본 단가 (원)</label>
-                            <input
-                                type="text"
-                                className="readonly-input"
-                                placeholder="상품 선택 시 자동 입력"
-                                value={formatPrice(baseUnitPrice)}
-                                readOnly />
-                        </div>
-
-                        <div className="form-group">
-                            <label>옵션 추가 단가 (원)</label>
-                            <input
-                                type="text"
-                                value={formatPrice(optionUnitPrice)}
-                                readOnly
-                                className="readonly-input"
-                            />
-                        </div>
-
-                        <div className="form-group">
-                            <label>옵션 포함 최종 단가 (원)</label>
-                            <input
-                                type="text"
-                                value={formatPrice(finalUnitPrice)}
-                                readOnly
-                                className="readonly-input"
-                            />
-                        </div>
-
-                        <div className="form-group">
-                            <p>상품 총 금액 (원)</p>
-                            <input
-                                type="text"
-                                placeholder="자동 계산"
-                                value={formatPrice(totalPrice)}
-                                readOnly
-                                className="readonly-input"
-                            />
-                        </div>
-
-                        <div className="option-section">
-                            <button className="option-add-btn" onClick={handleAddOption}>
-                                + 옵션 추가
-                            </button>
+                        {/* 2. 추가 옵션 */}
+                        <div className="quote-product-options">
 
                             {options.map((option) => (
-                                <div className="option-row" key={option.id}>
+                                <div
+                                    className="quote-option-row quote-product-columns"
+                                    key={option.id}
+                                >
                                     <input
-                                        className="option-name-input"
+                                        className="option-name-input quote-option-name"
                                         type="text"
                                         placeholder="옵션명 입력"
                                         value={option.name}
                                         onChange={(e) =>
-                                            handleChangeOption(option.id, "name", e.target.value)
+                                            handleChangeOption(
+                                                option.id,
+                                                "name",
+                                                e.target.value
+                                            )
                                         }
                                     />
-                                    <div className="option-price-wrapper">
+
+                                    <div className="option-price-wrapper quote-option-price">
                                         <input
                                             className="option-price-input"
                                             type="text"
@@ -549,22 +546,55 @@ function QuotationCreate() {
                                                 const value = e.target.value.replace(/,/g, "");
 
                                                 if (/^-?\d*$/.test(value)) {
-                                                    handleChangeOption(option.id, "unitPrice", value);
+                                                    handleChangeOption(
+                                                        option.id,
+                                                        "unitPrice",
+                                                        value
+                                                    );
                                                 }
                                             }}
                                         />
                                         <span className="price-unit">원</span>
                                     </div>
-                                    <button className="option-delete-btn" onClick={() => handleDeleteOption(option.id)}>
+
+                                    <button
+                                        type="button"
+                                        className="option-delete-btn quote-option-delete"
+                                        onClick={() => handleDeleteOption(option.id)}
+                                    >
                                         삭제
                                     </button>
-
                                 </div>
                             ))}
                         </div>
 
+
+                        {/* 3. 계산 결과 */}
+                        <div className="quote-product-summary quote-product-columns">
+
+                            <div className="quote-summary-final">
+                                <span className="quote-summary-label">
+                                    옵션 포함 최종 단가 (원)
+                                </span>
+                                <div className="quote-summary-value">
+                                    {formatPrice(finalUnitPrice) || "—"}
+                                </div>
+                            </div>
+
+                            <div className="quote-summary-total">
+                                <span className="quote-summary-label">
+                                    상품 총 금액 (원)
+                                </span>
+                                <div className="quote-summary-value">
+                                    {formatPrice(totalPrice) || "—"}
+                                </div>
+                            </div>
+
+                        </div>
+
                     </div>
                 </section>
+
 
                 <section className="create-card">
                     <div className="section-header">

@@ -28,9 +28,9 @@ function Sidebar() {
         { name: "상담 관리", path: "/consultation", icon: "☏" },
         { name: "고객 관리", path: "/crm", icon: "♙" },
         { name: "견적 관리", path: "/quotation", icon: "▤" },
-        { name: "상품 관리", path: "/product", icon: "▧" },
         { name: "프로젝트 관리", path: "/projects", icon: "▣" },
         { name: "세부 작업 관리", path: "/tasks", icon: "☑" },
+        { name: "상품 관리", path: "/product", icon: "▧" },
         { name: "일정 관리", path: "/schedule", icon: "▦" },
         { name: "인적 자원 관리", path: "/hr", icon: "♧" }
     ];
