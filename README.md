@@ -1,70 +1,129 @@
-# Getting Started with Create React App
+# GOODS ERP
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+**굿즈 제작·판매 기업을 위한 React 기반 ERP 팀 프로젝트**
 
-## Available Scripts
+고객 상담부터 견적 작성, 프로젝트 진행, 제작·검수·포장·배송까지 이어지는 업무를 하나의 화면에서 관리하도록 구현한 ERP입니다. 6명의 팀원이 약 4주 동안 개발한 교육·포트폴리오용 프로젝트로, 실제 서버 대신 React 상태 관리와 브라우저 저장소를 활용합니다.
 
-In the project directory, you can run:
+## 1. 프로젝트 개요
 
-### `npm start`
+- **개발 기간:** 2026년 10월 26일 ~ 11월 20일 (약 4주)
+- **개발 인원:** 6명
+- **개발 형태:** React 프런트엔드 중심 팀 프로젝트
+- **대상 업무:** 굿즈 제작·판매 기업의 고객·견적·생산 프로젝트 관리
+- **구현 목표:** 모듈별 CRUD뿐 아니라 업무 상태와 참조 관계가 서로 연결되는 ERP 흐름 구현
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+## 2. 기술 스택
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+| 구분 | 사용 기술 |
+|---|---|
+| 프런트엔드 | React, JavaScript, HTML, CSS |
+| 화면 이동 | React Router |
+| 공통 상태 관리 | React Context API, 커스텀 훅 |
+| 데이터 저장 | localStorage, sessionStorage |
+| 초기 데이터 | JavaScript Mock Data |
+| 실행·빌드 | Node.js, npm, Create React App (`react-scripts`) |
+| 테스트 | Jest, React Testing Library |
 
-### `npm test`
+별도의 Node.js/Express/MySQL 서버가 필요한 구성은 아닙니다. 백엔드 전환 실험본과는 구분되는 **공식 React 제출 버전**입니다.
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+## 3. 주요 기능
 
-### `npm run build`
+| 메뉴 | 주요 기능 |
+|---|---|
+| 대시보드 | 주요 업무 현황 확인, 공지사항·커뮤니티·마이페이지 |
+| 고객 관리 | 고객 등록·조회·수정·삭제, 담당자 관리 |
+| 상담 관리 | 상담 접수·처리, 견적 요청, 고객 정보 연계 |
+| 견적 관리 | 상담 기반 견적 작성, 임시 저장, 승인·반려, 상품·옵션 가격 계산 |
+| 상품 관리 | 상품 등록·조회·수정, 판매 상태 관리 |
+| 프로젝트 관리 | 승인된 견적 기반 프로젝트 생성, 담당자·기간·진행 현황 관리 |
+| 세부 작업 관리 | 제작·검수·포장·배송 단계별 작업, 담당자 및 완료 상태 관리 |
+| 일정 관리 | 일정 조회·등록·관리, 업무 일정 연계 |
+| 인적 자원 관리 | 직원·부서·재직 상태 및 계정 관리 |
+| 로그인·계정 | 시연용 로그인, 계정 역할 및 비밀번호 변경 |
+| 고객용 홈페이지 | 내부 ERP와 분리된 상품 소개 및 고객 문의 화면 |
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+### 주요 업무 흐름
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+```text
+상담 접수 → 견적 요청 → 견적 작성 및 승인
+                         ↓
+                    프로젝트 생성
+                         ↓
+             제작 → 검수 → 포장 → 배송
+                         ↓
+                    프로젝트 완료
+```
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+주요 업무 규칙의 예시는 다음과 같습니다.
 
-### `npm run eject`
+- 프로젝트는 **승인 완료**된 견적을 기준으로 생성합니다.
+- 프로젝트 생성 시 견적 납품 예정일을 초기 마감일로 사용하되, 이후 프로젝트 마감일은 별도로 변경할 수 있습니다. 단, 기존 세부 작업의 기한이 변경된 프로젝트 기간을 벗어나면 수정을 제한합니다.
+- 배송 작업을 완료하려면 제작·검수·포장 작업이 모두 완료되어야 합니다.
+- 배송이 완료되면 연결된 프로젝트가 자동 완료되며, 완료된 프로젝트와 작업은 수정이 제한됩니다.
+- 참조 중인 데이터의 삭제나 업무 담당자 변경은 연결 관계와 업무 상태에 따라 제한됩니다.
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+## 4. 실행 방법
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+Node.js와 npm이 설치된 환경에서 **`package.json`이 있는 프로젝트 최상위 폴더**로 이동한 뒤 실행합니다.
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+```bash
+npm ci
+npm start
+```
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+브라우저에서 [http://localhost:3000](http://localhost:3000)에 접속합니다.
 
-## Learn More
+```bash
+npm run build
+```
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+위 명령으로 배포용 빌드를 생성할 수 있습니다. 자동 테스트는 아래 명령으로 실행할 수 있습니다.
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+```bash
+CI=true npm test -- --watchAll=false --runInBand
+```
 
-### Code Splitting
+> 기존 테스트 중 일부는 최신 상품 화면과 테스트의 요소 조회 기준이 일치하지 않아 실패할 수 있습니다. 테스트 결과와 확인 범위는 `audit-reports/`의 최종 보고서를 참고해 주세요.
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+## 5. 프로젝트 구조
 
-### Analyzing the Bundle Size
+```text
+project-root/
+├── public/                   # 정적 리소스
+├── src/
+│   ├── 1_crm/                # 고객 관리
+│   ├── 2_quotation/          # 견적 관리
+│   ├── 3_projects/           # 프로젝트 관리
+│   ├── 4_tasks/              # 세부 작업 관리
+│   ├── 5_schedule/           # 일정 관리
+│   ├── 6_dashboard/          # 대시보드 및 사내 기능
+│   ├── 7_login/              # 로그인·비밀번호 변경
+│   ├── 8_hr/                 # 직원·계정 관리
+│   ├── 9_consultation/       # 상담 관리
+│   ├── 10_product/           # 상품 관리
+│   ├── 11_homepage/          # 외부 고객용 홈페이지
+│   ├── components/           # 공통 UI
+│   ├── context/              # Context 및 데이터 관리 훅
+│   ├── data/                 # 초기 데이터
+│   └── utils/                # 공통 검증·계산·포맷 함수
+├── audit-reports/            # 개발 과정의 검수 기록
+├── package.json
+├── package-lock.json
+└── README.md
+```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+## 6. 데이터 관리 및 시연 시 참고사항
 
-### Making a Progressive Web App
+업무 데이터는 초기 Mock Data를 바탕으로 브라우저의 `localStorage` 등에 저장됩니다. 로그인 세션 등 일부 정보에는 `sessionStorage`를 사용합니다. 따라서 실제 데이터베이스 기반의 다중 사용자 동시 편집 환경은 제공하지 않습니다.
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+- **여러 탭에서 동시에 데이터를 수정하면 저장 내용이 유실될 수 있으므로, 시연 시 한 탭에서 작업하는 것을 권장합니다.**
+- `전체 데이터 초기화`는 개발·시연 편의를 위한 기능이며, 실행하면 저장한 변경 내용이 초기 상태로 복원됩니다.
+- 본 프로젝트는 학습·시연 목적의 프런트엔드 구현이며, 실제 서비스 수준의 서버 인증·권한·동시성 및 데이터 복구를 보장하지 않습니다.
 
-### Advanced Configuration
+자세한 실행 및 시연 절차는 [DEMO_GUIDE.md](./DEMO_GUIDE.md)를 참고해 주세요.
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+## 7. 개발 및 검수 기록
 
-### Deployment
+개발 중 발견한 오류와 개선 사항, 재검증 과정은 [`audit-reports/`](./audit-reports/) 폴더에 날짜별로 정리했습니다. 보고서는 **AI 보조 코드 검수 및 테스트 자료**로, 각 작성 당시의 소스를 기준으로 합니다. 따라서 이전 보고서에 기재된 오류가 최종 제출본에도 남아 있다는 뜻은 아닙니다.
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+최종 상태는 [`2026-11-20 최종 재검수 보고서`](./audit-reports/ERP-2026-11-20-Final-Audit_2.md)를 참고해 주세요. 해당 보고서에는 해결된 항목과 남아 있는 제한사항, 실제 실행한 테스트 범위가 구분되어 있습니다.
