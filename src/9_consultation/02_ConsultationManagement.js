@@ -39,6 +39,10 @@ function ConsultationManagement() {
 
     const originalConsultation = consultations.find(
         (consultation) => consultation.id === editData.id)
+
+    const isReadOnly = ["문의 종료", "인계 완료"].includes(
+        originalConsultation?.status
+    );
     //페이지설정기준
     const [currentPage, setCurrentPage] = useState(1)
     //페이지당 보여질 목록개수
@@ -49,7 +53,11 @@ function ConsultationManagement() {
         const selectedConsultation = consultations.find(
             (item) => item.id === checkIds[0])
         setEditData(selectedConsultation);
-        alert("문의 상세정보를 불러왔습니다.\n상단에서 내용을 확인하거나 수정할 수 있습니다.");
+        alert(
+            ["문의 종료", "인계 완료"].includes(selectedConsultation.status)
+                ? "문의 상세정보를 불러왔습니다.\n이 상담은 조회만 가능합니다."
+                : "문의 상세정보를 불러왔습니다.\n상단에서 내용을 확인하거나 수정할 수 있습니다."
+        );
 
     }
 
@@ -172,12 +180,14 @@ function ConsultationManagement() {
                 <label>고객사명</label>
                 <input type="text"
                     value={editData?.companyName || ""}
+                    readOnly={isReadOnly}
                     onChange={(e) => setEditData(
                         { ...editData, companyName: (e.target.value) }
                     )} />
                 <label>문의 경로</label>
                 <select
                     value={editData?.inquiryChannel || ""}
+                    disabled={isReadOnly}
                     onChange={(e) => setEditData(
                         { ...editData, inquiryChannel: (e.target.value) }
                     )}>
@@ -190,6 +200,7 @@ function ConsultationManagement() {
                 <label>고객사 담당자</label>
                 <input type="text"
                     value={editData?.customerManager || ""}
+                    readOnly={isReadOnly}
                     onChange={(e) => setEditData(
                         { ...editData, customerManager: (e.target.value) }
                     )} />
@@ -197,6 +208,7 @@ function ConsultationManagement() {
                 <label>연락처</label>
                 <input type="text"
                     value={editData?.phone || ""}
+                    readOnly={isReadOnly}
                     onChange={(e) => setEditData(
                         { ...editData, phone: formatPhone(e.target.value) }
                     )} /><br />
@@ -204,6 +216,7 @@ function ConsultationManagement() {
                 <label>이메일</label>
                 <input type="text"
                     value={editData?.email || ""}
+                    readOnly={isReadOnly}
                     onChange={(e) => setEditData(
                         { ...editData, email: (e.target.value) }
                     )} />
@@ -211,6 +224,7 @@ function ConsultationManagement() {
 
                 <label>담당자</label>
                 <select value={(editData.employeeId) ?? ""}
+                    disabled={isReadOnly}
                     onChange={(e) =>
                         setEditData({
                             ...editData,
@@ -245,7 +259,10 @@ function ConsultationManagement() {
                 <label>진행상태</label>
                 <select
                     value={editData?.status || "문의 접수"}
-                    disabled={editData?.status === "인계 완료"}
+                    disabled={
+                        isReadOnly ||
+                        originalConsultation?.status === "견적 요청"
+                    }
                     onChange={(e) => setEditData({
                         ...editData,
                         status: e.target.value
@@ -264,12 +281,20 @@ function ConsultationManagement() {
                 <label>문의 사항/처리 내용</label>
                 <textarea
                     value={editData?.memo || ""}
-                    onChange={(e) => setEditData(
-                        { ...editData, memo: (e.target.value) }
-                    )} />
+                    readOnly={isReadOnly}
+                    onChange={(e) => setEditData({
+                        ...editData,
+                        memo: e.target.value
+                    })}
+                />
 
                 <button
-                    onClick={saveConsultation}>등록/수정 저장</button>
+                    type="button"
+                    disabled={isReadOnly}
+                    onClick={saveConsultation}
+                >
+                    등록/수정 저장
+                </button>
 
             </div>
             <hr />

@@ -598,3 +598,255 @@
   pointer-events: none;
   z-index: 2;
 }
+
+
+/* 상품 정보 전체 영역 */
+.quote-product-layout {
+  padding: 20px;
+  border: 1px solid #e4def1;
+  border-radius: 12px;
+  background: #faf9fd;
+}
+
+/* 기본 정보, 옵션, 결과의 공통 열 배치 */
+.quote-product-columns {
+  display: grid;
+  grid-template-columns:
+      minmax(0, 2.2fr)
+      minmax(110px, 0.8fr)
+      minmax(170px, 1.3fr)
+      minmax(180px, 1.4fr);
+  gap: 14px;
+  align-items: end;
+}
+
+/* 첫 번째 행 */
+.quote-product-name {
+  grid-column: 1;
+  position: relative;
+  min-width: 0;
+}
+
+.quote-product-quantity {
+  grid-column: 2;
+  min-width: 0;
+}
+
+.quote-product-base {
+  grid-column: 3;
+  min-width: 0;
+}
+
+.quote-product-top .form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.quote-product-top input {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* 상품 자동완성 목록 */
+.quote-product-name .product-list {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 30;
+}
+
+/* 옵션 영역 */
+.quote-product-options {
+  margin-top: 20px;
+  padding-top: 18px;
+  border-top: 1px solid #e5dff0;
+}
+
+.quote-option-heading {
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.quote-option-heading-left {
+  grid-column: 1;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.quote-option-title {
+  font-weight: 700;
+  font-size: 14px;
+  color: #403960;
+}
+
+.quote-option-price-label {
+  grid-column: 3;
+  font-size: 12px;
+  font-weight: 600;
+  color: #77718f;
+}
+
+.quote-option-row {
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid #eee9f5;
+}
+
+.quote-option-row:last-child {
+  border-bottom: none;
+}
+
+.quote-option-name {
+  grid-column: 1;
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.quote-option-price {
+  grid-column: 3;
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.quote-option-price .option-price-input {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.quote-option-delete {
+  grid-column: 4;
+  justify-self: end;
+  margin: 0;
+}
+
+
+/* 옵션 추가 버튼: 삭제 버튼과 같은 오른쪽 열 */
+.quote-option-add {
+  grid-column: 4;
+  justify-self: end;
+  margin: 0;
+}
+
+/* 계산 결과 영역 */
+.quote-product-summary {
+  margin-top: 20px;
+  padding-top: 18px;
+  border-top: 1px solid #e5dff0;
+  align-items: end;
+}
+
+/* 계산 결과 전체 묶음 */
+.quote-summary-final,
+.quote-summary-total {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+/* 각 결과 위치 */
+.quote-summary-final {
+  grid-column: 3;
+}
+
+.quote-summary-total {
+  grid-column: 4;
+}
+
+/* 박스 바깥의 제목 */
+.quote-summary-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #77718f;
+}
+
+/* 금액 표시 박스 */
+.quote-summary-value {
+  display: flex;
+  align-items: center;
+  min-height: 46px;
+  padding: 10px 14px;
+  box-sizing: border-box;
+  border: 1px solid #e4def1;
+  border-radius: 9px;
+  background: #ffffff;
+
+  font-size: 18px;
+  font-weight: 700;
+  color: #39315d;
+  white-space: nowrap;
+}
+
+/* 상품 총 금액 강조 */
+.quote-summary-total .quote-summary-value {
+  background: #f0ecfa;
+  border-color: #cfc4ed;
+  color: #63569d;
+}
+
+/* 반응형 */
+@media (max-width: 1000px) {
+  .quote-option-add {
+      grid-column: 3;
+  }
+}
+
+@media (max-width: 600px) {
+  .quote-option-heading {
+      grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .quote-option-title {
+      grid-column: 1;
+  }
+
+  .quote-option-add {
+      grid-column: 2;
+  }
+
+  .quote-summary-final,
+  .quote-summary-total {
+      grid-column: 1;
+  }
+}
+
+
+/* 기본 단가 옆 옵션 추가 버튼 */
+.quote-product-add {
+  grid-column: 4;
+  align-self: end;
+  justify-self: end;
+}
+
+.quote-product-add .option-add-btn {
+  margin: 0;
+  min-height: 44px;
+  white-space: nowrap;
+}
+
+/* 옵션 제목 행을 제거했으므로 간격만 정리 */
+.quote-product-options {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid #e5dff0;
+}
+
+@media (max-width: 1000px) {
+  .quote-product-add {
+      grid-column: 2;
+      justify-self: end;
+  }
+}
+
+@media (max-width: 600px) {
+  .quote-product-add {
+      grid-column: 1;
+  }
+}
