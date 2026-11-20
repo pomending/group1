@@ -358,6 +358,7 @@ function QuotationCreate() {
                             <select
                                 id="quotation-consultation"
                                 value={consultationId}
+                                disabled={Boolean(editQuotation) && editQuotation.status !== "임시 저장"}
                                 onChange={(e) => setConsultationId(e.target.value)}
                             >
                                 <option value="">
@@ -365,6 +366,17 @@ function QuotationCreate() {
                                         ? "견적 요청 상담을 선택하세요."
                                         : "선택 가능한 견적 요청 상담이 없습니다."}
                                 </option>
+
+                                {editQuotation?.status !== "임시 저장" &&
+                                    editQuotation?.consultationId != null && (
+                                        <option value={String(editQuotation.consultationId)}>
+                                            {consultations.find(
+                                                c => c.id === Number(editQuotation.consultationId)
+                                            )?.companyName || "기존 상담"}
+                                            {" "}(상담 #{editQuotation.consultationId})
+                                        </option>
+                                    )
+                                }
 
                                 {quotationRequests.map(consultation => (
                                     <option key={consultation.id} value={consultation.id}>
